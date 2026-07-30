@@ -1,8 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lehiboo/features/events/data/models/event_reference_data_dto.dart';
 import 'package:lehiboo/features/search/domain/models/event_filter.dart';
 import 'package:lehiboo/features/search/presentation/providers/filter_provider.dart';
+import 'package:lehiboo/features/search/presentation/utils/search_l10n.dart';
+import 'package:lehiboo/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -65,6 +68,60 @@ void main() {
     notifier.removeFilterByType(FilterChipType.category);
 
     expect(container.read(eventFilterProvider).categoriesSlugs, isEmpty);
+  });
+
+  test('price range chip preserves exact decimal values', () {
+    SharedPreferences.setMockInitialValues({});
+
+    final notifier = EventFilterNotifier();
+    notifier.applyFilters(
+      const EventFilter(
+        priceFilterType: PriceFilterType.range,
+        priceMin: 5.5,
+        priceMax: 14.3,
+      ),
+    );
+
+    final container = ProviderContainer(
+      overrides: [
+        eventFilterProvider.overrideWith((ref) => notifier),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final priceChip = container
+        .read(activeFilterChipsProvider)
+        .singleWhere((chip) => chip.id == 'price');
+
+    expect(priceChip.label, 'range:5.5:14.3');
+    expect(priceChip.value, 'range:5.5:14.3');
+  });
+
+  testWidgets('French price range label preserves exact decimal values',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) {
+            final label = context.searchPriceFilterLabel(
+              const EventFilter(
+                priceFilterType: PriceFilterType.range,
+                priceMin: 5.5,
+                priceMax: 14.3,
+              ),
+            );
+            return Text(label!);
+          },
+        ),
+      ),
+    );
+
+    expect(find.text('5,5€ - 14,3€'), findsOneWidget);
+    expect(find.text('5€ - 14€'), findsNothing);
+    expect(find.text('5,50€ - 14,30€'), findsNothing);
   });
 
   test('public filter chips use grouped backend labels and remove by key',

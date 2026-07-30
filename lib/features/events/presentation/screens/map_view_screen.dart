@@ -982,10 +982,13 @@ class _MapActiveFilters extends ConsumerWidget {
     if (value == 'paid') return context.l10n.searchPricePaid;
     if (value.startsWith('range:')) {
       final parts = value.split(':');
-      final min = parts.length > 1 ? int.tryParse(parts[1]) : null;
-      final max = parts.length > 2 ? int.tryParse(parts[2]) : null;
+      final min = parts.length > 1 ? double.tryParse(parts[1]) : null;
+      final max = parts.length > 2 ? double.tryParse(parts[2]) : null;
       if (min != null && max != null) {
-        return context.l10n.searchPriceRange(min, max);
+        return context.l10n.searchPriceRange(
+          context.appAmount(min),
+          context.appAmount(max),
+        );
       }
     }
     return chip.label;

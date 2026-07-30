@@ -2397,10 +2397,10 @@
   "@searchPriceRange": {
     "placeholders": {
       "min": {
-        "type": "int"
+        "type": "String"
       },
       "max": {
-        "type": "int"
+        "type": "String"
       }
     }
   },

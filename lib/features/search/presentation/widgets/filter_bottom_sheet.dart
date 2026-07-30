@@ -1800,7 +1800,9 @@ class _PriceFilterSection extends StatelessWidget {
                 ),
               ),
               Text(
-                '${validMin.toInt()}€ - ${validMax.toInt()}€${validMax >= _sliderMax ? '+' : ''}',
+                '${context.appEuroAmount(validMin)} - '
+                '${context.appEuroAmount(validMax)}'
+                '${validMax >= _sliderMax ? '+' : ''}',
                 style: GoogleFonts.montserrat(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,

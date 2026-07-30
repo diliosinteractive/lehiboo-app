@@ -7939,7 +7939,7 @@ abstract class AppLocalizations {
   ///
   /// In fr, this message translates to:
   /// **'{min}€ - {max}€'**
-  String searchPriceRange(int min, int max);
+  String searchPriceRange(String min, String max);
 
   /// No description provided for @searchAroundMeWithRadius.
   ///

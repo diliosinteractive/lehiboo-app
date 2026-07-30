@@ -29,8 +29,8 @@ extension SearchL10n on BuildContext {
       PriceFilterType.free => l10n.commonFree,
       PriceFilterType.paid => l10n.searchPricePaid,
       PriceFilterType.range => l10n.searchPriceRange(
-          filter.priceMin.toInt(),
-          filter.priceMax.toInt(),
+          appAmount(filter.priceMin),
+          appAmount(filter.priceMax),
         ),
       null => null,
     };

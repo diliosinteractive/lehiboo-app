@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
@@ -1274,7 +1275,7 @@ String? _priceChipValue(EventFilter filter) {
     PriceFilterType.free => 'free',
     PriceFilterType.paid => 'paid',
     PriceFilterType.range =>
-      'range:${filter.priceMin.toInt()}:${filter.priceMax.toInt()}',
+      'range:${apiAmountText(filter.priceMin)}:${apiAmountText(filter.priceMax)}',
     null => null,
   };
 }

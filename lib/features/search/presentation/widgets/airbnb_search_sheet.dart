@@ -559,7 +559,9 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
     if (filter.priceFilterType == PriceFilterType.paid ||
         filter.priceFilterType == PriceFilterType.range) {
       if (filter.priceFilterType == PriceFilterType.range) {
-        return '${filter.priceMin.toInt()}€ - ${filter.priceMax.toInt()}€${filter.priceMax >= 500 ? '+' : ''}';
+        return '${context.appEuroAmount(filter.priceMin)} - '
+            '${context.appEuroAmount(filter.priceMax)}'
+            '${filter.priceMax >= 500 ? '+' : ''}';
       }
       return context.l10n.searchPricePaid;
     }
@@ -1982,7 +1984,9 @@ class _PriceContent extends ConsumerWidget {
                 ),
               ),
               Text(
-                '${range.start.toInt()}€ - ${range.end.toInt()}€${range.end >= 500 ? '+' : ''}',
+                '${context.appEuroAmount(range.start)} - '
+                '${context.appEuroAmount(range.end)}'
+                '${range.end >= 500 ? '+' : ''}',
                 style: GoogleFonts.montserrat(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,

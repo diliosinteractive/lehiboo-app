@@ -4573,7 +4573,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchPricePaid => 'Paid';
 
   @override
-  String searchPriceRange(int min, int max) {
+  String searchPriceRange(String min, String max) {
     return '€$min - €$max';
   }
 

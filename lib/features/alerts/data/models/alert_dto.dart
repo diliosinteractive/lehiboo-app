@@ -74,17 +74,17 @@ class AlertDto {
       // Fields from inside search_criteria
       searchQuery: criteria['search_query'] as String?,
       citySlug: criteria['city_slug'] as String?,
-      latitude: (criteria['latitude'] as num?)?.toDouble(),
-      longitude: (criteria['longitude'] as num?)?.toDouble(),
-      radiusKm: (criteria['radius_km'] as num?)?.toDouble(),
+      latitude: _parseDouble(criteria['latitude']),
+      longitude: _parseDouble(criteria['longitude']),
+      radiusKm: _parseDouble(criteria['radius_km']),
 
       dateType: criteria['date_type'] as String?,
       startDate: criteria['start_date'] as String?,
       endDate: criteria['end_date'] as String?,
 
       priceType: criteria['price_type'] as String?,
-      priceMin: (criteria['price_min'] as num?)?.toDouble(),
-      priceMax: (criteria['price_max'] as num?)?.toDouble(),
+      priceMin: _parseDouble(criteria['price_min']),
+      priceMax: _parseDouble(criteria['price_max']),
 
       categories: (criteria['categories'] as List<dynamic>?)
           ?.map((e) => e.toString())
@@ -201,4 +201,12 @@ class AlertDto {
       createdAt: DateTime.tryParse(createdAt) ?? DateTime.now(),
     );
   }
+}
+
+double? _parseDouble(Object? value) {
+  if (value is num) return value.toDouble();
+  if (value is String) {
+    return double.tryParse(value.trim().replaceAll(',', '.'));
+  }
+  return null;
 }
