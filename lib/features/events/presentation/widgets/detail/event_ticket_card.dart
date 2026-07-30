@@ -267,7 +267,7 @@ class _EventTicketCardState extends State<EventTicketCard> {
 
     final buyerPrice = widget.ticket.buyerPrice;
     return Text(
-      '${buyerPrice.toStringAsFixed(buyerPrice == buyerPrice.roundToDouble() ? 0 : 2)}€',
+      context.appEuroAmount(buyerPrice),
       style: const TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,

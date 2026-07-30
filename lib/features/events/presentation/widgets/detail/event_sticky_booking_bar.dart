@@ -342,7 +342,7 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
               textBaseline: TextBaseline.alphabetic,
               children: [
                 Text(
-                  _formatPrice(widget.event.buyerPriceFrom ?? 0),
+                  context.appEuroAmount(widget.event.buyerPriceFrom ?? 0),
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -434,7 +434,7 @@ class _EventStickyBookingBarState extends State<EventStickyBookingBar>
                 ),
               ),
               Text(
-                _formatPrice(widget.event.buyerPriceFrom ?? 0),
+                context.appEuroAmount(widget.event.buyerPriceFrom ?? 0),
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,

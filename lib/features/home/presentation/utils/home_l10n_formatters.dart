@@ -3,10 +3,7 @@ import 'package:flutter/widgets.dart';
 import '../../../../core/l10n/l10n.dart';
 
 extension HomeL10nFormatters on BuildContext {
-  String homeEuroAmount(num amount) {
-    final rounded = amount.toStringAsFixed(0);
-    return isEnglishLocale ? '€$rounded' : '$rounded€';
-  }
+  String homeEuroAmount(num amount) => appEuroAmount(amount);
 
   String homePriceFrom(num amount) =>
       l10n.homePriceFrom(homeEuroAmount(amount));

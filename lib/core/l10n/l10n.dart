@@ -25,6 +25,18 @@ extension AppLocalizationsX on BuildContext {
   NumberFormat get appCompactNumberFormat {
     return NumberFormat.compact(locale: appLocaleName);
   }
+
+  String appEuroAmount(num amount) {
+    // Keep the API's numeric value intact. Deserializing a whole JSON number
+    // as a double can add a synthetic ".0", which is the only part removed.
+    final rawAmount = amount.toString();
+    final apiAmount = rawAmount.endsWith('.0')
+        ? rawAmount.substring(0, rawAmount.length - 2)
+        : rawAmount;
+    final localizedAmount =
+        isEnglishLocale ? apiAmount : apiAmount.replaceAll('.', ',');
+    return isEnglishLocale ? '€$localizedAmount' : '$localizedAmount€';
+  }
 }
 
 AppLocalizations cachedAppLocalizations() {

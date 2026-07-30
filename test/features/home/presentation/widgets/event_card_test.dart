@@ -30,6 +30,18 @@ Activity _discoveryActivity({
   );
 }
 
+Activity _bookingActivity(double price) {
+  return Activity(
+    id: 'booking-event-$price',
+    title: 'Booking event',
+    slug: 'booking-event-$price',
+    description: '',
+    isFree: false,
+    priceMin: price,
+    reservationMode: ReservationMode.lehibooPaid,
+  );
+}
+
 Future<void> _pumpCard(WidgetTester tester, Activity activity) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -56,6 +68,34 @@ Future<void> _pumpCard(WidgetTester tester, Activity activity) async {
 }
 
 void main() {
+  group('EventCard booking pricing', () {
+    testWidgets('preserves a decimal price instead of rounding it up', (
+      tester,
+    ) async {
+      await _pumpCard(tester, _bookingActivity(5.5));
+
+      expect(find.text('À partir de 5,5€'), findsOneWidget);
+      expect(find.text('À partir de 6€'), findsNothing);
+    });
+
+    testWidgets('preserves a decimal price instead of rounding it down', (
+      tester,
+    ) async {
+      await _pumpCard(tester, _bookingActivity(14.3));
+
+      expect(find.text('À partir de 14,3€'), findsOneWidget);
+      expect(find.text('À partir de 14€'), findsNothing);
+    });
+
+    testWidgets('keeps whole-number prices free of a synthetic decimal', (
+      tester,
+    ) async {
+      await _pumpCard(tester, _bookingActivity(55));
+
+      expect(find.text('À partir de 55€'), findsOneWidget);
+    });
+  });
+
   group('EventCard discovery pricing', () {
     testWidgets(
       'shows Gratuit from the authoritative free value without numeric prices',
