@@ -12,7 +12,7 @@ _$BookingCreatedDataImpl _$$BookingCreatedDataImplFromJson(
       bookingId: (json['booking_id'] as num).toInt(),
       bookingUuid: json['booking_uuid'] as String,
       eventId: (json['event_id'] as num).toInt(),
-      totalAmount: (json['total_amount'] as num).toInt(),
+      totalAmount: _parseTotalAmount(json['total_amount']),
       createdAt: json['created_at'] == null
           ? null
           : DateTime.parse(json['created_at'] as String),

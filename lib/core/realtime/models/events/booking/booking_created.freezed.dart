@@ -26,8 +26,8 @@ mixin _$BookingCreatedData {
   String get bookingUuid => throw _privateConstructorUsedError;
   @JsonKey(name: 'event_id')
   int get eventId => throw _privateConstructorUsedError;
-  @JsonKey(name: 'total_amount')
-  int get totalAmount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'total_amount', fromJson: _parseTotalAmount)
+  double get totalAmount => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at')
   DateTime? get createdAt => throw _privateConstructorUsedError;
 
@@ -46,7 +46,8 @@ abstract class $BookingCreatedDataCopyWith<$Res> {
       {@JsonKey(name: 'booking_id') int bookingId,
       @JsonKey(name: 'booking_uuid') String bookingUuid,
       @JsonKey(name: 'event_id') int eventId,
-      @JsonKey(name: 'total_amount') int totalAmount,
+      @JsonKey(name: 'total_amount', fromJson: _parseTotalAmount)
+      double totalAmount,
       @JsonKey(name: 'created_at') DateTime? createdAt});
 }
 
@@ -85,7 +86,7 @@ class _$BookingCreatedDataCopyWithImpl<$Res, $Val extends BookingCreatedData>
       totalAmount: null == totalAmount
           ? _value.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
-              as int,
+              as double,
       createdAt: freezed == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -106,7 +107,8 @@ abstract class _$$BookingCreatedDataImplCopyWith<$Res>
       {@JsonKey(name: 'booking_id') int bookingId,
       @JsonKey(name: 'booking_uuid') String bookingUuid,
       @JsonKey(name: 'event_id') int eventId,
-      @JsonKey(name: 'total_amount') int totalAmount,
+      @JsonKey(name: 'total_amount', fromJson: _parseTotalAmount)
+      double totalAmount,
       @JsonKey(name: 'created_at') DateTime? createdAt});
 }
 
@@ -143,7 +145,7 @@ class __$$BookingCreatedDataImplCopyWithImpl<$Res>
       totalAmount: null == totalAmount
           ? _value.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
-              as int,
+              as double,
       createdAt: freezed == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
@@ -159,7 +161,8 @@ class _$BookingCreatedDataImpl implements _BookingCreatedData {
       {@JsonKey(name: 'booking_id') required this.bookingId,
       @JsonKey(name: 'booking_uuid') required this.bookingUuid,
       @JsonKey(name: 'event_id') required this.eventId,
-      @JsonKey(name: 'total_amount') required this.totalAmount,
+      @JsonKey(name: 'total_amount', fromJson: _parseTotalAmount)
+      required this.totalAmount,
       @JsonKey(name: 'created_at') this.createdAt});
 
   factory _$BookingCreatedDataImpl.fromJson(Map<String, dynamic> json) =>
@@ -175,8 +178,8 @@ class _$BookingCreatedDataImpl implements _BookingCreatedData {
   @JsonKey(name: 'event_id')
   final int eventId;
   @override
-  @JsonKey(name: 'total_amount')
-  final int totalAmount;
+  @JsonKey(name: 'total_amount', fromJson: _parseTotalAmount)
+  final double totalAmount;
   @override
   @JsonKey(name: 'created_at')
   final DateTime? createdAt;
@@ -220,7 +223,8 @@ abstract class _BookingCreatedData implements BookingCreatedData {
           {@JsonKey(name: 'booking_id') required final int bookingId,
           @JsonKey(name: 'booking_uuid') required final String bookingUuid,
           @JsonKey(name: 'event_id') required final int eventId,
-          @JsonKey(name: 'total_amount') required final int totalAmount,
+          @JsonKey(name: 'total_amount', fromJson: _parseTotalAmount)
+          required final double totalAmount,
           @JsonKey(name: 'created_at') final DateTime? createdAt}) =
       _$BookingCreatedDataImpl;
 
@@ -237,8 +241,8 @@ abstract class _BookingCreatedData implements BookingCreatedData {
   @JsonKey(name: 'event_id')
   int get eventId;
   @override
-  @JsonKey(name: 'total_amount')
-  int get totalAmount;
+  @JsonKey(name: 'total_amount', fromJson: _parseTotalAmount)
+  double get totalAmount;
   @override
   @JsonKey(name: 'created_at')
   DateTime? get createdAt;

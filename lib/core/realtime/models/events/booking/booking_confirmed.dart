@@ -11,7 +11,8 @@ class BookingConfirmedData with _$BookingConfirmedData {
     @JsonKey(name: 'booking_id') required int bookingId,
     @JsonKey(name: 'booking_uuid') required String bookingUuid,
     @JsonKey(name: 'event_id') required int eventId,
-    @JsonKey(name: 'total_amount') required int totalAmount,
+    @JsonKey(name: 'total_amount', fromJson: _parseTotalAmount)
+    required double totalAmount,
     @JsonKey(name: 'confirmed_at') DateTime? confirmedAt,
   }) = _BookingConfirmedData;
 
@@ -27,4 +28,13 @@ class BookingConfirmedNotification with _$BookingConfirmedNotification {
     required BookingConfirmedData data,
     DateTime? receivedAt,
   }) = _BookingConfirmedNotification;
+}
+
+double _parseTotalAmount(Object? value) {
+  if (value is num) return value.toDouble();
+  if (value is String) {
+    final parsed = double.tryParse(value.trim());
+    if (parsed != null) return parsed;
+  }
+  throw FormatException('Invalid booking total_amount: $value');
 }

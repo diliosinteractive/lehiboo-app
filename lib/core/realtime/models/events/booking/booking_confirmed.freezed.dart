@@ -26,8 +26,8 @@ mixin _$BookingConfirmedData {
   String get bookingUuid => throw _privateConstructorUsedError;
   @JsonKey(name: 'event_id')
   int get eventId => throw _privateConstructorUsedError;
-  @JsonKey(name: 'total_amount')
-  int get totalAmount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'total_amount', fromJson: _parseTotalAmount)
+  double get totalAmount => throw _privateConstructorUsedError;
   @JsonKey(name: 'confirmed_at')
   DateTime? get confirmedAt => throw _privateConstructorUsedError;
 
@@ -46,7 +46,8 @@ abstract class $BookingConfirmedDataCopyWith<$Res> {
       {@JsonKey(name: 'booking_id') int bookingId,
       @JsonKey(name: 'booking_uuid') String bookingUuid,
       @JsonKey(name: 'event_id') int eventId,
-      @JsonKey(name: 'total_amount') int totalAmount,
+      @JsonKey(name: 'total_amount', fromJson: _parseTotalAmount)
+      double totalAmount,
       @JsonKey(name: 'confirmed_at') DateTime? confirmedAt});
 }
 
@@ -86,7 +87,7 @@ class _$BookingConfirmedDataCopyWithImpl<$Res,
       totalAmount: null == totalAmount
           ? _value.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
-              as int,
+              as double,
       confirmedAt: freezed == confirmedAt
           ? _value.confirmedAt
           : confirmedAt // ignore: cast_nullable_to_non_nullable
@@ -107,7 +108,8 @@ abstract class _$$BookingConfirmedDataImplCopyWith<$Res>
       {@JsonKey(name: 'booking_id') int bookingId,
       @JsonKey(name: 'booking_uuid') String bookingUuid,
       @JsonKey(name: 'event_id') int eventId,
-      @JsonKey(name: 'total_amount') int totalAmount,
+      @JsonKey(name: 'total_amount', fromJson: _parseTotalAmount)
+      double totalAmount,
       @JsonKey(name: 'confirmed_at') DateTime? confirmedAt});
 }
 
@@ -144,7 +146,7 @@ class __$$BookingConfirmedDataImplCopyWithImpl<$Res>
       totalAmount: null == totalAmount
           ? _value.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
-              as int,
+              as double,
       confirmedAt: freezed == confirmedAt
           ? _value.confirmedAt
           : confirmedAt // ignore: cast_nullable_to_non_nullable
@@ -160,7 +162,8 @@ class _$BookingConfirmedDataImpl implements _BookingConfirmedData {
       {@JsonKey(name: 'booking_id') required this.bookingId,
       @JsonKey(name: 'booking_uuid') required this.bookingUuid,
       @JsonKey(name: 'event_id') required this.eventId,
-      @JsonKey(name: 'total_amount') required this.totalAmount,
+      @JsonKey(name: 'total_amount', fromJson: _parseTotalAmount)
+      required this.totalAmount,
       @JsonKey(name: 'confirmed_at') this.confirmedAt});
 
   factory _$BookingConfirmedDataImpl.fromJson(Map<String, dynamic> json) =>
@@ -176,8 +179,8 @@ class _$BookingConfirmedDataImpl implements _BookingConfirmedData {
   @JsonKey(name: 'event_id')
   final int eventId;
   @override
-  @JsonKey(name: 'total_amount')
-  final int totalAmount;
+  @JsonKey(name: 'total_amount', fromJson: _parseTotalAmount)
+  final double totalAmount;
   @override
   @JsonKey(name: 'confirmed_at')
   final DateTime? confirmedAt;
@@ -222,7 +225,8 @@ abstract class _BookingConfirmedData implements BookingConfirmedData {
           {@JsonKey(name: 'booking_id') required final int bookingId,
           @JsonKey(name: 'booking_uuid') required final String bookingUuid,
           @JsonKey(name: 'event_id') required final int eventId,
-          @JsonKey(name: 'total_amount') required final int totalAmount,
+          @JsonKey(name: 'total_amount', fromJson: _parseTotalAmount)
+          required final double totalAmount,
           @JsonKey(name: 'confirmed_at') final DateTime? confirmedAt}) =
       _$BookingConfirmedDataImpl;
 
@@ -239,8 +243,8 @@ abstract class _BookingConfirmedData implements BookingConfirmedData {
   @JsonKey(name: 'event_id')
   int get eventId;
   @override
-  @JsonKey(name: 'total_amount')
-  int get totalAmount;
+  @JsonKey(name: 'total_amount', fromJson: _parseTotalAmount)
+  double get totalAmount;
   @override
   @JsonKey(name: 'confirmed_at')
   DateTime? get confirmedAt;
