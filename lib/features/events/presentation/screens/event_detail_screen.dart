@@ -150,7 +150,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         orElse: () => const Ticket(id: '', name: '', price: 0),
       );
       if (ticket.id.isNotEmpty) {
-        total += ticket.price * qty;
+        total += ticket.buyerPrice * qty;
       }
     });
     return total;

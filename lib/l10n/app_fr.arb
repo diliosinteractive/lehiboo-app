@@ -3085,6 +3085,10 @@
   "bookingParticipantActionRequired": "Action requise",
   "bookingRecapTitle": "Récapitulatif",
   "bookingTotalTickets": "Total billets",
+  "serviceFeesIncluded": "Frais de service inclus",
+  "ticketPriceSubtotal": "Prix des billets",
+  "serviceFees": "Frais de service",
+  "totalPaid": "Total payé",
   "bookingPerTicket": "{price} / billet",
   "@bookingPerTicket": {
     "placeholders": {

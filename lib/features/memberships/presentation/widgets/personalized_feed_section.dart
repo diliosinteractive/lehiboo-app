@@ -73,8 +73,8 @@ Slot _fallbackSlot(Event event) {
     endDateTime: event.endDate,
     capacityTotal: event.totalSeats,
     capacityRemaining: event.availableSeats,
-    priceMin: event.minPrice ?? event.price,
-    priceMax: event.maxPrice ?? event.price,
+    priceMin: event.buyerPriceFrom,
+    priceMax: event.buyerMaxPrice,
     currency: 'EUR',
     indoorOutdoor: event.isIndoor && event.isOutdoor
         ? IndoorOutdoor.both
@@ -109,8 +109,8 @@ Slot _activitySlotFromCalendarSlot(Event event, CalendarDateSlot slot) {
     endDateTime: normalizedEnd.isAfter(start) ? normalizedEnd : start,
     capacityTotal: slot.totalCapacity ?? event.totalSeats,
     capacityRemaining: slot.spotsRemaining ?? event.availableSeats,
-    priceMin: event.minPrice ?? event.price,
-    priceMax: event.maxPrice ?? event.price,
+    priceMin: event.buyerPriceFrom,
+    priceMax: event.buyerMaxPrice,
     currency: 'EUR',
     indoorOutdoor: event.isIndoor && event.isOutdoor
         ? IndoorOutdoor.both

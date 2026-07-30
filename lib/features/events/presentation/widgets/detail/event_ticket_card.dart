@@ -62,7 +62,7 @@ class _EventTicketCardState extends State<EventTicketCard> {
   bool get _isLowStock =>
       widget.ticket.remainingPlaces != null &&
       widget.ticket.remainingPlaces! <= 5;
-  bool get _isFree => widget.ticket.price == 0;
+  bool get _isFree => widget.ticket.buyerPrice == 0;
 
   TicketTier get _tier {
     final nameLower = widget.ticket.name.toLowerCase();
@@ -265,8 +265,9 @@ class _EventTicketCardState extends State<EventTicketCard> {
       );
     }
 
+    final buyerPrice = widget.ticket.buyerPrice;
     return Text(
-      '${widget.ticket.price.toStringAsFixed(widget.ticket.price == widget.ticket.price.roundToDouble() ? 0 : 2)}€',
+      '${buyerPrice.toStringAsFixed(buyerPrice == buyerPrice.roundToDouble() ? 0 : 2)}€',
       style: const TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
@@ -477,13 +478,30 @@ class EventTicketsSection extends StatelessWidget {
         // Header
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            context.l10n.eventTicketsTitle,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: HbColors.textPrimary,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                context.l10n.eventTicketsTitle,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: HbColors.textPrimary,
+                ),
+              ),
+              if (tickets.any((ticket) =>
+                  ticket.allInclusivePrice != null &&
+                  ticket.buyerPrice > 0)) ...[
+                const SizedBox(height: 3),
+                Text(
+                  context.l10n.serviceFeesIncluded,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: HbColors.textSecondary,
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
         const SizedBox(height: 12),

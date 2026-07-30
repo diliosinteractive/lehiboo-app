@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -56,9 +57,42 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final bool _acceptNewsletter = false;
   String? _errorMessage;
 
-  // Booking créé (pour le paiement - utilisé pour la navigation)
-  // ignore: unused_field
   CreateBookingResponseDto? _bookingResponse;
+  double? _serverPaymentTotal;
+
+  double get _displayTotal =>
+      _serverPaymentTotal ??
+      _bookingResponse?.paidTotal ??
+      widget.params.totalPrice;
+
+  double get _organizerSubtotal {
+    final response = _bookingResponse;
+    if (response != null) return response.totalAmount;
+
+    return widget.params.ticketQuantities.entries.fold<double>(0, (sum, entry) {
+      final ticket = widget.params.event.tickets
+          .where((candidate) => candidate.id == entry.key)
+          .firstOrNull;
+      return sum + (ticket?.price ?? 0) * entry.value;
+    });
+  }
+
+  double get _serviceFeeTotal {
+    final serverPaymentTotal = _serverPaymentTotal;
+    final response = _bookingResponse;
+    if (serverPaymentTotal != null && response != null) {
+      return serverPaymentTotal - response.totalAmount;
+    }
+    final responseFee = _bookingResponse?.platformFeeAmount;
+    if (responseFee != null) return responseFee;
+    return widget.params.ticketQuantities.entries.fold<double>(0, (sum, entry) {
+      final ticket = widget.params.event.tickets
+          .where((candidate) => candidate.id == entry.key)
+          .firstOrNull;
+      if (ticket == null) return sum;
+      return sum + (ticket.buyerPrice - ticket.price) * entry.value;
+    });
+  }
 
   @override
   void initState() {
@@ -354,7 +388,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     ),
                   ),
                   Text(
-                    _formatPrice(ticket.price * entry.value),
+                    _formatPrice(ticket.buyerPrice * entry.value),
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -370,32 +404,31 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           const Divider(),
           const SizedBox(height: 8),
 
-          // Total
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                context.l10n.bookingTotal,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: HbColors.textPrimary,
-                ),
-              ),
-              Text(
-                widget.params.isFree
-                    ? context.l10n.commonFree
-                    : _formatPrice(widget.params.totalPrice),
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: widget.params.isFree
-                      ? Colors.green
-                      : HbColors.brandPrimary,
-                ),
-              ),
-            ],
-          ),
+          if (_serviceFeeTotal > 0.000001) ...[
+            _CheckoutPriceRow(
+              label: context.l10n.ticketPriceSubtotal,
+              value: _formatPrice(_organizerSubtotal),
+            ),
+            const SizedBox(height: 6),
+            _CheckoutPriceRow(
+              label: context.l10n.serviceFees,
+              value: _formatPrice(_serviceFeeTotal),
+            ),
+            const SizedBox(height: 8),
+            _CheckoutPriceRow(
+              label: context.l10n.totalPaid,
+              value: _formatPrice(_displayTotal),
+              isTotal: true,
+            ),
+          ] else
+            _CheckoutPriceRow(
+              label: context.l10n.bookingTotal,
+              value: _displayTotal == 0
+                  ? context.l10n.commonFree
+                  : _formatPrice(_displayTotal),
+              isTotal: true,
+              isFree: _displayTotal == 0,
+            ),
         ],
       ),
     );
@@ -691,7 +724,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Widget _buildConfirmButton() {
-    final isFree = widget.params.isFree;
+    final isFree = _displayTotal == 0;
 
     return Container(
       decoration: BoxDecoration(
@@ -718,7 +751,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     Text(
                       isFree
                           ? context.l10n.commonFree
-                          : _formatPrice(widget.params.totalPrice),
+                          : _formatPrice(_displayTotal),
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -869,6 +902,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _bookingResponse = null;
+      _serverPaymentTotal = null;
     });
 
     try {
@@ -917,7 +952,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       );
 
       var confirmationBooking = bookingResponse;
-      _bookingResponse = bookingResponse;
+      if (mounted) {
+        setState(() => _bookingResponse = bookingResponse);
+      }
       final draftOrBookingUuid = bookingResponse.uuid;
       final isFree = bookingResponse.totalAmount == 0;
 
@@ -928,6 +965,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         final paymentIntent = await bookingDataSource.getDraftPaymentIntent(
           draftUuid: draftOrBookingUuid,
         );
+        final serverPaymentTotal = paymentIntent.amount / 100;
+        if (kDebugMode &&
+            (serverPaymentTotal - widget.params.totalPrice).abs() >= 0.005) {
+          debugPrint(
+            'Booking total mismatch: '
+            'checkout=${widget.params.totalPrice.toStringAsFixed(2)} '
+            'server=${serverPaymentTotal.toStringAsFixed(2)}',
+          );
+        }
+        if (mounted) {
+          setState(() => _serverPaymentTotal = serverPaymentTotal);
+        }
 
         // 3. Configurer et afficher le Payment Sheet Stripe
         await Stripe.instance.initPaymentSheet(
@@ -989,5 +1038,44 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       return '${price.toInt()}€';
     }
     return '${price.toStringAsFixed(2)}€';
+  }
+}
+
+class _CheckoutPriceRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool isTotal;
+  final bool isFree;
+
+  const _CheckoutPriceRow({
+    required this.label,
+    required this.value,
+    this.isTotal = false,
+    this.isFree = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: isTotal ? 18 : 14,
+            fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
+            color: HbColors.textPrimary,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: isTotal ? 20 : 14,
+            fontWeight: isTotal ? FontWeight.bold : FontWeight.w500,
+            color: isFree ? Colors.green : HbColors.brandPrimary,
+          ),
+        ),
+      ],
+    );
   }
 }

@@ -189,6 +189,12 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
 
                   const SizedBox(height: 24),
 
+                  if (widget.bookingResponse != null &&
+                      widget.bookingResponse!.paidTotal > 0) ...[
+                    _buildPaymentSummary(widget.bookingResponse!),
+                    const SizedBox(height: 24),
+                  ],
+
                   // Section billets
                   _buildTicketsSection(),
 
@@ -416,6 +422,61 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
         ],
       ),
     );
+  }
+
+  Widget _buildPaymentSummary(CreateBookingResponseDto booking) {
+    final fee = booking.platformFeeAmount ?? 0;
+
+    Widget row(String label, double amount, {bool isTotal = false}) {
+      return Padding(
+        padding: EdgeInsets.only(top: isTotal ? 12 : 6),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: isTotal ? 16 : 14,
+                fontWeight: isTotal ? FontWeight.w700 : FontWeight.w500,
+                color: HbColors.textPrimary,
+              ),
+            ),
+            Text(
+              _formatAmount(amount),
+              style: TextStyle(
+                fontSize: isTotal ? 18 : 14,
+                fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
+                color: isTotal ? HbColors.brandPrimary : HbColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          if (fee > 0) ...[
+            row(context.l10n.ticketPriceSubtotal, booking.totalAmount),
+            row(context.l10n.serviceFees, fee),
+            const Divider(height: 20),
+          ],
+          row(context.l10n.totalPaid, booking.paidTotal, isTotal: true),
+        ],
+      ),
+    );
+  }
+
+  String _formatAmount(double amount) {
+    if (amount == amount.roundToDouble()) return '${amount.toInt()} €';
+    return '${amount.toStringAsFixed(2).replaceAll('.', ',')} €';
   }
 
   Widget _buildTicketsSection() {

@@ -8,12 +8,14 @@ import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
 /// Aligné sur le récap sticky du panier desktop (Next.js).
 class CartSummarySection extends StatelessWidget {
   final List<OrderCartItem> items;
+  final double? totalAmountOverride;
   final void Function(String itemId, int quantity)? onUpdateQuantity;
   final void Function(String itemId)? onRemove;
 
   const CartSummarySection({
     super.key,
     required this.items,
+    this.totalAmountOverride,
     this.onUpdateQuantity,
     this.onRemove,
   });
@@ -37,8 +39,17 @@ class CartSummarySection extends StatelessWidget {
 
     final totalQuantity =
         items.fold<int>(0, (sum, item) => sum + item.quantity);
-    final totalAmount =
+    final calculatedTotalAmount =
         items.fold<double>(0, (sum, item) => sum + item.lineTotal);
+    final totalAmount = totalAmountOverride ?? calculatedTotalAmount;
+    final organizerTotal =
+        items.fold<double>(0, (sum, item) => sum + item.organizerLineTotal);
+    final calculatedFeeTotal =
+        items.fold<double>(0, (sum, item) => sum + item.feeLineTotal);
+    final feeTotal = totalAmountOverride == null
+        ? calculatedFeeTotal
+        : totalAmount - organizerTotal;
+    final hasServiceFees = feeTotal > 0.000001;
 
     return Container(
       decoration: BoxDecoration(
@@ -78,6 +89,16 @@ class CartSummarySection extends StatelessWidget {
             ),
             const SizedBox(height: 10),
           ],
+          if (hasServiceFees) ...[
+            Text(
+              context.l10n.serviceFeesIncluded,
+              style: const TextStyle(
+                fontSize: 12,
+                color: HbColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
           const Divider(height: 1),
           const SizedBox(height: 10),
           Row(
@@ -98,27 +119,28 @@ class CartSummarySection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                context.l10n.bookingTotal,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: HbColors.textPrimary,
-                ),
-              ),
-              Text(
-                _formatPrice(totalAmount),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: HbColors.brandPrimary,
-                ),
-              ),
-            ],
-          ),
+          if (hasServiceFees) ...[
+            _PriceSummaryRow(
+              label: context.l10n.ticketPriceSubtotal,
+              value: _formatPrice(organizerTotal),
+            ),
+            const SizedBox(height: 4),
+            _PriceSummaryRow(
+              label: context.l10n.serviceFees,
+              value: _formatPrice(feeTotal),
+            ),
+            const SizedBox(height: 6),
+            _PriceSummaryRow(
+              label: context.l10n.totalPaid,
+              value: _formatPrice(totalAmount),
+              isTotal: true,
+            ),
+          ] else
+            _PriceSummaryRow(
+              label: context.l10n.bookingTotal,
+              value: _formatPrice(totalAmount),
+              isTotal: true,
+            ),
         ],
       ),
     );
@@ -252,7 +274,7 @@ class _CartLineRow extends StatelessWidget {
                     ),
                     Text(
                       context.l10n.bookingPerTicket(
-                        formatPrice(item.ticket.price),
+                        formatPrice(item.ticket.buyerPrice),
                       ),
                       style:
                           TextStyle(fontSize: 11, color: Colors.grey.shade500),
@@ -326,6 +348,43 @@ class _CartLineRow extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _PriceSummaryRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool isTotal;
+
+  const _PriceSummaryRow({
+    required this.label,
+    required this.value,
+    this.isTotal = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: isTotal ? 15 : 13,
+            fontWeight: isTotal ? FontWeight.w700 : FontWeight.w500,
+            color: HbColors.textPrimary,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: isTotal ? 18 : 13,
+            fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
+            color: isTotal ? HbColors.brandPrimary : HbColors.textPrimary,
+          ),
+        ),
+      ],
     );
   }
 }
