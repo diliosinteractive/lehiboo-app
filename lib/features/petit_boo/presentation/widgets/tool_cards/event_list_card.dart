@@ -455,17 +455,37 @@ class _EventItemCard extends StatelessWidget {
   }
 
   double? _getPriceMin() {
-    return _readPrice([
+    final allInclusivePrice = _usesBuyerPricing
+        ? _readPrice([
+              'all_inclusive_price_from',
+              'allInclusivePriceFrom',
+            ]) ??
+            _readNestedPrice([
+              'all_inclusive_min',
+              'allInclusiveMin',
+            ])
+        : null;
+    return allInclusivePrice ??
+        _readPrice([
           'price_min',
           'price_from',
           'min_price',
           'price',
         ]) ??
+        _readNestedPrice(['min']) ??
         _readPriceFromDisplay(first: true);
   }
 
   double? _getPriceMax() {
-    return _readPrice(['price_max', 'max_price']) ??
+    final allInclusivePrice = _usesBuyerPricing
+        ? _readNestedPrice([
+            'all_inclusive_max',
+            'allInclusiveMax',
+          ])
+        : null;
+    return allInclusivePrice ??
+        _readPrice(['price_max', 'max_price']) ??
+        _readNestedPrice(['max']) ??
         _readPriceFromDisplay(first: false);
   }
 
@@ -488,6 +508,26 @@ class _EventItemCard extends StatelessWidget {
       if (price != null) return price;
     }
     return null;
+  }
+
+  double? _readNestedPrice(List<String> keys) {
+    final pricing = item['pricing'];
+    if (pricing is! Map) return null;
+
+    for (final key in keys) {
+      final price = _asDouble(pricing[key]);
+      if (price != null) return price;
+    }
+    return null;
+  }
+
+  bool get _usesBuyerPricing {
+    final bookingMode = _getStringValue(['booking_mode', 'bookingMode']);
+    final discoveryPricingType = _getStringValue([
+      'discovery_pricing_type',
+      'discoveryPricingType',
+    ]);
+    return bookingMode != 'discovery' && discoveryPricingType == null;
   }
 
   double? _readPriceFromDisplay({required bool first}) {

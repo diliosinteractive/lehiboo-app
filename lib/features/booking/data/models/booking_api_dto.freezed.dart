@@ -546,6 +546,10 @@ mixin _$CreateBookingResponseDto {
   String get status => throw _privateConstructorUsedError;
   @JsonKey(name: 'total_amount')
   double get totalAmount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'platform_fee_amount')
+  double? get platformFeeAmount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'buyer_total')
+  double? get buyerTotal => throw _privateConstructorUsedError;
   @JsonKey(name: 'expires_at')
   String? get expiresAt => throw _privateConstructorUsedError;
   String? get reference => throw _privateConstructorUsedError;
@@ -566,6 +570,8 @@ abstract class $CreateBookingResponseDtoCopyWith<$Res> {
       {String uuid,
       String status,
       @JsonKey(name: 'total_amount') double totalAmount,
+      @JsonKey(name: 'platform_fee_amount') double? platformFeeAmount,
+      @JsonKey(name: 'buyer_total') double? buyerTotal,
       @JsonKey(name: 'expires_at') String? expiresAt,
       String? reference});
 }
@@ -587,6 +593,8 @@ class _$CreateBookingResponseDtoCopyWithImpl<$Res,
     Object? uuid = null,
     Object? status = null,
     Object? totalAmount = null,
+    Object? platformFeeAmount = freezed,
+    Object? buyerTotal = freezed,
     Object? expiresAt = freezed,
     Object? reference = freezed,
   }) {
@@ -603,6 +611,14 @@ class _$CreateBookingResponseDtoCopyWithImpl<$Res,
           ? _value.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
               as double,
+      platformFeeAmount: freezed == platformFeeAmount
+          ? _value.platformFeeAmount
+          : platformFeeAmount // ignore: cast_nullable_to_non_nullable
+              as double?,
+      buyerTotal: freezed == buyerTotal
+          ? _value.buyerTotal
+          : buyerTotal // ignore: cast_nullable_to_non_nullable
+              as double?,
       expiresAt: freezed == expiresAt
           ? _value.expiresAt
           : expiresAt // ignore: cast_nullable_to_non_nullable
@@ -628,6 +644,8 @@ abstract class _$$CreateBookingResponseDtoImplCopyWith<$Res>
       {String uuid,
       String status,
       @JsonKey(name: 'total_amount') double totalAmount,
+      @JsonKey(name: 'platform_fee_amount') double? platformFeeAmount,
+      @JsonKey(name: 'buyer_total') double? buyerTotal,
       @JsonKey(name: 'expires_at') String? expiresAt,
       String? reference});
 }
@@ -648,6 +666,8 @@ class __$$CreateBookingResponseDtoImplCopyWithImpl<$Res>
     Object? uuid = null,
     Object? status = null,
     Object? totalAmount = null,
+    Object? platformFeeAmount = freezed,
+    Object? buyerTotal = freezed,
     Object? expiresAt = freezed,
     Object? reference = freezed,
   }) {
@@ -664,6 +684,14 @@ class __$$CreateBookingResponseDtoImplCopyWithImpl<$Res>
           ? _value.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
               as double,
+      platformFeeAmount: freezed == platformFeeAmount
+          ? _value.platformFeeAmount
+          : platformFeeAmount // ignore: cast_nullable_to_non_nullable
+              as double?,
+      buyerTotal: freezed == buyerTotal
+          ? _value.buyerTotal
+          : buyerTotal // ignore: cast_nullable_to_non_nullable
+              as double?,
       expiresAt: freezed == expiresAt
           ? _value.expiresAt
           : expiresAt // ignore: cast_nullable_to_non_nullable
@@ -678,13 +706,16 @@ class __$$CreateBookingResponseDtoImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$CreateBookingResponseDtoImpl implements _CreateBookingResponseDto {
+class _$CreateBookingResponseDtoImpl extends _CreateBookingResponseDto {
   const _$CreateBookingResponseDtoImpl(
       {required this.uuid,
       required this.status,
       @JsonKey(name: 'total_amount') required this.totalAmount,
+      @JsonKey(name: 'platform_fee_amount') this.platformFeeAmount,
+      @JsonKey(name: 'buyer_total') this.buyerTotal,
       @JsonKey(name: 'expires_at') this.expiresAt,
-      this.reference});
+      this.reference})
+      : super._();
 
   factory _$CreateBookingResponseDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$CreateBookingResponseDtoImplFromJson(json);
@@ -697,6 +728,12 @@ class _$CreateBookingResponseDtoImpl implements _CreateBookingResponseDto {
   @JsonKey(name: 'total_amount')
   final double totalAmount;
   @override
+  @JsonKey(name: 'platform_fee_amount')
+  final double? platformFeeAmount;
+  @override
+  @JsonKey(name: 'buyer_total')
+  final double? buyerTotal;
+  @override
   @JsonKey(name: 'expires_at')
   final String? expiresAt;
   @override
@@ -704,7 +741,7 @@ class _$CreateBookingResponseDtoImpl implements _CreateBookingResponseDto {
 
   @override
   String toString() {
-    return 'CreateBookingResponseDto(uuid: $uuid, status: $status, totalAmount: $totalAmount, expiresAt: $expiresAt, reference: $reference)';
+    return 'CreateBookingResponseDto(uuid: $uuid, status: $status, totalAmount: $totalAmount, platformFeeAmount: $platformFeeAmount, buyerTotal: $buyerTotal, expiresAt: $expiresAt, reference: $reference)';
   }
 
   @override
@@ -716,6 +753,10 @@ class _$CreateBookingResponseDtoImpl implements _CreateBookingResponseDto {
             (identical(other.status, status) || other.status == status) &&
             (identical(other.totalAmount, totalAmount) ||
                 other.totalAmount == totalAmount) &&
+            (identical(other.platformFeeAmount, platformFeeAmount) ||
+                other.platformFeeAmount == platformFeeAmount) &&
+            (identical(other.buyerTotal, buyerTotal) ||
+                other.buyerTotal == buyerTotal) &&
             (identical(other.expiresAt, expiresAt) ||
                 other.expiresAt == expiresAt) &&
             (identical(other.reference, reference) ||
@@ -724,8 +765,8 @@ class _$CreateBookingResponseDtoImpl implements _CreateBookingResponseDto {
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, uuid, status, totalAmount, expiresAt, reference);
+  int get hashCode => Object.hash(runtimeType, uuid, status, totalAmount,
+      platformFeeAmount, buyerTotal, expiresAt, reference);
 
   @JsonKey(ignore: true)
   @override
@@ -742,13 +783,16 @@ class _$CreateBookingResponseDtoImpl implements _CreateBookingResponseDto {
   }
 }
 
-abstract class _CreateBookingResponseDto implements CreateBookingResponseDto {
+abstract class _CreateBookingResponseDto extends CreateBookingResponseDto {
   const factory _CreateBookingResponseDto(
       {required final String uuid,
       required final String status,
       @JsonKey(name: 'total_amount') required final double totalAmount,
+      @JsonKey(name: 'platform_fee_amount') final double? platformFeeAmount,
+      @JsonKey(name: 'buyer_total') final double? buyerTotal,
       @JsonKey(name: 'expires_at') final String? expiresAt,
       final String? reference}) = _$CreateBookingResponseDtoImpl;
+  const _CreateBookingResponseDto._() : super._();
 
   factory _CreateBookingResponseDto.fromJson(Map<String, dynamic> json) =
       _$CreateBookingResponseDtoImpl.fromJson;
@@ -760,6 +804,12 @@ abstract class _CreateBookingResponseDto implements CreateBookingResponseDto {
   @override
   @JsonKey(name: 'total_amount')
   double get totalAmount;
+  @override
+  @JsonKey(name: 'platform_fee_amount')
+  double? get platformFeeAmount;
+  @override
+  @JsonKey(name: 'buyer_total')
+  double? get buyerTotal;
   @override
   @JsonKey(name: 'expires_at')
   String? get expiresAt;
@@ -2458,7 +2508,12 @@ mixin _$BookingListItemDto {
   String? get eventImage => throw _privateConstructorUsedError;
   String? get slotDate => throw _privateConstructorUsedError;
   double? get grandTotal => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readTotalAmount)
   double? get totalAmount => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readPlatformFeeAmount)
+  double? get platformFeeAmount => throw _privateConstructorUsedError;
+  @JsonKey(readValue: _readBuyerTotal)
+  double? get buyerTotal => throw _privateConstructorUsedError;
   int? get ticketCount => throw _privateConstructorUsedError;
   @JsonKey(name: 'customer_email')
   String? get customerEmail => throw _privateConstructorUsedError;
@@ -2510,7 +2565,9 @@ abstract class $BookingListItemDtoCopyWith<$Res> {
       String? eventImage,
       String? slotDate,
       double? grandTotal,
-      double? totalAmount,
+      @JsonKey(readValue: _readTotalAmount) double? totalAmount,
+      @JsonKey(readValue: _readPlatformFeeAmount) double? platformFeeAmount,
+      @JsonKey(readValue: _readBuyerTotal) double? buyerTotal,
       int? ticketCount,
       @JsonKey(name: 'customer_email') String? customerEmail,
       @JsonKey(name: 'customer_first_name') String? customerFirstName,
@@ -2556,6 +2613,8 @@ class _$BookingListItemDtoCopyWithImpl<$Res, $Val extends BookingListItemDto>
     Object? slotDate = freezed,
     Object? grandTotal = freezed,
     Object? totalAmount = freezed,
+    Object? platformFeeAmount = freezed,
+    Object? buyerTotal = freezed,
     Object? ticketCount = freezed,
     Object? customerEmail = freezed,
     Object? customerFirstName = freezed,
@@ -2622,6 +2681,14 @@ class _$BookingListItemDtoCopyWithImpl<$Res, $Val extends BookingListItemDto>
       totalAmount: freezed == totalAmount
           ? _value.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
+              as double?,
+      platformFeeAmount: freezed == platformFeeAmount
+          ? _value.platformFeeAmount
+          : platformFeeAmount // ignore: cast_nullable_to_non_nullable
+              as double?,
+      buyerTotal: freezed == buyerTotal
+          ? _value.buyerTotal
+          : buyerTotal // ignore: cast_nullable_to_non_nullable
               as double?,
       ticketCount: freezed == ticketCount
           ? _value.ticketCount
@@ -2736,7 +2803,9 @@ abstract class _$$BookingListItemDtoImplCopyWith<$Res>
       String? eventImage,
       String? slotDate,
       double? grandTotal,
-      double? totalAmount,
+      @JsonKey(readValue: _readTotalAmount) double? totalAmount,
+      @JsonKey(readValue: _readPlatformFeeAmount) double? platformFeeAmount,
+      @JsonKey(readValue: _readBuyerTotal) double? buyerTotal,
       int? ticketCount,
       @JsonKey(name: 'customer_email') String? customerEmail,
       @JsonKey(name: 'customer_first_name') String? customerFirstName,
@@ -2783,6 +2852,8 @@ class __$$BookingListItemDtoImplCopyWithImpl<$Res>
     Object? slotDate = freezed,
     Object? grandTotal = freezed,
     Object? totalAmount = freezed,
+    Object? platformFeeAmount = freezed,
+    Object? buyerTotal = freezed,
     Object? ticketCount = freezed,
     Object? customerEmail = freezed,
     Object? customerFirstName = freezed,
@@ -2849,6 +2920,14 @@ class __$$BookingListItemDtoImplCopyWithImpl<$Res>
       totalAmount: freezed == totalAmount
           ? _value.totalAmount
           : totalAmount // ignore: cast_nullable_to_non_nullable
+              as double?,
+      platformFeeAmount: freezed == platformFeeAmount
+          ? _value.platformFeeAmount
+          : platformFeeAmount // ignore: cast_nullable_to_non_nullable
+              as double?,
+      buyerTotal: freezed == buyerTotal
+          ? _value.buyerTotal
+          : buyerTotal // ignore: cast_nullable_to_non_nullable
               as double?,
       ticketCount: freezed == ticketCount
           ? _value.ticketCount
@@ -2922,7 +3001,9 @@ class _$BookingListItemDtoImpl implements _BookingListItemDto {
       this.eventImage,
       this.slotDate,
       this.grandTotal,
-      this.totalAmount,
+      @JsonKey(readValue: _readTotalAmount) this.totalAmount,
+      @JsonKey(readValue: _readPlatformFeeAmount) this.platformFeeAmount,
+      @JsonKey(readValue: _readBuyerTotal) this.buyerTotal,
       this.ticketCount,
       @JsonKey(name: 'customer_email') this.customerEmail,
       @JsonKey(name: 'customer_first_name') this.customerFirstName,
@@ -2970,7 +3051,14 @@ class _$BookingListItemDtoImpl implements _BookingListItemDto {
   @override
   final double? grandTotal;
   @override
+  @JsonKey(readValue: _readTotalAmount)
   final double? totalAmount;
+  @override
+  @JsonKey(readValue: _readPlatformFeeAmount)
+  final double? platformFeeAmount;
+  @override
+  @JsonKey(readValue: _readBuyerTotal)
+  final double? buyerTotal;
   @override
   final int? ticketCount;
   @override
@@ -3021,7 +3109,7 @@ class _$BookingListItemDtoImpl implements _BookingListItemDto {
 
   @override
   String toString() {
-    return 'BookingListItemDto(id: $id, uuid: $uuid, reference: $reference, status: $status, eventId: $eventId, slotId: $slotId, userId: $userId, eventTitle: $eventTitle, eventSlug: $eventSlug, eventImage: $eventImage, slotDate: $slotDate, grandTotal: $grandTotal, totalAmount: $totalAmount, ticketCount: $ticketCount, customerEmail: $customerEmail, customerFirstName: $customerFirstName, customerLastName: $customerLastName, customerBirthDate: $customerBirthDate, customerTown: $customerTown, canCancel: $canCancel, createdAt: $createdAt, createdAt2: $createdAt2, event: $event, slot: $slot, items: $items, cancellation: $cancellation)';
+    return 'BookingListItemDto(id: $id, uuid: $uuid, reference: $reference, status: $status, eventId: $eventId, slotId: $slotId, userId: $userId, eventTitle: $eventTitle, eventSlug: $eventSlug, eventImage: $eventImage, slotDate: $slotDate, grandTotal: $grandTotal, totalAmount: $totalAmount, platformFeeAmount: $platformFeeAmount, buyerTotal: $buyerTotal, ticketCount: $ticketCount, customerEmail: $customerEmail, customerFirstName: $customerFirstName, customerLastName: $customerLastName, customerBirthDate: $customerBirthDate, customerTown: $customerTown, canCancel: $canCancel, createdAt: $createdAt, createdAt2: $createdAt2, event: $event, slot: $slot, items: $items, cancellation: $cancellation)';
   }
 
   @override
@@ -3049,6 +3137,10 @@ class _$BookingListItemDtoImpl implements _BookingListItemDto {
                 other.grandTotal == grandTotal) &&
             (identical(other.totalAmount, totalAmount) ||
                 other.totalAmount == totalAmount) &&
+            (identical(other.platformFeeAmount, platformFeeAmount) ||
+                other.platformFeeAmount == platformFeeAmount) &&
+            (identical(other.buyerTotal, buyerTotal) ||
+                other.buyerTotal == buyerTotal) &&
             (identical(other.ticketCount, ticketCount) ||
                 other.ticketCount == ticketCount) &&
             (identical(other.customerEmail, customerEmail) ||
@@ -3091,6 +3183,8 @@ class _$BookingListItemDtoImpl implements _BookingListItemDto {
         slotDate,
         grandTotal,
         totalAmount,
+        platformFeeAmount,
+        buyerTotal,
         ticketCount,
         customerEmail,
         customerFirstName,
@@ -3135,7 +3229,10 @@ abstract class _BookingListItemDto implements BookingListItemDto {
       final String? eventImage,
       final String? slotDate,
       final double? grandTotal,
-      final double? totalAmount,
+      @JsonKey(readValue: _readTotalAmount) final double? totalAmount,
+      @JsonKey(readValue: _readPlatformFeeAmount)
+      final double? platformFeeAmount,
+      @JsonKey(readValue: _readBuyerTotal) final double? buyerTotal,
       final int? ticketCount,
       @JsonKey(name: 'customer_email') final String? customerEmail,
       @JsonKey(name: 'customer_first_name') final String? customerFirstName,
@@ -3181,7 +3278,14 @@ abstract class _BookingListItemDto implements BookingListItemDto {
   @override
   double? get grandTotal;
   @override
+  @JsonKey(readValue: _readTotalAmount)
   double? get totalAmount;
+  @override
+  @JsonKey(readValue: _readPlatformFeeAmount)
+  double? get platformFeeAmount;
+  @override
+  @JsonKey(readValue: _readBuyerTotal)
+  double? get buyerTotal;
   @override
   int? get ticketCount;
   @override

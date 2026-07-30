@@ -5913,6 +5913,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bookingTotalTickets => 'Total tickets';
 
   @override
+  String get serviceFeesIncluded => 'Service fees included';
+
+  @override
+  String get ticketPriceSubtotal => 'Ticket prices';
+
+  @override
+  String get serviceFees => 'Service fees';
+
+  @override
+  String get totalPaid => 'Total paid';
+
+  @override
   String bookingPerTicket(String price) {
     return '$price / ticket';
   }

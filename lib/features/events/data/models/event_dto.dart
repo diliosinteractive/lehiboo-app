@@ -146,6 +146,8 @@ class EventDto with _$EventDto {
     // §4.5 Top-level pricing
     @JsonKey(name: 'price_from', fromJson: _parseDoubleOrNull)
     double? priceFrom,
+    @JsonKey(name: 'all_inclusive_price_from', fromJson: _parseDoubleOrNull)
+    double? allInclusivePriceFrom,
     @JsonKey(name: 'is_free', fromJson: _parseBool) @Default(false) bool isFree,
 
     // §4.6 Capacity (top-level cap)
@@ -348,6 +350,12 @@ class EventPricingDto with _$EventPricingDto {
     @JsonKey(fromJson: _parseDouble) @Default(0) double max,
     @Default('EUR') String currency,
     @JsonKey(fromJson: _parseStringOrNull) String? display,
+    @JsonKey(name: 'all_inclusive_min', fromJson: _parseDoubleOrNull)
+    double? allInclusiveMin,
+    @JsonKey(name: 'all_inclusive_max', fromJson: _parseDoubleOrNull)
+    double? allInclusiveMax,
+    @JsonKey(name: 'all_inclusive_display', fromJson: _parseStringOrNull)
+    String? allInclusiveDisplay,
   }) = _EventPricingDto;
 
   factory EventPricingDto.fromJson(Map<String, dynamic> json) =>

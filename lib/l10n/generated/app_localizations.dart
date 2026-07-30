@@ -10257,6 +10257,30 @@ abstract class AppLocalizations {
   /// **'Total billets'**
   String get bookingTotalTickets;
 
+  /// No description provided for @serviceFeesIncluded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Frais de service inclus'**
+  String get serviceFeesIncluded;
+
+  /// No description provided for @ticketPriceSubtotal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prix des billets'**
+  String get ticketPriceSubtotal;
+
+  /// No description provided for @serviceFees.
+  ///
+  /// In fr, this message translates to:
+  /// **'Frais de service'**
+  String get serviceFees;
+
+  /// No description provided for @totalPaid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Total payé'**
+  String get totalPaid;
+
   /// No description provided for @bookingPerTicket.
   ///
   /// In fr, this message translates to:

@@ -2554,6 +2554,10 @@
   "bookingParticipantActionRequired": "Action required",
   "bookingRecapTitle": "Summary",
   "bookingTotalTickets": "Total tickets",
+  "serviceFeesIncluded": "Service fees included",
+  "ticketPriceSubtotal": "Ticket prices",
+  "serviceFees": "Service fees",
+  "totalPaid": "Total paid",
   "bookingPerTicket": "{price} / ticket",
   "@bookingPerTicket": {
     "placeholders": {

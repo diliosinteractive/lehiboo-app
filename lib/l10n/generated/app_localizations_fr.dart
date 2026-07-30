@@ -5961,6 +5961,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get bookingTotalTickets => 'Total billets';
 
   @override
+  String get serviceFeesIncluded => 'Frais de service inclus';
+
+  @override
+  String get ticketPriceSubtotal => 'Prix des billets';
+
+  @override
+  String get serviceFees => 'Frais de service';
+
+  @override
+  String get totalPaid => 'Total payé';
+
+  @override
   String bookingPerTicket(String price) {
     return '$price / billet';
   }

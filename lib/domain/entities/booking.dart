@@ -5,6 +5,8 @@ part 'booking.freezed.dart';
 
 @freezed
 class Booking with _$Booking {
+  const Booking._();
+
   const factory Booking({
     required String id, // UUID
     int? numericId, // ID numérique pour les appels API (cancel, etc.)
@@ -13,6 +15,9 @@ class Booking with _$Booking {
     required String activityId,
     int? quantity,
     double? totalPrice,
+    double? organizerTotal,
+    double? platformFeeAmount,
+    double? buyerTotal,
     String? currency,
     String? status, // pending, confirmed, cancelled, refunded, completed
     String? paymentProvider,
@@ -38,6 +43,8 @@ class Booking with _$Booking {
     // Reference (short code for display)
     String? reference,
   }) = _Booking;
+
+  double get paidTotal => buyerTotal ?? totalPrice ?? organizerTotal ?? 0;
 }
 
 @freezed

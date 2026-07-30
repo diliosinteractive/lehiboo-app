@@ -64,8 +64,8 @@ class EventToActivityMapper {
       endDateTime: event.endDate,
       capacityTotal: event.totalSeats,
       capacityRemaining: event.availableSeats,
-      priceMin: event.minPrice ?? event.price,
-      priceMax: event.maxPrice ?? event.price,
+      priceMin: event.buyerPriceFrom,
+      priceMax: event.buyerMaxPrice,
       currency: 'EUR',
       indoorOutdoor: event.isIndoor && event.isOutdoor
           ? IndoorOutdoor.both
@@ -96,8 +96,8 @@ class EventToActivityMapper {
       category: category,
       tags: tags,
       isFree: event.isAuthoritativelyFree,
-      priceMin: event.minPrice ?? event.price,
-      priceMax: event.maxPrice ?? event.price,
+      priceMin: event.buyerPriceFrom,
+      priceMax: event.buyerMaxPrice,
       currency: 'EUR',
       reservationMode: reservationMode,
       indoorOutdoor: event.isIndoor && event.isOutdoor

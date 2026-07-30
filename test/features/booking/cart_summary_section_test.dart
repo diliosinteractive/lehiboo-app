@@ -44,6 +44,48 @@ void main() {
     expect(find.textContaining('09:30'), findsOneWidget);
     expect(find.textContaining('09:30:00'), findsNothing);
   });
+
+  testWidgets('shows buyer fee breakdown only when fees are present',
+      (tester) async {
+    AppLocaleCache.setLanguageCode('fr');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: CartSummarySection(
+            items: [
+              OrderCartItem(
+                event: Event.minimal(
+                  id: 'event-1',
+                  slug: 'event-1',
+                  title: 'Atelier',
+                ),
+                slotId: 'slot-1',
+                ticket: const Ticket(
+                  id: 'ticket-1',
+                  name: 'Standard',
+                  price: 50,
+                  allInclusivePrice: 55,
+                ),
+                quantity: 2,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Frais de service inclus'), findsOneWidget);
+    expect(find.text('Prix des billets'), findsOneWidget);
+    expect(find.text('Frais de service'), findsOneWidget);
+    expect(find.text('Total payé'), findsOneWidget);
+    expect(find.text('100 €'), findsOneWidget);
+    expect(find.text('10 €'), findsOneWidget);
+    expect(find.text('110 €'), findsWidgets);
+  });
 }
 
 CalendarDateSlot _slot({required String startTime}) {

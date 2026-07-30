@@ -53,6 +53,8 @@ class Event extends Equatable {
   final double? price;
   final double? minPrice;
   final double? maxPrice;
+  final double? allInclusivePriceFrom;
+  final double? allInclusiveMaxPrice;
   final String? priceDetails;
   final int? availableSeats;
   final int? totalSeats;
@@ -214,6 +216,8 @@ class Event extends Equatable {
     this.price,
     this.minPrice,
     this.maxPrice,
+    this.allInclusivePriceFrom,
+    this.allInclusiveMaxPrice,
     this.priceDetails,
     this.availableSeats,
     this.totalSeats,
@@ -366,6 +370,19 @@ class Event extends Equatable {
   bool get isAuthoritativelyFree =>
       hasDirectBooking ? isFree : discoveryPricingType == 'free';
 
+  double? get buyerPriceFrom => hasDirectBooking
+      ? allInclusivePriceFrom ?? minPrice ?? price
+      : minPrice ?? price;
+
+  double? get buyerMaxPrice => hasDirectBooking
+      ? allInclusivePriceFrom != null
+          ? allInclusiveMaxPrice ?? allInclusivePriceFrom
+          : maxPrice ?? price
+      : maxPrice ?? price;
+
+  bool get displaysAllInclusivePrice =>
+      hasDirectBooking && allInclusivePriceFrom != null;
+
   /// Primary amount for a paid discovery event.
   ///
   /// The API-provided display is preferred because it is localized and
@@ -439,12 +456,13 @@ class Event extends Equatable {
       return l10n.eventUndefined;
     } else if (priceType == PriceType.donation) {
       return l10n.eventPriceDonation;
-    } else if (price != null) {
-      return '${price!.toStringAsFixed(2)} €';
-    } else if (minPrice != null && maxPrice != null) {
+    } else if (buyerPriceFrom != null &&
+        (buyerMaxPrice == null || buyerPriceFrom == buyerMaxPrice)) {
+      return '${buyerPriceFrom!.toStringAsFixed(2)} €';
+    } else if (buyerPriceFrom != null && buyerMaxPrice != null) {
       return l10n.eventPriceRange(
-        '${minPrice!.toStringAsFixed(0)} €',
-        '${maxPrice!.toStringAsFixed(0)} €',
+        '${buyerPriceFrom!.toStringAsFixed(0)} €',
+        '${buyerMaxPrice!.toStringAsFixed(0)} €',
       );
     }
     return priceDetails ?? l10n.eventPriceVariable;
@@ -583,6 +601,8 @@ class Event extends Equatable {
     double? price,
     double? minPrice,
     double? maxPrice,
+    double? allInclusivePriceFrom,
+    double? allInclusiveMaxPrice,
     String? priceDetails,
     int? availableSeats,
     int? totalSeats,
@@ -701,6 +721,9 @@ class Event extends Equatable {
       price: price ?? this.price,
       minPrice: minPrice ?? this.minPrice,
       maxPrice: maxPrice ?? this.maxPrice,
+      allInclusivePriceFrom:
+          allInclusivePriceFrom ?? this.allInclusivePriceFrom,
+      allInclusiveMaxPrice: allInclusiveMaxPrice ?? this.allInclusiveMaxPrice,
       priceDetails: priceDetails ?? this.priceDetails,
       availableSeats: availableSeats ?? this.availableSeats,
       totalSeats: totalSeats ?? this.totalSeats,
@@ -826,6 +849,8 @@ class Event extends Equatable {
         price,
         minPrice,
         maxPrice,
+        allInclusivePriceFrom,
+        allInclusiveMaxPrice,
         priceDetails,
         availableSeats,
         totalSeats,

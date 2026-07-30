@@ -26,6 +26,7 @@ class BookingDetailSummaryCard extends StatelessWidget {
   final String currency;
   final String? promoCode;
   final double? discount;
+  final double? platformFeeAmount;
 
   const BookingDetailSummaryCard({
     super.key,
@@ -34,6 +35,7 @@ class BookingDetailSummaryCard extends StatelessWidget {
     this.currency = '€',
     this.promoCode,
     this.discount,
+    this.platformFeeAmount,
   });
 
   factory BookingDetailSummaryCard.fromBooking(Booking booking) {
@@ -44,15 +46,17 @@ class BookingDetailSummaryCard extends StatelessWidget {
       BookingLineItem(
         label: '',
         quantity: booking.quantity ?? 1,
-        unitPrice: (booking.totalPrice ?? 0) / (booking.quantity ?? 1),
+        unitPrice: (booking.organizerTotal ?? booking.totalPrice ?? 0) /
+            (booking.quantity ?? 1),
         currency: symbol,
       ),
     ];
 
     return BookingDetailSummaryCard(
       items: items,
-      totalPrice: booking.totalPrice ?? 0,
+      totalPrice: booking.paidTotal,
       currency: symbol,
+      platformFeeAmount: booking.platformFeeAmount,
     );
   }
 
@@ -123,6 +127,29 @@ class BookingDetailSummaryCard extends StatelessWidget {
           const SizedBox(height: 16),
           // Line items
           ...items.map((item) => _buildLineItem(context, item)),
+          if (platformFeeAmount != null && platformFeeAmount! > 0) ...[
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  context.l10n.serviceFees,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: HbColors.textPrimary,
+                  ),
+                ),
+                Text(
+                  '${platformFeeAmount!.toStringAsFixed(2)}$currency',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: HbColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ],
           // Discount if any
           if (discount != null && discount! > 0) ...[
             const SizedBox(height: 8),
@@ -140,7 +167,9 @@ class BookingDetailSummaryCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                context.l10n.bookingTotal,
+                platformFeeAmount != null && platformFeeAmount! > 0
+                    ? context.l10n.totalPaid
+                    : context.l10n.bookingTotal,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,

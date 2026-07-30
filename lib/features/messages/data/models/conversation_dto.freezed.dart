@@ -742,7 +742,7 @@ mixin _$ConversationDto {
   int get unreadCount => throw _privateConstructorUsedError;
   @JsonKey(name: 'is_signalement')
   bool get isSignalement => throw _privateConstructorUsedError;
-  @JsonKey(name: 'user_has_reported')
+  @JsonKey(name: 'user_has_reported', readValue: _readUserHasReported)
   bool get userHasReported => throw _privateConstructorUsedError;
   ConversationOrganizationDto? get organization =>
       throw _privateConstructorUsedError;
@@ -783,7 +783,8 @@ abstract class $ConversationDtoCopyWith<$Res> {
       @JsonKey(name: 'last_message_at') String? lastMessageAt,
       @JsonKey(name: 'unread_count') int unreadCount,
       @JsonKey(name: 'is_signalement') bool isSignalement,
-      @JsonKey(name: 'user_has_reported') bool userHasReported,
+      @JsonKey(name: 'user_has_reported', readValue: _readUserHasReported)
+      bool userHasReported,
       ConversationOrganizationDto? organization,
       @JsonKey(name: 'partner_organization')
       ConversationOrganizationDto? partnerOrganization,
@@ -997,7 +998,8 @@ abstract class _$$ConversationDtoImplCopyWith<$Res>
       @JsonKey(name: 'last_message_at') String? lastMessageAt,
       @JsonKey(name: 'unread_count') int unreadCount,
       @JsonKey(name: 'is_signalement') bool isSignalement,
-      @JsonKey(name: 'user_has_reported') bool userHasReported,
+      @JsonKey(name: 'user_has_reported', readValue: _readUserHasReported)
+      bool userHasReported,
       ConversationOrganizationDto? organization,
       @JsonKey(name: 'partner_organization')
       ConversationOrganizationDto? partnerOrganization,
@@ -1146,7 +1148,8 @@ class _$ConversationDtoImpl implements _ConversationDto {
       @JsonKey(name: 'last_message_at') this.lastMessageAt,
       @JsonKey(name: 'unread_count') this.unreadCount = 0,
       @JsonKey(name: 'is_signalement') this.isSignalement = false,
-      @JsonKey(name: 'user_has_reported') this.userHasReported = false,
+      @JsonKey(name: 'user_has_reported', readValue: _readUserHasReported)
+      this.userHasReported = false,
       this.organization,
       @JsonKey(name: 'partner_organization') this.partnerOrganization,
       this.participant,
@@ -1187,7 +1190,7 @@ class _$ConversationDtoImpl implements _ConversationDto {
   @JsonKey(name: 'is_signalement')
   final bool isSignalement;
   @override
-  @JsonKey(name: 'user_has_reported')
+  @JsonKey(name: 'user_has_reported', readValue: _readUserHasReported)
   final bool userHasReported;
   @override
   final ConversationOrganizationDto? organization;
@@ -1314,7 +1317,8 @@ abstract class _ConversationDto implements ConversationDto {
           @JsonKey(name: 'last_message_at') final String? lastMessageAt,
           @JsonKey(name: 'unread_count') final int unreadCount,
           @JsonKey(name: 'is_signalement') final bool isSignalement,
-          @JsonKey(name: 'user_has_reported') final bool userHasReported,
+          @JsonKey(name: 'user_has_reported', readValue: _readUserHasReported)
+          final bool userHasReported,
           final ConversationOrganizationDto? organization,
           @JsonKey(name: 'partner_organization')
           final ConversationOrganizationDto? partnerOrganization,
@@ -1356,7 +1360,7 @@ abstract class _ConversationDto implements ConversationDto {
   @JsonKey(name: 'is_signalement')
   bool get isSignalement;
   @override
-  @JsonKey(name: 'user_has_reported')
+  @JsonKey(name: 'user_has_reported', readValue: _readUserHasReported)
   bool get userHasReported;
   @override
   ConversationOrganizationDto? get organization;

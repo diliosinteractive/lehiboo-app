@@ -22,7 +22,11 @@ class OrderCartItem extends Equatable {
 
   String get id => '${event.id}:$slotId:${ticket.id}';
 
-  double get lineTotal => ticket.price * quantity;
+  double get organizerLineTotal => ticket.price * quantity;
+
+  double get lineTotal => ticket.buyerPrice * quantity;
+
+  double get feeLineTotal => lineTotal - organizerLineTotal;
 
   OrderCartItem copyWith({
     Event? event,
@@ -68,6 +72,8 @@ class OrderCartItem extends Equatable {
           'id': ticket.id,
           'name': ticket.name,
           'price': ticket.price,
+          'all_inclusive_price': ticket.allInclusivePrice,
+          'platform_fee': ticket.platformFee,
           'description': ticket.description,
         },
         'quantity': quantity,
@@ -111,6 +117,9 @@ class OrderCartItem extends Equatable {
           name: ticketJson['name']?.toString() ??
               cachedAppLocalizations().bookingTicketFallback,
           price: (ticketJson['price'] as num?)?.toDouble() ?? 0,
+          allInclusivePrice:
+              (ticketJson['all_inclusive_price'] as num?)?.toDouble(),
+          platformFee: (ticketJson['platform_fee'] as num?)?.toDouble(),
           description: ticketJson['description']?.toString(),
         ),
         quantity: (json['quantity'] as num?)?.toInt() ?? 0,

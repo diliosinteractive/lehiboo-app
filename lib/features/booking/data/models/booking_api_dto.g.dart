@@ -60,6 +60,8 @@ _$CreateBookingResponseDtoImpl _$$CreateBookingResponseDtoImplFromJson(
       uuid: json['uuid'] as String,
       status: json['status'] as String,
       totalAmount: (json['total_amount'] as num).toDouble(),
+      platformFeeAmount: (json['platform_fee_amount'] as num?)?.toDouble(),
+      buyerTotal: (json['buyer_total'] as num?)?.toDouble(),
       expiresAt: json['expires_at'] as String?,
       reference: json['reference'] as String?,
     );
@@ -70,6 +72,8 @@ Map<String, dynamic> _$$CreateBookingResponseDtoImplToJson(
       'uuid': instance.uuid,
       'status': instance.status,
       'total_amount': instance.totalAmount,
+      'platform_fee_amount': instance.platformFeeAmount,
+      'buyer_total': instance.buyerTotal,
       'expires_at': instance.expiresAt,
       'reference': instance.reference,
     };
@@ -234,7 +238,11 @@ _$BookingListItemDtoImpl _$$BookingListItemDtoImplFromJson(
       eventImage: json['eventImage'] as String?,
       slotDate: json['slotDate'] as String?,
       grandTotal: (json['grandTotal'] as num?)?.toDouble(),
-      totalAmount: (json['totalAmount'] as num?)?.toDouble(),
+      totalAmount: (_readTotalAmount(json, 'totalAmount') as num?)?.toDouble(),
+      platformFeeAmount:
+          (_readPlatformFeeAmount(json, 'platformFeeAmount') as num?)
+              ?.toDouble(),
+      buyerTotal: (_readBuyerTotal(json, 'buyerTotal') as num?)?.toDouble(),
       ticketCount: (json['ticketCount'] as num?)?.toInt(),
       customerEmail: json['customer_email'] as String?,
       customerFirstName: json['customer_first_name'] as String?,
@@ -275,6 +283,8 @@ Map<String, dynamic> _$$BookingListItemDtoImplToJson(
       'slotDate': instance.slotDate,
       'grandTotal': instance.grandTotal,
       'totalAmount': instance.totalAmount,
+      'platformFeeAmount': instance.platformFeeAmount,
+      'buyerTotal': instance.buyerTotal,
       'ticketCount': instance.ticketCount,
       'customer_email': instance.customerEmail,
       'customer_first_name': instance.customerFirstName,
