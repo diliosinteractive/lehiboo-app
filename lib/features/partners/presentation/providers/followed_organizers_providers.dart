@@ -16,12 +16,14 @@ class FollowedOrganizersState {
   final int page;
   final int lastPage;
   final bool isLoadingMore;
+  final bool hasLoadMoreError;
 
   const FollowedOrganizersState({
     required this.items,
     required this.page,
     required this.lastPage,
     required this.isLoadingMore,
+    this.hasLoadMoreError = false,
   });
 
   bool get hasMore => page < lastPage;
@@ -31,12 +33,14 @@ class FollowedOrganizersState {
     int? page,
     int? lastPage,
     bool? isLoadingMore,
+    bool? hasLoadMoreError,
   }) =>
       FollowedOrganizersState(
         items: items ?? this.items,
         page: page ?? this.page,
         lastPage: lastPage ?? this.lastPage,
         isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+        hasLoadMoreError: hasLoadMoreError ?? this.hasLoadMoreError,
       );
 }
 
@@ -50,25 +54,36 @@ class FollowedOrganizersController
 
   @override
   Future<FollowedOrganizersState> build() async {
-    final page =
-        await ref.watch(organizerRepositoryProvider).getFollowing(
-              search: _searchQuery.isEmpty ? null : _searchQuery,
-              page: 1,
-              perPage: _perPage,
-            );
+    final page = await ref.watch(organizerRepositoryProvider).getFollowing(
+          search: _searchQuery.isEmpty ? null : _searchQuery,
+          page: 1,
+          perPage: _perPage,
+        );
     return FollowedOrganizersState(
       items: page.items,
       page: page.page,
       lastPage: page.lastPage,
       isLoadingMore: false,
+      hasLoadMoreError: false,
     );
   }
 
-  Future<void> loadMore() async {
-    final current = state.valueOrNull;
-    if (current == null || !current.hasMore || current.isLoadingMore) return;
+  Future<void> loadMore() => _loadMore();
 
-    state = AsyncData(current.copyWith(isLoadingMore: true));
+  Future<void> retryLoadMore() => _loadMore(allowAfterError: true);
+
+  Future<void> _loadMore({bool allowAfterError = false}) async {
+    final current = state.valueOrNull;
+    if (current == null ||
+        !current.hasMore ||
+        current.isLoadingMore ||
+        (current.hasLoadMoreError && !allowAfterError)) {
+      return;
+    }
+
+    state = AsyncData(
+      current.copyWith(isLoadingMore: true, hasLoadMoreError: false),
+    );
 
     try {
       final next = await ref.read(organizerRepositoryProvider).getFollowing(
@@ -82,10 +97,13 @@ class FollowedOrganizersController
           page: next.page,
           lastPage: next.lastPage,
           isLoadingMore: false,
+          hasLoadMoreError: false,
         ),
       );
     } catch (e, st) {
-      state = AsyncData(current.copyWith(isLoadingMore: false));
+      state = AsyncData(
+        current.copyWith(isLoadingMore: false, hasLoadMoreError: true),
+      );
       if (kDebugMode) {
         debugPrint('FollowedOrganizersController.loadMore failed: $e\n$st');
       }
@@ -141,12 +159,12 @@ class FollowedOrganizersController
       if (kDebugMode) {
         debugPrint('FollowedOrganizersController.unfollow failed: $e\n$st');
       }
+      Error.throwWithStackTrace(e, st);
     }
   }
 }
 
-final followedOrganizersControllerProvider =
-    AsyncNotifierProvider<FollowedOrganizersController,
-        FollowedOrganizersState>(
+final followedOrganizersControllerProvider = AsyncNotifierProvider<
+    FollowedOrganizersController, FollowedOrganizersState>(
   FollowedOrganizersController.new,
 );

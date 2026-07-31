@@ -27,6 +27,7 @@ class OrganizersDirectoryState {
   final int lastPage;
   final int total;
   final bool isLoadingMore;
+  final bool hasLoadMoreError;
 
   const OrganizersDirectoryState({
     required this.items,
@@ -34,6 +35,7 @@ class OrganizersDirectoryState {
     required this.lastPage,
     required this.total,
     required this.isLoadingMore,
+    this.hasLoadMoreError = false,
   });
 
   bool get hasMore => page < lastPage;
@@ -44,6 +46,7 @@ class OrganizersDirectoryState {
     int? lastPage,
     int? total,
     bool? isLoadingMore,
+    bool? hasLoadMoreError,
   }) =>
       OrganizersDirectoryState(
         items: items ?? this.items,
@@ -51,6 +54,7 @@ class OrganizersDirectoryState {
         lastPage: lastPage ?? this.lastPage,
         total: total ?? this.total,
         isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+        hasLoadMoreError: hasLoadMoreError ?? this.hasLoadMoreError,
       );
 }
 
@@ -81,14 +85,26 @@ class OrganizersDirectoryController
       lastPage: page.lastPage,
       total: page.total,
       isLoadingMore: false,
+      hasLoadMoreError: false,
     );
   }
 
-  Future<void> loadMore() async {
-    final current = state.valueOrNull;
-    if (current == null || !current.hasMore || current.isLoadingMore) return;
+  Future<void> loadMore() => _loadMore();
 
-    state = AsyncData(current.copyWith(isLoadingMore: true));
+  Future<void> retryLoadMore() => _loadMore(allowAfterError: true);
+
+  Future<void> _loadMore({bool allowAfterError = false}) async {
+    final current = state.valueOrNull;
+    if (current == null ||
+        !current.hasMore ||
+        current.isLoadingMore ||
+        (current.hasLoadMoreError && !allowAfterError)) {
+      return;
+    }
+
+    state = AsyncData(
+      current.copyWith(isLoadingMore: true, hasLoadMoreError: false),
+    );
 
     try {
       final next = await ref.read(organizerRepositoryProvider).getOrganizers(
@@ -104,10 +120,13 @@ class OrganizersDirectoryController
           lastPage: next.lastPage,
           total: next.total,
           isLoadingMore: false,
+          hasLoadMoreError: false,
         ),
       );
     } catch (e, st) {
-      state = AsyncData(current.copyWith(isLoadingMore: false));
+      state = AsyncData(
+        current.copyWith(isLoadingMore: false, hasLoadMoreError: true),
+      );
       if (kDebugMode) {
         debugPrint('OrganizersDirectoryController.loadMore failed: $e\n$st');
       }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/guest_restriction_dialog.dart';
 import '../providers/organizer_profile_providers.dart';
@@ -74,7 +75,7 @@ class OrganizerFollowButton extends ConsumerWidget {
     );
   }
 
-  void _onTap(WidgetRef ref, BuildContext context) {
+  Future<void> _onTap(WidgetRef ref, BuildContext context) async {
     final isAuthenticated = ref.read(authProvider).isAuthenticated;
     if (!isAuthenticated) {
       ref.read(pendingOrganizerActionProvider.notifier).state =
@@ -85,6 +86,28 @@ class OrganizerFollowButton extends ConsumerWidget {
       );
       return;
     }
-    ref.read(followStateControllerProvider(organizerUuid).notifier).toggle();
+
+    final wasFollowing = ref
+            .read(followStateControllerProvider(organizerUuid))
+            .valueOrNull
+            ?.isFollowed ??
+        false;
+    try {
+      await ref
+          .read(followStateControllerProvider(organizerUuid).notifier)
+          .toggle();
+    } catch (error) {
+      if (!context.mounted) return;
+      final fallback = wasFollowing
+          ? context.l10n.organizerUnfollowError
+          : context.l10n.organizerFollowError;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ApiResponseHandler.extractError(error, fallback: fallback),
+          ),
+        ),
+      );
+    }
   }
 }

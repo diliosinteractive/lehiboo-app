@@ -19,12 +19,14 @@ class OrganizerReviewsState {
   final int page;
   final int lastPage;
   final bool isLoadingMore;
+  final bool hasLoadMoreError;
 
   const OrganizerReviewsState({
     required this.items,
     required this.page,
     required this.lastPage,
     required this.isLoadingMore,
+    this.hasLoadMoreError = false,
   });
 
   bool get hasMore => page < lastPage;
@@ -34,12 +36,14 @@ class OrganizerReviewsState {
     int? page,
     int? lastPage,
     bool? isLoadingMore,
+    bool? hasLoadMoreError,
   }) =>
       OrganizerReviewsState(
         items: items ?? this.items,
         page: page ?? this.page,
         lastPage: lastPage ?? this.lastPage,
         isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+        hasLoadMoreError: hasLoadMoreError ?? this.hasLoadMoreError,
       );
 }
 
@@ -55,11 +59,22 @@ class OrganizerReviewsController
     return _stateFromResponse(response, fallbackPage: 1);
   }
 
-  Future<void> loadMore() async {
-    final current = state.valueOrNull;
-    if (current == null || !current.hasMore || current.isLoadingMore) return;
+  Future<void> loadMore() => _loadMore();
 
-    state = AsyncData(current.copyWith(isLoadingMore: true));
+  Future<void> retryLoadMore() => _loadMore(allowAfterError: true);
+
+  Future<void> _loadMore({bool allowAfterError = false}) async {
+    final current = state.valueOrNull;
+    if (current == null ||
+        !current.hasMore ||
+        current.isLoadingMore ||
+        (current.hasLoadMoreError && !allowAfterError)) {
+      return;
+    }
+
+    state = AsyncData(
+      current.copyWith(isLoadingMore: true, hasLoadMoreError: false),
+    );
 
     try {
       final response = await ref
@@ -72,10 +87,13 @@ class OrganizerReviewsController
           page: next.page,
           lastPage: next.lastPage,
           isLoadingMore: false,
+          hasLoadMoreError: false,
         ),
       );
     } catch (e, st) {
-      state = AsyncData(current.copyWith(isLoadingMore: false));
+      state = AsyncData(
+        current.copyWith(isLoadingMore: false, hasLoadMoreError: true),
+      );
       if (kDebugMode) {
         debugPrint('OrganizerReviewsController.loadMore failed: $e\n$st');
       }
@@ -94,6 +112,7 @@ class OrganizerReviewsController
       page: meta?.currentPage ?? fallbackPage,
       lastPage: meta?.lastPage ?? 1,
       isLoadingMore: false,
+      hasLoadMoreError: false,
     );
   }
 }

@@ -6,8 +6,10 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../providers/followed_organizers_providers.dart';
 import '../widgets/followed_organizer_tile.dart';
+import '../widgets/organizer_load_more_error.dart';
 
 /// "Organisateurs suivis" screen — paginated list of the authed user's
 /// followed organizers (spec §6bis). Each row exposes an inline unfollow
@@ -58,6 +60,26 @@ class _FollowedOrganizersScreenState
     _searchDebounce = Timer(const Duration(milliseconds: 350), () {
       ref.read(followedOrganizersControllerProvider.notifier).setSearch(value);
     });
+  }
+
+  Future<void> _unfollow(String uuid) async {
+    try {
+      await ref
+          .read(followedOrganizersControllerProvider.notifier)
+          .unfollow(uuid);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ApiResponseHandler.extractError(
+              error,
+              fallback: context.l10n.organizerUnfollowError,
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildSearchField() {
@@ -148,8 +170,8 @@ class _FollowedOrganizersScreenState
                     controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.only(top: 4, bottom: 24),
-                    itemCount:
-                        state.items.length + (state.isLoadingMore ? 1 : 0),
+                    itemCount: state.items.length +
+                        (state.isLoadingMore || state.hasLoadMoreError ? 1 : 0),
                     separatorBuilder: (_, __) => Divider(
                       height: 1,
                       thickness: 1,
@@ -159,6 +181,15 @@ class _FollowedOrganizersScreenState
                     ),
                     itemBuilder: (context, index) {
                       if (index == state.items.length) {
+                        if (state.hasLoadMoreError) {
+                          return OrganizerLoadMoreError(
+                            message: context.l10n.organizersLoadMoreError,
+                            onRetry: () => ref
+                                .read(followedOrganizersControllerProvider
+                                    .notifier)
+                                .retryLoadMore(),
+                          );
+                        }
                         return const Padding(
                           padding: EdgeInsets.symmetric(vertical: 16),
                           child: Center(
@@ -171,9 +202,7 @@ class _FollowedOrganizersScreenState
                       final org = state.items[index];
                       return FollowedOrganizerTile(
                         organizer: org,
-                        onUnfollowTap: () => ref
-                            .read(followedOrganizersControllerProvider.notifier)
-                            .unfollow(org.uuid),
+                        onUnfollowTap: () => _unfollow(org.uuid),
                       );
                     },
                   ),

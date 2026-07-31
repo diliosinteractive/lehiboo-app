@@ -9,6 +9,7 @@ import '../../../events/domain/entities/event.dart';
 import '../../../events/presentation/utils/open_event.dart';
 import '../providers/organizer_profile_providers.dart';
 import '../utils/event_timing_bucket.dart';
+import 'organizer_load_more_error.dart';
 
 /// "Activités" tab — segmented toggle (Current/Upcoming vs Past) over a
 /// paginated event list.
@@ -118,6 +119,15 @@ class _OrganizerActivitiesTabState
                       color: HbColors.brandPrimary,
                     ),
                   ),
+                ),
+              if (state.hasLoadMoreError)
+                OrganizerLoadMoreError(
+                  message: context.l10n.organizerActivitiesLoadMoreError,
+                  onRetry: () => ref
+                      .read(organizerEventsControllerProvider(
+                              widget.organizerIdentifier)
+                          .notifier)
+                      .retryLoadMore(),
                 ),
             ],
           ),

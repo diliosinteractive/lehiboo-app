@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/guest_restriction_dialog.dart';
 import '../../../memberships/presentation/widgets/organizer_join_button.dart'
@@ -140,9 +141,7 @@ class _OrganizerActionBarState extends ConsumerState<OrganizerActionBar> {
         : widget.organizer.name;
     switch (action) {
       case PendingOrganizerAction.follow:
-        ref
-            .read(followStateControllerProvider(widget.organizer.uuid).notifier)
-            .toggle();
+        _toggleFollow();
       case PendingOrganizerAction.contact:
         context.push(
           '/messages/new/from-organizer/${widget.organizer.uuid}'
@@ -160,6 +159,26 @@ class _OrganizerActionBarState extends ConsumerState<OrganizerActionBar> {
           widget.organizer.uuid,
           orgName,
         );
+    }
+  }
+
+  Future<void> _toggleFollow() async {
+    final provider = followStateControllerProvider(widget.organizer.uuid);
+    final wasFollowing = ref.read(provider).valueOrNull?.isFollowed ?? false;
+    try {
+      await ref.read(provider.notifier).toggle();
+    } catch (error) {
+      if (!mounted) return;
+      final fallback = wasFollowing
+          ? context.l10n.organizerUnfollowError
+          : context.l10n.organizerFollowError;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ApiResponseHandler.extractError(error, fallback: fallback),
+          ),
+        ),
+      );
     }
   }
 }

@@ -5,6 +5,7 @@ import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../reviews/data/models/review_dto.dart';
 import '../providers/organizer_reviews_providers.dart';
+import 'organizer_load_more_error.dart';
 import 'organizer_review_row.dart';
 
 /// "Avis" tab — histogram header + paginated list of reviews aggregated
@@ -61,8 +62,10 @@ class _OrganizerReviewsTabState extends ConsumerState<OrganizerReviewsTab> {
           onNotification: _onScrollNotification,
           child: ListView.separated(
             padding: const EdgeInsets.only(top: 8, bottom: 80),
-            // +1 for the histogram header, +1 for the load-more spinner when active
-            itemCount: 1 + state.items.length + (state.isLoadingMore ? 1 : 0),
+            // +1 for the histogram header, +1 for pagination feedback.
+            itemCount: 1 +
+                state.items.length +
+                (state.isLoadingMore || state.hasLoadMoreError ? 1 : 0),
             separatorBuilder: (_, index) {
               if (index == 0) return const SizedBox.shrink();
               return Divider(
@@ -79,6 +82,16 @@ class _OrganizerReviewsTabState extends ConsumerState<OrganizerReviewsTab> {
               }
               final reviewIndex = index - 1;
               if (reviewIndex == state.items.length) {
+                if (state.hasLoadMoreError) {
+                  return OrganizerLoadMoreError(
+                    message: context.l10n.organizerReviewsLoadMoreError,
+                    onRetry: () => ref
+                        .read(organizerReviewsControllerProvider(
+                                widget.organizerIdentifier)
+                            .notifier)
+                        .retryLoadMore(),
+                  );
+                }
                 return const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
                   child: Center(

@@ -8,6 +8,7 @@ import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../providers/organizers_directory_providers.dart';
 import '../widgets/organizer_directory_tile.dart';
+import '../widgets/organizer_load_more_error.dart';
 
 /// Public organizers directory — paginated, searchable and sortable list of
 /// verified organizers (`GET /organizers`).
@@ -219,11 +220,20 @@ class _OrganizersDirectoryScreenState
                     controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                    itemCount:
-                        state.items.length + (state.isLoadingMore ? 1 : 0),
+                    itemCount: state.items.length +
+                        (state.isLoadingMore || state.hasLoadMoreError ? 1 : 0),
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       if (index == state.items.length) {
+                        if (state.hasLoadMoreError) {
+                          return OrganizerLoadMoreError(
+                            message: context.l10n.organizersLoadMoreError,
+                            onRetry: () => ref
+                                .read(organizersDirectoryControllerProvider
+                                    .notifier)
+                                .retryLoadMore(),
+                          );
+                        }
                         return const Padding(
                           padding: EdgeInsets.symmetric(vertical: 16),
                           child: Center(

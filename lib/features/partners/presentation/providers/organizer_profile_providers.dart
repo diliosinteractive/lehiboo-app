@@ -25,12 +25,14 @@ class OrganizerEventsState {
   final int page;
   final int lastPage;
   final bool isLoadingMore;
+  final bool hasLoadMoreError;
 
   const OrganizerEventsState({
     required this.events,
     required this.page,
     required this.lastPage,
     required this.isLoadingMore,
+    this.hasLoadMoreError = false,
   });
 
   bool get hasMore => page < lastPage;
@@ -40,12 +42,14 @@ class OrganizerEventsState {
     int? page,
     int? lastPage,
     bool? isLoadingMore,
+    bool? hasLoadMoreError,
   }) =>
       OrganizerEventsState(
         events: events ?? this.events,
         page: page ?? this.page,
         lastPage: lastPage ?? this.lastPage,
         isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+        hasLoadMoreError: hasLoadMoreError ?? this.hasLoadMoreError,
       );
 }
 
@@ -63,14 +67,26 @@ class OrganizerEventsController
       page: page.page,
       lastPage: page.lastPage,
       isLoadingMore: false,
+      hasLoadMoreError: false,
     );
   }
 
-  Future<void> loadMore() async {
-    final current = state.valueOrNull;
-    if (current == null || !current.hasMore || current.isLoadingMore) return;
+  Future<void> loadMore() => _loadMore();
 
-    state = AsyncData(current.copyWith(isLoadingMore: true));
+  Future<void> retryLoadMore() => _loadMore(allowAfterError: true);
+
+  Future<void> _loadMore({bool allowAfterError = false}) async {
+    final current = state.valueOrNull;
+    if (current == null ||
+        !current.hasMore ||
+        current.isLoadingMore ||
+        (current.hasLoadMoreError && !allowAfterError)) {
+      return;
+    }
+
+    state = AsyncData(
+      current.copyWith(isLoadingMore: true, hasLoadMoreError: false),
+    );
 
     try {
       final next = await ref.read(organizerRepositoryProvider).getEvents(
@@ -84,11 +100,14 @@ class OrganizerEventsController
           page: next.page,
           lastPage: next.lastPage,
           isLoadingMore: false,
+          hasLoadMoreError: false,
         ),
       );
     } catch (e, st) {
       // Roll back the loading flag but keep the already-loaded events visible.
-      state = AsyncData(current.copyWith(isLoadingMore: false));
+      state = AsyncData(
+        current.copyWith(isLoadingMore: false, hasLoadMoreError: true),
+      );
       if (kDebugMode) {
         debugPrint('OrganizerEventsController.loadMore failed: $e\n$st');
       }
@@ -128,8 +147,9 @@ class FollowState {
     bool? isInFlight,
   }) =>
       FollowState(
-        isFollowed:
-            identical(isFollowed, _unset) ? this.isFollowed : isFollowed as bool?,
+        isFollowed: identical(isFollowed, _unset)
+            ? this.isFollowed
+            : isFollowed as bool?,
         followersCount: followersCount ?? this.followersCount,
         isInFlight: isInFlight ?? this.isInFlight,
       );
@@ -138,8 +158,7 @@ class FollowState {
 }
 
 /// Seeds the follow state from a freshly-loaded profile.
-class FollowStateController
-    extends FamilyAsyncNotifier<FollowState, String> {
+class FollowStateController extends FamilyAsyncNotifier<FollowState, String> {
   @override
   Future<FollowState> build(String identifier) async {
     final profile =
@@ -151,8 +170,8 @@ class FollowStateController
     );
   }
 
-  /// Optimistically toggle follow. The button flips immediately, the API
-  /// call fires in the background, and on failure we silently roll back.
+  /// Optimistically toggle follow. The button flips immediately and rolls
+  /// back if the API rejects the change.
   ///
   /// Race-condition policy: **ignore taps while a request is in flight**.
   /// The button shows a spinner during this window, so users get visual
@@ -160,13 +179,9 @@ class FollowStateController
   /// the ~200ms typical roundtrip; cancel-and-replace would create the
   /// possibility of a "successful" intermediate state being lost.
   ///
-  /// Error policy: rollback to the pre-toggle snapshot and log in debug.
-  /// We deliberately don't rethrow or push the controller into an error
-  /// state — the data is still valid (the snapshot), and a transient
-  /// network blip shouldn't make the rest of the screen disappear. The
-  /// visible "bounce-back" of the button is enough signal for the user to
-  /// retry; if they keep failing, that's a real issue worth surfacing
-  /// elsewhere (e.g. the global Dio error interceptor handles 401s).
+  /// Error policy: restore the valid snapshot, then rethrow so the initiating
+  /// widget can explain which action failed without replacing the profile
+  /// state with an error screen.
   Future<void> toggle() async {
     final snapshot = state.valueOrNull;
     if (snapshot == null) return; // still loading the initial fetch
@@ -181,16 +196,15 @@ class FollowStateController
     // Optimistic flip.
     state = AsyncData(snapshot.copyWith(
       isFollowed: !wasFollowing,
-      followersCount: (snapshot.followersCount + (wasFollowing ? -1 : 1))
-          .clamp(0, 1 << 30),
+      followersCount:
+          (snapshot.followersCount + (wasFollowing ? -1 : 1)).clamp(0, 1 << 30),
       isInFlight: true,
     ));
 
     try {
       final repo = ref.read(organizerRepositoryProvider);
-      final result = wasFollowing
-          ? await repo.unfollow(arg)
-          : await repo.follow(arg);
+      final result =
+          wasFollowing ? await repo.unfollow(arg) : await repo.follow(arg);
 
       // Reconcile from the server — it's the source of truth, especially
       // for `followersCount` which may have shifted due to other users.
@@ -212,6 +226,7 @@ class FollowStateController
       if (kDebugMode) {
         debugPrint('FollowStateController.toggle failed: $e\n$st');
       }
+      Error.throwWithStackTrace(e, st);
     }
   }
 }
