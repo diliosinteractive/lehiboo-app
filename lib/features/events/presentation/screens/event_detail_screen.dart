@@ -226,10 +226,40 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   /// Retourne le slot sélectionné
   CalendarDateSlot? get _selectedSlot {
     if (_selectedSlotId == null || _availableSlots.isEmpty) return null;
-    return _availableSlots.firstWhere(
-      (s) => s.id == _selectedSlotId,
-      orElse: () => _availableSlots.first,
-    );
+    final matches = _availableSlots.where((slot) => slot.id == _selectedSlotId);
+    return matches.isEmpty ? null : matches.first;
+  }
+
+  bool _sameSlots(
+    List<CalendarDateSlot> current,
+    List<CalendarDateSlot> incoming,
+  ) {
+    if (current.length != incoming.length) return false;
+    for (var index = 0; index < current.length; index++) {
+      final left = current[index];
+      final right = incoming[index];
+      if (left.id != right.id ||
+          left.date != right.date ||
+          left.startTime != right.startTime ||
+          left.endTime != right.endTime ||
+          left.spotsRemaining != right.spotsRemaining ||
+          left.totalCapacity != right.totalCapacity) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void _replaceAvailableSlots(List<CalendarDateSlot> slots) {
+    _availableSlots = slots;
+    final selectedStillExists = slots.any((slot) => slot.id == _selectedSlotId);
+    if (_selectedSlotId != null && !selectedStillExists) {
+      _selectedSlotId = null;
+      _ticketQuantities.clear();
+    }
+    if (slots.length == 1 && _selectedSlotId == null) {
+      _selectedSlotId = slots.first.id;
+    }
   }
 
   @override
@@ -760,19 +790,16 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
             startTime: slot.startTime,
             endTime: slot.endTime,
             spotsRemaining: slot.spotsRemaining,
+            totalCapacity: slot.spotsTotal,
           );
         }).toList();
 
         // Stocker les slots pour pouvoir obtenir le label de date
-        if (_availableSlots.isEmpty || _availableSlots.length != slots.length) {
+        if (!_sameSlots(_availableSlots, slots)) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
               setState(() {
-                _availableSlots = slots;
-                // Auto-sélection si une seule date disponible
-                if (slots.length == 1 && _selectedSlotId == null) {
-                  _selectedSlotId = slots.first.id;
-                }
+                _replaceAvailableSlots(slots);
               });
             }
           });
@@ -821,15 +848,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     }
 
     // Stocker les slots pour pouvoir obtenir le label de date
-    if (_availableSlots.isEmpty || _availableSlots.length != slots.length) {
+    if (!_sameSlots(_availableSlots, slots)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() {
-            _availableSlots = slots;
-            // Auto-sélection si une seule date disponible
-            if (slots.length == 1 && _selectedSlotId == null) {
-              _selectedSlotId = slots.first.id;
-            }
+            _replaceAvailableSlots(slots);
           });
         }
       });
@@ -1306,7 +1329,60 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       return;
     }
 
+    final selectionError = _selectionValidationMessage(event);
+    if (selectionError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(selectionError),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     _showBookingChoiceSheet(event);
+  }
+
+  String? _selectionValidationMessage(Event event) {
+    for (final entry in _ticketQuantities.entries) {
+      if (entry.value <= 0) continue;
+
+      final matches = event.tickets.where((ticket) => ticket.id == entry.key);
+      if (matches.isEmpty) {
+        return context.l10n.bookingTicketAvailabilityChanged;
+      }
+
+      final ticket = matches.first;
+      if (!ticket.isBookable) {
+        return context.l10n.bookingTicketAvailabilityChanged;
+      }
+      if (entry.value < ticket.effectiveMinPerBooking) {
+        return context.l10n
+            .bookingTicketMinimumRequired(ticket.effectiveMinPerBooking);
+      }
+      if (entry.value > ticket.effectiveMaxPerBooking) {
+        return context.l10n
+            .bookingTicketMaximumAllowed(ticket.effectiveMaxPerBooking);
+      }
+    }
+
+    final remainingForSlot = _selectedSlot?.spotsRemaining;
+    if (remainingForSlot != null && _totalTickets > remainingForSlot) {
+      return context.l10n.bookingTicketAvailabilityChanged;
+    }
+    return null;
+  }
+
+  bool _addCurrentSelectionToCart(Event event) {
+    final selectedSlot = _selectedSlot;
+    if (_selectedSlotId == null || selectedSlot == null) return false;
+
+    return ref.read(orderCartProvider.notifier).addSelection(
+          event: event,
+          slotId: _selectedSlotId!,
+          selectedSlot: selectedSlot,
+          ticketQuantities: Map<String, int>.from(_ticketQuantities),
+        );
   }
 
   void _showBookingChoiceSheet(Event event) {
@@ -1356,14 +1432,18 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     final router = GoRouter.of(context);
                     final messenger = ScaffoldMessenger.of(context);
 
+                    final added = _addCurrentSelectionToCart(event);
                     Navigator.of(sheetContext).pop();
-                    ref.read(orderCartProvider.notifier).addSelection(
-                          event: event,
-                          slotId: _selectedSlotId!,
-                          selectedSlot: _selectedSlot,
-                          ticketQuantities:
-                              Map<String, int>.from(_ticketQuantities),
-                        );
+                    if (!added) {
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            context.l10n.bookingTicketAvailabilityChanged,
+                          ),
+                        ),
+                      );
+                      return;
+                    }
                     messenger.showSnackBar(
                       SnackBar(
                         content: Text(context.l10n.eventTicketsAddedToCart),
@@ -1392,14 +1472,19 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     // dereference a dead context (same trap as the
                     // "Ajouter au panier" button above).
                     final router = GoRouter.of(context);
+                    final messenger = ScaffoldMessenger.of(context);
+                    final added = _addCurrentSelectionToCart(event);
                     Navigator.of(sheetContext).pop();
-                    ref.read(orderCartProvider.notifier).addSelection(
-                          event: event,
-                          slotId: _selectedSlotId!,
-                          selectedSlot: _selectedSlot,
-                          ticketQuantities:
-                              Map<String, int>.from(_ticketQuantities),
-                        );
+                    if (!added) {
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            context.l10n.bookingTicketAvailabilityChanged,
+                          ),
+                        ),
+                      );
+                      return;
+                    }
                     router.push('/cart');
                   },
                   icon: const Icon(Icons.lock),

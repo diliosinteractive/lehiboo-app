@@ -57,10 +57,13 @@ class EventTicketCard extends StatefulWidget {
 class _EventTicketCardState extends State<EventTicketCard> {
   bool get _isSelected => widget.quantity > 0;
   bool get _isSoldOut =>
-      widget.ticket.remainingPlaces != null &&
-      widget.ticket.remainingPlaces! <= 0;
+      widget.ticket.isSoldOut ||
+      (widget.ticket.remainingPlaces != null &&
+          widget.ticket.remainingPlaces! <= 0);
+  bool get _isUnavailable => !_isSoldOut && !widget.ticket.isBookable;
   bool get _isLowStock =>
       widget.ticket.remainingPlaces != null &&
+      widget.ticket.remainingPlaces! > 0 &&
       widget.ticket.remainingPlaces! <= 5;
   bool get _isFree => widget.ticket.buyerPrice == 0;
 
@@ -77,16 +80,6 @@ class _EventTicketCardState extends State<EventTicketCard> {
       return TicketTier.reduced;
     }
     return TicketTier.standard;
-  }
-
-  int get _maxQuantity {
-    if (widget.ticket.maxPerBooking != null) {
-      return widget.ticket.maxPerBooking!;
-    }
-    if (widget.ticket.remainingPlaces != null) {
-      return widget.ticket.remainingPlaces!.clamp(0, 10);
-    }
-    return 10;
   }
 
   @override
@@ -278,27 +271,18 @@ class _EventTicketCardState extends State<EventTicketCard> {
 
   Widget _buildStockBadge(BuildContext context) {
     if (_isSoldOut) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.red.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.block, color: Colors.red, size: 14),
-            const SizedBox(width: 4),
-            Text(
-              context.l10n.eventSoldOut,
-              style: const TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
+      return _buildAvailabilityBadge(
+        label: context.l10n.eventSoldOut,
+        color: Colors.red,
+        icon: Icons.block,
+      );
+    }
+
+    if (_isUnavailable) {
+      return _buildAvailabilityBadge(
+        label: context.l10n.eventTicketUnavailable,
+        color: Colors.grey.shade600,
+        icon: Icons.event_busy_outlined,
       );
     }
 
@@ -357,10 +341,42 @@ class _EventTicketCardState extends State<EventTicketCard> {
     return const SizedBox.shrink();
   }
 
+  Widget _buildAvailabilityBadge({
+    required String label,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 14),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildQuantitySelector() {
-    if (_isSoldOut) {
+    if (!widget.ticket.isBookable) {
       return const SizedBox.shrink();
     }
+
+    final minimum = widget.ticket.effectiveMinPerBooking;
+    final maximum = widget.ticket.effectiveMaxPerBooking;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -382,7 +398,9 @@ class _EventTicketCardState extends State<EventTicketCard> {
             onPressed: widget.enabled && widget.quantity > 0
                 ? () {
                     HapticFeedback.selectionClick();
-                    widget.onQuantityChanged(widget.quantity - 1);
+                    final nextQuantity =
+                        widget.quantity <= minimum ? 0 : widget.quantity - 1;
+                    widget.onQuantityChanged(nextQuantity);
                   }
                 : null,
           ),
@@ -411,10 +429,17 @@ class _EventTicketCardState extends State<EventTicketCard> {
           // Bouton plus
           _buildQuantityButton(
             icon: Icons.add,
-            onPressed: widget.enabled && widget.quantity < _maxQuantity
+            onPressed: widget.enabled && widget.quantity < maximum
                 ? () {
                     HapticFeedback.mediumImpact();
-                    widget.onQuantityChanged(widget.quantity + 1);
+                    final nextQuantity = widget.quantity <= 0
+                        ? minimum
+                        : widget.quantity < minimum
+                            ? minimum
+                            : widget.quantity + 1;
+                    widget.onQuantityChanged(
+                      nextQuantity > maximum ? maximum : nextQuantity,
+                    );
                   }
                 : null,
           ),

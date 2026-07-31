@@ -2152,6 +2152,7 @@
   "eventShowMore": "Show more",
   "eventShowLess": "Show less",
   "eventSoldOut": "Sold out",
+  "eventTicketUnavailable": "Unavailable",
   "eventTicketLowStock": "{count, plural, =1{Only 1 left!} other{Only {count} left!}}",
   "@eventTicketLowStock": {
     "placeholders": {
@@ -2475,6 +2476,23 @@
   },
   "bookingCartTitle": "Cart",
   "bookingCartHoldExpired": "The cart hold has expired. Add your tickets again to continue.",
+  "bookingTicketAvailabilityChanged": "A ticket is no longer available in the quantity selected. Remove it from your cart or choose another quantity, then try again.",
+  "bookingTicketMinimumRequired": "Select at least {count} tickets of this type.",
+  "@bookingTicketMinimumRequired": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bookingTicketMaximumAllowed": "You can select up to {count} tickets of this type.",
+  "@bookingTicketMaximumAllowed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "bookingClearCartTitle": "Clear cart?",
   "bookingClearCartBody": "All added tickets will be removed. This action cannot be undone.",
   "bookingClear": "Clear",

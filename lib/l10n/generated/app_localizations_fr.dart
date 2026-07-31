@@ -5144,6 +5144,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get eventSoldOut => 'Épuisé';
 
   @override
+  String get eventTicketUnavailable => 'Indisponible';
+
+  @override
   String eventTicketLowStock(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -5791,6 +5794,20 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get bookingCartHoldExpired =>
       'Le délai du panier est dépassé. Ajoutez à nouveau vos billets pour continuer.';
+
+  @override
+  String get bookingTicketAvailabilityChanged =>
+      'Un billet n\'est plus disponible dans la quantité choisie. Retirez-le du panier ou choisissez une autre quantité, puis réessayez.';
+
+  @override
+  String bookingTicketMinimumRequired(int count) {
+    return 'Sélectionnez au moins $count billets de ce type.';
+  }
+
+  @override
+  String bookingTicketMaximumAllowed(int count) {
+    return 'Vous pouvez sélectionner jusqu\'à $count billets de ce type.';
+  }
 
   @override
   String get bookingClearCartTitle => 'Vider le panier ?';

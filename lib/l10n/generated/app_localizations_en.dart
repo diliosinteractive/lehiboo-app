@@ -5106,6 +5106,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventSoldOut => 'Sold out';
 
   @override
+  String get eventTicketUnavailable => 'Unavailable';
+
+  @override
   String eventTicketLowStock(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -5745,6 +5748,20 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get bookingCartHoldExpired =>
       'The cart hold has expired. Add your tickets again to continue.';
+
+  @override
+  String get bookingTicketAvailabilityChanged =>
+      'A ticket is no longer available in the quantity selected. Remove it from your cart or choose another quantity, then try again.';
+
+  @override
+  String bookingTicketMinimumRequired(int count) {
+    return 'Select at least $count tickets of this type.';
+  }
+
+  @override
+  String bookingTicketMaximumAllowed(int count) {
+    return 'You can select up to $count tickets of this type.';
+  }
 
   @override
   String get bookingClearCartTitle => 'Clear cart?';

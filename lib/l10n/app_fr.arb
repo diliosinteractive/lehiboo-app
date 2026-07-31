@@ -2683,6 +2683,7 @@
   "eventShowMore": "Voir plus",
   "eventShowLess": "Voir moins",
   "eventSoldOut": "Épuisé",
+  "eventTicketUnavailable": "Indisponible",
   "eventTicketLowStock": "{count, plural, =1{Plus qu'1 !} other{Plus que {count} !}}",
   "@eventTicketLowStock": {
     "placeholders": {
@@ -3006,6 +3007,23 @@
   },
   "bookingCartTitle": "Panier",
   "bookingCartHoldExpired": "Le délai du panier est dépassé. Ajoutez à nouveau vos billets pour continuer.",
+  "bookingTicketAvailabilityChanged": "Un billet n'est plus disponible dans la quantité choisie. Retirez-le du panier ou choisissez une autre quantité, puis réessayez.",
+  "bookingTicketMinimumRequired": "Sélectionnez au moins {count} billets de ce type.",
+  "@bookingTicketMinimumRequired": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bookingTicketMaximumAllowed": "Vous pouvez sélectionner jusqu'à {count} billets de ce type.",
+  "@bookingTicketMaximumAllowed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "bookingClearCartTitle": "Vider le panier ?",
   "bookingClearCartBody": "Tous les billets ajoutés seront supprimés. Cette action est irréversible.",
   "bookingClear": "Vider",

@@ -8913,6 +8913,12 @@ abstract class AppLocalizations {
   /// **'Épuisé'**
   String get eventSoldOut;
 
+  /// No description provided for @eventTicketUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indisponible'**
+  String get eventTicketUnavailable;
+
   /// No description provided for @eventTicketLowStock.
   ///
   /// In fr, this message translates to:
@@ -9968,6 +9974,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Le délai du panier est dépassé. Ajoutez à nouveau vos billets pour continuer.'**
   String get bookingCartHoldExpired;
+
+  /// No description provided for @bookingTicketAvailabilityChanged.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un billet n\'est plus disponible dans la quantité choisie. Retirez-le du panier ou choisissez une autre quantité, puis réessayez.'**
+  String get bookingTicketAvailabilityChanged;
+
+  /// No description provided for @bookingTicketMinimumRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionnez au moins {count} billets de ce type.'**
+  String bookingTicketMinimumRequired(int count);
+
+  /// No description provided for @bookingTicketMaximumAllowed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous pouvez sélectionner jusqu\'à {count} billets de ce type.'**
+  String bookingTicketMaximumAllowed(int count);
 
   /// No description provided for @bookingClearCartTitle.
   ///
