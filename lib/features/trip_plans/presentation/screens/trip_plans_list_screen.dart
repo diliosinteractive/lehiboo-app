@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/l10n/l10n.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../providers/trip_plans_provider.dart';
 import '../widgets/trip_plan_list_card.dart';
 
@@ -53,15 +54,33 @@ class TripPlansListScreen extends ConsumerWidget {
                   },
                   onDelete: () async {
                     HapticFeedback.mediumImpact();
-                    await ref
-                        .read(tripPlansProvider.notifier)
-                        .deleteTripPlan(plan.uuid);
-                    if (context.mounted) {
+                    try {
+                      await ref
+                          .read(tripPlansProvider.notifier)
+                          .deleteTripPlan(plan.uuid);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              context.l10n.tripPlansDeletedSnack(planTitle),
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        );
+                      }
+                    } catch (error) {
+                      if (!context.mounted) return;
+                      final message = ApiResponseHandler.extractError(
+                        error,
+                        fallback: context.l10n.tripPlanDeleteFailed(planTitle),
+                      );
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(
-                            context.l10n.tripPlansDeletedSnack(planTitle),
-                          ),
+                          content: Text(message),
+                          backgroundColor: Colors.red,
                           behavior: SnackBarBehavior.floating,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),

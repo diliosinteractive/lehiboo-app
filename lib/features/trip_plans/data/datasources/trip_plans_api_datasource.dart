@@ -26,16 +26,22 @@ class TripPlansApiDataSource {
 
         // Try nested key 'plans' first, then fall back to flat list
         try {
-          final list = ApiResponseHandler.extractList(response.data, key: 'plans');
-          return list.map((e) => TripPlanDto.fromJson(e as Map<String, dynamic>)).toList();
+          final list =
+              ApiResponseHandler.extractList(response.data, key: 'plans');
+          return list
+              .map((e) => TripPlanDto.fromJson(e as Map<String, dynamic>))
+              .toList();
         } on ApiFormatException {
           final list = ApiResponseHandler.extractList(response.data);
-          return list.map((e) => TripPlanDto.fromJson(e as Map<String, dynamic>)).toList();
+          return list
+              .map((e) => TripPlanDto.fromJson(e as Map<String, dynamic>))
+              .toList();
         }
       } on DioException catch (e) {
         if (e.response?.statusCode != null && e.response!.statusCode! >= 500) {
           if (attempt < maxRetries) {
-            debugPrint('5xx Error fetching trip plans. Retrying... ($attempt/$maxRetries)');
+            debugPrint(
+                '5xx Error fetching trip plans. Retrying... ($attempt/$maxRetries)');
             await Future.delayed(retryDelay * attempt);
             continue;
           }
@@ -43,7 +49,7 @@ class TripPlansApiDataSource {
         rethrow;
       }
     }
-    throw Exception('Failed to fetch trip plans after $maxRetries attempts');
+    throw const ApiFormatException('Failed to fetch trip plans after retries');
   }
 
   /// PUT /api/v1/trip-plans/{uuid} - Modifier un plan
@@ -60,7 +66,8 @@ class TripPlansApiDataSource {
     if (stopsOrder != null) payload['stops_order'] = stopsOrder;
 
     final response = await _dio.put('/trip-plans/$uuid', data: payload);
-    final data = ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
+    final data =
+        ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
     return TripPlanDto.fromJson(data);
   }
 

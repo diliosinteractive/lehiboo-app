@@ -507,7 +507,10 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
           SnackBar(
             content: Text(
               context.l10n.tripPlanEditErrorWithMessage(
-                ApiResponseHandler.extractError(e),
+                ApiResponseHandler.extractError(
+                  e,
+                  fallback: context.l10n.tripPlanUpdateFailed,
+                ),
               ),
             ),
             behavior: SnackBarBehavior.floating,

@@ -52,33 +52,26 @@ class TripPlansNotifier extends StateNotifier<AsyncValue<List<TripPlan>>> {
     DateTime? plannedDate,
     List<String>? stopsOrder,
   }) async {
-    try {
-      final updatedPlan = await _repository.updateTripPlan(
-        uuid: uuid,
-        title: title,
-        plannedDate: plannedDate,
-        stopsOrder: stopsOrder,
-      );
+    final updatedPlan = await _repository.updateTripPlan(
+      uuid: uuid,
+      title: title,
+      plannedDate: plannedDate,
+      stopsOrder: stopsOrder,
+    );
 
-      final currentList = state.valueOrNull ?? [];
-      state = AsyncValue.data(
-        currentList.map((p) => p.uuid == uuid ? updatedPlan : p).toList(),
-      );
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-    }
+    final currentList = state.valueOrNull ?? const <TripPlan>[];
+    state = AsyncValue.data(
+      currentList.map((p) => p.uuid == uuid ? updatedPlan : p).toList(),
+    );
   }
 
   Future<void> deleteTripPlan(String uuid) async {
-    try {
-      await _repository.deleteTripPlan(uuid);
+    await _repository.deleteTripPlan(uuid);
 
-      final currentList = state.valueOrNull ?? [];
-      state =
-          AsyncValue.data(currentList.where((p) => p.uuid != uuid).toList());
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-    }
+    final currentList = state.valueOrNull ?? const <TripPlan>[];
+    state = AsyncValue.data(
+      currentList.where((p) => p.uuid != uuid).toList(),
+    );
   }
 
   /// Get a specific trip plan by UUID
