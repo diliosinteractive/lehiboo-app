@@ -163,9 +163,10 @@ class ApiResponseHandler {
   /// Resolution order for [DioException] response bodies:
   ///  1. `{ "error": { "details": { "<field>": ["msg", …] } } }` — first validation error
   ///  2. `{ "error": { "message": "…" } }`
-  ///  3. `{ "error": "…" }`                                      — simple string
+  ///  3. `{ "errors": { "<field>": ["msg", …] } }`                — Laravel validation
   ///  4. `{ "message": "…" }`                                    — top-level message
   ///  5. `{ "data": { "message": "…" } }`                        — nested message
+  ///  6. `{ "error": "…" }`                                      — machine-code fallback
   ///
   /// Network / timeout errors return a localized connectivity message.
   /// [ApiFormatException] and unrecognised errors return [fallback].
@@ -245,16 +246,14 @@ class ApiResponseHandler {
     final error = body['error'];
     if (error is Map<String, dynamic>) {
       final details = error['details'];
-      if (details is Map<String, dynamic> && details.isNotEmpty) {
-        final first = details.values.first;
-        if (first is List && first.isNotEmpty) {
-          return safeUserMessage(first.first);
-        }
-        return safeUserMessage(first);
-      }
+      final detailsMessage = _firstValidationMessage(details);
+      if (detailsMessage != null) return detailsMessage;
       if (error['message'] is String) return safeUserMessage(error['message']);
     }
-    if (error is String) return safeUserMessage(error);
+
+    // Standard Laravel validation: { "errors": { "field": ["msg"] } }
+    final validationMessage = _firstValidationMessage(body['errors']);
+    if (validationMessage != null) return validationMessage;
 
     // Top-level message
     if (body['message'] is String) return safeUserMessage(body['message']);
@@ -265,7 +264,21 @@ class ApiResponseHandler {
       return safeUserMessage(data['message']);
     }
 
+    // A string `error` is commonly a machine code (`booking_error`,
+    // `not_found`, …). Only surface it when the API supplied no human message.
+    if (error is String) return safeUserMessage(error);
+
     return null;
+  }
+
+  static String? _firstValidationMessage(dynamic errors) {
+    if (errors is! Map || errors.isEmpty) return null;
+
+    final first = errors.values.first;
+    if (first is List && first.isNotEmpty) {
+      return safeUserMessage(first.first);
+    }
+    return safeUserMessage(first);
   }
 
   static String _stripGenericExceptionPrefix(String value) {

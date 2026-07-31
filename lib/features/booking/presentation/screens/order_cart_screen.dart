@@ -12,7 +12,6 @@ import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/services/crash_reporter.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
-import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
 import 'package:lehiboo/features/booking/domain/extensions/user_participant_extension.dart';
@@ -22,6 +21,7 @@ import 'package:lehiboo/features/booking/domain/models/refund_policy.dart';
 import 'package:lehiboo/features/booking/presentation/controllers/booking_list_controller.dart';
 import 'package:lehiboo/features/booking/presentation/providers/order_cart_provider.dart';
 import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
+import 'package:lehiboo/features/booking/presentation/utils/order_checkout_error_mapper.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/cart_summary_section.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/participant_form_card.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/participants_overview_block.dart';
@@ -1126,29 +1126,36 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         _clearReservationTimer();
       }
 
-      // C'est le catch qui produit « Une erreur est survenue. Veuillez
-      // réessayer. » — on remonte l'exception réelle + l'étape pour pouvoir
-      // diagnostiquer (notamment les échecs TestFlight).
-      await CrashReporter.recordError(
-        e,
-        stack,
-        reason: 'Order checkout failed',
-        context: {
-          'step': checkoutStep,
-          'order_uuid': _activeOrderUuid,
-        },
-      );
+      final isExpectedValidation =
+          OrderCheckoutErrorMapper.isExpectedValidation(e);
 
+      // Availability conflicts are a normal checkout race: refresh the event
+      // caches so returning to its detail page fetches current ticket flags.
+      if (isExpectedValidation) {
+        _invalidateBookedEventsCache(cartItems);
+        if (kDebugMode) {
+          debugPrint(
+            'Order checkout validation failed at $checkoutStep: '
+            '${e is DioException ? e.response?.data : e}',
+          );
+        }
+      } else {
+        await CrashReporter.recordError(
+          e,
+          stack,
+          reason: 'Order checkout failed',
+          context: {
+            'step': checkoutStep,
+            'order_uuid': _activeOrderUuid,
+          },
+        );
+      }
+
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
-        // En debug : on expose l'erreur brute (corps de réponse 422 inclus)
-        // pour diagnostiquer. En release : message d'erreur localisé.
-        if (kDebugMode) {
-          final body = e is DioException ? e.response?.data : null;
-          _errorMessage = '[DEBUG $checkoutStep] ${body ?? e}';
-        } else {
-          _errorMessage = ApiResponseHandler.extractError(e);
-        }
+        // Raw response bodies belong in logs, never in user-facing UI.
+        _errorMessage = OrderCheckoutErrorMapper.userMessage(e, context.l10n);
       });
     }
   }
