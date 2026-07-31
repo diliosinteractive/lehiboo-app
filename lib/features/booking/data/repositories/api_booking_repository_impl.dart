@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../domain/entities/activity.dart';
@@ -120,6 +121,17 @@ class ApiBookingRepositoryImpl implements BookingRepository {
   Future<List<Booking>> getMyBookings() async {
     final response = await _apiDataSource.getMyBookings();
     return response.data.map(_mapBookingDto).toList();
+  }
+
+  @override
+  Future<Booking?> getBookingById(String bookingId) async {
+    try {
+      final booking = await _apiDataSource.getBookingById(bookingId);
+      return _mapBookingDto(booking);
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) return null;
+      rethrow;
+    }
   }
 
   /// Maps a [BookingListItemDto] to the domain [Booking] entity. Used by

@@ -262,17 +262,11 @@ class BookingApiDataSource {
     final response = await _dio.get('/bookings/$bookingUuid/tickets');
 
     final data = response.data;
-
-    try {
-      final ticketsList = ApiResponseHandler.extractList(data);
-      debugPrint('🎫 getBookingTickets: ${ticketsList.length} tickets trouvés');
-      return ticketsList
-          .map((t) => BookingTicketDto.fromJson(t as Map<String, dynamic>))
-          .toList();
-    } on ApiFormatException {
-      debugPrint('🎫 getBookingTickets: Pas de data ou pas une liste');
-      return [];
-    }
+    final ticketsList = ApiResponseHandler.extractList(data);
+    debugPrint('🎫 getBookingTickets: ${ticketsList.length} tickets trouvés');
+    return ticketsList
+        .map((t) => BookingTicketDto.fromJson(t as Map<String, dynamic>))
+        .toList();
   }
 
   Future<BookingsListResponseDto> getMyBookings({
@@ -296,7 +290,7 @@ class BookingApiDataSource {
     throw ApiFormatException('Expected Map response for bookings list', data);
   }
 
-  Future<BookingListItemDto> getBookingById(int bookingId) async {
+  Future<BookingListItemDto> getBookingById(String bookingId) async {
     final response = await _dio.get('/me/bookings/$bookingId');
 
     final payload = ApiResponseHandler.extractObject(response.data);

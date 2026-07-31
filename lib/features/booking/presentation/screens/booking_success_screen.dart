@@ -8,6 +8,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/features/booking/data/models/booking_api_dto.dart';
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
 import 'package:lehiboo/features/booking/presentation/controllers/booking_list_controller.dart';
@@ -45,7 +46,6 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
 
   List<BookingTicketDto>? _tickets;
   bool _isLoadingTickets = false;
-  // ignore: unused_field - Préservé pour usage futur
   String? _errorMessage;
 
   @override
@@ -95,10 +95,15 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
 
   /// Charge les tickets avec polling (génération asynchrone côté backend)
   Future<void> _loadTickets() async {
-    setState(() => _isLoadingTickets = true);
+    setState(() {
+      _isLoadingTickets = true;
+      _errorMessage = null;
+    });
 
     try {
       final bookingDataSource = ref.read(bookingApiDataSourceProvider);
+      Object? lastError;
+      var receivedSuccessfulResponse = false;
 
       // Polling: les tickets sont générés de manière asynchrone
       // Délai progressif: 1s, 1s, 2s, 2s, 3s... pour réduire l'attente initiale
@@ -112,6 +117,7 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
           final tickets = await bookingDataSource.getBookingTickets(
             bookingUuid: widget.bookingId,
           );
+          receivedSuccessfulResponse = true;
 
           debugPrint('🎫 Polling result: ${tickets.length} tickets');
           if (tickets.isNotEmpty) {
@@ -124,8 +130,11 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
             return;
           }
         } catch (e) {
+          lastError = e;
           debugPrint('🎫 Polling error: $e');
-          // Ignorer les erreurs pendant le polling
+          // A transient failure can recover on a later attempt. Keep the last
+          // error so a run with no successful response does not masquerade as
+          // "tickets are still being generated".
         }
 
         // Attendre avant la prochaine tentative (délai progressif)
@@ -138,13 +147,22 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
       if (mounted) {
         setState(() {
           _tickets = [];
+          _errorMessage = !receivedSuccessfulResponse && lastError != null
+              ? ApiResponseHandler.extractError(
+                  lastError,
+                  fallback: context.l10n.bookingTicketsLoadError,
+                )
+              : null;
           _isLoadingTickets = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = context.l10n.bookingTicketsLoadError;
+          _errorMessage = ApiResponseHandler.extractError(
+            e,
+            fallback: context.l10n.bookingTicketsLoadError,
+          );
           _isLoadingTickets = false;
         });
       }
@@ -512,9 +530,40 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
           )
         else if (_tickets != null && _tickets!.isNotEmpty)
           ..._tickets!.map((ticket) => _buildTicketCard(ticket))
+        else if (_errorMessage != null)
+          _buildTicketsError()
         else
           _buildPlaceholderTicket(),
       ],
+    );
+  }
+
+  Widget _buildTicketsError() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.cloud_off_outlined, color: Colors.orange.shade800),
+          const SizedBox(height: 10),
+          Text(
+            _errorMessage!,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: HbColors.textPrimary),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _loadTickets,
+            icon: const Icon(Icons.refresh),
+            label: Text(context.l10n.commonRetry),
+          ),
+        ],
+      ),
     );
   }
 

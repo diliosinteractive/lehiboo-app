@@ -8,7 +8,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
-import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
 import 'package:lehiboo/features/booking/data/models/booking_api_dto.dart';
@@ -17,6 +16,7 @@ import 'package:lehiboo/features/booking/domain/models/refund_policy.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
+import 'package:lehiboo/features/booking/presentation/utils/order_checkout_error_mapper.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/participant_forms_section.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
 import 'package:lehiboo/features/memberships/presentation/providers/personalized_feed_provider.dart';
@@ -56,6 +56,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   bool _acceptedRefundPolicy = false;
   final bool _acceptNewsletter = false;
   String? _errorMessage;
+  bool _confirmationOutcomeUncertain = false;
 
   CreateBookingResponseDto? _bookingResponse;
   double? _serverPaymentTotal;
@@ -228,9 +229,27 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         const Icon(Icons.error_outline, color: Colors.red),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text(
-                            _errorMessage!,
-                            style: const TextStyle(color: Colors.red),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _errorMessage!,
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                              if (_confirmationOutcomeUncertain)
+                                TextButton(
+                                  onPressed: () => context.go('/my-bookings'),
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.only(top: 6),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(
+                                    context.l10n.bookingViewMyBookings,
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       ],
@@ -774,7 +793,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
               // Bouton confirmer
               ElevatedButton(
-                onPressed: _isLoading ? null : _onConfirmPressed,
+                onPressed: _isLoading || _confirmationOutcomeUncertain
+                    ? null
+                    : _onConfirmPressed,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: HbColors.brandPrimary,
                   foregroundColor: Colors.white,
@@ -902,9 +923,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _confirmationOutcomeUncertain = false;
       _bookingResponse = null;
       _serverPaymentTotal = null;
     });
+
+    var paymentWasCompleted = false;
 
     try {
       final bookingDataSource = ref.read(bookingApiDataSourceProvider);
@@ -999,6 +1023,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         }
 
         await Stripe.instance.presentPaymentSheet();
+        paymentWasCompleted = true;
 
         // 4. Confirmer le brouillon après paiement réussi et récupérer le Booking.
         confirmationBooking = await bookingDataSource.confirmDraftBooking(
@@ -1019,16 +1044,25 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         });
       }
     } on StripeException catch (e) {
-      // Paiement annulé ou échoué
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
+        _confirmationOutcomeUncertain = false;
         _errorMessage =
-            e.error.localizedMessage ?? context.l10n.bookingPaymentCancelled;
+            OrderCheckoutErrorMapper.stripeUserMessage(e, context.l10n);
       });
     } catch (e) {
+      if (!mounted) return;
+      final confirmationOutcomeUncertain = paymentWasCompleted &&
+          OrderCheckoutErrorMapper.isConfirmationOutcomeUncertain(e);
       setState(() {
         _isLoading = false;
-        _errorMessage = ApiResponseHandler.extractError(e);
+        _confirmationOutcomeUncertain = confirmationOutcomeUncertain;
+        _errorMessage = OrderCheckoutErrorMapper.userMessage(
+          e,
+          context.l10n,
+          paymentWasCompleted: paymentWasCompleted,
+        );
       });
     }
   }

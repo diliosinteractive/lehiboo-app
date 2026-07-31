@@ -96,12 +96,12 @@ class _BookingParticipantScreenState
       controller.goToPaymentStep().then((_) {
         if (!mounted) return;
         final updatedState = ref.read(provider);
-        if (updatedState.errorMessage == null) {
-          if (updatedState.isFree) {
-            // Direct confirmation flow
-            context.push('/booking/${widget.activity.id}/confirmation',
-                extra: widget.activity);
-          } else {
+        if (updatedState.isFree && updatedState.confirmedBooking != null) {
+          // Direct confirmation flow
+          context.push('/booking/${widget.activity.id}/confirmation',
+              extra: widget.activity);
+        } else if (updatedState.errorMessage == null) {
+          if (!updatedState.isFree) {
             context.push('/booking/${widget.activity.id}/payment',
                 extra: widget.activity);
           }

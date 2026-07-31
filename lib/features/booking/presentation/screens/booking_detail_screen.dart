@@ -9,9 +9,9 @@ import 'package:share_plus/share_plus.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/themes/hb_theme.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
-// import 'package:lehiboo/features/booking/presentation/controllers/booking_flow_controller.dart';
-import 'package:lehiboo/features/booking/presentation/controllers/booking_list_controller.dart';
+import 'package:lehiboo/features/booking/presentation/controllers/booking_flow_controller.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/booking_hero_header.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/event_info_card.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/booking_detail_summary_card.dart';
@@ -40,7 +40,9 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
   Booking? _booking;
   bool _isLoading = true; // Commence en loading
   bool _notFound = false;
+  String? _loadError;
   List<Ticket> _tickets = [];
+  ScaffoldMessengerState? _scaffoldMessenger;
 
   @override
   void initState() {
@@ -65,12 +67,19 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
+  }
+
+  @override
   void dispose() {
     // Tear down any in-flight snackbar BEFORE the widget tree is gone so
     // the snackbar's animation status listener doesn't fire on a
     // deactivated tree and crash via findAncestorStateOfType.
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    messenger?.removeCurrentSnackBar(reason: SnackBarClosedReason.remove);
+    _scaffoldMessenger?.removeCurrentSnackBar(
+      reason: SnackBarClosedReason.remove,
+    );
     super.dispose();
   }
 
@@ -79,47 +88,41 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         '📖 BookingDetailScreen: Loading details for bookingId=${widget.bookingId}');
 
     if (_booking == null) {
-      setState(() => _isLoading = true);
+      setState(() {
+        _isLoading = true;
+        _notFound = false;
+        _loadError = null;
+      });
 
-      // Charger les bookings si pas encore fait
-      final controller = ref.read(bookingsListControllerProvider.notifier);
-      final state = ref.read(bookingsListControllerProvider);
+      try {
+        // Detail routes must not depend on the first page of the booking list:
+        // the backend exposes this user-scoped endpoint specifically for UUID
+        // lookups and returns a real 404 when the booking is absent.
+        final foundBooking = await ref
+            .read(bookingRepositoryProvider)
+            .getBookingById(widget.bookingId);
+        if (!mounted) return;
 
-      debugPrint(
-          '📖 BookingDetailScreen: Current bookings count=${state.allBookings.length}');
-
-      if (state.allBookings.isEmpty) {
-        debugPrint('📖 BookingDetailScreen: Loading bookings from API...');
-        await controller.loadBookings();
-      }
-
-      // Chercher le booking par ID (essayer plusieurs formats)
-      final updatedState = ref.read(bookingsListControllerProvider);
-      debugPrint(
-          '📖 BookingDetailScreen: Searching in ${updatedState.allBookings.length} bookings');
-
-      // Debug: afficher les IDs disponibles
-      for (final b in updatedState.allBookings) {
-        debugPrint(
-            '📖 BookingDetailScreen: Available booking id=${b.id}, numericId=${b.numericId}');
-      }
-
-      // Chercher par UUID (id) ou par ID numérique
-      final searchId = widget.bookingId;
-      final foundBooking = updatedState.allBookings
-          .where(
-            (b) => b.id == searchId || b.numericId?.toString() == searchId,
-          )
-          .firstOrNull;
-
-      if (foundBooking != null) {
-        debugPrint(
-            '📖 BookingDetailScreen: Found booking! id=${foundBooking.id}, activity=${foundBooking.activity?.title}');
-        _booking = foundBooking;
-      } else {
-        debugPrint(
-            '📖 BookingDetailScreen: Booking NOT FOUND for id=$searchId');
-        _notFound = true;
+        if (foundBooking != null) {
+          debugPrint(
+              '📖 BookingDetailScreen: Found booking! id=${foundBooking.id}, activity=${foundBooking.activity?.title}');
+          _booking = foundBooking;
+        } else {
+          debugPrint(
+              '📖 BookingDetailScreen: Booking NOT FOUND for id=${widget.bookingId}');
+          _notFound = true;
+        }
+      } catch (error) {
+        debugPrint('📖 BookingDetailScreen: Detail load failed: $error');
+        if (!mounted) return;
+        setState(() {
+          _loadError = ApiResponseHandler.extractError(
+            error,
+            fallback: context.l10n.bookingDetailLoadFallback,
+          );
+          _isLoading = false;
+        });
+        return;
       }
 
       setState(() => _isLoading = false);
@@ -222,7 +225,14 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     shareText +=
         '\n\n${context.l10n.bookingShareTicketsCount(_tickets.length)}';
 
-    await SharePlus.instance.share(ShareParams(text: shareText));
+    try {
+      await SharePlus.instance.share(ShareParams(text: shareText));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.commonShareFailed)),
+      );
+    }
   }
 
   /// Hands off to the system calendar's "create event" flow with the booking
@@ -269,18 +279,28 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       androidParams: const cal.AndroidParams(emailInvites: []),
     );
 
-    final added = await cal.Add2Calendar.addEvent2Cal(event);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          added
-              ? context.l10n.bookingCalendarAdded
-              : context.l10n.bookingCalendarAddFailed,
+    try {
+      final added = await cal.Add2Calendar.addEvent2Cal(event);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            added
+                ? context.l10n.bookingCalendarAdded
+                : context.l10n.bookingCalendarAddFailed,
+          ),
+          duration: const Duration(seconds: 2),
         ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.bookingCalendarAddFailed),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   String _formatDate(DateTime date) {
@@ -421,7 +441,12 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
     } catch (e) {
       debugPrint('🚫 Erreur annulation: $e');
       if (!mounted) return;
-      _showCancelError(context.l10n.bookingCancelGenericError);
+      _showCancelError(
+        ApiResponseHandler.extractError(
+          e,
+          fallback: context.l10n.bookingCancelGenericError,
+        ),
+      );
     }
   }
 
@@ -550,6 +575,57 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         ),
         body: const Center(
           child: CircularProgressIndicator(color: HbColors.brandPrimary),
+        ),
+      );
+    }
+
+    if (_loadError != null) {
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          title: Text(
+            context.l10n.bookingReservationFallback,
+            style: const TextStyle(color: HbColors.textPrimary),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: HbColors.textPrimary),
+            onPressed: _goBack,
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.cloud_off_outlined,
+                  size: 64,
+                  color: Colors.grey.shade400,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  context.l10n.bookingLoadError(_loadError!),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: HbColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: _loadBookingDetails,
+                  icon: const Icon(Icons.refresh),
+                  label: Text(context.l10n.commonRetry),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: HbColors.brandPrimary,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       );
     }

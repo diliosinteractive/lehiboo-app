@@ -30,7 +30,8 @@ class FakeBookingRepositoryImpl implements BookingRepository {
   }) async {
     await Future.delayed(const Duration(milliseconds: 500));
 
-    final totalQuantity = ticketSelections.fold<int>(0, (sum, ts) => sum + ts.quantity);
+    final totalQuantity =
+        ticketSelections.fold<int>(0, (sum, ts) => sum + ts.quantity);
 
     final newBooking = Booking(
       id: 'fake_booking_${DateTime.now().millisecondsSinceEpoch}',
@@ -51,17 +52,17 @@ class FakeBookingRepositoryImpl implements BookingRepository {
     String? paymentIntentId,
   }) async {
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
     final confirmed = Booking(
       id: bookingId,
       userId: 'user_1',
-      slotId: 'fake_slot', 
+      slotId: 'fake_slot',
       activityId: 'fake_act',
       quantity: 1,
       status: 'confirmed',
       paymentReference: paymentIntentId, // Map to paymentReference instead
     );
-    
+
     _localBookings.insert(0, confirmed);
     return confirmed;
   }
@@ -85,6 +86,18 @@ class FakeBookingRepositoryImpl implements BookingRepository {
   }
 
   @override
+  Future<Booking?> getBookingById(String bookingId) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    for (final booking in _localBookings) {
+      if (booking.id == bookingId ||
+          booking.numericId?.toString() == bookingId) {
+        return booking;
+      }
+    }
+    return null;
+  }
+
+  @override
   Future<List<Ticket>> getMyTickets() async {
     return _generateFakeTickets();
   }
@@ -104,15 +117,16 @@ class FakeBookingRepositoryImpl implements BookingRepository {
       )
     ];
   }
-  
+
   List<Ticket> _generateFakeTickets() {
-     return _localBookings.map((b) => Ticket(
-        id: 'ticket_${b.id}',
-        bookingId: b.id,
-        userId: b.userId,
-        slotId: b.slotId,
-        qrCodeData: 'MOCK_QR_${b.id}',
-        status: 'valid'
-     )).toList();
+    return _localBookings
+        .map((b) => Ticket(
+            id: 'ticket_${b.id}',
+            bookingId: b.id,
+            userId: b.userId,
+            slotId: b.slotId,
+            qrCodeData: 'MOCK_QR_${b.id}',
+            status: 'valid'))
+        .toList();
   }
 }

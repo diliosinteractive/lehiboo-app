@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/l10n/generated/app_localizations.dart';
 
@@ -49,7 +50,36 @@ class OrderCheckoutErrorMapper {
 
   static bool isExpectedValidation(Object error) => issue(error) != null;
 
-  static String userMessage(Object error, AppLocalizations l10n) {
+  static String userMessage(
+    Object error,
+    AppLocalizations l10n, {
+    bool paymentWasCompleted = false,
+    String? fallback,
+  }) {
+    if (paymentWasCompleted && isConfirmationOutcomeUncertain(error)) {
+      return l10n.bookingPaymentConfirmationUncertain;
+    }
+
+    if (error is StripeException) {
+      return stripeUserMessage(error, l10n);
+    }
+    if (error is StripeConfigException) {
+      return l10n.bookingPaymentUnavailable;
+    }
+
+    if (error is DioException) {
+      switch (error.type) {
+        case DioExceptionType.connectionTimeout:
+        case DioExceptionType.sendTimeout:
+        case DioExceptionType.receiveTimeout:
+          return l10n.bookingCheckoutTimedOut;
+        case DioExceptionType.connectionError:
+          return l10n.bookingCheckoutConnectionError;
+        default:
+          break;
+      }
+    }
+
     final body = _responseBody(error);
 
     switch (issue(error)) {
@@ -78,9 +108,74 @@ class OrderCheckoutErrorMapper {
       case OrderCheckoutIssue.availability:
         return l10n.bookingTicketAvailabilityChanged;
       case null:
-        return ApiResponseHandler.extractError(error);
+        return ApiResponseHandler.extractError(
+          error,
+          fallback: fallback,
+          localizations: l10n,
+        );
     }
   }
+
+  /// Maps Stripe's small set of SDK failure codes to safe, actionable copy.
+  ///
+  /// Stripe's `localizedMessage` is deliberately not rendered: depending on
+  /// the platform/plugin version it can contain configuration or SDK details.
+  static String stripeUserMessage(
+    StripeException error,
+    AppLocalizations l10n,
+  ) {
+    if (error.error.code == FailureCode.Canceled) {
+      return l10n.bookingPaymentCancelled;
+    }
+    if (error.error.code == FailureCode.Timeout) {
+      return l10n.bookingPaymentTimedOut;
+    }
+    if (_isStripeConnectivityFailure(error)) {
+      return l10n.bookingPaymentTimedOut;
+    }
+    if (error.error.code == FailureCode.Unknown ||
+        _isStripeUnavailableFailure(error)) {
+      return l10n.bookingPaymentUnavailable;
+    }
+    return l10n.bookingPaymentFailed;
+  }
+
+  /// Once Stripe has returned success, *any* exception while confirming or
+  /// decoding the confirmation leaves the booking outcome unknown.
+  ///
+  /// This intentionally includes malformed 2xx responses and 4xx conflicts:
+  /// the server may have committed the booking before the client failed to
+  /// decode it, and a retry may observe a now-conflicting state. Callers pair
+  /// this predicate with their `paymentWasCompleted` flag, so pre-payment
+  /// validation errors are still rendered normally.
+  static bool isConfirmationOutcomeUncertain(Object _) => true;
+
+  static bool _isStripeConnectivityFailure(StripeException error) {
+    if (error.error.code == FailureCode.Timeout) return true;
+    final diagnostic = _stripeDiagnostic(error);
+    return diagnostic.contains('timeout') ||
+        diagnostic.contains('timed out') ||
+        diagnostic.contains('network') ||
+        diagnostic.contains('connection');
+  }
+
+  static bool _isStripeUnavailableFailure(StripeException error) {
+    final diagnostic = _stripeDiagnostic(error);
+    return diagnostic.contains('config') ||
+        diagnostic.contains('not initialized') ||
+        diagnostic.contains('not initialised') ||
+        diagnostic.contains('publishable key') ||
+        diagnostic.contains('client secret') ||
+        diagnostic.contains('merchant');
+  }
+
+  static String _stripeDiagnostic(StripeException error) => [
+        error.error.type,
+        error.error.stripeErrorCode,
+        error.error.declineCode,
+        error.error.message,
+        error.error.localizedMessage,
+      ].whereType<String>().join(' ').toLowerCase();
 
   static Map<String, dynamic>? _responseBody(Object error) {
     if (error is! DioException) return null;

@@ -52,6 +52,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
   bool _acceptedRefundPolicy = false;
   bool _isLoading = false;
   String? _errorMessage;
+  bool _confirmationOutcomeUncertain = false;
   String? _activeOrderUuid;
   DateTime? _activeOrderExpiresAt;
   Duration? _reservationRemaining;
@@ -879,9 +880,24 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
             const Icon(Icons.error_outline, color: Colors.red, size: 20),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                _errorMessage!,
-                style: const TextStyle(color: Colors.red, fontSize: 13),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red, fontSize: 13),
+                  ),
+                  if (_confirmationOutcomeUncertain)
+                    TextButton(
+                      onPressed: () => context.go('/my-bookings'),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.only(top: 6),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(context.l10n.bookingViewMyBookings),
+                    ),
+                ],
               ),
             ),
           ],
@@ -934,7 +950,9 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                 ),
               ),
               ElevatedButton(
-                onPressed: _isLoading ? null : _submitOrder,
+                onPressed: _isLoading || _confirmationOutcomeUncertain
+                    ? null
+                    : _submitOrder,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: HbColors.brandPrimary,
                   foregroundColor: Colors.white,
@@ -1006,10 +1024,12 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _confirmationOutcomeUncertain = false;
     });
 
     final dataSource = ref.read(bookingApiDataSourceProvider);
     var shouldCancelOrderOnError = false;
+    var paymentWasCompleted = false;
     // Suit l'étape en cours pour que Crashlytics indique précisément où le
     // checkout a cassé (création commande / paiement / confirmation).
     var checkoutStep = 'create_order';
@@ -1060,6 +1080,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         }
 
         await Stripe.instance.presentPaymentSheet();
+        paymentWasCompleted = true;
 
         shouldCancelOrderOnError = false;
         checkoutStep = 'confirm_order';
@@ -1109,15 +1130,12 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         );
       }
 
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
-        // En debug : erreur Stripe brute pour diagnostiquer (TestFlight, etc.).
-        // En release : message localisé générique.
-        _errorMessage = kDebugMode
-            ? '[DEBUG $checkoutStep] '
-                'Stripe(${e.error.code.name}): '
-                '${e.error.message ?? e.error.localizedMessage ?? e}'
-            : e.error.localizedMessage ?? context.l10n.bookingPaymentCancelled;
+        _confirmationOutcomeUncertain = false;
+        _errorMessage =
+            OrderCheckoutErrorMapper.stripeUserMessage(e, context.l10n);
       });
     } catch (e, stack) {
       if (shouldCancelOrderOnError) {
@@ -1152,10 +1170,17 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
       }
 
       if (!mounted) return;
+      final confirmationOutcomeUncertain = paymentWasCompleted &&
+          OrderCheckoutErrorMapper.isConfirmationOutcomeUncertain(e);
       setState(() {
         _isLoading = false;
+        _confirmationOutcomeUncertain = confirmationOutcomeUncertain;
         // Raw response bodies belong in logs, never in user-facing UI.
-        _errorMessage = OrderCheckoutErrorMapper.userMessage(e, context.l10n);
+        _errorMessage = OrderCheckoutErrorMapper.userMessage(
+          e,
+          context.l10n,
+          paymentWasCompleted: paymentWasCompleted,
+        );
       });
     }
   }

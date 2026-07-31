@@ -123,7 +123,14 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
     }
     shareText +=
         '\n\n${context.l10n.bookingShareTicketCode(ticket.qrCodeData ?? ticket.id)}';
-    await SharePlus.instance.share(ShareParams(text: shareText));
+    try {
+      await SharePlus.instance.share(ShareParams(text: shareText));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.commonShareFailed)),
+      );
+    }
   }
 
   Future<void> _downloadTicket(Ticket ticket) async {

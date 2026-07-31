@@ -7,6 +7,7 @@ import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/booking/domain/repositories/booking_repository.dart';
 import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
+import 'package:lehiboo/features/booking/presentation/utils/order_checkout_error_mapper.dart';
 import 'package:lehiboo/features/memberships/presentation/providers/personalized_feed_provider.dart';
 
 final bookingRepositoryProvider = Provider<BookingRepository>((ref) {
@@ -56,6 +57,9 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
 
   final BookingRepository bookingRepository;
   final Ref? _ref;
+  bool _paymentOutcomeUncertain = false;
+
+  bool get paymentOutcomeUncertain => _paymentOutcomeUncertain;
 
   AnalyticsService? get _analytics =>
       _ref == null ? null : _ref.read(analyticsServiceProvider);
@@ -168,7 +172,13 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
   }
 
   Future<void> _submitBooking({String? paymentIntentId}) async {
-    state = state.copyWith(isSubmitting: true, errorMessage: null);
+    _paymentOutcomeUncertain = false;
+    state = state.copyWith(
+      isSubmitting: true,
+      errorMessage: null,
+      confirmedBooking: null,
+      tickets: null,
+    );
     String failureStep = AnalyticsBookingStep.create;
     try {
       // 1. Create Booking
@@ -204,20 +214,11 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
         bookingId: booking.id,
         paymentIntentId: paymentIntentId,
       );
+      state = state.copyWith(confirmedBooking: confirmedBooking);
 
-      // 3. Get Tickets
-      final tickets =
-          await bookingRepository.getTicketsByBooking(confirmedBooking.id);
-
-      state = state.copyWith(
-        isSubmitting: false,
-        confirmedBooking: confirmedBooking,
-        tickets: tickets,
-        step: const BookingStep.confirmation(),
-      );
-
-      // purchase (standard GA4) — funnel completion. Avec `transaction_id`,
-      // `value`, `currency` GA4 alimente les rapports Monetization.
+      // The booking is committed at this point. Ticket retrieval is a
+      // separate, retryable read and must never send the user back through
+      // payment if it fails.
       _analytics?.logEvent(
         AnalyticsEvent.purchase,
         params: {
@@ -227,6 +228,19 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
           AnalyticsParam.eventUuid: state.activity.id,
           AnalyticsParam.isFree: state.isFree,
         },
+      );
+      _ref?.invalidate(personalizedFeedProvider);
+
+      // 3. Get Tickets
+      failureStep = AnalyticsBookingStep.tickets;
+      final tickets =
+          await bookingRepository.getTicketsByBooking(confirmedBooking.id);
+
+      state = state.copyWith(
+        isSubmitting: false,
+        confirmedBooking: confirmedBooking,
+        tickets: tickets,
+        step: const BookingStep.confirmation(),
       );
 
       if (tickets.isNotEmpty) {
@@ -238,13 +252,36 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
           },
         );
       }
-
-      // Booking signal changed — drop the personalized feed (spec §7).
-      _ref?.invalidate(personalizedFeedProvider);
     } catch (e) {
+      final l10n = bookingCachedL10n();
+      final bookingWasConfirmed = state.confirmedBooking != null;
+      _paymentOutcomeUncertain =
+          paymentIntentId != null && !bookingWasConfirmed;
+
+      final errorMessage = switch (failureStep) {
+        AnalyticsBookingStep.tickets => ApiResponseHandler.extractError(
+            e,
+            fallback: l10n.bookingTicketsLoadError,
+          ),
+        AnalyticsBookingStep.confirm when paymentIntentId == null =>
+          ApiResponseHandler.extractError(
+            e,
+            fallback: l10n.bookingConfirmationFailed,
+          ),
+        _ => OrderCheckoutErrorMapper.userMessage(
+            e,
+            l10n,
+            paymentWasCompleted: paymentIntentId != null,
+            fallback: l10n.bookingCreateFailed,
+          ),
+      };
+
       state = state.copyWith(
         isSubmitting: false,
-        errorMessage: ApiResponseHandler.extractError(e),
+        errorMessage: errorMessage,
+        step:
+            bookingWasConfirmed ? const BookingStep.confirmation() : state.step,
+        tickets: bookingWasConfirmed ? const [] : state.tickets,
       );
       _analytics?.logEvent(
         AnalyticsEvent.bookingFailed,
@@ -253,6 +290,38 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
           AnalyticsParam.step: failureStep,
           AnalyticsParam.reason: e.runtimeType.toString(),
         },
+      );
+    }
+  }
+
+  Future<void> retryTickets() async {
+    final booking = state.confirmedBooking;
+    if (booking == null || state.isSubmitting) return;
+
+    state = state.copyWith(isSubmitting: true, errorMessage: null);
+    try {
+      final tickets = await bookingRepository.getTicketsByBooking(booking.id);
+      state = state.copyWith(
+        isSubmitting: false,
+        tickets: tickets,
+        errorMessage: null,
+      );
+      if (tickets.isNotEmpty) {
+        _analytics?.logEvent(
+          AnalyticsEvent.ticketsDisplayed,
+          params: {
+            AnalyticsParam.bookingUuid: booking.id,
+            AnalyticsParam.quantity: tickets.length,
+          },
+        );
+      }
+    } catch (error) {
+      state = state.copyWith(
+        isSubmitting: false,
+        errorMessage: ApiResponseHandler.extractError(
+          error,
+          fallback: bookingCachedL10n().bookingTicketsLoadError,
+        ),
       );
     }
   }

@@ -9,6 +9,7 @@ import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../booking/presentation/utils/order_checkout_error_mapper.dart';
 import '../../data/repositories/donations_repository_impl.dart';
 
 /// Écran « Soutenir Le Hiboo » — don volontaire seul via Stripe PaymentSheet.
@@ -173,14 +174,19 @@ class _DonationSupportScreenState extends ConsumerState<DonationSupportScreen> {
       if (!mounted) return;
       setState(() {
         _isProcessing = false;
-        _errorMessage =
-            e.error.localizedMessage ?? context.l10n.donationsPaymentCancelled;
+        _errorMessage = OrderCheckoutErrorMapper.stripeUserMessage(
+          e,
+          context.l10n,
+        );
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _isProcessing = false;
-        _errorMessage = ApiResponseHandler.extractError(e);
+        _errorMessage = ApiResponseHandler.extractError(
+          e,
+          fallback: context.l10n.donationsCheckoutFailed,
+        );
       });
     }
   }
@@ -307,8 +313,7 @@ class _DonationSupportScreenState extends ConsumerState<DonationSupportScreen> {
           const SizedBox(height: 16),
           TextField(
             controller: _customAmountController,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
             ],
@@ -365,9 +370,7 @@ class _DonationSupportScreenState extends ConsumerState<DonationSupportScreen> {
               color: selected ? HbColors.brandPrimary : Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: selected
-                    ? HbColors.brandPrimary
-                    : Colors.grey.shade300,
+                color: selected ? HbColors.brandPrimary : Colors.grey.shade300,
                 width: selected ? 2 : 1,
               ),
             ),
@@ -462,11 +465,10 @@ class _DonationSupportScreenState extends ConsumerState<DonationSupportScreen> {
 
   Widget _buildConfirmBar(BuildContext context) {
     final amount = _amount;
-    final label = (amount != null &&
-            amount >= _minAmount &&
-            amount <= _maxAmount)
-        ? context.l10n.donationsCtaLabel(_formatAmount(amount))
-        : context.l10n.donationsCtaLabelGeneric;
+    final label =
+        (amount != null && amount >= _minAmount && amount <= _maxAmount)
+            ? context.l10n.donationsCtaLabel(_formatAmount(amount))
+            : context.l10n.donationsCtaLabelGeneric;
 
     return Container(
       decoration: BoxDecoration(
@@ -564,8 +566,8 @@ class _DonationSupportScreenState extends ConsumerState<DonationSupportScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  context.l10n
-                      .donationsSuccessSubtitle(_formatAmount(_completedAmount)),
+                  context.l10n.donationsSuccessSubtitle(
+                      _formatAmount(_completedAmount)),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,

@@ -46,6 +46,7 @@ class _BookingConfirmationScreenState
     final activity = widget.activity;
     final provider = bookingFlowControllerProvider(activity);
     final state = ref.watch(provider);
+    final controller = ref.read(provider.notifier);
     final firstName = state.buyerInfo?.firstName?.trim() ?? '';
 
     return Scaffold(
@@ -76,7 +77,25 @@ class _BookingConfirmationScreenState
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
-                  if (state.tickets != null && state.tickets!.isNotEmpty)
+                  if (state.isSubmitting)
+                    const CircularProgressIndicator()
+                  else if (state.errorMessage != null)
+                    Column(
+                      children: [
+                        Text(
+                          state.errorMessage!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: controller.retryTickets,
+                          icon: const Icon(Icons.refresh),
+                          label: Text(context.l10n.commonRetry),
+                        ),
+                      ],
+                    )
+                  else if (state.tickets != null && state.tickets!.isNotEmpty)
                     ...state.tickets!.map(
                       (ticket) => Card(
                         margin: const EdgeInsets.only(bottom: 16),

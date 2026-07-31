@@ -4,6 +4,7 @@ import 'package:lehiboo/features/booking/data/models/booking_dto.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/booking/domain/repositories/booking_repository.dart';
 import 'package:lehiboo/data/mappers/booking_mapper.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 
 class BookingRepositoryImpl implements BookingRepository {
   BookingRepositoryImpl(this._dio);
@@ -92,7 +93,7 @@ class BookingRepositoryImpl implements BookingRepository {
         (data['data'] as Map<String, dynamic>?) ?? data,
       ).toDomain();
     }
-    throw Exception('Unexpected cancel response');
+    throw const ApiFormatException('Unexpected cancel response');
   }
 
   @override
@@ -102,6 +103,18 @@ class BookingRepositoryImpl implements BookingRepository {
     return list
         .map((e) => BookingDto.fromJson(e as Map<String, dynamic>).toDomain())
         .toList();
+  }
+
+  @override
+  Future<Booking?> getBookingById(String bookingId) async {
+    try {
+      final response = await _dio.get('/lehiboo/v1/me/bookings/$bookingId');
+      final data = ApiResponseHandler.extractObject(response.data);
+      return BookingDto.fromJson(data).toDomain();
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) return null;
+      rethrow;
+    }
   }
 
   @override

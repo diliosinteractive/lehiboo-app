@@ -208,6 +208,7 @@ class AnalyticsBookingStep {
   static const String create = 'create';
   static const String payment = 'payment';
   static const String confirm = 'confirm';
+  static const String tickets = 'tickets';
 }
 
 /// Valeurs connues pour `AnalyticsParam.quotaType` (`petitboo_quota_reached`).

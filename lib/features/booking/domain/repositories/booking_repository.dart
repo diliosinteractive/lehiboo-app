@@ -24,6 +24,11 @@ abstract class BookingRepository {
 
   Future<List<Booking>> getMyBookings();
 
+  /// Loads one of the current user's bookings by its API route identifier
+  /// (normally the booking UUID). Returns `null` only when the API confirms
+  /// that the booking does not exist or is not accessible (HTTP 404).
+  Future<Booking?> getBookingById(String bookingId);
+
   Future<List<Ticket>> getMyTickets();
 
   Future<List<Ticket>> getTicketsByBooking(String bookingId);

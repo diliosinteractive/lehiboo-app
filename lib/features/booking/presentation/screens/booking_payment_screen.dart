@@ -104,26 +104,33 @@ class BookingPaymentScreen extends ConsumerWidget {
           ),
           Padding(
             padding: const EdgeInsets.all(16),
-            child: HbButton.primary(
-              label: context.l10n.bookingPayAmount(
-                context.appCalculatedAmount(totalPrice),
-                currency,
-              ),
-              isLoading: state.isSubmitting,
-              onTap: () {
-                // Simulate Stripe Success
-                controller
-                    .submitPaidBooking(paymentIntentId: 'pi_fake_12345')
-                    .then((_) {
-                  if (!context.mounted) return;
-                  final updatedState = ref.read(provider);
-                  if (updatedState.errorMessage == null) {
-                    context.push('/booking/${activity.id}/confirmation',
-                        extra: activity);
-                  }
-                });
-              },
-            ),
+            child: controller.paymentOutcomeUncertain
+                ? HbButton.secondary(
+                    label: context.l10n.bookingViewMyBookings,
+                    onTap: () => context.go('/my-bookings'),
+                  )
+                : HbButton.primary(
+                    label: context.l10n.bookingPayAmount(
+                      context.appCalculatedAmount(totalPrice),
+                      currency,
+                    ),
+                    isLoading: state.isSubmitting,
+                    onTap: () {
+                      // Simulate Stripe Success
+                      controller
+                          .submitPaidBooking(paymentIntentId: 'pi_fake_12345')
+                          .then((_) {
+                        if (!context.mounted) return;
+                        final updatedState = ref.read(provider);
+                        if (updatedState.confirmedBooking != null) {
+                          context.push(
+                            '/booking/${activity.id}/confirmation',
+                            extra: activity,
+                          );
+                        }
+                      });
+                    },
+                  ),
           ),
         ],
       ),
