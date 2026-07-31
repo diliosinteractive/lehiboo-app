@@ -14,6 +14,9 @@ import 'participant_form_card.dart';
 /// widgets where N = quantity. The first participant globally gets the
 /// "Same as buyer" toggle.
 class ParticipantFormsSection extends StatelessWidget {
+  /// Exact account that owns the participant drafts rendered by this section.
+  final String ownerAccountId;
+
   /// Ticket type ID → quantity mapping (same as CheckoutParams.ticketQuantities).
   final Map<String, int> ticketQuantities;
 
@@ -36,6 +39,7 @@ class ParticipantFormsSection extends StatelessWidget {
 
   const ParticipantFormsSection({
     super.key,
+    required this.ownerAccountId,
     required this.ticketQuantities,
     required this.eventTickets,
     this.buyerInfo,
@@ -122,6 +126,7 @@ class ParticipantFormsSection extends StatelessWidget {
                     : const ParticipantInfo();
 
                 return ParticipantFormCard(
+                  ownerAccountId: ownerAccountId,
                   ticketTypeName: _ticketName(context, entry.key),
                   participantIndex: i + 1,
                   totalForType: entry.value,

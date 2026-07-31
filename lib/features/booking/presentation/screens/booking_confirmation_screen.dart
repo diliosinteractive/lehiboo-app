@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/widgets/buttons/hb_button.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/booking/presentation/controllers/booking_flow_controller.dart';
 import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
 import 'package:lehiboo/features/events/presentation/screens/event_detail_screen.dart';
@@ -22,9 +24,14 @@ class BookingConfirmationScreen extends ConsumerStatefulWidget {
 
 class _BookingConfirmationScreenState
     extends ConsumerState<BookingConfirmationScreen> {
+  late final String? _ownerSessionUserId;
+  late final AuthSessionKey _ownerSession;
+
   @override
   void initState() {
     super.initState();
+    _ownerSessionUserId = ref.read(authSessionUserIdProvider);
+    _ownerSession = ref.read(authSessionKeyProvider);
     // Poison the event detail cache as soon as we land here — the booking
     // has consumed a seat, so spots_remaining is now stale. Doing this in
     // initState (not on button tap) guarantees freshness regardless of
@@ -35,14 +42,30 @@ class _BookingConfirmationScreenState
   }
 
   void _invalidateEventData() {
+    if (!identical(ref.read(authSessionKeyProvider), _ownerSession)) return;
     final id = widget.activity.id;
-    ref.invalidate(eventDetailControllerProvider(id));
-    ref.invalidate(eventAvailabilityProvider(id));
+    ref.invalidate(
+      eventDetailControllerProvider(eventDetailRequest(_ownerSession, id)),
+    );
+    ref.invalidate(
+      eventAvailabilityProvider(eventAvailabilityRequest(_ownerSession, id)),
+    );
     ref.invalidate(similarEventsProvider(id));
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentSessionUserId = ref.watch(authSessionUserIdProvider);
+    final currentSession = ref.watch(authSessionKeyProvider);
+    if (_ownerSessionUserId == null ||
+        currentSessionUserId != _ownerSessionUserId ||
+        !identical(currentSession, _ownerSession)) {
+      return const Scaffold(
+        key: Key('booking-confirmation-session-invalid'),
+        body: SizedBox.shrink(),
+      );
+    }
+
     final activity = widget.activity;
     final provider = bookingFlowControllerProvider(activity);
     final state = ref.watch(provider);
@@ -110,11 +133,16 @@ class _BookingConfirmationScreenState
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              if (ticket.qrCodeData != null)
+                              if (ticket.qrCodeData?.trim().isNotEmpty ?? false)
                                 QrImageView(
-                                  data: ticket.qrCodeData!,
+                                  data: ticket.qrCodeData!.trim(),
                                   version: QrVersions.auto,
                                   size: 150.0,
+                                )
+                              else
+                                Text(
+                                  context.l10n.bookingTicketsNotReady,
+                                  textAlign: TextAlign.center,
                                 ),
                               const SizedBox(height: 8),
                               Text(
@@ -137,8 +165,22 @@ class _BookingConfirmationScreenState
             child: HbButton.secondary(
               label: context.l10n.bookingBackHome,
               onTap: () {
-                ref.invalidate(eventDetailControllerProvider(activity.id));
-                ref.invalidate(eventAvailabilityProvider(activity.id));
+                if (!identical(
+                  ref.read(authSessionKeyProvider),
+                  _ownerSession,
+                )) {
+                  return;
+                }
+                ref.invalidate(
+                  eventDetailControllerProvider(
+                    eventDetailRequest(_ownerSession, activity.id),
+                  ),
+                );
+                ref.invalidate(
+                  eventAvailabilityProvider(
+                    eventAvailabilityRequest(_ownerSession, activity.id),
+                  ),
+                );
                 ref.invalidate(similarEventsProvider(activity.id));
                 ref.invalidate(homeFeedProvider);
                 context.go('/');

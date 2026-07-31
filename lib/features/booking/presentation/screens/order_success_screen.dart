@@ -4,16 +4,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/booking/data/models/order_api_dto.dart';
 
 class OrderSuccessScreen extends ConsumerStatefulWidget {
   final String orderId;
   final CreateOrderResponseDto? order;
+  final String? initialDataOwnerAccountId;
 
   const OrderSuccessScreen({
     super.key,
     required this.orderId,
     this.order,
+    this.initialDataOwnerAccountId,
   });
 
   @override
@@ -21,17 +24,43 @@ class OrderSuccessScreen extends ConsumerStatefulWidget {
 }
 
 class _OrderSuccessScreenState extends ConsumerState<OrderSuccessScreen> {
+  late final String? _ownerSessionUserId;
+  late final bool _acceptInitialData;
+  bool _ownsCurrentSession = false;
+
+  CreateOrderResponseDto? get _order =>
+      _acceptInitialData ? widget.order : null;
+
   @override
   void initState() {
     super.initState();
+    _ownerSessionUserId = ref.read(authSessionUserIdProvider);
+    final hasExplicitOwnerMismatch = widget.initialDataOwnerAccountId != null &&
+        widget.initialDataOwnerAccountId != _ownerSessionUserId;
+    _ownsCurrentSession =
+        _ownerSessionUserId != null && !hasExplicitOwnerMismatch;
+    _acceptInitialData = widget.order == null ||
+        widget.initialDataOwnerAccountId == _ownerSessionUserId;
+    ref.listenManual<String?>(authSessionUserIdProvider, (_, next) {
+      if (!mounted || next == _ownerSessionUserId) return;
+      setState(() => _ownsCurrentSession = false);
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_ownsCurrentSession) return;
       HapticFeedback.heavyImpact();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final order = widget.order;
+    if (!_ownsCurrentSession) {
+      return const Scaffold(
+        key: Key('order-success-session-invalid'),
+        body: SizedBox.shrink(),
+      );
+    }
+
+    final order = _order;
     final bookings = order?.bookings ?? const <OrderBookingDto>[];
 
     return Scaffold(

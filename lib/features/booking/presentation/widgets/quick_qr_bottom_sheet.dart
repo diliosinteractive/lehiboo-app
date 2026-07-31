@@ -10,12 +10,12 @@ import 'package:screen_brightness/screen_brightness.dart';
 
 class QuickQRBottomSheet extends StatefulWidget {
   final Booking booking;
-  final Ticket? ticket;
+  final Ticket ticket;
 
   const QuickQRBottomSheet({
     super.key,
     required this.booking,
-    this.ticket,
+    required this.ticket,
   });
 
   @override
@@ -28,7 +28,7 @@ class _QuickQRBottomSheetState extends State<QuickQRBottomSheet> {
   @override
   void initState() {
     super.initState();
-    _increaseBrightness();
+    if (_getQRData() != null) _increaseBrightness();
   }
 
   @override
@@ -59,12 +59,14 @@ class _QuickQRBottomSheetState extends State<QuickQRBottomSheet> {
   }
 
   void _showFullscreenQR() {
+    final qrData = _getQRData();
+    if (qrData == null) return;
     HapticFeedback.lightImpact();
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: false,
         pageBuilder: (_, __, ___) => FullscreenQRSheet(
-          qrData: _getQRData(),
+          qrData: qrData,
           title:
               widget.booking.activity?.title ?? context.l10n.bookingTicketTitle,
           subtitle: _getSubtitle(),
@@ -79,12 +81,9 @@ class _QuickQRBottomSheetState extends State<QuickQRBottomSheet> {
     );
   }
 
-  String _getQRData() {
-    // Use ticket QR data if available, otherwise use booking ID
-    if (widget.ticket?.qrCodeData != null) {
-      return widget.ticket!.qrCodeData!;
-    }
-    return widget.booking.id;
+  String? _getQRData() {
+    final qrData = widget.ticket.qrCodeData?.trim();
+    return qrData == null || qrData.isEmpty ? null : qrData;
   }
 
   String _getSubtitle() {
@@ -121,6 +120,7 @@ class _QuickQRBottomSheetState extends State<QuickQRBottomSheet> {
     final ticketLabel = ticketCount > 1
         ? context.l10n.bookingTicketPlural(ticketCount)
         : context.l10n.bookingTicketSingular;
+    final qrData = _getQRData();
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.65,
@@ -190,23 +190,51 @@ class _QuickQRBottomSheetState extends State<QuickQRBottomSheet> {
                   ),
                   const SizedBox(height: 24),
                   // QR Code - tappable for fullscreen
-                  GestureDetector(
-                    onTap: _showFullscreenQR,
-                    child: LargeQRCode.large(
-                      data: _getQRData(),
-                      codeLabel: _extractShortCode(_getQRData()),
+                  if (qrData != null)
+                    GestureDetector(
+                      onTap: _showFullscreenQR,
+                      child: LargeQRCode.large(
+                        data: qrData,
+                        codeLabel: _extractShortCode(qrData),
+                      ),
+                    )
+                  else
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(
+                            Icons.qr_code_2,
+                            size: 48,
+                            color: HbColors.textSecondary,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            context.l10n.bookingTicketNotReady,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: HbColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 16),
                   // Hint text
-                  Text(
-                    context.l10n.bookingQrTapFullscreenHint,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade500,
+                  if (qrData != null)
+                    Text(
+                      context.l10n.bookingQrTapFullscreenHint,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
                 ],
               ),
             ),

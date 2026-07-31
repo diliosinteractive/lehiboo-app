@@ -259,7 +259,18 @@ class BookingApiDataSource {
     required String bookingUuid,
   }) async {
     debugPrint('🎫 getBookingTickets: GET /bookings/$bookingUuid/tickets');
-    final response = await _dio.get('/bookings/$bookingUuid/tickets');
+    late final Response<dynamic> response;
+    try {
+      response = await _dio.get('/bookings/$bookingUuid/tickets');
+    } on DioException catch (error) {
+      // Tickets are generated asynchronously after a booking is confirmed.
+      // Per the API contract, this endpoint returns 404 while generation is
+      // still in progress. Keep that state distinct from a transport failure.
+      if (error.response?.statusCode == 404) {
+        throw const TicketsNotReadyException();
+      }
+      rethrow;
+    }
 
     final data = response.data;
     final ticketsList = ApiResponseHandler.extractList(data);

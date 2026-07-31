@@ -31,12 +31,17 @@ class _BookingParticipantScreenState
   late TextEditingController _ageCtrl;
   late TextEditingController _townCtrl;
   String? _customerBirthDate;
+  late final String? _ownerAccountId;
+  late final BookingFlowController _ownerController;
+  bool _sessionInvalid = false;
 
   @override
   void initState() {
     super.initState();
+    _ownerAccountId = ref.read(authSessionUserIdProvider);
     // Pre-fill if existing
     final provider = bookingFlowControllerProvider(widget.activity);
+    _ownerController = ref.read(provider.notifier);
     final state = ref.read(provider);
 
     _firstNameCtrl = TextEditingController(text: state.buyerInfo?.firstName);
@@ -66,7 +71,25 @@ class _BookingParticipantScreenState
         _townCtrl.text = user.membershipCity!;
       }
     }
+
+    ref.listenManual<String?>(authSessionUserIdProvider, (_, next) {
+      if (next == _ownerAccountId || _sessionInvalid) return;
+      _sessionInvalid = true;
+      _firstNameCtrl.clear();
+      _lastNameCtrl.clear();
+      _emailCtrl.clear();
+      _phoneCtrl.clear();
+      _ageCtrl.clear();
+      _townCtrl.clear();
+      _customerBirthDate = null;
+      if (mounted) setState(() {});
+    });
   }
+
+  bool get _ownsCurrentAccount =>
+      !_sessionInvalid &&
+      _ownerAccountId != null &&
+      ref.read(authSessionUserIdProvider) == _ownerAccountId;
 
   @override
   void dispose() {
@@ -79,42 +102,55 @@ class _BookingParticipantScreenState
     super.dispose();
   }
 
-  void _onSave() {
-    if (_formKey.currentState!.validate()) {
-      final provider = bookingFlowControllerProvider(widget.activity);
-      final controller = ref.read(provider.notifier);
+  Future<void> _onSave() async {
+    if (!_ownsCurrentAccount || _formKey.currentState?.validate() != true) {
+      return;
+    }
+    final provider = bookingFlowControllerProvider(widget.activity);
+    final controller = _ownerController;
 
-      controller.updateBuyerInfo(BuyerInfo(
-        firstName: _firstNameCtrl.text,
-        lastName: _lastNameCtrl.text,
-        email: _emailCtrl.text,
-        phone: _phoneCtrl.text,
-        birthDate: _customerBirthDate,
-        town: _townCtrl.text.isNotEmpty ? _townCtrl.text : null,
-      ));
+    controller.updateBuyerInfo(BuyerInfo(
+      firstName: _firstNameCtrl.text,
+      lastName: _lastNameCtrl.text,
+      email: _emailCtrl.text,
+      phone: _phoneCtrl.text,
+      birthDate: _customerBirthDate,
+      town: _townCtrl.text.isNotEmpty ? _townCtrl.text : null,
+    ));
 
-      controller.goToPaymentStep().then((_) {
-        if (!mounted) return;
-        final updatedState = ref.read(provider);
-        if (updatedState.isFree && updatedState.confirmedBooking != null) {
-          // Direct confirmation flow
-          context.push('/booking/${widget.activity.id}/confirmation',
-              extra: widget.activity);
-        } else if (updatedState.errorMessage == null) {
-          if (!updatedState.isFree) {
-            context.push('/booking/${widget.activity.id}/payment',
-                extra: widget.activity);
-          }
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(updatedState.errorMessage!)));
-        }
-      });
+    await controller.goToPaymentStep();
+    if (!mounted ||
+        !_ownsCurrentAccount ||
+        !identical(ref.read(provider.notifier), controller)) {
+      return;
+    }
+    final updatedState = ref.read(provider);
+    if (updatedState.isFree && updatedState.confirmedBooking != null) {
+      // Direct confirmation flow
+      context.push('/booking/${widget.activity.id}/confirmation',
+          extra: widget.activity);
+    } else if (updatedState.errorMessage == null) {
+      if (!updatedState.isFree) {
+        context.push('/booking/${widget.activity.id}/payment',
+            extra: widget.activity);
+      }
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(updatedState.errorMessage!)));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_ownerAccountId == null ||
+        currentAccountId != _ownerAccountId ||
+        _sessionInvalid) {
+      return const Scaffold(
+        key: Key('booking-participant-session-invalid'),
+        body: SizedBox.shrink(),
+      );
+    }
     final provider = bookingFlowControllerProvider(widget.activity);
     final state = ref.watch(provider);
 

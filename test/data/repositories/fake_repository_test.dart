@@ -26,5 +26,12 @@ void main() {
       expect(bookings, isNotEmpty);
       expect(bookings.first.userId, 'user_1');
     });
+
+    test('never fabricates usable ticket identities or QR payloads', () async {
+      final repo = FakeBookingRepositoryImpl();
+
+      expect(await repo.getMyTickets(), isEmpty);
+      expect(await repo.getTicketsByBooking('fake-booking'), isEmpty);
+    });
   });
 }

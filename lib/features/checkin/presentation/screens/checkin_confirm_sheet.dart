@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/models/ticket_summary_dto.dart';
 import '../widgets/ticket_summary_card.dart';
 
@@ -11,6 +13,7 @@ import '../widgets/ticket_summary_card.dart';
 /// `isReEntry` drives the amber styling and re-entry copy.
 Future<bool?> showCheckinConfirmSheet(
   BuildContext context, {
+  required String ownerAccountId,
   required TicketSummaryDto ticket,
   required bool isReEntry,
   bool isCommitting = false,
@@ -25,31 +28,63 @@ Future<bool?> showCheckinConfirmSheet(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
     builder: (ctx) => _ConfirmSheetContent(
+      ownerAccountId: ownerAccountId,
       ticket: ticket,
       isReEntry: isReEntry,
     ),
   );
 }
 
-class _ConfirmSheetContent extends StatelessWidget {
+class _ConfirmSheetContent extends ConsumerStatefulWidget {
+  final String ownerAccountId;
   final TicketSummaryDto ticket;
   final bool isReEntry;
 
   const _ConfirmSheetContent({
+    required this.ownerAccountId,
     required this.ticket,
     required this.isReEntry,
   });
 
   @override
+  ConsumerState<_ConfirmSheetContent> createState() =>
+      _ConfirmSheetContentState();
+}
+
+class _ConfirmSheetContentState extends ConsumerState<_ConfirmSheetContent> {
+  bool _invalid = false;
+
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual<String?>(authSessionUserIdProvider, (_, next) {
+      if (next == widget.ownerAccountId || _invalid) return;
+      _invalid = true;
+      if (!mounted) return;
+      final navigator = Navigator.of(context);
+      if (navigator.canPop()) navigator.pop(false);
+    });
+  }
+
+  bool get _ownsCurrentSession =>
+      !_invalid && ref.read(authSessionUserIdProvider) == widget.ownerAccountId;
+
+  @override
   Widget build(BuildContext context) {
-    final color = isReEntry ? HbColors.warning : HbColors.success;
-    final icon = isReEntry ? Icons.repeat : Icons.check_circle;
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_invalid || currentAccountId != widget.ownerAccountId) {
+      return const SizedBox.shrink();
+    }
+
+    final color = widget.isReEntry ? HbColors.warning : HbColors.success;
+    final icon = widget.isReEntry ? Icons.repeat : Icons.check_circle;
     final l10n = context.l10n;
-    final title = isReEntry
+    final title = widget.isReEntry
         ? l10n.checkinReEntryDetectedTitle
         : l10n.checkinValidTicketTitle;
-    final ctaLabel =
-        isReEntry ? l10n.checkinConfirmReEntry : l10n.checkinConfirmEntry;
+    final ctaLabel = widget.isReEntry
+        ? l10n.checkinConfirmReEntry
+        : l10n.checkinConfirmEntry;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -96,7 +131,7 @@ class _ConfirmSheetContent extends StatelessWidget {
               ),
             ],
           ),
-          if (isReEntry) ...[
+          if (widget.isReEntry) ...[
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -105,7 +140,7 @@ class _ConfirmSheetContent extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                l10n.checkinAlreadyEnteredWarning(ticket.checkInCount),
+                l10n.checkinAlreadyEnteredWarning(widget.ticket.checkInCount),
                 style: const TextStyle(
                   fontSize: 13,
                   color: HbColors.textPrimary,
@@ -114,13 +149,16 @@ class _ConfirmSheetContent extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 16),
-          TicketSummaryCard(ticket: ticket),
+          TicketSummaryCard(ticket: widget.ticket),
           const SizedBox(height: 20),
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => Navigator.of(context).pop(false),
+                  onPressed: () {
+                    if (!_ownsCurrentSession) return;
+                    Navigator.of(context).pop(false);
+                  },
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
@@ -136,7 +174,10 @@ class _ConfirmSheetContent extends StatelessWidget {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  onPressed: () => Navigator.of(context).pop(true),
+                  onPressed: () {
+                    if (!_ownsCurrentSession) return;
+                    Navigator.of(context).pop(true);
+                  },
                   child: Text(ctaLabel),
                 ),
               ),

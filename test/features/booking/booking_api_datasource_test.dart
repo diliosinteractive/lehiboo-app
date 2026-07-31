@@ -30,6 +30,15 @@ void main() {
         throwsA(isA<ApiFormatException>()),
       );
     });
+
+    test('maps a 404 to the explicit tickets-not-ready state', () async {
+      final dataSource = BookingApiDataSource(_dioRejecting(404));
+
+      await expectLater(
+        dataSource.getBookingTickets(bookingUuid: 'booking-1'),
+        throwsA(isA<TicketsNotReadyException>()),
+      );
+    });
   });
 }
 
@@ -43,6 +52,29 @@ Dio _dioResolving(dynamic data) {
             requestOptions: options,
             statusCode: 200,
             data: data,
+          ),
+        );
+      },
+    ),
+  );
+  return dio;
+}
+
+Dio _dioRejecting(int statusCode) {
+  final dio = Dio(BaseOptions(baseUrl: 'https://example.test'));
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) {
+        final response = Response<dynamic>(
+          requestOptions: options,
+          statusCode: statusCode,
+          data: {'message': 'No tickets found for this booking.'},
+        );
+        handler.reject(
+          DioException.badResponse(
+            statusCode: statusCode,
+            requestOptions: options,
+            response: response,
           ),
         );
       },

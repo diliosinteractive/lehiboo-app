@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/l10n/l10n.dart';
 import '../../../../domain/entities/activity.dart';
 import '../../../../domain/entities/booking.dart';
 import '../../domain/models/booking_flow_state.dart';
@@ -219,27 +218,7 @@ class ApiBookingRepositoryImpl implements BookingRepository {
       }
     }
 
-    // Build real Ticket entities backed by attendee data when available.
-    // Falls back to leaving tickets null so the UI can mock them as before.
     final bookingUuid = b.uuid ?? b.id.toString();
-    List<Ticket>? tickets;
-    if (attendees.isNotEmpty) {
-      tickets = List<Ticket>.generate(attendees.length, (index) {
-        final a = attendees[index];
-        return Ticket(
-          id: '${bookingUuid}_ticket_$index',
-          bookingId: bookingUuid,
-          userId: b.userId?.toString() ?? '',
-          slotId: b.slotId?.toString() ?? '',
-          ticketType: a.ticketTypeName ??
-              cachedAppLocalizations().bookingStandardTicket,
-          status: 'active',
-          attendeeFirstName: a.firstName,
-          attendeeLastName: a.lastName,
-          attendeeEmail: a.email,
-        );
-      });
-    }
 
     // Prefer real attendee count, then API's ticketCount, then 1 as last
     // resort. Items[].quantity is the ground truth when items are present.
@@ -282,7 +261,6 @@ class ApiBookingRepositoryImpl implements BookingRepository {
       createdAt: b.createdAt != null ? _parseLocal(b.createdAt!) : null,
       activity: activity,
       slot: slot,
-      tickets: tickets,
       attendees: attendees.isNotEmpty ? attendees : null,
       cancellation: cancellation,
       customerBirthDate: b.customerBirthDate,
@@ -350,19 +328,27 @@ class ApiBookingRepositoryImpl implements BookingRepository {
 
   @override
   Future<List<Ticket>> getTicketsByBooking(String bookingId) async {
-    // Get all tickets and filter by booking
-    final response = await _apiDataSource.getMyTickets();
+    // Booking IDs exposed by the mobile API are UUIDs, while `/me/tickets`
+    // carries a numeric `booking_id`. Filtering that global list by the UUID
+    // silently produced an empty result. Query the booking-scoped endpoint so
+    // every returned ticket and QR payload is authoritative for this booking.
+    final tickets = await _apiDataSource.getBookingTickets(
+      bookingUuid: bookingId,
+    );
 
-    return response.tickets
-        .where((t) => t.bookingId?.toString() == bookingId)
+    return tickets
         .map((t) => Ticket(
-              id: t.id.toString(),
-              bookingId: t.bookingId?.toString() ?? '',
+              id: t.uuid?.trim().isNotEmpty == true ? t.uuid!.trim() : t.id,
+              bookingId: bookingId,
               userId: '',
-              slotId: '',
-              ticketType: t.ticketType,
+              slotId: t.slotId?.toString() ?? '',
               qrCodeData: t.qrCode,
               status: t.status,
+              attendeeFirstName: t.attendeeFirstName,
+              attendeeLastName: t.attendeeLastName,
+              attendeeEmail: t.attendeeEmail,
+              price: t.price,
+              createdAt: t.createdAt == null ? null : _parseLocal(t.createdAt!),
             ))
         .toList();
   }

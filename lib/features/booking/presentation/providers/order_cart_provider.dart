@@ -1,77 +1,384 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/providers/shared_preferences_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/booking/domain/models/order_cart_item.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+enum _OrderCartScopeKind { unknown, guest, account }
+
+class _OrderCartScope {
+  const _OrderCartScope._(this.kind, this.accountId);
+
+  const _OrderCartScope.unknown() : this._(_OrderCartScopeKind.unknown, null);
+
+  const _OrderCartScope.guest() : this._(_OrderCartScopeKind.guest, null);
+
+  const _OrderCartScope.account(String accountId)
+      : this._(_OrderCartScopeKind.account, accountId);
+
+  final _OrderCartScopeKind kind;
+  final String? accountId;
+
+  bool get canReadAndWrite => kind != _OrderCartScopeKind.unknown;
+
+  String get ownerTag => switch (kind) {
+        _OrderCartScopeKind.guest => 'guest',
+        _OrderCartScopeKind.account => 'account:$accountId',
+        _OrderCartScopeKind.unknown => 'unknown',
+      };
+
+  String get storageSuffix => switch (kind) {
+        _OrderCartScopeKind.guest => 'guest',
+        _OrderCartScopeKind.account =>
+          'account_${base64Url.encode(utf8.encode(accountId!)).replaceAll('=', '')}',
+        _OrderCartScopeKind.unknown => 'unknown',
+      };
+
+  @override
+  bool operator ==(Object other) =>
+      other is _OrderCartScope &&
+      other.kind == kind &&
+      other.accountId == accountId;
+
+  @override
+  int get hashCode => Object.hash(kind, accountId);
+}
+
+final _orderCartScopeProvider = Provider<_OrderCartScope>((ref) {
+  final auth = ref.watch(authProvider);
+  if (auth.status == AuthStatus.authenticated) {
+    final accountId = auth.user?.id.trim();
+    if (accountId != null && accountId.isNotEmpty) {
+      return _OrderCartScope.account(accountId);
+    }
+    return const _OrderCartScope.unknown();
+  }
+  if (auth.status == AuthStatus.unauthenticated) {
+    return const _OrderCartScope.guest();
+  }
+  return const _OrderCartScope.unknown();
+});
+
+/// Keeps SharedPreferences writes ordered per owner and coalesces stale writes.
+///
+/// Account and guest data also use different keys. A write already queued by a
+/// disposed account-A notifier therefore cannot overwrite account B's cart.
+class _OrderCartPersistence {
+  _OrderCartPersistence(this._prefs) {
+    // v1 values had no owner metadata. Reading them could expose the previous
+    // account after an upgrade, so deliberately fail closed and remove them.
+    remove(_legacyItemsKey);
+    remove(_legacyHoldKey);
+  }
+
+  static const _legacyItemsKey = 'order_cart_items_v1';
+  static const _legacyHoldKey = 'order_cart_hold_expires_at_v1';
+
+  final SharedPreferences _prefs;
+  final Map<String, String?> _desiredValues = {};
+  final Map<String, int> _revisions = {};
+  final Map<String, Future<void>> _writeTails = {};
+
+  String? read(String key) {
+    if (_desiredValues.containsKey(key)) return _desiredValues[key];
+    return _prefs.getString(key);
+  }
+
+  void write(String key, String value) {
+    _desiredValues[key] = value;
+    _enqueue(key);
+  }
+
+  void remove(String key) {
+    _desiredValues[key] = null;
+    _enqueue(key);
+  }
+
+  void _enqueue(String key) {
+    final revision = (_revisions[key] ?? 0) + 1;
+    _revisions[key] = revision;
+    final previous = _writeTails[key] ?? Future<void>.value();
+
+    Future<void> persistLatest() async {
+      if (_revisions[key] != revision) return;
+      final value = _desiredValues[key];
+      if (value == null) {
+        await _prefs.remove(key);
+      } else {
+        await _prefs.setString(key, value);
+      }
+    }
+
+    final next = previous.then<void>(
+      (_) => persistLatest(),
+      onError: (_) => persistLatest(),
+    );
+    _writeTails[key] = next;
+    unawaited(next);
+  }
+}
+
+final _orderCartPersistenceProvider = Provider<_OrderCartPersistence>((ref) {
+  return _OrderCartPersistence(ref.watch(sharedPreferencesProvider));
+});
+
+enum _GuestAdoptionPart { cart, hold }
+
+/// Guest data is transferable only after an observed guest -> account
+/// transition in this process. A cold start directly into an authenticated
+/// account never adopts an unowned/guest value left by an earlier session.
+class _GuestCartAdoptionCoordinator {
+  _OrderCartScope? _lastStableScope;
+  String? _adoptionTarget;
+  final Set<_GuestAdoptionPart> _consumed = {};
+
+  bool enterAndConsume(
+    _OrderCartScope scope,
+    _GuestAdoptionPart part,
+  ) {
+    if (!scope.canReadAndWrite) return false;
+
+    if (_lastStableScope != scope) {
+      final shouldAdopt = _lastStableScope?.kind == _OrderCartScopeKind.guest &&
+          scope.kind == _OrderCartScopeKind.account;
+      _adoptionTarget = shouldAdopt ? scope.accountId : null;
+      _consumed.clear();
+      _lastStableScope = scope;
+    }
+
+    if (_adoptionTarget != scope.accountId ||
+        scope.kind != _OrderCartScopeKind.account ||
+        _consumed.contains(part)) {
+      return false;
+    }
+    _consumed.add(part);
+    return true;
+  }
+}
+
+final _guestCartAdoptionCoordinatorProvider =
+    Provider<_GuestCartAdoptionCoordinator>((ref) {
+  return _GuestCartAdoptionCoordinator();
+});
+
+const _cartStoragePrefix = 'order_cart_items_v2_';
+const _holdStoragePrefix = 'order_cart_hold_expires_at_v2_';
+
+String _cartStorageKey(_OrderCartScope scope) =>
+    '$_cartStoragePrefix${scope.storageSuffix}';
+
+String _holdStorageKey(_OrderCartScope scope) =>
+    '$_holdStoragePrefix${scope.storageSuffix}';
+
+String _encodeEnvelope(_OrderCartScope scope, Object? value) => jsonEncode({
+      'version': 2,
+      'owner': scope.ownerTag,
+      'value': value,
+    });
+
+Object? _decodeEnvelope(String? raw, _OrderCartScope scope) {
+  if (raw == null || raw.isEmpty) return null;
+  try {
+    final decoded = jsonDecode(raw);
+    if (decoded is! Map<String, dynamic> ||
+        decoded['version'] != 2 ||
+        decoded['owner'] != scope.ownerTag) {
+      return null;
+    }
+    return decoded['value'];
+  } catch (_) {
+    return null;
+  }
+}
+
 final orderCartHoldProvider =
     StateNotifierProvider<OrderCartHoldNotifier, DateTime?>((ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return OrderCartHoldNotifier(prefs);
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  final scope = ref.watch(_orderCartScopeProvider);
+  return OrderCartHoldNotifier._(
+    ref,
+    ref.watch(_orderCartPersistenceProvider),
+    ref.read(_guestCartAdoptionCoordinatorProvider),
+    scope,
+    ownerSession,
+  );
 });
 
 final orderCartProvider =
     StateNotifierProvider<OrderCartNotifier, List<OrderCartItem>>((ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return OrderCartNotifier(prefs, ref);
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  final scope = ref.watch(_orderCartScopeProvider);
+  return OrderCartNotifier._(
+    ref.watch(_orderCartPersistenceProvider),
+    ref.read(_guestCartAdoptionCoordinatorProvider),
+    scope,
+    ref,
+    ownerSession,
+  );
 });
 
 class OrderCartHoldNotifier extends StateNotifier<DateTime?> {
   static const holdDuration = Duration(minutes: 15);
-  static const _storageKey = 'order_cart_hold_expires_at_v1';
 
-  final SharedPreferences _prefs;
+  OrderCartHoldNotifier._(
+    this._ref,
+    this._persistence,
+    _GuestCartAdoptionCoordinator adoptionCoordinator,
+    this._scope,
+    this._ownerSession,
+  ) : super(null) {
+    _active = true;
+    _ref.onDispose(() => _active = false);
+    if (!_scope.canReadAndWrite) return;
 
-  OrderCartHoldNotifier(this._prefs)
-      : super(_decode(_prefs.getString(_storageKey)));
+    final adoptGuest = adoptionCoordinator.enterAndConsume(
+      _scope,
+      _GuestAdoptionPart.hold,
+    );
+    state = _read(_scope);
+    if (adoptGuest) {
+      const guestScope = _OrderCartScope.guest();
+      final guestHold = _read(guestScope);
+      _persistence.remove(_holdStorageKey(guestScope));
+      if (state == null &&
+          guestHold != null &&
+          guestHold.isAfter(DateTime.now())) {
+        state = guestHold;
+        _persist(guestHold);
+      }
+    }
+  }
 
-  static DateTime? _decode(String? raw) {
-    if (raw == null || raw.isEmpty) return null;
-    return DateTime.tryParse(raw)?.toLocal();
+  final Ref _ref;
+  final _OrderCartPersistence _persistence;
+  final _OrderCartScope _scope;
+  final AuthSessionKey _ownerSession;
+  late bool _active;
+
+  bool get _ownsCurrentScope =>
+      _active &&
+      _scope.canReadAndWrite &&
+      identical(_ref.read(authSessionKeyProvider), _ownerSession) &&
+      _ref.read(_orderCartScopeProvider) == _scope;
+
+  DateTime? _read(_OrderCartScope scope) {
+    final value = _decodeEnvelope(
+      _persistence.read(_holdStorageKey(scope)),
+      scope,
+    );
+    if (value is! String) return null;
+    return DateTime.tryParse(value)?.toLocal();
+  }
+
+  void _persist(DateTime expiresAt) {
+    _persistence.write(
+      _holdStorageKey(_scope),
+      _encodeEnvelope(_scope, expiresAt.toUtc().toIso8601String()),
+    );
   }
 
   void restart() {
+    if (!_ownsCurrentScope) return;
     final expiresAt = DateTime.now().add(holdDuration);
     state = expiresAt;
-    _prefs.setString(_storageKey, expiresAt.toUtc().toIso8601String());
+    _persist(expiresAt);
   }
 
   void ensureActive() {
+    if (!_ownsCurrentScope) return;
     final current = state;
-    if (current != null && current.isAfter(DateTime.now())) {
-      return;
-    }
-
+    if (current != null && current.isAfter(DateTime.now())) return;
     restart();
   }
 
   void syncServerExpiration(String? expiresAt) {
-    final parsed = _decode(expiresAt);
+    if (!_ownsCurrentScope) return;
+    final parsed =
+        expiresAt == null ? null : DateTime.tryParse(expiresAt)?.toLocal();
     if (parsed == null) {
       clear();
       return;
     }
 
     state = parsed;
-    _prefs.setString(_storageKey, parsed.toUtc().toIso8601String());
+    _persist(parsed);
   }
 
   void clear() {
+    if (!_active) return;
     state = null;
-    _prefs.remove(_storageKey);
+    if (!_ownsCurrentScope) return;
+    _persistence.remove(_holdStorageKey(_scope));
   }
 }
 
 class OrderCartNotifier extends StateNotifier<List<OrderCartItem>> {
-  static const _storageKey = 'order_cart_items_v1';
+  OrderCartNotifier._(
+    this._persistence,
+    _GuestCartAdoptionCoordinator adoptionCoordinator,
+    this._scope,
+    this._ref,
+    this._ownerSession,
+  ) : super(const []) {
+    _active = true;
+    _ref.onDispose(() => _active = false);
+    if (!_scope.canReadAndWrite) return;
 
-  final SharedPreferences _prefs;
+    final adoptGuest = adoptionCoordinator.enterAndConsume(
+      _scope,
+      _GuestAdoptionPart.cart,
+    );
+    state = _read(_scope) ?? const [];
+    if (adoptGuest) {
+      const guestScope = _OrderCartScope.guest();
+      final guestItems = _read(guestScope);
+      _persistence.remove(_cartStorageKey(guestScope));
+      if (state.isEmpty && guestItems != null && guestItems.isNotEmpty) {
+        state = guestItems;
+        _persist(guestItems);
+      }
+    }
+  }
+
+  final _OrderCartPersistence _persistence;
+  final _OrderCartScope _scope;
   final Ref _ref;
+  final AuthSessionKey _ownerSession;
+  late bool _active;
 
-  OrderCartNotifier(this._prefs, this._ref)
-      : super(OrderCartItem.decodeList(_prefs.getString(_storageKey)));
+  bool get _ownsCurrentScope =>
+      _active &&
+      _scope.canReadAndWrite &&
+      identical(_ref.read(authSessionKeyProvider), _ownerSession) &&
+      _ref.read(_orderCartScopeProvider) == _scope;
+
+  List<OrderCartItem>? _read(_OrderCartScope scope) {
+    final value = _decodeEnvelope(
+      _persistence.read(_cartStorageKey(scope)),
+      scope,
+    );
+    if (value is! List) return null;
+    try {
+      return OrderCartItem.decodeList(jsonEncode(value));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _persist(List<OrderCartItem> items) {
+    final encodedItems = jsonDecode(OrderCartItem.encodeList(items));
+    _persistence.write(
+      _cartStorageKey(_scope),
+      _encodeEnvelope(_scope, encodedItems),
+    );
+  }
 
   int get totalQuantity =>
       state.fold<int>(0, (sum, item) => sum + item.quantity);
@@ -90,6 +397,7 @@ class OrderCartNotifier extends StateNotifier<List<OrderCartItem>> {
     required CalendarDateSlot? selectedSlot,
     required Map<String, int> ticketQuantities,
   }) {
+    if (!_ownsCurrentScope) return false;
     final holdExpiresAt = _ref.read(orderCartHoldProvider);
     final holdExpired =
         holdExpiresAt != null && !holdExpiresAt.isAfter(DateTime.now());
@@ -162,6 +470,7 @@ class OrderCartNotifier extends StateNotifier<List<OrderCartItem>> {
   }
 
   void updateQuantity(String itemId, int quantity) {
+    if (!_ownsCurrentScope) return;
     final holdExpiresAt = _ref.read(orderCartHoldProvider);
     if (holdExpiresAt != null && !holdExpiresAt.isAfter(DateTime.now())) {
       clear();
@@ -209,6 +518,7 @@ class OrderCartNotifier extends StateNotifier<List<OrderCartItem>> {
   }
 
   void remove(String itemId) {
+    if (!_ownsCurrentScope) return;
     final holdExpiresAt = _ref.read(orderCartHoldProvider);
     if (holdExpiresAt != null && !holdExpiresAt.isAfter(DateTime.now())) {
       clear();
@@ -223,12 +533,16 @@ class OrderCartNotifier extends StateNotifier<List<OrderCartItem>> {
   }
 
   void clear() {
-    _save(const []);
+    if (!_active) return;
+    state = const [];
+    if (!_ownsCurrentScope) return;
+    _persistence.remove(_cartStorageKey(_scope));
     _ref.read(orderCartHoldProvider.notifier).clear();
   }
 
   void _save(List<OrderCartItem> items) {
+    if (!_ownsCurrentScope) return;
     state = items;
-    _prefs.setString(_storageKey, OrderCartItem.encodeList(items));
+    _persist(items);
   }
 }

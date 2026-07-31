@@ -4,17 +4,44 @@ import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/widgets/buttons/hb_button.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/booking/presentation/controllers/booking_flow_controller.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/booking_stepper_header.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/booking_summary_card.dart';
 
 // TODO(lehiboo): Implement real Stripe integration here
-class BookingPaymentScreen extends ConsumerWidget {
+class BookingPaymentScreen extends ConsumerStatefulWidget {
   const BookingPaymentScreen({super.key, required this.activity});
   final Activity activity;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BookingPaymentScreen> createState() =>
+      _BookingPaymentScreenState();
+}
+
+class _BookingPaymentScreenState extends ConsumerState<BookingPaymentScreen> {
+  late final String? _ownerAccountId;
+
+  @override
+  void initState() {
+    super.initState();
+    _ownerAccountId = ref.read(authSessionUserIdProvider);
+  }
+
+  bool get _ownsCurrentAccount =>
+      _ownerAccountId != null &&
+      ref.read(authSessionUserIdProvider) == _ownerAccountId;
+
+  @override
+  Widget build(BuildContext context) {
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_ownerAccountId == null || currentAccountId != _ownerAccountId) {
+      return const Scaffold(
+        key: Key('booking-payment-session-invalid'),
+        body: SizedBox.shrink(),
+      );
+    }
+    final activity = widget.activity;
     final provider = bookingFlowControllerProvider(activity);
     final state = ref.watch(provider);
     final controller = ref.read(provider.notifier);
@@ -107,7 +134,9 @@ class BookingPaymentScreen extends ConsumerWidget {
             child: controller.paymentOutcomeUncertain
                 ? HbButton.secondary(
                     label: context.l10n.bookingViewMyBookings,
-                    onTap: () => context.go('/my-bookings'),
+                    onTap: () {
+                      if (_ownsCurrentAccount) context.go('/my-bookings');
+                    },
                   )
                 : HbButton.primary(
                     label: context.l10n.bookingPayAmount(
@@ -115,20 +144,27 @@ class BookingPaymentScreen extends ConsumerWidget {
                       currency,
                     ),
                     isLoading: state.isSubmitting,
-                    onTap: () {
+                    onTap: () async {
+                      if (!_ownsCurrentAccount) return;
                       // Simulate Stripe Success
-                      controller
-                          .submitPaidBooking(paymentIntentId: 'pi_fake_12345')
-                          .then((_) {
-                        if (!context.mounted) return;
-                        final updatedState = ref.read(provider);
-                        if (updatedState.confirmedBooking != null) {
-                          context.push(
-                            '/booking/${activity.id}/confirmation',
-                            extra: activity,
-                          );
-                        }
-                      });
+                      await controller.submitPaidBooking(
+                        paymentIntentId: 'pi_fake_12345',
+                      );
+                      if (!context.mounted ||
+                          !_ownsCurrentAccount ||
+                          !identical(
+                            ref.read(provider.notifier),
+                            controller,
+                          )) {
+                        return;
+                      }
+                      final updatedState = ref.read(provider);
+                      if (updatedState.confirmedBooking != null) {
+                        context.push(
+                          '/booking/${activity.id}/confirmation',
+                          extra: activity,
+                        );
+                      }
                     },
                   ),
           ),

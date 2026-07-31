@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/widgets/account_bound_route_guard.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
 import 'package:lehiboo/features/profile/domain/models/saved_participant.dart';
@@ -12,7 +15,8 @@ import 'package:lehiboo/features/profile/domain/models/saved_participant.dart';
 /// then an expandable body containing the "Pré-remplir ce billet" dropdown,
 /// the form fields in a 2-column grid, an optional contact section, and
 /// a "Save to Mes participants" checkbox when manually entered.
-class ParticipantFormCard extends StatefulWidget {
+class ParticipantFormCard extends ConsumerStatefulWidget {
+  final String ownerAccountId;
   final String ticketTypeName;
   final int participantIndex; // 1-based for display
   final int totalForType;
@@ -31,6 +35,7 @@ class ParticipantFormCard extends StatefulWidget {
 
   const ParticipantFormCard({
     super.key,
+    required this.ownerAccountId,
     required this.ticketTypeName,
     required this.participantIndex,
     required this.totalForType,
@@ -44,10 +49,11 @@ class ParticipantFormCard extends StatefulWidget {
   });
 
   @override
-  State<ParticipantFormCard> createState() => _ParticipantFormCardState();
+  ConsumerState<ParticipantFormCard> createState() =>
+      _ParticipantFormCardState();
 }
 
-class _ParticipantFormCardState extends State<ParticipantFormCard> {
+class _ParticipantFormCardState extends ConsumerState<ParticipantFormCard> {
   late TextEditingController _firstNameCtrl;
   late TextEditingController _lastNameCtrl;
   late TextEditingController _emailCtrl;
@@ -256,6 +262,9 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
   }
 
   Future<void> _pickBirthDate() async {
+    final ownerAccountId = widget.ownerAccountId;
+    if (ref.read(authSessionUserIdProvider) != ownerAccountId) return;
+
     final now = DateTime.now();
     final initial = DateTime.tryParse(_birthDate ?? '') ??
         DateTime(now.year - 8, now.month, now.day);
@@ -267,8 +276,16 @@ class _ParticipantFormCardState extends State<ParticipantFormCard> {
       helpText: context.l10n.bookingBirthDateHelp,
       cancelText: context.l10n.commonCancel,
       confirmText: context.l10n.bookingConfirm,
+      builder: (_, child) => AccountBoundRouteGuard<DateTime>(
+        ownerAccountId: ownerAccountId,
+        builder: (_) => child ?? const SizedBox.shrink(),
+      ),
     );
-    if (picked == null || !mounted) return;
+    if (picked == null ||
+        !mounted ||
+        ref.read(authSessionUserIdProvider) != ownerAccountId) {
+      return;
+    }
 
     final formatted = DateFormat('yyyy-MM-dd').format(picked);
     setState(() {

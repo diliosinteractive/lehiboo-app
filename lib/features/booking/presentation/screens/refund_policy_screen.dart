@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
+import 'package:lehiboo/features/auth/presentation/widgets/account_bound_route_guard.dart';
 import 'package:lehiboo/features/booking/domain/models/refund_policy.dart';
 
-class RefundPolicyScreen extends StatelessWidget {
+class RefundPolicyScreen extends ConsumerStatefulWidget {
   final RefundPolicyRouteArgs args;
 
   const RefundPolicyScreen({
@@ -13,15 +16,48 @@ class RefundPolicyScreen extends StatelessWidget {
   });
 
   @override
+  ConsumerState<RefundPolicyScreen> createState() => _RefundPolicyScreenState();
+}
+
+class _RefundPolicyScreenState extends ConsumerState<RefundPolicyScreen> {
+  late final AuthSessionKey _ownerSession;
+  late final bool _rejectInitialPayload;
+
+  @override
+  void initState() {
+    super.initState();
+    _ownerSession = ref.read(authSessionKeyProvider);
+    final declaredOwner = widget.args.ownerAccountId;
+    _rejectInitialPayload =
+        declaredOwner != null && declaredOwner != _ownerSession.accountId;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final policies = args.policies
+    if (_rejectInitialPayload) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.canPop() ? context.pop() : context.go('/');
+      });
+      return const Scaffold(body: SizedBox.shrink());
+    }
+
+    return AccountBoundRouteGuard<void>(
+      ownerAccountId: _ownerSession.accountId,
+      ownerSession: _ownerSession,
+      builder: _buildContent,
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
+    final policies = widget.args.policies
         .where((entry) => entry.policy.trim().isNotEmpty)
         .toList(growable: false);
 
     return Scaffold(
       backgroundColor: HbColors.backgroundLight,
       appBar: AppBar(
-        title: Text(args.title),
+        title: Text(widget.args.title),
         backgroundColor: Colors.white,
         foregroundColor: HbColors.textPrimary,
         elevation: 0,

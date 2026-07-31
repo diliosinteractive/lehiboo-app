@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/models/checkin_request_dto.dart';
 import '../../data/models/ticket_summary_dto.dart';
 import '../../data/repositories/checkin_repository_impl.dart';
@@ -36,6 +37,30 @@ class _CheckinManualEntryScreenState
     extends ConsumerState<CheckinManualEntryScreen> {
   final _controller = TextEditingController();
   bool _submitting = false;
+  late final String? _ownerAccountId;
+  bool _sessionInvalid = false;
+
+  bool get _ownsCurrentSession {
+    if (_sessionInvalid || _ownerAccountId == null || !mounted) return false;
+    return ref.read(authSessionUserIdProvider) == _ownerAccountId;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _ownerAccountId = ref.read(authSessionUserIdProvider);
+    _sessionInvalid = _ownerAccountId == null;
+    ref.listenManual<String?>(authSessionUserIdProvider, (_, next) {
+      if (next == _ownerAccountId || _sessionInvalid) return;
+
+      // A manually entered ticket code and any peek result belong only to the
+      // account that opened this route.
+      _sessionInvalid = true;
+      _submitting = false;
+      _controller.clear();
+      if (mounted) setState(() {});
+    });
+  }
 
   @override
   void dispose() {
@@ -44,6 +69,7 @@ class _CheckinManualEntryScreenState
   }
 
   Future<void> _submit() async {
+    if (!_ownsCurrentSession) return;
     final code = _controller.text.trim();
     if (code.isEmpty) return;
     if (ref.read(activeOrganizationProvider) == null) {
@@ -54,32 +80,38 @@ class _CheckinManualEntryScreenState
     final repo = ref.read(checkinRepositoryProvider);
     try {
       final result = await repo.peek(qrCode: code);
-      if (!mounted) return;
+      if (!mounted || !_ownsCurrentSession) return;
       switch (result) {
         case CanCheckIn(:final ticket):
           await _confirmAndCommit(ticket: ticket, isReEntry: false);
+          if (!mounted || !_ownsCurrentSession) return;
         case WouldBeReEntry(:final ticket):
           await _confirmAndCommit(ticket: ticket, isReEntry: true);
+          if (!mounted || !_ownsCurrentSession) return;
         case Blocked(:final reason, :final ticket):
           await showCheckinBlockedSheet(
             context,
+            ownerAccountId: _ownerAccountId!,
             reason: reason,
             ticket: ticket,
           );
+          if (!mounted || !_ownsCurrentSession) return;
       }
     } on CheckinFailure catch (e) {
-      if (!mounted) return;
+      if (!mounted || !_ownsCurrentSession) return;
       if (e.isNetworkError) {
         _toast(context.l10n.checkinNetworkRetype);
       } else {
         await showCheckinBlockedSheet(
           context,
+          ownerAccountId: _ownerAccountId!,
           reason: e.blocker,
           extraMessage: e.message,
         );
+        if (!mounted || !_ownsCurrentSession) return;
       }
     } finally {
-      if (mounted) setState(() => _submitting = false);
+      if (_ownsCurrentSession) setState(() => _submitting = false);
     }
   }
 
@@ -87,12 +119,14 @@ class _CheckinManualEntryScreenState
     required TicketSummaryDto ticket,
     required bool isReEntry,
   }) async {
+    if (!_ownsCurrentSession) return;
     final confirmed = await showCheckinConfirmSheet(
       context,
+      ownerAccountId: _ownerAccountId!,
       ticket: ticket,
       isReEntry: isReEntry,
     );
-    if (confirmed != true) return;
+    if (!mounted || !_ownsCurrentSession || confirmed != true) return;
     final session = ref.read(scanSessionProvider);
     final request = CheckinRequestDto(
       deviceId: session.deviceId,
@@ -100,11 +134,12 @@ class _CheckinManualEntryScreenState
       gate: session.gate,
       scanMethod: 'manual',
     );
+    if (!_ownsCurrentSession) return;
     try {
       final response = await ref
           .read(checkinRepositoryProvider)
           .commit(ticket.uuid, request);
-      if (!mounted) return;
+      if (!mounted || !_ownsCurrentSession) return;
       final l10n = context.l10n;
       _toast(
         response.isReEntry
@@ -114,20 +149,23 @@ class _CheckinManualEntryScreenState
       );
       _controller.clear();
     } on CheckinFailure catch (e) {
-      if (!mounted) return;
+      if (!mounted || !_ownsCurrentSession) return;
       if (e.isNetworkError) {
         _toast(context.l10n.checkinNetworkRetype);
       } else {
         await showCheckinBlockedSheet(
           context,
+          ownerAccountId: _ownerAccountId,
           reason: e.blocker,
           extraMessage: e.message,
         );
+        if (!mounted || !_ownsCurrentSession) return;
       }
     }
   }
 
   void _toast(String message, {bool success = false}) {
+    if (!_ownsCurrentSession) return;
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
@@ -144,6 +182,13 @@ class _CheckinManualEntryScreenState
 
   @override
   Widget build(BuildContext context) {
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_sessionInvalid ||
+        _ownerAccountId == null ||
+        currentAccountId != _ownerAccountId) {
+      return const Scaffold(body: SizedBox.shrink());
+    }
+
     final activeOrg = ref.watch(activeOrganizationProvider);
     final l10n = context.l10n;
 

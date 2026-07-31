@@ -4,6 +4,8 @@ import 'package:lehiboo/core/analytics/analytics_provider.dart';
 import 'package:lehiboo/core/analytics/analytics_service.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/booking/domain/repositories/booking_repository.dart';
 import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
@@ -17,11 +19,15 @@ final bookingRepositoryProvider = Provider<BookingRepository>((ref) {
 
 final bookingFlowControllerProvider = StateNotifierProvider.autoDispose
     .family<BookingFlowController, BookingFlowState, Activity>((ref, activity) {
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  final accountId = ref.watch(authSessionUserIdProvider);
   final repo = ref.watch(bookingRepositoryProvider);
   return BookingFlowController(
     bookingRepository: repo,
     activity: activity,
     ref: ref,
+    accountId: accountId,
+    ownerSession: ownerSession,
   );
 });
 
@@ -30,7 +36,11 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
     required this.bookingRepository,
     required Activity activity,
     Ref? ref,
+    String? accountId,
+    AuthSessionKey? ownerSession,
   })  : _ref = ref,
+        _accountId = accountId,
+        _ownerSession = ownerSession,
         super(
           BookingFlowState(
             step: const BookingStep.selectSlot(),
@@ -57,12 +67,28 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
 
   final BookingRepository bookingRepository;
   final Ref? _ref;
+  final String? _accountId;
+  final AuthSessionKey? _ownerSession;
   bool _paymentOutcomeUncertain = false;
 
   bool get paymentOutcomeUncertain => _paymentOutcomeUncertain;
 
-  AnalyticsService? get _analytics =>
-      _ref == null ? null : _ref.read(analyticsServiceProvider);
+  AnalyticsService? get _analytics => _ref?.read(analyticsServiceProvider);
+
+  /// Direct unit-test construction has no Riverpod ref and remains usable.
+  /// Provider-owned controllers, however, are bound to the account that
+  /// created them so a late booking response cannot continue under another
+  /// user's credentials or publish into a replacement session.
+  bool get _canUseOwningAccount {
+    if (!mounted) return false;
+    final ref = _ref;
+    if (ref == null) return true;
+    final ownerSession = _ownerSession;
+    return ownerSession != null &&
+        identical(ref.read(authSessionKeyProvider), ownerSession) &&
+        _accountId != null &&
+        ref.read(authSessionUserIdProvider) == _accountId;
+  }
 
   void selectSlot(Slot slot) {
     state = state.copyWith(selectedSlot: slot, errorMessage: null);
@@ -172,6 +198,7 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
   }
 
   Future<void> _submitBooking({String? paymentIntentId}) async {
+    if (!_canUseOwningAccount) return;
     _paymentOutcomeUncertain = false;
     state = state.copyWith(
       isSubmitting: true,
@@ -206,6 +233,7 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
         ticketSelections: legacySelections,
         buyer: state.buyerInfo!,
       );
+      if (!_canUseOwningAccount) return;
 
       // 2. Confirm Booking (if needed immediately or strictly for paid flow after stripe)
       // For free booking, backend might auto-confirm. For paid, we send Intent ID.
@@ -214,6 +242,7 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
         bookingId: booking.id,
         paymentIntentId: paymentIntentId,
       );
+      if (!_canUseOwningAccount) return;
       state = state.copyWith(confirmedBooking: confirmedBooking);
 
       // The booking is committed at this point. Ticket retrieval is a
@@ -235,6 +264,7 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
       failureStep = AnalyticsBookingStep.tickets;
       final tickets =
           await bookingRepository.getTicketsByBooking(confirmedBooking.id);
+      if (!_canUseOwningAccount) return;
 
       state = state.copyWith(
         isSubmitting: false,
@@ -253,6 +283,7 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
         );
       }
     } catch (e) {
+      if (!_canUseOwningAccount) return;
       final l10n = bookingCachedL10n();
       final bookingWasConfirmed = state.confirmedBooking != null;
       _paymentOutcomeUncertain =
@@ -296,11 +327,12 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
 
   Future<void> retryTickets() async {
     final booking = state.confirmedBooking;
-    if (booking == null || state.isSubmitting) return;
+    if (booking == null || state.isSubmitting || !_canUseOwningAccount) return;
 
     state = state.copyWith(isSubmitting: true, errorMessage: null);
     try {
       final tickets = await bookingRepository.getTicketsByBooking(booking.id);
+      if (!_canUseOwningAccount) return;
       state = state.copyWith(
         isSubmitting: false,
         tickets: tickets,
@@ -316,6 +348,7 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
         );
       }
     } catch (error) {
+      if (!_canUseOwningAccount) return;
       state = state.copyWith(
         isSubmitting: false,
         errorMessage: ApiResponseHandler.extractError(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/themes/hb_theme.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
 import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
 import 'package:lehiboo/features/booking/presentation/utils/ticket_download_helper.dart';
@@ -22,6 +25,7 @@ class TicketDetailScreen extends ConsumerStatefulWidget {
   final List<Ticket>? tickets;
   final int initialIndex;
   final Booking? booking;
+  final String? initialDataOwnerAccountId;
 
   const TicketDetailScreen({
     super.key,
@@ -30,6 +34,7 @@ class TicketDetailScreen extends ConsumerStatefulWidget {
     this.tickets,
     this.initialIndex = 0,
     this.booking,
+    this.initialDataOwnerAccountId,
   });
 
   @override
@@ -39,17 +44,68 @@ class TicketDetailScreen extends ConsumerStatefulWidget {
 class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
   late PageController _pageController;
   late int _currentIndex;
+  late final String? _ownerSessionUserId;
+  late final bool _acceptInitialData;
+  bool _ownsCurrentSession = false;
+  int _sessionGeneration = 0;
   double? _originalBrightness;
+  ScaffoldMessengerState? _scaffoldMessenger;
 
-  List<Ticket> get _tickets =>
-      widget.tickets ?? (widget.ticket != null ? [widget.ticket!] : []);
+  List<Ticket> get _tickets {
+    if (!_ownsCurrentSession || !_acceptInitialData) return const [];
+    return widget.tickets ?? (widget.ticket != null ? [widget.ticket!] : []);
+  }
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: _currentIndex);
-    _increaseBrightness();
+    _ownerSessionUserId = ref.read(authSessionUserIdProvider);
+    final hasInitialData = widget.ticket != null ||
+        (widget.tickets?.isNotEmpty ?? false) ||
+        widget.booking != null;
+    _acceptInitialData = !hasInitialData ||
+        widget.initialDataOwnerAccountId == _ownerSessionUserId;
+    _ownsCurrentSession = _ownerSessionUserId != null && _acceptInitialData;
+
+    ref.listenManual<String?>(authSessionUserIdProvider, (_, next) {
+      if (!mounted || next == _ownerSessionUserId) return;
+
+      _sessionGeneration++;
+      setState(() => _ownsCurrentSession = false);
+      unawaited(_restoreBrightness());
+
+      // Close an open full-screen QR first, or this ticket page itself when
+      // it is the top route. The state gate above still hides all ticket data
+      // if this screen is the navigator root and cannot be popped.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) unawaited(Navigator.of(context).maybePop());
+      });
+    });
+
+    if (_ownsCurrentSession) {
+      _increaseBrightness();
+    }
+  }
+
+  bool _isCurrentSessionRequest(int generation) {
+    return mounted &&
+        _ownsCurrentSession &&
+        generation == _sessionGeneration &&
+        _ownerSessionUserId != null &&
+        ref.read(authSessionUserIdProvider) == _ownerSessionUserId;
+  }
+
+  String? _qrDataFor(Ticket ticket) {
+    final qrData = ticket.qrCodeData?.trim();
+    return qrData == null || qrData.isEmpty ? null : qrData;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
   }
 
   @override
@@ -58,8 +114,9 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
     _restoreBrightness();
     // Tear down any in-flight snackbar so its animation listener can't
     // fire on a deactivated tree (crashes in findAncestorStateOfType).
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    messenger?.removeCurrentSnackBar(reason: SnackBarClosedReason.remove);
+    _scaffoldMessenger?.removeCurrentSnackBar(
+      reason: SnackBarClosedReason.remove,
+    );
     super.dispose();
   }
 
@@ -85,12 +142,15 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
   }
 
   void _showFullscreenQR(Ticket ticket) {
+    if (!_isCurrentSessionRequest(_sessionGeneration)) return;
+    final qrData = _qrDataFor(ticket);
+    if (qrData == null) return;
     HapticFeedback.lightImpact();
     Navigator.of(context).push(
       PageRouteBuilder(
         opaque: false,
         pageBuilder: (_, __, ___) => FullscreenQRSheet(
-          qrData: ticket.qrCodeData ?? ticket.id,
+          qrData: qrData,
           title: widget.booking?.activity?.title ??
               context.l10n.bookingTicketTitle,
           subtitle: _getEventSubtitle(),
@@ -116,24 +176,33 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
   }
 
   Future<void> _shareTicket(Ticket ticket) async {
+    final generation = _sessionGeneration;
+    if (!_isCurrentSessionRequest(generation)) return;
+    final qrData = _qrDataFor(ticket);
+    if (qrData == null) {
+      _showDownloadError(context.l10n.bookingTicketNotReady);
+      return;
+    }
     final activity = widget.booking?.activity;
     String shareText = '${context.l10n.bookingShareTicketTitle}\n';
     if (activity != null) {
       shareText += '\n${activity.title}';
     }
-    shareText +=
-        '\n\n${context.l10n.bookingShareTicketCode(ticket.qrCodeData ?? ticket.id)}';
+    shareText += '\n\n${context.l10n.bookingShareTicketCode(qrData)}';
+    final shareFailedMessage = context.l10n.commonShareFailed;
     try {
       await SharePlus.instance.share(ShareParams(text: shareText));
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || !_isCurrentSessionRequest(generation)) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.commonShareFailed)),
+        SnackBar(content: Text(shareFailedMessage)),
       );
     }
   }
 
   Future<void> _downloadTicket(Ticket ticket) async {
+    final generation = _sessionGeneration;
+    if (!_isCurrentSessionRequest(generation)) return;
     HapticFeedback.lightImpact();
     final l10n = context.l10n;
     final androidDisplayLocation = l10n.bookingAndroidDownloadsLocation;
@@ -145,23 +214,24 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
       final pdf = await ref
           .read(bookingApiDataSourceProvider)
           .downloadSingleTicket(ticket.id);
+      if (!_isCurrentSessionRequest(generation)) return;
       _hideSnack();
       final saved = await shareTicketPdf(
         pdf,
         androidDisplayLocation: androidDisplayLocation,
         documentsDisplayLocation: documentsDisplayLocation,
       );
-      if (!mounted) return;
+      if (!_isCurrentSessionRequest(generation)) return;
       _showInfoSnack(l10n.bookingTicketSaved(saved.displayLocation));
     } on TicketsNotReadyException {
-      if (!mounted) return;
-      _showDownloadError(context.l10n.bookingTicketNotReady);
+      if (!_isCurrentSessionRequest(generation)) return;
+      _showDownloadError(l10n.bookingTicketNotReady);
     } on NotAuthorizedToDownloadException {
-      if (!mounted) return;
-      _showDownloadError(context.l10n.bookingTicketNotDownloadable);
+      if (!_isCurrentSessionRequest(generation)) return;
+      _showDownloadError(l10n.bookingTicketNotDownloadable);
     } catch (_) {
-      if (!mounted) return;
-      _showDownloadError(context.l10n.bookingDownloadError);
+      if (!_isCurrentSessionRequest(generation)) return;
+      _showDownloadError(l10n.bookingDownloadError);
     }
   }
 
@@ -255,7 +325,9 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.share, color: HbColors.textPrimary),
-            onPressed: () => _shareTicket(_tickets[_currentIndex]),
+            onPressed: _qrDataFor(_tickets[_currentIndex]) == null
+                ? null
+                : () => _shareTicket(_tickets[_currentIndex]),
           ),
         ],
       ),
@@ -348,12 +420,12 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
     final slotEndDateTime = slot?.endDateTime;
     final status = TicketStatusExtension.fromString(ticket.status);
 
-    final qrData = ticket.qrCodeData ?? ticket.id;
+    final qrData = _qrDataFor(ticket);
     final ticketType = ticket.ticketType ?? context.l10n.bookingStandardTicket;
     final participantLabel = context.l10n.bookingParticipantNumber(index + 1);
 
-    // Pull the matching attendee from the booking. Attendees are flattened in
-    // the same order tickets are generated in the mapper, so index lines up.
+    // Pull the matching attendee from the booking. The ticket endpoint keeps
+    // the same attendee order as the booking items, so the index lines up.
     final attendees = widget.booking?.attendees;
     final attendee = (attendees != null && index < attendees.length)
         ? attendees[index]
@@ -373,14 +445,39 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
         children: [
           const SizedBox(height: 8),
           // QR Code - tappable for fullscreen
-          GestureDetector(
-            onTap: () => _showFullscreenQR(ticket),
-            child: LargeQRCode(
-              data: qrData,
-              size: QRCodeSize.medium,
-              codeLabel: qrData,
+          if (qrData != null)
+            GestureDetector(
+              onTap: () => _showFullscreenQR(ticket),
+              child: LargeQRCode(
+                data: qrData,
+                size: QRCodeSize.medium,
+                codeLabel: qrData,
+              ),
+            )
+          else
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(tokens.spacing.l),
+              decoration: BoxDecoration(
+                color: HbColors.orangePastel,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.qr_code_2,
+                    size: 48,
+                    color: HbColors.textSecondary,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    context.l10n.bookingTicketNotReady,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: HbColors.textSecondary),
+                  ),
+                ],
+              ),
             ),
-          ),
           const SizedBox(height: 24),
           // Ticket info card
           Container(

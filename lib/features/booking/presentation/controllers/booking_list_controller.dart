@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/booking/domain/repositories/booking_repository.dart';
 import 'package:lehiboo/features/booking/presentation/controllers/booking_flow_controller.dart';
 
@@ -165,41 +166,36 @@ class BookingsListState {
 final bookingsListControllerProvider =
     StateNotifierProvider<BookingListController, BookingsListState>(
   (ref) {
+    ref.watch(authSessionKeyProvider);
+    final hasActiveAccount = ref.watch(authSessionUserIdProvider) != null;
     final repo = ref.watch(bookingRepositoryProvider);
-    return BookingListController(bookingRepository: repo, ref: ref)
-      ..loadBookings();
+    final controller = BookingListController(
+      bookingRepository: repo,
+      hasActiveAccount: hasActiveAccount,
+    );
+    if (hasActiveAccount) controller.loadBookings();
+    return controller;
   },
 );
 
 class BookingListController extends StateNotifier<BookingsListState> {
-  BookingListController({required this.bookingRepository, required Ref ref})
-      : _ref = ref,
-        super(const BookingsListState(isLoading: true)) {
-    // Bookings are user-scoped. The provider is NOT autoDispose, so its state
-    // survives logout and would leak the previous user's reservations to the
-    // next sign-in on the same app session. Mirror the hibons/notifications
-    // pattern: reset state on real auth transitions only (skip the `loading`
-    // hop that logout() itself triggers).
-    _ref.listen<AuthStatus>(
-      authProvider.select((s) => s.status),
-      (previous, next) {
-        final loggedOut = didTransitionToUnauthenticated(previous, next);
-        final loggedIn = next == AuthStatus.authenticated &&
-            previous != AuthStatus.authenticated &&
-            previous != AuthStatus.initial;
-        if (loggedOut) {
-          state = const BookingsListState();
-        } else if (loggedIn) {
-          loadBookings(refresh: true);
-        }
-      },
-    );
-  }
+  BookingListController({
+    required this.bookingRepository,
+    required bool hasActiveAccount,
+  })  : _hasActiveAccount = hasActiveAccount,
+        super(BookingsListState(isLoading: hasActiveAccount));
 
   final BookingRepository bookingRepository;
-  final Ref _ref;
+  final bool _hasActiveAccount;
+  int _loadGeneration = 0;
 
   Future<void> loadBookings({bool refresh = false}) async {
+    if (!mounted) return;
+    final requestGeneration = ++_loadGeneration;
+    if (!_hasActiveAccount) {
+      state = const BookingsListState();
+      return;
+    }
     debugPrint('📋 loadBookings called (refresh: $refresh)');
     try {
       if (refresh) {
@@ -211,6 +207,7 @@ class BookingListController extends StateNotifier<BookingsListState> {
       debugPrint('📋 Fetching bookings from API...');
       final bookings = await bookingRepository.getMyBookings();
       debugPrint('📋 Got ${bookings.length} bookings from API');
+      if (!mounted || requestGeneration != _loadGeneration) return;
 
       // Sort bookings: upcoming first by date, then past
       final sortedBookings = List<Booking>.from(bookings)
@@ -232,6 +229,7 @@ class BookingListController extends StateNotifier<BookingsListState> {
       );
     } catch (e) {
       debugPrint('📋 Error loading bookings: $e');
+      if (!mounted || requestGeneration != _loadGeneration) return;
       state = state.copyWith(
         isLoading: false,
         isRefreshing: false,
@@ -273,24 +271,48 @@ class BookingListController extends StateNotifier<BookingsListState> {
 final legacyBookingsListControllerProvider = StateNotifierProvider<
     LegacyBookingListController, AsyncValue<List<Booking>>>(
   (ref) {
+    ref.watch(authSessionKeyProvider);
+    final hasActiveAccount = ref.watch(authSessionUserIdProvider) != null;
     final repo = ref.watch(bookingRepositoryProvider);
-    return LegacyBookingListController(bookingRepository: repo)..load();
+    final controller = LegacyBookingListController(
+      bookingRepository: repo,
+      hasActiveAccount: hasActiveAccount,
+    );
+    if (hasActiveAccount) controller.load();
+    return controller;
   },
 );
 
 class LegacyBookingListController
     extends StateNotifier<AsyncValue<List<Booking>>> {
-  LegacyBookingListController({required this.bookingRepository})
-      : super(const AsyncValue.loading());
+  LegacyBookingListController({
+    required this.bookingRepository,
+    required bool hasActiveAccount,
+  })  : _hasActiveAccount = hasActiveAccount,
+        super(
+          hasActiveAccount
+              ? const AsyncValue.loading()
+              : const AsyncValue.data([]),
+        );
 
   final BookingRepository bookingRepository;
+  final bool _hasActiveAccount;
+  int _loadGeneration = 0;
 
   Future<void> load() async {
+    if (!mounted) return;
+    final requestGeneration = ++_loadGeneration;
+    if (!_hasActiveAccount) {
+      state = const AsyncValue.data([]);
+      return;
+    }
     try {
       state = const AsyncValue.loading();
       final bookings = await bookingRepository.getMyBookings();
+      if (!mounted || requestGeneration != _loadGeneration) return;
       state = AsyncValue.data(bookings);
     } catch (e, st) {
+      if (!mounted || requestGeneration != _loadGeneration) return;
       state = AsyncValue.error(e, st);
     }
   }

@@ -9,6 +9,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/booking/data/models/booking_api_dto.dart';
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
 import 'package:lehiboo/features/booking/presentation/controllers/booking_list_controller.dart';
@@ -24,6 +26,7 @@ class BookingSuccessScreen extends ConsumerStatefulWidget {
   final CreateBookingResponseDto? bookingResponse;
   final Event? event;
   final CalendarDateSlot? selectedSlot;
+  final String? initialDataOwnerAccountId;
 
   const BookingSuccessScreen({
     super.key,
@@ -31,6 +34,7 @@ class BookingSuccessScreen extends ConsumerStatefulWidget {
     this.bookingResponse,
     this.event,
     this.selectedSlot,
+    this.initialDataOwnerAccountId,
   });
 
   @override
@@ -47,10 +51,53 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
   List<BookingTicketDto>? _tickets;
   bool _isLoadingTickets = false;
   String? _errorMessage;
+  late final String? _ownerSessionUserId;
+  late final AuthSessionKey _ownerSession;
+  late final bool _acceptInitialData;
+  bool _ownsCurrentSession = false;
+  int _sessionGeneration = 0;
+
+  CreateBookingResponseDto? get _bookingResponse =>
+      _acceptInitialData ? widget.bookingResponse : null;
+  Event? get _event => _acceptInitialData ? widget.event : null;
+  CalendarDateSlot? get _selectedSlot =>
+      _acceptInitialData ? widget.selectedSlot : null;
 
   @override
   void initState() {
     super.initState();
+    _ownerSessionUserId = ref.read(authSessionUserIdProvider);
+    _ownerSession = ref.read(authSessionKeyProvider);
+    final hasExplicitOwnerMismatch = widget.initialDataOwnerAccountId != null &&
+        widget.initialDataOwnerAccountId != _ownerSessionUserId;
+    _ownsCurrentSession =
+        _ownerSessionUserId != null && !hasExplicitOwnerMismatch;
+    final hasInitialData = widget.bookingResponse != null ||
+        widget.event != null ||
+        widget.selectedSlot != null;
+    _acceptInitialData = !hasInitialData ||
+        widget.initialDataOwnerAccountId == _ownerSessionUserId;
+
+    ref.listenManual<String?>(authSessionUserIdProvider, (_, next) {
+      if (!mounted || next == _ownerSessionUserId) return;
+      _sessionGeneration++;
+      setState(() {
+        _ownsCurrentSession = false;
+        _tickets = null;
+        _isLoadingTickets = false;
+        _errorMessage = null;
+      });
+    });
+    ref.listenManual<AuthSessionKey>(authSessionKeyProvider, (_, next) {
+      if (!mounted || identical(next, _ownerSession)) return;
+      _sessionGeneration++;
+      setState(() {
+        _ownsCurrentSession = false;
+        _tickets = null;
+        _isLoadingTickets = false;
+        _errorMessage = null;
+      });
+    });
 
     // Confetti controller
     _confettiController =
@@ -68,6 +115,7 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
 
     // Démarrer les animations
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isCurrentSessionRequest(_sessionGeneration)) return;
       _confettiController.play();
       _scaleController.forward();
       HapticFeedback.heavyImpact();
@@ -83,11 +131,21 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
     });
 
     // Charger les tickets
-    _loadTickets();
+    if (_ownsCurrentSession) _loadTickets();
+  }
+
+  bool _isCurrentSessionRequest(int generation) {
+    return mounted &&
+        _ownsCurrentSession &&
+        generation == _sessionGeneration &&
+        _ownerSessionUserId != null &&
+        ref.read(authSessionUserIdProvider) == _ownerSessionUserId &&
+        identical(ref.read(authSessionKeyProvider), _ownerSession);
   }
 
   @override
   void dispose() {
+    _sessionGeneration++;
     _confettiController.dispose();
     _scaleController.dispose();
     super.dispose();
@@ -95,6 +153,8 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
 
   /// Charge les tickets avec polling (génération asynchrone côté backend)
   Future<void> _loadTickets() async {
+    final generation = _sessionGeneration;
+    if (!_isCurrentSessionRequest(generation)) return;
     setState(() {
       _isLoadingTickets = true;
       _errorMessage = null;
@@ -111,25 +171,26 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
       final delays = [1, 1, 2, 2, 3, 3, 4, 4];
 
       for (var attempt = 0; attempt < maxAttempts; attempt++) {
+        if (!_isCurrentSessionRequest(generation)) return;
         debugPrint(
             '🎫 Polling tickets attempt ${attempt + 1}/$maxAttempts for booking: ${widget.bookingId}');
         try {
           final tickets = await bookingDataSource.getBookingTickets(
             bookingUuid: widget.bookingId,
           );
+          if (!_isCurrentSessionRequest(generation)) return;
           receivedSuccessfulResponse = true;
 
           debugPrint('🎫 Polling result: ${tickets.length} tickets');
           if (tickets.isNotEmpty) {
-            if (mounted) {
-              setState(() {
-                _tickets = tickets;
-                _isLoadingTickets = false;
-              });
-            }
+            setState(() {
+              _tickets = tickets;
+              _isLoadingTickets = false;
+            });
             return;
           }
         } catch (e) {
+          if (!_isCurrentSessionRequest(generation)) return;
           lastError = e;
           debugPrint('🎫 Polling error: $e');
           // A transient failure can recover on a later attempt. Keep the last
@@ -140,46 +201,62 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
         // Attendre avant la prochaine tentative (délai progressif)
         if (attempt < maxAttempts - 1) {
           await Future.delayed(Duration(seconds: delays[attempt]));
+          if (!_isCurrentSessionRequest(generation)) return;
         }
       }
 
       // Timeout: les tickets ne sont pas encore disponibles
-      if (mounted) {
-        setState(() {
-          _tickets = [];
-          _errorMessage = !receivedSuccessfulResponse && lastError != null
-              ? ApiResponseHandler.extractError(
-                  lastError,
-                  fallback: context.l10n.bookingTicketsLoadError,
-                )
-              : null;
-          _isLoadingTickets = false;
-        });
-      }
+      if (!_isCurrentSessionRequest(generation)) return;
+      setState(() {
+        _tickets = [];
+        _errorMessage = !receivedSuccessfulResponse && lastError != null
+            ? ApiResponseHandler.extractError(
+                lastError,
+                fallback: context.l10n.bookingTicketsLoadError,
+              )
+            : null;
+        _isLoadingTickets = false;
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = ApiResponseHandler.extractError(
-            e,
-            fallback: context.l10n.bookingTicketsLoadError,
-          );
-          _isLoadingTickets = false;
-        });
-      }
+      if (!_isCurrentSessionRequest(generation)) return;
+      setState(() {
+        _errorMessage = ApiResponseHandler.extractError(
+          e,
+          fallback: context.l10n.bookingTicketsLoadError,
+        );
+        _isLoadingTickets = false;
+      });
     }
   }
 
   void _invalidateEventData() {
-    if (widget.event != null) {
-      final eventId = widget.event!.id;
-      ref.invalidate(eventDetailControllerProvider(eventId));
-      ref.invalidate(eventAvailabilityProvider(eventId));
+    if (_event != null &&
+        identical(ref.read(authSessionKeyProvider), _ownerSession)) {
+      final eventId = _event!.id;
+      ref.invalidate(
+        eventDetailControllerProvider(
+          eventDetailRequest(_ownerSession, eventId),
+        ),
+      );
+      ref.invalidate(
+        eventAvailabilityProvider(
+          eventAvailabilityRequest(_ownerSession, eventId),
+        ),
+      );
       ref.invalidate(similarEventsProvider(eventId));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentSession = ref.watch(authSessionKeyProvider);
+    if (!_ownsCurrentSession || !identical(currentSession, _ownerSession)) {
+      return const Scaffold(
+        key: Key('booking-success-session-invalid'),
+        body: SizedBox.shrink(),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
@@ -203,13 +280,13 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
                   const SizedBox(height: 32),
 
                   // Résumé de l'événement
-                  if (widget.event != null) _buildEventSummary(),
+                  if (_event != null) _buildEventSummary(),
 
                   const SizedBox(height: 24),
 
-                  if (widget.bookingResponse != null &&
-                      widget.bookingResponse!.paidTotal > 0) ...[
-                    _buildPaymentSummary(widget.bookingResponse!),
+                  if (_bookingResponse != null &&
+                      _bookingResponse!.paidTotal > 0) ...[
+                    _buildPaymentSummary(_bookingResponse!),
                     const SizedBox(height: 24),
                   ],
 
@@ -304,8 +381,7 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
   }
 
   Widget _buildBookingReference() {
-    final reference =
-        widget.bookingResponse?.reference ?? 'HB-${widget.bookingId}';
+    final reference = _bookingResponse?.reference ?? 'HB-${widget.bookingId}';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -362,7 +438,7 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
   }
 
   Widget _buildEventSummary() {
-    final event = widget.event!;
+    final event = _event!;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -404,7 +480,7 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (widget.selectedSlot != null) ...[
+                if (_selectedSlot != null) ...[
                   const SizedBox(height: 4),
                   Row(
                     children: [
@@ -412,13 +488,13 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
                           size: 14, color: Colors.grey.shade600),
                       const SizedBox(width: 4),
                       Text(
-                        _formatDate(widget.selectedSlot!),
+                        _formatDate(_selectedSlot!),
                         style: TextStyle(
                             fontSize: 13, color: Colors.grey.shade600),
                       ),
                     ],
                   ),
-                  if (_formatTimeRange(widget.selectedSlot!) != null) ...[
+                  if (_formatTimeRange(_selectedSlot!) != null) ...[
                     const SizedBox(height: 2),
                     Row(
                       children: [
@@ -426,7 +502,7 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
                             size: 14, color: Colors.grey.shade600),
                         const SizedBox(width: 4),
                         Text(
-                          _formatTimeRange(widget.selectedSlot!)!,
+                          _formatTimeRange(_selectedSlot!)!,
                           style: TextStyle(
                               fontSize: 13, color: Colors.grey.shade600),
                         ),
@@ -568,6 +644,8 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
   }
 
   Widget _buildTicketCard(BookingTicketDto ticket) {
+    final qrCode = ticket.qrCode.trim();
+    final hasQrCode = qrCode.isNotEmpty;
     final attendeeName = ticket.attendeeName ??
         [ticket.attendeeFirstName, ticket.attendeeLastName]
             .where((s) => s != null && s.isNotEmpty)
@@ -598,24 +676,44 @@ class _BookingSuccessScreenState extends ConsumerState<BookingSuccessScreen>
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: Colors.grey.shade200),
             ),
-            child: QrImageView(
-              data: ticket.qrCode,
-              version: QrVersions.auto,
-              size: 150,
-              backgroundColor: Colors.white,
-            ),
+            child: hasQrCode
+                ? QrImageView(
+                    data: qrCode,
+                    version: QrVersions.auto,
+                    size: 150,
+                    backgroundColor: Colors.white,
+                  )
+                : Column(
+                    children: [
+                      const Icon(
+                        Icons.qr_code_2,
+                        size: 48,
+                        color: HbColors.textSecondary,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        context.l10n.bookingTicketNotReady,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: HbColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
           ),
-          const SizedBox(height: 12),
+          if (hasQrCode) ...[
+            const SizedBox(height: 12),
 
-          // Code (QR code as the human-readable reference)
-          Text(
-            ticket.qrCode,
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey.shade600,
-              fontFamily: 'monospace',
+            // Code (QR code as the human-readable reference)
+            Text(
+              qrCode,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade600,
+                fontFamily: 'monospace',
+              ),
             ),
-          ),
+          ],
           if (attendeeName.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(

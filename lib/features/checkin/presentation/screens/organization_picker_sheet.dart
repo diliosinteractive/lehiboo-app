@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../memberships/data/models/membership_dto.dart';
 import '../../../memberships/presentation/providers/membership_state_providers.dart';
 import '../../domain/entities/active_organization.dart';
@@ -17,7 +18,10 @@ import '../providers/vendor_memberships_provider.dart';
 ///
 /// Returns `true` when the user picks an org; `false` when they dismiss
 /// without picking. The active org provider is updated as a side effect.
-Future<bool> showOrganizationPickerSheet(BuildContext context) async {
+Future<bool> showOrganizationPickerSheet(
+  BuildContext context, {
+  required String ownerAccountId,
+}) async {
   final result = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
@@ -27,16 +31,45 @@ Future<bool> showOrganizationPickerSheet(BuildContext context) async {
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (_) => const _OrgPickerSheet(),
+    builder: (_) => _OrgPickerSheet(ownerAccountId: ownerAccountId),
   );
   return result ?? false;
 }
 
-class _OrgPickerSheet extends ConsumerWidget {
-  const _OrgPickerSheet();
+class _OrgPickerSheet extends ConsumerStatefulWidget {
+  const _OrgPickerSheet({required this.ownerAccountId});
+
+  final String ownerAccountId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_OrgPickerSheet> createState() => _OrgPickerSheetState();
+}
+
+class _OrgPickerSheetState extends ConsumerState<_OrgPickerSheet> {
+  bool _invalid = false;
+
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual<String?>(authSessionUserIdProvider, (_, next) {
+      if (next == widget.ownerAccountId || _invalid) return;
+      _invalid = true;
+      if (!mounted) return;
+      final navigator = Navigator.of(context);
+      if (navigator.canPop()) navigator.pop(false);
+    });
+  }
+
+  bool get _ownsCurrentSession =>
+      !_invalid && ref.read(authSessionUserIdProvider) == widget.ownerAccountId;
+
+  @override
+  Widget build(BuildContext context) {
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_invalid || currentAccountId != widget.ownerAccountId) {
+      return const SizedBox.shrink();
+    }
+
     final memberships = ref.watch(vendorMembershipsProvider);
     final asyncList = ref.watch(myMembershipsListProvider);
     final l10n = context.l10n;
@@ -91,12 +124,21 @@ class _OrgPickerSheet extends ConsumerWidget {
                   loadError,
                   fallback: l10n.membershipLoadError,
                 ),
-                refresh: () =>
-                    ref.read(myMembershipsListProvider.notifier).refresh(),
+                refresh: () async {
+                  if (!_ownsCurrentSession) return;
+                  final refresh =
+                      ref.read(myMembershipsListProvider.notifier).refresh();
+                  await refresh;
+                  if (!_ownsCurrentSession) return;
+                },
               )
             else if (memberships.isEmpty)
               _EmptyState(refresh: () async {
-                ref.read(myMembershipsListProvider.notifier).refresh();
+                if (!_ownsCurrentSession) return;
+                final refresh =
+                    ref.read(myMembershipsListProvider.notifier).refresh();
+                await refresh;
+                if (!_ownsCurrentSession) return;
               })
             else
               Flexible(
@@ -109,17 +151,19 @@ class _OrgPickerSheet extends ConsumerWidget {
                     return _OrgTile(
                       membership: m,
                       onTap: () async {
+                        if (!_ownsCurrentSession) return;
                         final org = m.organization;
                         if (org == null || org.uuid == null) return;
-                        await ref
-                            .read(activeOrganizationProvider.notifier)
-                            .set(ActiveOrganization(
-                              uuid: org.uuid!,
-                              name: org.displayName,
-                              role: m.role ?? MembershipRole.staff,
-                              logoUrl: org.logoOrUrl,
-                            ));
-                        if (context.mounted) {
+                        final activeOrganization =
+                            ref.read(activeOrganizationProvider.notifier);
+                        await activeOrganization.set(ActiveOrganization(
+                          uuid: org.uuid!,
+                          name: org.displayName,
+                          role: m.role ?? MembershipRole.staff,
+                          logoUrl: org.logoOrUrl,
+                        ));
+                        if (!_ownsCurrentSession) return;
+                        if (context.mounted && _ownsCurrentSession) {
                           Navigator.of(context).pop(true);
                         }
                       },

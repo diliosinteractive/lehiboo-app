@@ -13,6 +13,8 @@ import 'package:lehiboo/core/services/crash_reporter.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/age_utils.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
+import 'package:lehiboo/features/auth/presentation/widgets/account_bound_route_guard.dart';
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
 import 'package:lehiboo/features/booking/domain/extensions/user_participant_extension.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
@@ -25,6 +27,7 @@ import 'package:lehiboo/features/booking/presentation/utils/order_checkout_error
 import 'package:lehiboo/features/booking/presentation/widgets/cart_summary_section.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/participant_form_card.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/participants_overview_block.dart';
+import 'package:lehiboo/features/booking/presentation/widgets/saved_participant_picker_sheet.dart';
 import 'package:lehiboo/features/events/presentation/screens/event_detail_screen.dart';
 import 'package:lehiboo/features/profile/domain/models/saved_participant.dart';
 import 'package:lehiboo/features/profile/presentation/providers/saved_participants_provider.dart';
@@ -59,16 +62,52 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
   Timer? _reservationTimer;
   Duration? _cartHoldRemaining;
   Timer? _cartHoldTimer;
+  late final String? _ownerSessionUserId;
+  bool _ownsCurrentSession = false;
+
+  bool get _isCurrentAccount {
+    return mounted &&
+        _ownsCurrentSession &&
+        _ownerSessionUserId != null &&
+        ref.read(authSessionUserIdProvider) == _ownerSessionUserId;
+  }
 
   @override
   void initState() {
     super.initState();
+    _ownerSessionUserId = ref.read(authSessionUserIdProvider);
+    _ownsCurrentSession = _ownerSessionUserId != null;
+    ref.listenManual<String?>(authSessionUserIdProvider, (_, next) {
+      if (!mounted || next == _ownerSessionUserId) return;
+      _reservationTimer?.cancel();
+      _cartHoldTimer?.cancel();
+      _firstNameController.clear();
+      _lastNameController.clear();
+      _emailController.clear();
+      _phoneController.clear();
+      _ageController.clear();
+      _townController.clear();
+      _attendeesByCartItemId.clear();
+      setState(() {
+        _ownsCurrentSession = false;
+        _customerBirthDate = null;
+        _acceptedTerms = false;
+        _acceptedRefundPolicy = false;
+        _isLoading = false;
+        _errorMessage = null;
+        _confirmationOutcomeUncertain = false;
+        _activeOrderUuid = null;
+        _activeOrderExpiresAt = null;
+        _reservationRemaining = null;
+        _cartHoldRemaining = null;
+      });
+    });
     _prefillForm();
     // Defer past the current frame: _updateCartHoldRemaining may clear the
     // cart provider when a stale hold has expired, and Riverpod forbids
     // mutating providers during widget mount.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!_isCurrentAccount) return;
       _updateCartHoldRemaining();
     });
     _cartHoldTimer = Timer.periodic(
@@ -143,7 +182,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
 
   void _updateReservationRemaining() {
     final expiresAt = _activeOrderExpiresAt;
-    if (expiresAt == null || !mounted) return;
+    if (expiresAt == null || !_isCurrentAccount) return;
 
     final remaining = expiresAt.difference(DateTime.now());
     setState(() {
@@ -160,7 +199,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
   }
 
   void _updateCartHoldRemaining() {
-    if (!mounted) return;
+    if (!_isCurrentAccount) return;
 
     final expiresAt = ref.read(orderCartHoldProvider);
     if (expiresAt == null) {
@@ -214,27 +253,37 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
   // Cart actions
 
   Future<void> _confirmClearCart() async {
+    if (!_isCurrentAccount) return;
+    final ownerAccountId = _ownerSessionUserId!;
+    final ownerNotifier = ref.read(orderCartProvider.notifier);
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(context.l10n.bookingClearCartTitle),
-        content: Text(context.l10n.bookingClearCartBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(context.l10n.commonCancel),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(context.l10n.bookingClear),
-          ),
-        ],
+      builder: (dialogContext) => AccountBoundRouteGuard<bool>(
+        ownerAccountId: ownerAccountId,
+        invalidResult: false,
+        builder: (_) => AlertDialog(
+          title: Text(context.l10n.bookingClearCartTitle),
+          content: Text(context.l10n.bookingClearCartBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(context.l10n.commonCancel),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(context.l10n.bookingClear),
+            ),
+          ],
+        ),
       ),
     );
 
-    if (confirmed == true && mounted) {
-      ref.read(orderCartProvider.notifier).clear();
+    if (confirmed == true &&
+        _isCurrentAccount &&
+        ref.read(authSessionUserIdProvider) == ownerAccountId &&
+        identical(ref.read(orderCartProvider.notifier), ownerNotifier)) {
+      ownerNotifier.clear();
     }
   }
 
@@ -290,8 +339,18 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
   Future<void> _pickSavedForFirstEmpty(
     List<SavedParticipant> savedParticipants,
   ) async {
-    final selected = await _showSavedParticipantsBottomSheet(savedParticipants);
-    if (selected == null || !mounted) return;
+    if (!_isCurrentAccount) return;
+    final ownerAccountId = _ownerSessionUserId!;
+    final selected = await showSavedParticipantPickerSheet(
+      context,
+      ownerAccountId: ownerAccountId,
+      participants: savedParticipants,
+    );
+    if (selected == null ||
+        !_isCurrentAccount ||
+        _ownerSessionUserId != ownerAccountId) {
+      return;
+    }
 
     // Find first blank slot across all items.
     for (final entry in _attendeesByCartItemId.entries) {
@@ -311,86 +370,6 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     }
   }
 
-  Future<SavedParticipant?> _showSavedParticipantsBottomSheet(
-    List<SavedParticipant> participants,
-  ) {
-    return showModalBottomSheet<SavedParticipant>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(0, 0, 0, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-                child: Text(
-                  context.l10n.bookingChooseSavedParticipant,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: HbColors.textPrimary,
-                  ),
-                ),
-              ),
-              Flexible(
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  itemBuilder: (_, index) {
-                    final p = participants[index];
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor:
-                            HbColors.brandPrimary.withValues(alpha: 0.1),
-                        child: Text(
-                          p.displayName.isNotEmpty
-                              ? p.displayName
-                                  .trim()
-                                  .substring(0, 1)
-                                  .toUpperCase()
-                              : '?',
-                          style: const TextStyle(
-                              color: HbColors.brandPrimary,
-                              fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                      title: Text(p.displayName),
-                      subtitle: Text(
-                        [
-                          p.birthDate,
-                          p.membershipCity,
-                        ]
-                            .whereType<String>()
-                            .where((v) => v.isNotEmpty)
-                            .join(' · '),
-                      ),
-                      onTap: () => Navigator.of(sheetContext).pop(p),
-                    );
-                  },
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemCount: participants.length,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                child: Text(
-                  context.l10n.bookingAddToNextEmptyTicket,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: HbColors.textMuted,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   void _goToCompleteProfile() {
     context.push('/profile/edit');
   }
@@ -400,6 +379,13 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_ownsCurrentSession) {
+      return const Scaffold(
+        key: Key('order-cart-session-invalid'),
+        body: SizedBox.shrink(),
+      );
+    }
+
     final items = ref.watch(orderCartProvider);
     final totalQuantity =
         items.fold<int>(0, (sum, item) => sum + item.quantity);
@@ -613,6 +599,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         cards.add(
           ParticipantFormCard(
             key: ValueKey('${item.id}-$i'),
+            ownerAccountId: _ownerSessionUserId!,
             ticketTypeName: item.ticket.name,
             participantIndex: cardIndex + 1,
             totalForType: item.quantity,
@@ -995,6 +982,8 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
   // Submit
 
   Future<void> _submitOrder() async {
+    if (!_isCurrentAccount) return;
+    final ownerAccountId = _ownerSessionUserId!;
     FocusManager.instance.primaryFocus?.unfocus();
 
     if (!_formKey.currentState!.validate()) return;
@@ -1047,6 +1036,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
             : _townController.text.trim(),
         acceptRefundPolicy: _acceptedRefundPolicy,
       );
+      if (!_isCurrentAccount) return;
 
       var confirmedOrder = order;
       _activeOrderUuid = order.uuid;
@@ -1060,6 +1050,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         checkoutStep = 'payment_intent';
         final paymentIntent =
             await dataSource.getOrderPaymentIntent(orderUuid: order.uuid);
+        if (!_isCurrentAccount) return;
 
         checkoutStep = 'init_payment_sheet';
         await Stripe.instance.initPaymentSheet(
@@ -1068,9 +1059,12 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
             merchantDisplayName: 'Le Hiboo',
           ),
         );
+        if (!_isCurrentAccount) return;
 
         await Future<void>.delayed(const Duration(milliseconds: 500));
+        if (!_isCurrentAccount) return;
         await WidgetsBinding.instance.endOfFrame;
+        if (!_isCurrentAccount) return;
 
         checkoutStep = 'present_payment_sheet';
         if (!mounted) {
@@ -1081,6 +1075,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
 
         await Stripe.instance.presentPaymentSheet();
         paymentWasCompleted = true;
+        if (!_isCurrentAccount) return;
 
         shouldCancelOrderOnError = false;
         checkoutStep = 'confirm_order';
@@ -1088,16 +1083,20 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
           orderUuid: order.uuid,
           paymentIntentId: paymentIntent.paymentIntentId,
         );
+        if (!_isCurrentAccount) return;
       }
 
       // Best-effort: persist any participant the user marked "Save to Mes participants".
       // Failures here must not block the booking confirmation.
-      await _persistFlaggedParticipants();
+      final persistedParticipants =
+          await _persistFlaggedParticipants(ownerAccountId);
+      if (!persistedParticipants || !_isCurrentAccount) return;
 
       // Capture the cart contents BEFORE clearing — we need them below to
       // invalidate per-event caches so "spots remaining" reflects the seats
       // we just consumed when the user navigates back to the event detail.
       final bookedItems = ref.read(orderCartProvider);
+      if (!_isCurrentAccount) return;
 
       _clearReservationTimer();
       ref.read(orderCartProvider.notifier).clear();
@@ -1105,13 +1104,17 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
       _invalidateBookedEventsCache(bookedItems);
       HapticFeedback.heavyImpact();
 
-      if (mounted) {
+      if (_isCurrentAccount) {
+        if (!mounted) return;
         context.go('/order-confirmation/${confirmedOrder.uuid}', extra: {
+          'ownerAccountId': ownerAccountId,
           'order': confirmedOrder,
         });
       }
     } on StripeException catch (e, stack) {
+      if (!_isCurrentAccount) return;
       await _cancelActiveOrderIfNeeded(dataSource);
+      if (!_isCurrentAccount) return;
 
       // L'annulation par l'utilisateur (fermeture de la payment sheet) est
       // attendue — inutile de polluer Crashlytics. Tout le reste (carte
@@ -1130,7 +1133,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         );
       }
 
-      if (!mounted) return;
+      if (!_isCurrentAccount) return;
       setState(() {
         _isLoading = false;
         _confirmationOutcomeUncertain = false;
@@ -1138,11 +1141,13 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
             OrderCheckoutErrorMapper.stripeUserMessage(e, context.l10n);
       });
     } catch (e, stack) {
+      if (!_isCurrentAccount) return;
       if (shouldCancelOrderOnError) {
         await _cancelActiveOrderIfNeeded(dataSource);
       } else {
         _clearReservationTimer();
       }
+      if (!_isCurrentAccount) return;
 
       final isExpectedValidation =
           OrderCheckoutErrorMapper.isExpectedValidation(e);
@@ -1169,7 +1174,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
         );
       }
 
-      if (!mounted) return;
+      if (!_isCurrentAccount) return;
       final confirmationOutcomeUncertain = paymentWasCompleted &&
           OrderCheckoutErrorMapper.isConfirmationOutcomeUncertain(e);
       setState(() {
@@ -1185,16 +1190,22 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     }
   }
 
-  Future<void> _persistFlaggedParticipants() async {
+  Future<bool> _persistFlaggedParticipants(String ownerAccountId) async {
+    if (!_isCurrentAccount || _ownerSessionUserId != ownerAccountId) {
+      return false;
+    }
     final actions = ref.read(savedParticipantsActionsProvider);
     final flagged = _attendeesByCartItemId.values
         .expand((list) => list)
         .where((p) => p.saveForLater && p.isComplete)
         .toList();
 
-    if (flagged.isEmpty) return;
+    if (flagged.isEmpty) return true;
 
     for (final attendee in flagged) {
+      if (!_isCurrentAccount || _ownerSessionUserId != ownerAccountId) {
+        return false;
+      }
       try {
         final draft = SavedParticipant(
           uuid: '',
@@ -1212,7 +1223,11 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
       } catch (_) {
         // Silent — user can retry from /profile/mes-participants.
       }
+      if (!_isCurrentAccount || _ownerSessionUserId != ownerAccountId) {
+        return false;
+      }
     }
+    return true;
   }
 
   /// Refresh every event-level cache for the events the user just paid for,
@@ -1227,17 +1242,24 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
   /// who arrived via a deep link / story / question card. Invalidating only
   /// the UUID key would leave those slug-keyed entries stale.
   void _invalidateBookedEventsCache(List<OrderCartItem> bookedItems) {
+    final owner = ref.read(authSessionKeyProvider);
     final seenIds = <String>{};
     for (final item in bookedItems) {
       final event = item.event;
       if (!seenIds.add(event.id)) continue;
 
-      ref.invalidate(eventAvailabilityProvider(event.id));
-      ref.invalidate(eventDetailControllerProvider(event.id));
+      ref.invalidate(
+        eventAvailabilityProvider(eventAvailabilityRequest(owner, event.id)),
+      );
+      ref.invalidate(
+        eventDetailControllerProvider(eventDetailRequest(owner, event.id)),
+      );
 
       final slug = event.slug;
       if (slug.isNotEmpty && slug != event.id) {
-        ref.invalidate(eventDetailControllerProvider(slug));
+        ref.invalidate(
+          eventDetailControllerProvider(eventDetailRequest(owner, slug)),
+        );
       }
     }
   }
@@ -1264,11 +1286,12 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
   }
 
   void _openRefundPolicies(List<RefundPolicyEntry> refundPolicies) {
-    if (refundPolicies.isEmpty) return;
+    if (refundPolicies.isEmpty || !_isCurrentAccount) return;
 
     context.push(
       '/refund-policy',
       extra: RefundPolicyRouteArgs(
+        ownerAccountId: _ownerSessionUserId,
         title: refundPolicies.length > 1
             ? context.l10n.refundPolicyListTitle
             : context.l10n.refundPolicyTitle,

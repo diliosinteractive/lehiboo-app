@@ -8,11 +8,11 @@ import 'package:lehiboo/core/themes/hb_theme.dart';
 import 'package:lehiboo/core/themes/lehiboo_tokens.dart';
 import 'package:lehiboo/core/widgets/feedback/hb_feedback.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/booking/presentation/controllers/booking_list_controller.dart';
 import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/booking_list_card.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/filter_tabs_row.dart';
-import 'package:lehiboo/features/booking/presentation/widgets/quick_qr_bottom_sheet.dart';
 
 class BookingsListScreen extends ConsumerStatefulWidget {
   const BookingsListScreen({super.key});
@@ -42,16 +42,6 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
         _scrollController.position.maxScrollExtent - 200) {
       ref.read(bookingsListControllerProvider.notifier).loadMore();
     }
-  }
-
-  void _showQuickQR(Booking booking) {
-    HapticFeedback.mediumImpact();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => QuickQRBottomSheet(booking: booking),
-    );
   }
 
   void _showSortOptions() {
@@ -302,10 +292,10 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
               booking: booking,
               onTap: () => _navigateToDetail(booking),
               onQRTap: booking.status == 'confirmed'
-                  ? () => _showQuickQR(booking)
+                  ? () => _navigateToDetail(booking)
                   : null,
               onLongPress: booking.status == 'confirmed'
-                  ? () => _showQuickQR(booking)
+                  ? () => _navigateToDetail(booking)
                   : null,
             ),
           );
@@ -411,6 +401,12 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
   }
 
   void _navigateToDetail(Booking booking) {
-    context.push('/booking-detail/${booking.id}', extra: booking);
+    context.push(
+      '/booking-detail/${booking.id}',
+      extra: {
+        'ownerAccountId': ref.read(authSessionUserIdProvider),
+        'booking': booking,
+      },
+    );
   }
 }

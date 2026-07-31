@@ -9,6 +9,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../memberships/data/models/membership_dto.dart';
 import '../../../memberships/presentation/providers/membership_state_providers.dart';
 import '../../data/models/checkin_request_dto.dart';
@@ -48,6 +49,13 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
   DateTime? _lastScanAt;
   bool _processing = false;
   bool _orgPickerShown = false;
+  late final String? _ownerAccountId;
+  bool _sessionInvalid = false;
+
+  bool get _ownsCurrentSession {
+    if (_sessionInvalid || _ownerAccountId == null || !mounted) return false;
+    return ref.read(authSessionUserIdProvider) == _ownerAccountId;
+  }
 
   @override
   void initState() {
@@ -58,6 +66,21 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
       facing: CameraFacing.back,
       torchEnabled: false,
     );
+    _ownerAccountId = ref.read(authSessionUserIdProvider);
+    _sessionInvalid = _ownerAccountId == null;
+    ref.listenManual<String?>(authSessionUserIdProvider, (_, next) {
+      if (next == _ownerAccountId || _sessionInvalid) return;
+
+      // The route belongs to the account that opened it. Hide all scanner
+      // state immediately and never let this State object attach itself to a
+      // replacement account (including an A -> B -> A sequence).
+      _sessionInvalid = true;
+      _lastScanned = null;
+      _lastScanAt = null;
+      _processing = false;
+      unawaited(_scanner.stop());
+      if (mounted) setState(() {});
+    });
     // Defer to post-frame so the picker can use a Navigator that's mounted.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _ensureActiveOrganization();
@@ -76,7 +99,7 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
     // Pause the camera when the app goes to background — releases the
     // hardware promptly and avoids burning battery on the lock screen.
     if (state == AppLifecycleState.resumed) {
-      if (ref.read(activeOrganizationProvider) != null) {
+      if (_ownsCurrentSession && ref.read(activeOrganizationProvider) != null) {
         unawaited(_scanner.start());
       }
     } else if (state == AppLifecycleState.paused ||
@@ -86,7 +109,7 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
   }
 
   Future<void> _ensureActiveOrganization() async {
-    if (!mounted) return;
+    if (!_ownsCurrentSession) return;
     final activeOrg = ref.read(activeOrganizationProvider);
     if (activeOrg != null) return;
 
@@ -94,13 +117,14 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
     if (ref.read(myMembershipsListProvider) is AsyncLoading) {
       // wait for it
       try {
-        await ref.read(myMembershipsListProvider.future);
+        await ref.read(myMembershipsListProvider.notifier).waitForCurrentLoad();
+        if (!_ownsCurrentSession) return;
       } catch (_) {/* picker will show its own error */}
     } else if (ref.read(myMembershipsListProvider).hasError) {
       ref.read(myMembershipsListProvider.notifier).refresh();
     }
 
-    if (!mounted) return;
+    if (!_ownsCurrentSession) return;
 
     // Edge case: only one vendor org → silent select, no sheet.
     final vendorOrgs = ref.read(vendorMembershipsProvider);
@@ -111,15 +135,19 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
         await ref
             .read(activeOrganizationProvider.notifier)
             .set(_buildActiveOrgFromMembership(m));
+        if (!mounted || !_ownsCurrentSession) return;
         return;
       }
     }
 
-    if (_orgPickerShown) return;
+    if (!mounted || !_ownsCurrentSession || _orgPickerShown) return;
     _orgPickerShown = true;
-    final picked = await showOrganizationPickerSheet(context);
+    final picked = await showOrganizationPickerSheet(
+      context,
+      ownerAccountId: _ownerAccountId!,
+    );
     _orgPickerShown = false;
-    if (!mounted) return;
+    if (!mounted || !_ownsCurrentSession) return;
     if (!picked) {
       // User dismissed without picking — leave the screen.
       context.pop();
@@ -127,7 +155,7 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
   }
 
   Future<void> _onDetect(BarcodeCapture capture) async {
-    if (_processing) return;
+    if (!_ownsCurrentSession || _processing) return;
     if (capture.barcodes.isEmpty) return;
     final raw = capture.barcodes.first.rawValue;
     if (raw == null || raw.isEmpty) return;
@@ -147,15 +175,17 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
     setState(() => _processing = true);
     HapticFeedback.lightImpact();
     await _scanner.stop();
+    if (!_ownsCurrentSession) return;
 
     try {
       await _handleQr(raw);
+      if (!_ownsCurrentSession) return;
     } finally {
-      if (mounted) {
+      if (_ownsCurrentSession) {
         setState(() => _processing = false);
         // Resume scanning for the next ticket.
         await Future<void>.delayed(const Duration(milliseconds: 350));
-        if (mounted) {
+        if (_ownsCurrentSession) {
           await _scanner.start();
         }
       }
@@ -163,6 +193,7 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
   }
 
   Future<void> _handleQr(String qrData, {bool manualMode = false}) async {
+    if (!_ownsCurrentSession) return;
     final repo = ref.read(checkinRepositoryProvider);
     PeekResult? result;
     try {
@@ -170,29 +201,35 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
         qrData: manualMode ? null : qrData,
         qrCode: manualMode ? qrData : null,
       );
+      if (!mounted || !_ownsCurrentSession) return;
     } on CheckinFailure catch (e) {
-      if (!mounted) return;
+      if (!_ownsCurrentSession) return;
       if (e.isNetworkError) {
         _showNetworkUnstableBanner();
       } else {
         await _showBlocked(e);
+        if (!mounted || !_ownsCurrentSession) return;
       }
       return;
     }
 
-    if (!mounted) return;
+    if (!_ownsCurrentSession) return;
 
     switch (result) {
       case CanCheckIn(:final ticket):
         await _confirmAndCommit(ticket: ticket, isReEntry: false);
+        if (!mounted || !_ownsCurrentSession) return;
       case WouldBeReEntry(:final ticket):
         await _confirmAndCommit(ticket: ticket, isReEntry: true);
+        if (!_ownsCurrentSession) return;
       case Blocked(:final reason, :final ticket):
         await showCheckinBlockedSheet(
           context,
+          ownerAccountId: _ownerAccountId!,
           reason: reason,
           ticket: ticket,
         );
+        if (!_ownsCurrentSession) return;
     }
   }
 
@@ -200,12 +237,14 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
     required TicketSummaryDto ticket,
     required bool isReEntry,
   }) async {
+    if (!_ownsCurrentSession) return;
     final confirmed = await showCheckinConfirmSheet(
       context,
+      ownerAccountId: _ownerAccountId!,
       ticket: ticket,
       isReEntry: isReEntry,
     );
-    if (confirmed != true) return;
+    if (!_ownsCurrentSession || confirmed != true) return;
 
     final session = ref.read(scanSessionProvider);
     final repo = ref.read(checkinRepositoryProvider);
@@ -215,32 +254,38 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
       gate: session.gate,
       scanMethod: 'qr_code',
     );
+    if (!_ownsCurrentSession) return;
 
     try {
       final response = await repo.commit(ticket.uuid, request);
-      if (!mounted) return;
+      if (!_ownsCurrentSession) return;
       _showSuccessSnack(response.isReEntry, response.checkInCount);
     } on CheckinFailure catch (e) {
-      if (!mounted) return;
+      if (!_ownsCurrentSession) return;
       if (e.isNetworkError) {
         // Spec §15: never auto-retry. Surface and let the vendor re-scan;
         // the next peek will reveal whether the previous commit landed.
         _showNetworkUnstableBanner();
       } else {
         await _showBlocked(e);
+        if (!_ownsCurrentSession) return;
       }
     }
   }
 
   Future<void> _showBlocked(CheckinFailure e) async {
+    if (!_ownsCurrentSession) return;
     await showCheckinBlockedSheet(
       context,
+      ownerAccountId: _ownerAccountId!,
       reason: e.blocker,
       extraMessage: e.message,
     );
+    if (!_ownsCurrentSession) return;
   }
 
   void _showSuccessSnack(bool isReEntry, int count) {
+    if (!_ownsCurrentSession) return;
     final messenger = ScaffoldMessenger.of(context);
     final l10n = context.l10n;
     messenger.hideCurrentSnackBar();
@@ -263,6 +308,7 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
   }
 
   void _showNetworkUnstableBanner() {
+    if (!_ownsCurrentSession) return;
     final messenger = ScaffoldMessenger.of(context);
     final l10n = context.l10n;
     messenger.hideCurrentSnackBar();
@@ -283,20 +329,43 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
   }
 
   Future<void> _switchOrg() async {
+    if (!_ownsCurrentSession) return;
     await _scanner.stop();
-    if (!mounted) return;
-    final picked = await showOrganizationPickerSheet(context);
-    if (!mounted) return;
+    if (!mounted || !_ownsCurrentSession) return;
+    final picked = await showOrganizationPickerSheet(
+      context,
+      ownerAccountId: _ownerAccountId!,
+    );
+    if (!_ownsCurrentSession) return;
     if (picked) {
       await _scanner.start();
+      if (!_ownsCurrentSession) return;
     } else if (ref.read(activeOrganizationProvider) != null) {
       // No new org: resume the current one (active org unchanged).
       await _scanner.start();
+      if (!_ownsCurrentSession) return;
     }
+  }
+
+  Future<void> _openManualEntry() async {
+    if (!_ownsCurrentSession) return;
+    await _scanner.stop();
+    if (!mounted || !_ownsCurrentSession) return;
+    await context.push('/vendor/scan/manual');
+    if (!_ownsCurrentSession) return;
+    await _scanner.start();
+    if (!_ownsCurrentSession) return;
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_sessionInvalid ||
+        _ownerAccountId == null ||
+        currentAccountId != _ownerAccountId) {
+      return const Scaffold(backgroundColor: Colors.black);
+    }
+
     final activeOrg = ref.watch(activeOrganizationProvider);
     final session = ref.watch(scanSessionProvider);
     final l10n = context.l10n;
@@ -313,24 +382,26 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
           IconButton(
             tooltip: l10n.checkinTorchTooltip,
             icon: const Icon(Icons.flash_on),
-            onPressed: () => _scanner.toggleTorch(),
+            onPressed: () {
+              if (_ownsCurrentSession) _scanner.toggleTorch();
+            },
           ),
           IconButton(
             tooltip: l10n.checkinCameraTooltip,
             icon: const Icon(Icons.cameraswitch_outlined),
-            onPressed: () => _scanner.switchCamera(),
+            onPressed: () {
+              if (_ownsCurrentSession) _scanner.switchCamera();
+            },
           ),
           PopupMenuButton<String>(
             tooltip: l10n.checkinMoreTooltip,
             onSelected: (value) async {
+              if (!_ownsCurrentSession) return;
               switch (value) {
                 case 'switch_org':
                   await _switchOrg();
                 case 'manual':
-                  await _scanner.stop();
-                  if (!context.mounted) return;
-                  await context.push('/vendor/scan/manual');
-                  if (mounted) await _scanner.start();
+                  await _openManualEntry();
                 case 'gate':
                   await _editGate();
               }
@@ -359,7 +430,10 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
             MobileScanner(
               controller: _scanner,
               onDetect: _onDetect,
-              errorBuilder: (_, error, __) => _CameraErrorOverlay(error: error),
+              errorBuilder: (_, error, __) => _CameraErrorOverlay(
+                error: error,
+                onManualEntry: _openManualEntry,
+              ),
             )
           else
             const Center(
@@ -381,34 +455,16 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
   }
 
   Future<void> _editGate() async {
-    final controller = TextEditingController(
-      text: ref.read(scanSessionProvider).gate,
-    );
-    final l10n = context.l10n;
+    if (!_ownsCurrentSession) return;
     final res = await showDialog<String?>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(l10n.checkinGateLabel),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: l10n.checkinGateHint,
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(null),
-            child: Text(l10n.commonCancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            child: Text(l10n.commonSave),
-          ),
-        ],
+      builder: (_) => _AccountBoundGateDialog(
+        ownerAccountId: _ownerAccountId!,
+        initialGate: ref.read(scanSessionProvider).gate,
       ),
     );
-    if (res != null) {
+    if (!_ownsCurrentSession) return;
+    if (res != null && _ownsCurrentSession) {
       ref.read(scanSessionProvider.notifier).setGate(res.isEmpty ? null : res);
     }
   }
@@ -506,7 +562,12 @@ class _BottomBar extends StatelessWidget {
 
 class _CameraErrorOverlay extends StatelessWidget {
   final MobileScannerException error;
-  const _CameraErrorOverlay({required this.error});
+  final Future<void> Function() onManualEntry;
+
+  const _CameraErrorOverlay({
+    required this.error,
+    required this.onManualEntry,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -546,11 +607,85 @@ class _CameraErrorOverlay extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           FilledButton(
-            onPressed: () => context.push('/vendor/scan/manual'),
+            onPressed: onManualEntry,
             child: Text(l10n.checkinManualEntryTitle),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AccountBoundGateDialog extends ConsumerStatefulWidget {
+  const _AccountBoundGateDialog({
+    required this.ownerAccountId,
+    required this.initialGate,
+  });
+
+  final String ownerAccountId;
+  final String? initialGate;
+
+  @override
+  ConsumerState<_AccountBoundGateDialog> createState() =>
+      _AccountBoundGateDialogState();
+}
+
+class _AccountBoundGateDialogState
+    extends ConsumerState<_AccountBoundGateDialog> {
+  late final TextEditingController _controller;
+  bool _invalid = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialGate);
+    ref.listenManual<String?>(authSessionUserIdProvider, (_, next) {
+      if (next == widget.ownerAccountId || _invalid) return;
+      _invalid = true;
+      _controller.clear();
+      if (!mounted) return;
+      setState(() {});
+      Navigator.of(context).pop(null);
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  bool get _ownsCurrentSession =>
+      !_invalid && ref.read(authSessionUserIdProvider) == widget.ownerAccountId;
+
+  @override
+  Widget build(BuildContext context) {
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_invalid || currentAccountId != widget.ownerAccountId) {
+      return const SizedBox.shrink();
+    }
+
+    final l10n = context.l10n;
+    return AlertDialog(
+      title: Text(l10n.checkinGateLabel),
+      content: TextField(
+        controller: _controller,
+        decoration: InputDecoration(hintText: l10n.checkinGateHint),
+        autofocus: true,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(null),
+          child: Text(l10n.commonCancel),
+        ),
+        TextButton(
+          onPressed: () {
+            if (!_ownsCurrentSession) return;
+            Navigator.of(context).pop(_controller.text.trim());
+          },
+          child: Text(l10n.commonSave),
+        ),
+      ],
     );
   }
 }

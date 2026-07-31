@@ -5,11 +5,12 @@ import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/widgets/buttons/hb_button.dart';
 import 'package:lehiboo/core/widgets/feedback/hb_feedback.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/booking/presentation/controllers/booking_flow_controller.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/booking_stepper_header.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/booking_summary_card.dart';
 
-class BookingSlotSelectionScreen extends ConsumerWidget {
+class BookingSlotSelectionScreen extends ConsumerStatefulWidget {
   const BookingSlotSelectionScreen({
     super.key,
     required this.activity,
@@ -18,7 +19,34 @@ class BookingSlotSelectionScreen extends ConsumerWidget {
   final Activity activity;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BookingSlotSelectionScreen> createState() =>
+      _BookingSlotSelectionScreenState();
+}
+
+class _BookingSlotSelectionScreenState
+    extends ConsumerState<BookingSlotSelectionScreen> {
+  late final String? _ownerAccountId;
+
+  @override
+  void initState() {
+    super.initState();
+    _ownerAccountId = ref.read(authSessionUserIdProvider);
+  }
+
+  bool get _ownsCurrentAccount =>
+      _ownerAccountId != null &&
+      ref.read(authSessionUserIdProvider) == _ownerAccountId;
+
+  @override
+  Widget build(BuildContext context) {
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_ownerAccountId == null || currentAccountId != _ownerAccountId) {
+      return const Scaffold(
+        key: Key('booking-slot-selection-session-invalid'),
+        body: SizedBox.shrink(),
+      );
+    }
+    final activity = widget.activity;
     final provider = bookingFlowControllerProvider(activity);
     final state = ref.watch(provider);
     final controller = ref.read(provider.notifier);
@@ -60,7 +88,11 @@ class BookingSlotSelectionScreen extends ConsumerWidget {
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: InkWell(
-                          onTap: () => controller.selectSlot(slot),
+                          onTap: () {
+                            if (_ownsCurrentAccount) {
+                              controller.selectSlot(slot);
+                            }
+                          },
                           borderRadius: BorderRadius.circular(12),
                           child: Container(
                             padding: const EdgeInsets.all(12),
@@ -124,8 +156,11 @@ class BookingSlotSelectionScreen extends ConsumerWidget {
                     children: [
                       IconButton.filledTonal(
                         onPressed: state.quantity > 1
-                            ? () =>
-                                controller.updateQuantity(state.quantity - 1)
+                            ? () {
+                                if (_ownsCurrentAccount) {
+                                  controller.updateQuantity(state.quantity - 1);
+                                }
+                              }
                             : null,
                         icon: const Icon(Icons.remove),
                       ),
@@ -135,8 +170,11 @@ class BookingSlotSelectionScreen extends ConsumerWidget {
                               fontSize: 20, fontWeight: FontWeight.bold)),
                       const SizedBox(width: 16),
                       IconButton.filledTonal(
-                        onPressed: () =>
-                            controller.updateQuantity(state.quantity + 1),
+                        onPressed: () {
+                          if (_ownsCurrentAccount) {
+                            controller.updateQuantity(state.quantity + 1);
+                          }
+                        },
                         icon: const Icon(Icons.add),
                       ),
                     ],
@@ -155,17 +193,21 @@ class BookingSlotSelectionScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             child: HbButton.primary(
               label: context.l10n.bookingLegacyContinue,
-              onTap: () {
-                controller.goToParticipantsStep().then((_) {
-                  // Navigation triggered by state listener ideally,
-                  // but here verify state and push
-                  if (!context.mounted) return;
-                  final updatedState = ref.read(provider);
-                  if (updatedState.errorMessage == null) {
-                    context.push('/booking/${activity.id}/participants',
-                        extra: activity);
-                  }
-                });
+              onTap: () async {
+                if (!_ownsCurrentAccount) return;
+                await controller.goToParticipantsStep();
+                // Navigation triggered by state listener ideally,
+                // but here verify state and push.
+                if (!context.mounted ||
+                    !_ownsCurrentAccount ||
+                    !identical(ref.read(provider.notifier), controller)) {
+                  return;
+                }
+                final updatedState = ref.read(provider);
+                if (updatedState.errorMessage == null) {
+                  context.push('/booking/${activity.id}/participants',
+                      extra: activity);
+                }
               },
             ),
           ),

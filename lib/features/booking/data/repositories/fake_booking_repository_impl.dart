@@ -99,34 +99,15 @@ class FakeBookingRepositoryImpl implements BookingRepository {
 
   @override
   Future<List<Ticket>> getMyTickets() async {
-    return _generateFakeTickets();
+    // Development data must never produce scannable-looking tickets. A real
+    // ticket identity and QR payload can only come from the backend ticket
+    // endpoints, so fake mode represents them as not generated yet.
+    return const [];
   }
 
   @override
   Future<List<Ticket>> getTicketsByBooking(String bookingId) async {
     await Future.delayed(const Duration(milliseconds: 400));
-    // Generate fake tickets for this booking
-    return [
-      Ticket(
-        id: 'ticket_${bookingId}_1',
-        bookingId: bookingId,
-        userId: 'user_1',
-        slotId: 'slot_x',
-        qrCodeData: 'LEHIBOO_TICKET_${bookingId}_1',
-        status: 'valid',
-      )
-    ];
-  }
-
-  List<Ticket> _generateFakeTickets() {
-    return _localBookings
-        .map((b) => Ticket(
-            id: 'ticket_${b.id}',
-            bookingId: b.id,
-            userId: b.userId,
-            slotId: b.slotId,
-            qrCodeData: 'MOCK_QR_${b.id}',
-            status: 'valid'))
-        .toList();
+    return const [];
   }
 }

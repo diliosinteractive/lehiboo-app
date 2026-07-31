@@ -60,6 +60,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   CreateBookingResponseDto? _bookingResponse;
   double? _serverPaymentTotal;
+  late final String? _ownerSessionUserId;
+  bool _ownsCurrentSession = false;
+
+  bool get _isCurrentAccount {
+    return mounted &&
+        _ownsCurrentSession &&
+        _ownerSessionUserId != null &&
+        ref.read(authSessionUserIdProvider) == _ownerSessionUserId;
+  }
 
   double get _displayTotal =>
       _serverPaymentTotal ??
@@ -98,6 +107,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   void initState() {
     super.initState();
+    _ownerSessionUserId = ref.read(authSessionUserIdProvider);
+    _ownsCurrentSession = _ownerSessionUserId != null;
+    ref.listenManual<String?>(authSessionUserIdProvider, (_, next) {
+      if (!mounted || next == _ownerSessionUserId) return;
+      setState(() {
+        _ownsCurrentSession = false;
+        _bookingResponse = null;
+        _serverPaymentTotal = null;
+        _isLoading = false;
+        _errorMessage = null;
+      });
+    });
     _initAttendeesMap();
     _prefillForm();
   }
@@ -174,6 +195,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_ownsCurrentSession) {
+      return const Scaffold(
+        key: Key('checkout-session-invalid'),
+        body: SizedBox.shrink(),
+      );
+    }
+
     return Scaffold(
       backgroundColor: HbColors.backgroundLight,
       appBar: AppBar(
@@ -589,6 +617,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ref.watch(savedParticipantsProvider).valueOrNull ?? const [];
 
     return ParticipantFormsSection(
+      ownerAccountId: _ownerSessionUserId!,
       ticketQuantities: widget.params.ticketQuantities,
       eventTickets: widget.params.event.tickets,
       buyerInfo: _currentBuyerInfo,
@@ -726,11 +755,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   void _openRefundPolicy() {
     final policy = widget.params.event.vendorCancellationPolicy?.trim();
-    if (policy == null || policy.isEmpty) return;
+    if (policy == null || policy.isEmpty || !_isCurrentAccount) return;
 
     context.push(
       '/refund-policy',
       extra: RefundPolicyRouteArgs(
+        ownerAccountId: _ownerSessionUserId,
         title: context.l10n.refundPolicyTitle,
         policies: [
           RefundPolicyEntry(
@@ -869,6 +899,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Future<void> _onConfirmPressed() async {
+    if (!_isCurrentAccount) return;
+    final ownerAccountId = _ownerSessionUserId!;
     // Dismiss keyboard before any async work — iOS PaymentSheet cannot
     // present while the keyboard is animating, which silently hangs
     // presentPaymentSheet on iOS (Android tolerates it).
@@ -974,6 +1006,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         acceptRefundPolicy: _acceptedRefundPolicy,
         acceptNewsletter: _acceptNewsletter,
       );
+      if (!_isCurrentAccount) return;
 
       var confirmationBooking = bookingResponse;
       if (mounted) {
@@ -989,6 +1022,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         final paymentIntent = await bookingDataSource.getDraftPaymentIntent(
           draftUuid: draftOrBookingUuid,
         );
+        if (!_isCurrentAccount) return;
         final serverPaymentTotal = paymentIntent.amount / 100;
         if (kDebugMode &&
             (serverPaymentTotal - widget.params.totalPrice).abs() >= 0.005) {
@@ -1009,13 +1043,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             merchantDisplayName: 'Le Hiboo',
           ),
         );
+        if (!_isCurrentAccount) return;
 
         // iOS belt-and-suspenders: settle delay + explicit end-of-frame wait
         // so the view hierarchy is stable before Stripe walks it. In release,
         // addPostFrameCallback can stall if no new frame is scheduled here.
         await Future<void>.delayed(const Duration(milliseconds: 500));
+        if (!_isCurrentAccount) return;
         await WidgetsBinding.instance.endOfFrame;
 
+        if (!_isCurrentAccount) {
+          return;
+        }
         if (!mounted) {
           throw StateError(
             'Payment screen closed before Stripe sheet presentation.',
@@ -1024,27 +1063,31 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
         await Stripe.instance.presentPaymentSheet();
         paymentWasCompleted = true;
+        if (!_isCurrentAccount) return;
 
         // 4. Confirmer le brouillon après paiement réussi et récupérer le Booking.
         confirmationBooking = await bookingDataSource.confirmDraftBooking(
           draftUuid: draftOrBookingUuid,
           paymentIntentId: paymentIntent.paymentIntentId,
         );
+        if (!_isCurrentAccount) return;
       }
 
       // 5. Naviguer vers la confirmation avec confettis
       HapticFeedback.heavyImpact();
       // Booking signal changed — drop the personalized feed (spec §7).
       ref.invalidate(personalizedFeedProvider);
-      if (mounted) {
+      if (_isCurrentAccount) {
+        if (!mounted) return;
         context.go('/booking-confirmation/${confirmationBooking.uuid}', extra: {
+          'ownerAccountId': ownerAccountId,
           'booking': confirmationBooking,
           'event': widget.params.event,
           'selectedSlot': widget.params.selectedSlot,
         });
       }
     } on StripeException catch (e) {
-      if (!mounted) return;
+      if (!_isCurrentAccount) return;
       setState(() {
         _isLoading = false;
         _confirmationOutcomeUncertain = false;
@@ -1052,7 +1095,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             OrderCheckoutErrorMapper.stripeUserMessage(e, context.l10n);
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!_isCurrentAccount) return;
       final confirmationOutcomeUncertain = paymentWasCompleted &&
           OrderCheckoutErrorMapper.isConfirmationOutcomeUncertain(e);
       setState(() {

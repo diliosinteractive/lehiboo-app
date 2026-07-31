@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/models/ticket_summary_dto.dart';
 import '../../domain/entities/checkin_blocker.dart';
 import '../widgets/ticket_summary_card.dart';
@@ -10,6 +12,7 @@ import '../widgets/ticket_summary_card.dart';
 /// close-only — no confirm path.
 Future<void> showCheckinBlockedSheet(
   BuildContext context, {
+  required String ownerAccountId,
   required CheckinBlocker reason,
   TicketSummaryDto? ticket,
   String? extraMessage,
@@ -22,6 +25,7 @@ Future<void> showCheckinBlockedSheet(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
     builder: (ctx) => _BlockedSheetContent(
+      ownerAccountId: ownerAccountId,
       reason: reason,
       ticket: ticket,
       extraMessage: extraMessage,
@@ -29,19 +33,46 @@ Future<void> showCheckinBlockedSheet(
   );
 }
 
-class _BlockedSheetContent extends StatelessWidget {
+class _BlockedSheetContent extends ConsumerStatefulWidget {
+  final String ownerAccountId;
   final CheckinBlocker reason;
   final TicketSummaryDto? ticket;
   final String? extraMessage;
 
   const _BlockedSheetContent({
+    required this.ownerAccountId,
     required this.reason,
     this.ticket,
     this.extraMessage,
   });
 
   @override
+  ConsumerState<_BlockedSheetContent> createState() =>
+      _BlockedSheetContentState();
+}
+
+class _BlockedSheetContentState extends ConsumerState<_BlockedSheetContent> {
+  bool _invalid = false;
+
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual<String?>(authSessionUserIdProvider, (_, next) {
+      if (next == widget.ownerAccountId || _invalid) return;
+      _invalid = true;
+      if (!mounted) return;
+      final navigator = Navigator.of(context);
+      if (navigator.canPop()) navigator.pop();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_invalid || currentAccountId != widget.ownerAccountId) {
+      return const SizedBox.shrink();
+    }
+
     final l10n = context.l10n;
 
     return Padding(
@@ -83,7 +114,7 @@ class _BlockedSheetContent extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  reason.localizedTitle(l10n),
+                  widget.reason.localizedTitle(l10n),
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -95,25 +126,26 @@ class _BlockedSheetContent extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            reason.localizedSubtitle(l10n),
+            widget.reason.localizedSubtitle(l10n),
             style: const TextStyle(
               fontSize: 14,
               color: HbColors.textPrimary,
             ),
           ),
-          if (extraMessage != null && extraMessage!.isNotEmpty) ...[
+          if (widget.extraMessage != null &&
+              widget.extraMessage!.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
-              extraMessage!,
+              widget.extraMessage!,
               style: const TextStyle(
                 fontSize: 13,
                 color: HbColors.textSecondary,
               ),
             ),
           ],
-          if (ticket != null) ...[
+          if (widget.ticket != null) ...[
             const SizedBox(height: 16),
-            TicketSummaryCard(ticket: ticket!),
+            TicketSummaryCard(ticket: widget.ticket!),
           ],
           const SizedBox(height: 20),
           FilledButton(
