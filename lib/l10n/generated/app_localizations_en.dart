@@ -118,6 +118,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Make a voluntary donation to the platform';
 
   @override
+  String get commonShareFailed =>
+      'We couldn\'t open the sharing options. Please try again.';
+
+  @override
   String get donationsTitle => 'Support Le Hiboo';
 
   @override
@@ -174,6 +178,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get donationsPaymentCancelled => 'Payment cancelled.';
 
   @override
+  String get donationsCheckoutFailed =>
+      'We could not prepare or complete your donation. Please try again.';
+
+  @override
   String get donationsSuccessTitle => 'Thank you for your support!';
 
   @override
@@ -191,11 +199,35 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsPushSubtitle => 'Receive alerts on your phone';
 
   @override
+  String get settingsPushPermissionDenied =>
+      'Notifications are blocked for Le Hiboo. Allow them in your device settings, then try again.';
+
+  @override
+  String get settingsPushSetupFailed =>
+      'Notifications could not be activated on this device. Try again or enable them later in Settings.';
+
+  @override
+  String get settingsPushDeviceSyncFailed =>
+      'Notification permission was granted, but this device could not be linked to your account. Check your connection and try again.';
+
+  @override
+  String get settingsPushSubscriptionPending =>
+      'Permission was granted, but notification setup is not ready yet. Wait a moment and try again.';
+
+  @override
+  String get settingsPushPreferenceUpdateFailed =>
+      'Notification setup succeeded, but your account preference could not be saved. Try again.';
+
+  @override
   String get settingsNewsletterTitle => 'Newsletter';
 
   @override
   String get settingsNewsletterSubtitle =>
       'Event recommendations and deals by email';
+
+  @override
+  String get settingsNewsletterUpdateFailed =>
+      'Could not update your newsletter preference. Check your connection and try again.';
 
   @override
   String get settingsLanguageTitle => 'Language';
@@ -310,15 +342,47 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonErrorTitle => 'Oops!';
 
   @override
-  String get commonGenericError => 'Something went wrong.';
+  String get commonGenericError => 'We couldn\'t complete this action.';
 
   @override
   String get commonGenericRetryError =>
-      'Something went wrong. Please try again.';
+      'We couldn\'t complete your request. Please try again.';
 
   @override
   String get commonConnectionError =>
       'Connection error. Check your internet connection.';
+
+  @override
+  String get commonSessionExpiredError =>
+      'Your session has expired. Sign in again.';
+
+  @override
+  String get commonAccessDeniedError =>
+      'You don\'t have permission to perform this action.';
+
+  @override
+  String get commonNotFoundError =>
+      'This item is no longer available. Refresh and try again.';
+
+  @override
+  String get commonRequestTimeoutError =>
+      'The request took too long. Check your connection and try again.';
+
+  @override
+  String get commonConflictError =>
+      'This information has changed. Refresh and try again.';
+
+  @override
+  String get commonValidationError =>
+      'Some information is invalid. Check it and try again.';
+
+  @override
+  String get commonTooManyRequestsError =>
+      'Too many attempts. Wait a moment and try again.';
+
+  @override
+  String get commonServiceUnavailableError =>
+      'The service is temporarily unavailable. Try again in a moment.';
 
   @override
   String get commonSearchHint => 'Search...';
@@ -474,6 +538,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get userQuestionsLoadError => 'Unable to load your questions.';
 
   @override
+  String get userQuestionsLoadMoreError =>
+      'We couldn\'t load more questions. Check your connection and try again.';
+
+  @override
   String get userQuestionsEmptyTitle => 'No questions';
 
   @override
@@ -590,6 +658,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileAvatarUpdated => 'Profile photo updated';
 
   @override
+  String get profilePhotoPermissionDenied =>
+      'Photo access is blocked. Allow Le Hiboo to access your photos in your device settings, then try again.';
+
+  @override
+  String get profilePhotoPickerFailed =>
+      'Could not open your photo library. Please try again.';
+
+  @override
+  String get profileAvatarUploadFailed =>
+      'Could not update your profile photo. Check your connection and try again.';
+
+  @override
   String profileAvatarUploadError(String message) {
     return 'Upload error: $message';
   }
@@ -639,6 +719,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileUpdateSuccess => 'Profile updated successfully';
 
   @override
+  String get profileUpdateFailed =>
+      'Could not save your profile changes. Check your connection and try again.';
+
+  @override
   String profileGenericError(String message) {
     return 'Error: $message';
   }
@@ -654,6 +738,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profilePasswordChangeSuccess => 'Password changed successfully';
+
+  @override
+  String get profilePasswordChangeFailed =>
+      'Could not change your password. Check your current password and try again.';
 
   @override
   String get profileChangePasswordSubmit => 'Change';
@@ -676,6 +764,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileParticipantDeleted => 'Participant deleted';
+
+  @override
+  String get profileParticipantAddFailed =>
+      'Could not add this participant. Check the information and try again.';
+
+  @override
+  String get profileParticipantUpdateFailed =>
+      'Could not save this participant\'s changes. Please try again.';
+
+  @override
+  String get profileParticipantDeleteFailed =>
+      'Could not delete this participant. Please try again.';
 
   @override
   String get profileParticipantsEmptyTitle => 'No participants';
@@ -770,6 +870,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messagesContactPartner => 'Contact a partner';
 
   @override
+  String get messagesRecipientSearchFailed =>
+      'We couldn\'t load recipients. Check your connection and try again.';
+
+  @override
+  String get messagesOrganizationsLoadFailed =>
+      'We couldn\'t load the available organizations. Check your connection and try again.';
+
+  @override
+  String get messagesPartnersLoadFailed =>
+      'We couldn\'t load your accepted partners. Check your connection and try again.';
+
+  @override
   String get messagesBroadcastTitle => 'Broadcast';
 
   @override
@@ -804,7 +916,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get messagesBroadcastRecipientsPreviewError =>
-      'Could not calculate recipients.';
+      'We couldn\'t calculate the recipients. Check your selection and try again.';
+
+  @override
+  String get messagesBroadcastEventsLoadFailed =>
+      'We couldn\'t load your events. Check your connection and try again.';
+
+  @override
+  String get messagesBroadcastSlotsLoadFailed =>
+      'We couldn\'t load the event slots. Check your connection and try again.';
+
+  @override
+  String get messagesBroadcastSendFailed =>
+      'We couldn\'t send this broadcast. Your draft is still here—check the recipients and try again.';
+
+  @override
+  String get messagesBroadcastDetailLoadFailed =>
+      'We couldn\'t load this broadcast. Check your connection and try again.';
 
   @override
   String messagesBroadcastPotentialRecipients(int count) {
@@ -895,7 +1023,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messagesContactOrganizer => 'Contact an organizer';
 
   @override
-  String get messagesGenericError => 'Something went wrong.';
+  String get messagesGenericError =>
+      'We couldn\'t start this conversation. Try again.';
+
+  @override
+  String get messagesConversationCreateFailed =>
+      'We couldn\'t start this conversation. Your message is still here—try again.';
+
+  @override
+  String get messagesBookingConversationCreateFailed =>
+      'We couldn\'t start a conversation for this booking. Check your connection and try again.';
+
+  @override
+  String get messagesSupportTicketCreateFailed =>
+      'We couldn\'t create this support ticket. Your message is still here—try again.';
 
   @override
   String get messagesFallbackOrganizer => 'Organizer';
@@ -1115,6 +1256,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get messagesConversationsLoadMoreFailed =>
+      'We couldn\'t load more conversations. Your current messages are still available—try again.';
+
+  @override
+  String get messagesBroadcastsLoadMoreFailed =>
+      'We couldn\'t load more broadcasts. The broadcasts already shown are still available—try again.';
+
+  @override
+  String get messagesReportsLoadMoreFailed =>
+      'We couldn\'t load more reports. The reports already shown are still available—try again.';
+
+  @override
   String get messagesSearchHint => 'Search...';
 
   @override
@@ -1204,10 +1357,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messagesDeleteAction => 'Delete';
 
   @override
+  String get messagesEditFailed =>
+      'We couldn\'t save your changes. Your message is still here—try again.';
+
+  @override
+  String get messagesDeleteFailed =>
+      'We couldn\'t delete this message. It is still visible—try again.';
+
+  @override
   String get messagesReopenTooltip => 'Reopen';
 
   @override
+  String get messagesReopenConversationFailed =>
+      'We couldn\'t reopen this conversation. Try again.';
+
+  @override
   String get messagesCloseConversation => 'Close conversation';
+
+  @override
+  String get messagesCloseConversationFailed =>
+      'We couldn\'t close this conversation. You can still send messages—try again.';
+
+  @override
+  String get messagesCloseSupportTicketFailed =>
+      'We couldn\'t close this support ticket. You can still reply—try again.';
 
   @override
   String get messagesReadonlyBanner =>
@@ -1250,6 +1423,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get messagesReportSubmit => 'Report';
+
+  @override
+  String get messagesReportSubmitFailed =>
+      'We couldn\'t send your report. Your selections are still here—try again.';
 
   @override
   String get messagesReportSuccessTitle => 'Report sent';
@@ -1390,6 +1567,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get voiceNothingHeard => 'I did not hear anything';
 
   @override
+  String get voiceRecognitionPermissionRequired =>
+      'Allow microphone and speech recognition access in Settings to use voice input.';
+
+  @override
+  String get voiceRecognitionNetworkError =>
+      'Voice input needs a connection. Check your internet connection and try again.';
+
+  @override
+  String get voiceRecognitionBusy =>
+      'Voice recognition is busy. Wait a moment and try again.';
+
+  @override
+  String get voiceRecognitionLanguageUnavailable =>
+      'Voice input is not available for this language. You can type your message instead.';
+
+  @override
+  String get voiceRecognitionTooManyAttempts =>
+      'Too many voice attempts. Wait a moment and try again.';
+
+  @override
+  String get voiceRecognitionUnavailable =>
+      'Voice input is unavailable right now. Try again or type your message instead.';
+
+  @override
   String get petitBooChatHintListening => 'Listening...';
 
   @override
@@ -1416,8 +1617,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get petitBooNewConversation => 'New conversation';
 
   @override
+  String get petitBooServiceChecking =>
+      'Checking the connection to Petit Boo...';
+
+  @override
   String get petitBooServiceUnavailable =>
       'Petit Boo is temporarily unavailable';
+
+  @override
+  String get petitBooServiceCheckFailed =>
+      'We couldn\'t check whether Petit Boo is available. Check your internet connection and try again.';
 
   @override
   String get petitBooGreetingMorning => 'Good morning';
@@ -1543,6 +1752,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get petitBooConversationsLoadFailed => 'Could not load conversations';
+
+  @override
+  String get petitBooConversationsLoadMoreFailed =>
+      'We couldn\'t load older conversations. Check your connection and try again.';
+
+  @override
+  String get petitBooConversationDeleteFailed =>
+      'We couldn\'t delete this conversation. It is still in your history; please try again.';
 
   @override
   String get petitBooEngagementWelcome => 'Hi! Can I help? 🌟';
@@ -2265,10 +2482,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not load the conversation';
 
   @override
-  String get petitBooApiErrorFallback => 'Petit Boo error';
+  String get petitBooApiErrorFallback =>
+      'Petit Boo is temporarily unavailable. Try again in a moment.';
 
   @override
-  String get petitBooGenericError => 'An error occurred';
+  String get petitBooGenericError =>
+      'Petit Boo couldn\'t answer. Try again in a moment.';
 
   @override
   String get petitBooConfirmationTitle => 'Confirmation required';
@@ -2410,7 +2629,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get petitBooActionErrorTitle => 'Failed';
 
   @override
-  String get petitBooActionGenericError => 'Something went wrong';
+  String get petitBooActionGenericError =>
+      'Petit Boo couldn\'t complete this action. Try again.';
 
   @override
   String petitBooFavoriteListsCount(int count) {
@@ -2601,6 +2821,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get membershipLeaveAction => 'Leave';
 
   @override
+  String get membershipJoinFailed =>
+      'Could not send your membership request. Please try again.';
+
+  @override
+  String get membershipCancelRequestFailed =>
+      'Could not cancel your membership request. Please try again.';
+
+  @override
+  String get membershipLeaveFailed =>
+      'Could not leave this organization. Please try again.';
+
+  @override
   String get membershipCancelRequestTitle => 'Cancel request?';
 
   @override
@@ -2646,6 +2878,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privateEventsLoadError => 'Could not load events.';
+
+  @override
+  String get privateEventsLoadMoreError =>
+      'We couldn\'t load more private events. Check your connection and try again.';
 
   @override
   String get privateEventsPrivateBadge => 'Private';
@@ -2701,7 +2937,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get membershipInvitationAcceptFailed =>
-      'Could not accept this invitation.';
+      'Could not accept this invitation. Please try again.';
+
+  @override
+  String get membershipInvitationDeclineFailed =>
+      'Could not decline this invitation. Please try again.';
 
   @override
   String get membershipInvitationDeclineTitle => 'Decline invitation?';
@@ -2759,6 +2999,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get membershipInvitationNotFoundBody =>
       'The link may have been disabled. Ask the organizer to send you a new invitation.';
+
+  @override
+  String get membershipInvitationLoadFailedTitle =>
+      'Could not load this invitation.';
+
+  @override
+  String get membershipInvitationLoadFailedBody =>
+      'The invitation could not be loaded right now. Please try again.';
 
   @override
   String get personalizedFeedTitle => 'For you';
@@ -2843,7 +3091,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get organizerFollowAction => 'Follow';
 
   @override
+  String get organizerFollowError =>
+      'Could not follow this organizer. Please try again.';
+
+  @override
   String get organizerUnfollowAction => 'Unfollow';
+
+  @override
+  String get organizerUnfollowError =>
+      'Could not unfollow this organizer. Please try again.';
 
   @override
   String get organizerFollowedSearchHint => 'Search for an organizer';
@@ -2879,6 +3135,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Try another keyword or change the sorting.';
 
   @override
+  String get organizersLoadMoreError => 'Could not load more organizers.';
+
+  @override
   String get organizersSortLabel => 'Sort by';
 
   @override
@@ -2892,6 +3151,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get organizerActivitiesLoadError => 'Could not load activities.';
+
+  @override
+  String get organizerActivitiesLoadMoreError =>
+      'Could not load more activities.';
 
   @override
   String get organizerActivitiesEmpty => 'No activities published yet.';
@@ -2914,6 +3177,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get organizerReviewsLoadError => 'Could not load reviews.';
+
+  @override
+  String get organizerReviewsLoadMoreError => 'Could not load more reviews.';
 
   @override
   String organizerReviewsTotal(int count) {
@@ -3133,7 +3399,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkinBlockedTicketNotFoundTitle => 'Ticket not found';
 
   @override
-  String get checkinBlockedUnknownTitle => 'Error';
+  String get checkinBlockedUnknownTitle => 'Check-in unavailable';
 
   @override
   String get checkinBlockedDoNotAdmit => 'Do not admit.';
@@ -3159,7 +3425,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'QR not recognized - try again or enter the code.';
 
   @override
-  String get checkinBlockedUnknownBody => 'Unexpected error, try again.';
+  String get checkinBlockedUnknownBody =>
+      'We couldn\'t verify this ticket. Check your connection and try again.';
 
   @override
   String get authEmailLabel => 'Email';
@@ -3428,6 +3695,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authPermissionLocationGranted => 'Location already enabled';
 
   @override
+  String get authPermissionLocationSetupFailed =>
+      'Location access could not be checked on this device. Try again or continue without it and enable it later in Settings.';
+
+  @override
+  String get authPermissionLocationContinueWithout =>
+      'Continue without location';
+
+  @override
   String get authPermissionAudioTitle => 'Talk to Petit Boo by voice';
 
   @override
@@ -3446,6 +3721,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authPermissionAudioGranted => 'Microphone already enabled';
+
+  @override
+  String get authPermissionAudioSetupFailed =>
+      'Microphone access could not be checked on this device. Try again or continue without it and enable it later in Settings.';
+
+  @override
+  String get authPermissionAudioContinueWithout =>
+      'Continue without voice input';
 
   @override
   String get authPermissionNotificationsTitle => 'Do not miss the best plans';
@@ -3477,6 +3760,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get authPermissionNotificationsGranted =>
       'Notifications already enabled';
+
+  @override
+  String get authPermissionNotificationsEnable => 'Enable notifications';
+
+  @override
+  String get authPermissionNotificationsNotNow => 'Not now';
 
   @override
   String get authEmailAddressInvalid => 'Please enter a valid email address';
@@ -3872,6 +4161,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get authCompanySearchConnectionError =>
+      'The official company directory could not be reached. Check your connection, retry, or enter the details manually.';
+
+  @override
+  String get authCompanySearchUnavailable =>
+      'The official company directory is temporarily unavailable. Retry later or enter the details manually.';
+
+  @override
+  String get authCompanySearchNoResults =>
+      'No company was found. Check the name or enter the details manually.';
+
+  @override
   String authSiretLine(String siret) {
     return 'SIRET: $siret';
   }
@@ -4030,6 +4331,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeNoNewActivities => 'No new activities found.';
+
+  @override
+  String get homeRefreshPartialFailure =>
+      'Some sections couldn\'t be refreshed. Try again.';
 
   @override
   String get homeNearbyAvailableTitle => 'Available activities nearby';
@@ -4287,6 +4592,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeCityNotFound => 'City not found';
 
   @override
+  String get homeCityLoadError => 'Unable to load this city';
+
+  @override
+  String get homeCityActivitiesLoadError =>
+      'Unable to load activities in this city';
+
+  @override
+  String get homeCityActivitiesLoadMoreError =>
+      'We couldn\'t load more activities. Check your connection and try again.';
+
+  @override
   String homeCityDescriptionFallback(String cityName) {
     return 'Discover activities in $cityName.';
   }
@@ -4478,6 +4794,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String searchSavedSearchCreated(String name) {
     return 'Search \"$name\" saved!';
   }
+
+  @override
+  String get searchSaveFailed =>
+      'We couldn\'t save this search. Check your connection and try again.';
 
   @override
   String get searchAlreadySaved => 'Already saved';
@@ -4686,6 +5006,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchLoadError => 'Unable to load';
 
   @override
+  String get searchLoadMoreError =>
+      'We couldn\'t load more results. Try again.';
+
+  @override
   String get searchHintCity => 'Search for a city';
 
   @override
@@ -4866,7 +5190,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'There are no events available right now';
 
   @override
-  String get eventGenericErrorTitle => 'Something went wrong';
+  String get eventGenericErrorTitle => 'Activities unavailable';
 
   @override
   String get eventMapLocationError => 'Unable to get your location';
@@ -4950,6 +5274,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventInvalidBookingLink => 'Invalid booking link';
+
+  @override
+  String get eventOpenBookingLinkError =>
+      'The booking page couldn\'t be opened. Check your connection or try again later.';
 
   @override
   String get eventChooseDateFirst => 'Please choose a date first';
@@ -5173,6 +5501,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventRemindMe => 'Remind me';
 
   @override
+  String get eventReminderCreateFailed =>
+      'Could not set this reminder. It was not added. Please try again.';
+
+  @override
+  String get eventReminderRemoveFailed =>
+      'Could not remove this reminder. It is still active. Please try again.';
+
+  @override
   String get eventViewWebsite => 'View website';
 
   @override
@@ -5357,6 +5693,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventPasswordNetworkError => 'Network error. Try again.';
 
   @override
+  String get eventPasswordCheckFailed =>
+      'The password could not be verified because the service is temporarily unavailable. Try again in a moment.';
+
+  @override
   String eventPasswordRetryIn(int seconds) {
     return 'Try again in ${seconds}s';
   }
@@ -5430,6 +5770,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventQuestionSent => 'Your question has been sent!';
 
   @override
+  String get eventQuestionSubmitFailed =>
+      'Your question couldn\'t be sent. Check your connection and try again.';
+
+  @override
   String get eventQuestionAlreadyAsked =>
       'You have already asked a question about this event.';
 
@@ -5465,6 +5809,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventQuestionsLoadError => 'Unable to load questions';
+
+  @override
+  String get eventMyQuestionLoadErrorTitle => 'Question status unavailable';
+
+  @override
+  String get eventMyQuestionLoadErrorBody =>
+      'We couldn\'t check whether you have already asked a question. Retry before sending a new one.';
+
+  @override
+  String get eventQuestionsLoadMoreError =>
+      'We couldn\'t load more questions. Check your connection and try again.';
+
+  @override
+  String get eventAvailabilityLoadError =>
+      'Live ticket availability couldn\'t be checked. The dates shown may have changed.';
 
   @override
   String get eventQuestionsEnd => 'You have seen all questions';
@@ -5729,7 +6088,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bookingContinueToPayment => 'Continue to payment';
 
   @override
-  String get bookingPaymentCancelled => 'Payment cancelled';
+  String get bookingPaymentCancelled =>
+      'Payment was cancelled. You can try again when you are ready.';
+
+  @override
+  String get bookingPaymentFailed =>
+      'The payment was declined or could not be completed. Check your card details or try another payment method.';
+
+  @override
+  String get bookingPaymentTimedOut =>
+      'The payment timed out. Check your internet connection, then try again.';
+
+  @override
+  String get bookingPaymentUnavailable =>
+      'Card payment is temporarily unavailable. Please try again later or contact support if the problem continues.';
+
+  @override
+  String get bookingCheckoutConnectionError =>
+      'We could not continue checkout because of a connection problem. Check your internet connection, then try again.';
+
+  @override
+  String get bookingCheckoutTimedOut =>
+      'Checkout timed out. Check your internet connection, then try again.';
+
+  @override
+  String get bookingPaymentConfirmationUncertain =>
+      'We could not confirm your booking after payment. Your payment may have succeeded. Check My bookings before trying to pay again to avoid being charged twice.';
+
+  @override
+  String get bookingCreateFailed =>
+      'We couldn\'t create this booking. Your selections are still here—check availability and try again.';
+
+  @override
+  String get bookingConfirmationFailed =>
+      'We couldn\'t confirm this booking. It has not been completed; please try again.';
 
   @override
   String bookingTicketsCount(int count) {
@@ -6010,6 +6402,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String bookingLoadError(String message) {
     return 'Loading error: $message';
   }
+
+  @override
+  String get bookingDetailLoadFallback =>
+      'We couldn\'t load this booking. Check your connection and try again.';
 
   @override
   String get bookingEmptyAllTitle => 'No bookings';
@@ -6398,6 +6794,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String tripPlanDeleteFailed(String title) {
+    return 'Could not delete \"$title\". It is still in your outings. Please try again.';
+  }
+
+  @override
   String get tripPlansUntitledPlan => 'Untitled plan';
 
   @override
@@ -6411,7 +6812,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tripPlansTalkToPetitBoo => 'Talk to Petit Boo';
 
   @override
-  String get tripPlansErrorTitle => 'Something went wrong';
+  String get tripPlansErrorTitle => 'Outings unavailable';
 
   @override
   String get tripPlansLoadErrorBody => 'Unable to load your outings';
@@ -6447,6 +6848,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tripPlanEditUpdatedSnack => 'Plan updated';
+
+  @override
+  String get tripPlanUpdateFailed =>
+      'Could not update this outing. Your changes were not saved. Please try again.';
 
   @override
   String get tripPlanEditDiscardChangesTitle => 'Discard changes?';
@@ -6591,6 +6996,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reviewsUserLoadMoreError => 'Unable to load more reviews.';
+
+  @override
+  String get reviewsCreateFailed =>
+      'We couldn\'t publish your review. Check the form and try again.';
+
+  @override
+  String get reviewsUpdateFailed =>
+      'We couldn\'t update your review. Your changes were kept; please try again.';
+
+  @override
+  String get reviewsDeleteFailed =>
+      'We couldn\'t delete your review. Please try again.';
+
+  @override
+  String get reviewsVoteFailed =>
+      'We couldn\'t record your vote. Please try again.';
+
+  @override
+  String get reviewsReportFailed =>
+      'We couldn\'t send your report. Please try again.';
+
+  @override
+  String get reviewsEligibilityChecking =>
+      'Checking whether you can write a review…';
+
+  @override
+  String get reviewsEligibilityLoadError =>
+      'We couldn\'t check whether you can review this event. Retry before writing a review.';
 
   @override
   String get reviewsMyEmptyBody =>
@@ -6772,13 +7205,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gamificationComeBackTomorrow => 'Come back tomorrow!';
 
   @override
+  String get gamificationComingSoonCta => 'Coming soon';
+
+  @override
   String get gamificationCompleted => 'Completed';
 
   @override
   String get gamificationCurrentRankPrefix => 'You are';
 
   @override
-  String get gamificationDailyClaimError => 'Error claiming reward';
+  String get gamificationDailyClaimError =>
+      'We couldn\'t claim your reward. Please try again.';
+
+  @override
+  String gamificationDailyRewardClaimed(int count) {
+    return 'Reward claimed: +$count Hibons!';
+  }
 
   @override
   String get gamificationDailyRewardAlreadyClaimed =>
@@ -6900,6 +7342,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gamificationNoTransactions => 'No transactions';
 
   @override
+  String get gamificationTransactionsLoadMoreError =>
+      'We couldn\'t load more Hibon transactions. Check your connection and try again.';
+
+  @override
   String gamificationPetitBooDailyBonus(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7004,6 +7450,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get gamificationWheelSpinCta => 'Spin';
 
   @override
+  String get gamificationWheelSpinError =>
+      'We couldn\'t spin the wheel. Please try again.';
+
+  @override
   String get gamificationWheelWinTitle => 'Congratulations!';
 
   @override
@@ -7058,6 +7508,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get alertsDeleteFailed =>
+      'We couldn\'t delete this alert. Check your connection and try again.';
+
+  @override
   String alertsCreatedOn(String date) {
     return 'Created on $date';
   }
@@ -7069,7 +7523,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get alertsUnnamed => 'Unnamed alert';
 
   @override
-  String get favoritesLoadError => 'Loading error';
+  String get favoritesLoadError => 'Unable to load your favorites';
 
   @override
   String get favoritesEmptyTitle => 'No favorites';
@@ -7154,7 +7608,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get favoriteListCreateAction => 'Create';
 
   @override
-  String get favoriteListCreateError => 'Error creating the list';
+  String get favoriteListCreateError =>
+      'We couldn\'t create this list. Check your connection and try again.';
 
   @override
   String get favoriteListEditTitle => 'Edit list';
@@ -7172,7 +7627,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get favoriteListUpdateError => 'Error updating';
+  String get favoriteListUpdateError =>
+      'We couldn\'t update this list. Check your connection and try again.';
 
   @override
   String get favoriteListDeleteTitle => 'Delete list?';
@@ -7192,7 +7648,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get favoriteListDeleteError => 'Error deleting';
+  String get favoriteListDeleteError =>
+      'We couldn\'t delete this list. Check your connection and try again.';
 
   @override
   String get favoriteListDeleteThisAction => 'Delete this list';
@@ -7238,7 +7695,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get favoriteAddedToList => 'Added to list';
 
   @override
-  String get favoriteGenericError => 'Something went wrong.';
+  String get favoriteGenericError =>
+      'We couldn\'t update your favorites. Try again.';
 
   @override
   String get notificationsTitle => 'Notifications';
@@ -7273,6 +7731,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationsActionError => 'Action unavailable right now';
+
+  @override
+  String get notificationsMarkAllReadError =>
+      'We couldn\'t mark all notifications as read. Try again.';
+
+  @override
+  String get notificationsLoadMoreError =>
+      'We couldn\'t load more notifications. Try again.';
 
   @override
   String get notificationsDeleted => 'Notification deleted';
@@ -7365,6 +7831,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get remindersDeleted => 'Reminder deleted';
+
+  @override
+  String get remindersDeleteFailed =>
+      'Could not delete this reminder. It is still active. Please try again.';
 
   @override
   String remindersDateFromTo(String date, String start, String end) {

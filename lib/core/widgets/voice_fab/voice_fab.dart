@@ -9,6 +9,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../../features/petit_boo/presentation/providers/engagement_provider.dart';
 import '../../l10n/l10n.dart';
 import '../../utils/guest_guard.dart';
+import '../../utils/speech_recognition_error_message.dart';
 import 'animated_ring.dart';
 import 'pulse_waves.dart';
 import 'voice_fab_sounds.dart';
@@ -80,25 +81,37 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
     );
   }
 
-  Future<void> _initSpeech() async {
+  Future<bool> _initSpeech() async {
     try {
-      _speechEnabled = await _speech.initialize(
+      final enabled = await _speech.initialize(
         onStatus: (status) {
           if (status == 'notListening' || status == 'done') {
             if (mounted && _isListening) {
-              _stopListening(sendMessage: true);
+              unawaited(_stopListening(sendMessage: true));
             }
           }
         },
         onError: (error) {
           if (mounted) {
-            _showError(context.l10n.voiceMicrophoneError(error.errorMsg));
-            _stopListening(sendMessage: false);
+            _showError(
+              speechRecognitionErrorMessage(context.l10n, error.errorMsg),
+            );
+            unawaited(_stopListening(sendMessage: false));
           }
         },
       );
+      if (!mounted) return false;
+      setState(() => _speechEnabled = enabled);
+      if (!enabled) {
+        _showError(speechRecognitionErrorMessage(context.l10n, null));
+      }
+      return enabled;
     } catch (e) {
       debugPrint('VoiceFab: Speech init error: $e');
+      if (mounted) {
+        _showError(speechRecognitionErrorMessage(context.l10n, e));
+      }
+      return false;
     }
   }
 
@@ -155,6 +168,7 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
 
   /// Affiche un tooltip d'erreur
   void _showError(String message) {
+    if (!mounted) return;
     _tooltipTimer?.cancel();
     setState(() {
       _showTooltip = true;
@@ -188,13 +202,31 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
     final l10n = context.l10n;
     final localeName = context.appLocaleName;
 
+    try {
+      await _startListeningWithPermissions(l10n, localeName);
+    } catch (e) {
+      debugPrint('VoiceFab: Speech start error: $e');
+      if (!mounted) return;
+      _scaleController.reverse();
+      setState(() {
+        _isListening = false;
+        _transcription = '';
+      });
+      _showError(speechRecognitionErrorMessage(l10n, e));
+    }
+  }
+
+  Future<void> _startListeningWithPermissions(
+    AppLocalizations l10n,
+    String localeName,
+  ) async {
     // Vérifier la permission microphone
     var micStatus = await Permission.microphone.status;
     if (!micStatus.isGranted) {
       micStatus = await Permission.microphone.request();
       if (micStatus.isPermanentlyDenied) {
         _showError(l10n.voiceAllowMicrophoneSettings);
-        openAppSettings();
+        await openAppSettings();
         return;
       }
       if (!micStatus.isGranted) {
@@ -209,7 +241,7 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
       speechStatus = await Permission.speech.request();
       if (speechStatus.isPermanentlyDenied) {
         _showError(l10n.voiceAllowSpeechSettings);
-        openAppSettings();
+        await openAppSettings();
         return;
       }
       if (!speechStatus.isGranted) {
@@ -219,11 +251,8 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
     }
 
     if (!_speechEnabled) {
-      await _initSpeech();
-      if (!_speechEnabled) {
-        _showError(l10n.voiceMicrophoneUnavailable);
-        return;
-      }
+      final enabled = await _initSpeech();
+      if (!enabled) return;
     }
 
     // Cacher le tooltip si visible
@@ -246,7 +275,7 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
     });
 
     // Démarrer l'écoute
-    await _speech.listen(
+    final started = await _speech.listen(
       onResult: (result) {
         if (mounted && _isListening) {
           setState(() {
@@ -261,11 +290,22 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
         partialResults: true,
       ),
     );
+    if (!started && mounted) {
+      _scaleController.reverse();
+      setState(() => _isListening = false);
+      _showError(speechRecognitionErrorMessage(l10n, null));
+    }
   }
 
   /// Arrête l'écoute (relâchement)
   Future<void> _stopListening({required bool sendMessage}) async {
-    await _speech.stop();
+    try {
+      await _speech.stop();
+    } catch (e) {
+      debugPrint('VoiceFab: Speech stop error: $e');
+    }
+
+    if (!mounted) return;
 
     // Son de fin
     VoiceFabSounds.playStopListening();
@@ -275,9 +315,7 @@ class _VoiceFabState extends ConsumerState<VoiceFab>
 
     final transcriptionText = _transcription.trim();
 
-    setState(() {
-      _isListening = false;
-    });
+    setState(() => _isListening = false);
 
     if (sendMessage && mounted) {
       if (transcriptionText.isEmpty) {

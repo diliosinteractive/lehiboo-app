@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lehiboo/core/l10n/app_locale.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
+import 'package:lehiboo/l10n/generated/app_localizations_fr.dart';
 
 void main() {
   setUp(() {
@@ -120,7 +121,7 @@ void main() {
 
       expect(
         ApiResponseHandler.extractError(error),
-        'Something went wrong. Please try again.',
+        'The service is temporarily unavailable. Try again in a moment.',
       );
     });
 
@@ -132,7 +133,7 @@ void main() {
 
       expect(
         ApiResponseHandler.extractError(error),
-        'Something went wrong. Please try again.',
+        "We couldn't complete your request. Please try again.",
       );
     });
 
@@ -140,6 +141,176 @@ void main() {
       expect(
         ApiResponseHandler.extractError(Exception('Please choose a date.')),
         'Please choose a date.',
+      );
+    });
+
+    test('rejects client-generated response and parsing diagnostics', () {
+      const fallback = 'Could not load activities. Please try again.';
+
+      for (final diagnostic in [
+        'Unexpected data format in events response',
+        'Unexpected cancel response',
+        'Failed to load events',
+        'Failed to save PDF to Downloads',
+        'Missing auth field in response payload',
+      ]) {
+        expect(
+          ApiResponseHandler.extractError(
+            Exception(diagnostic),
+            fallback: fallback,
+          ),
+          fallback,
+          reason: diagnostic,
+        );
+      }
+    });
+
+    test('maps an empty 401 response to an actionable session message', () {
+      final requestOptions = RequestOptions(path: '/me');
+      final error = DioException(
+        requestOptions: requestOptions,
+        response: Response<dynamic>(
+          requestOptions: requestOptions,
+          statusCode: 401,
+          data: {'message': 'Unauthenticated.'},
+        ),
+        type: DioExceptionType.badResponse,
+      );
+
+      expect(
+        ApiResponseHandler.extractError(error),
+        'Your session has expired. Sign in again.',
+      );
+    });
+
+    test('maps response status when no useful backend message exists', () {
+      final expectedByStatus = <int, String>{
+        403: "You don't have permission to perform this action.",
+        404: 'This item is no longer available. Refresh and try again.',
+        408: 'The request took too long. Check your connection and try again.',
+        409: 'This information has changed. Refresh and try again.',
+        422: 'Some information is invalid. Check it and try again.',
+        429: 'Too many attempts. Wait a moment and try again.',
+        503: 'The service is temporarily unavailable. Try again in a moment.',
+      };
+
+      for (final entry in expectedByStatus.entries) {
+        final requestOptions = RequestOptions(path: '/resource');
+        final error = DioException(
+          requestOptions: requestOptions,
+          response: Response<dynamic>(
+            requestOptions: requestOptions,
+            statusCode: entry.key,
+            data: const <String, dynamic>{},
+          ),
+          type: DioExceptionType.badResponse,
+        );
+
+        expect(
+          ApiResponseHandler.extractError(error),
+          entry.value,
+          reason: 'status ${entry.key}',
+        );
+      }
+    });
+
+    test('never exposes a machine-code-only error', () {
+      final requestOptions = RequestOptions(path: '/orders');
+      final error = DioException(
+        requestOptions: requestOptions,
+        response: Response<dynamic>(
+          requestOptions: requestOptions,
+          statusCode: 422,
+          data: {'error': 'booking_error'},
+        ),
+        type: DioExceptionType.badResponse,
+      );
+
+      expect(
+        ApiResponseHandler.extractError(error),
+        'Some information is invalid. Check it and try again.',
+      );
+      expect(ApiResponseHandler.safeUserMessage('booking_error'), isNull);
+    });
+
+    test('maps known machine codes when the response has no human message', () {
+      final requestOptions = RequestOptions(path: '/resource');
+      final error = DioException(
+        requestOptions: requestOptions,
+        response: Response<dynamic>(
+          requestOptions: requestOptions,
+          statusCode: 400,
+          data: {'error_code': 'rate_limited'},
+        ),
+        type: DioExceptionType.badResponse,
+      );
+
+      expect(
+        ApiResponseHandler.extractError(error),
+        'Too many attempts. Wait a moment and try again.',
+      );
+    });
+
+    test('extracts the first safe nested validation message', () {
+      final requestOptions = RequestOptions(path: '/orders');
+      final error = DioException(
+        requestOptions: requestOptions,
+        response: Response<dynamic>(
+          requestOptions: requestOptions,
+          statusCode: 422,
+          data: {
+            'errors': {
+              'items': {
+                '0': {
+                  'quantity': ['Choose a smaller quantity.'],
+                },
+              },
+            },
+          },
+        ),
+        type: DioExceptionType.badResponse,
+      );
+
+      expect(
+        ApiResponseHandler.extractError(error),
+        'Choose a smaller quantity.',
+      );
+    });
+
+    test('uses localized status messages', () {
+      AppLocaleCache.setLanguageCode('fr');
+      final requestOptions = RequestOptions(path: '/resource');
+      final error = DioException(
+        requestOptions: requestOptions,
+        response: Response<dynamic>(
+          requestOptions: requestOptions,
+          statusCode: 429,
+          data: {'error': 'too_many_requests'},
+        ),
+        type: DioExceptionType.badResponse,
+      );
+
+      expect(
+        ApiResponseHandler.extractError(error),
+        'Trop de tentatives. Patientez un instant puis réessayez.',
+      );
+    });
+
+    test('uses explicitly supplied localizations over the cached locale', () {
+      final request = RequestOptions(path: '/events/private');
+      final error = DioException(
+        requestOptions: request,
+        response: Response<dynamic>(
+          requestOptions: request,
+          statusCode: 503,
+        ),
+        type: DioExceptionType.badResponse,
+      );
+      final french = AppLocalizationsFr();
+
+      expect(
+        ApiResponseHandler.extractError(error, localizations: french),
+        french.commonServiceUnavailableError,
       );
     });
   });

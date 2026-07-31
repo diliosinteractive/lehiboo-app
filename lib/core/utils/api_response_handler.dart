@@ -169,12 +169,15 @@ class ApiResponseHandler {
   ///  6. `{ "error": "…" }`                                      — machine-code fallback
   ///
   /// Network / timeout errors return a localized connectivity message.
+  /// Empty, boilerplate, or machine-code-only response messages fall back to
+  /// an actionable message derived from the HTTP status.
   /// [ApiFormatException] and unrecognised errors return [fallback].
   static String extractError(
     dynamic error, {
     String? fallback,
+    AppLocalizations? localizations,
   }) {
-    final l10n = cachedAppLocalizations();
+    final l10n = localizations ?? cachedAppLocalizations();
     final fallbackMessage = fallback ?? l10n.commonGenericRetryError;
 
     if (error is DioException) {
@@ -186,8 +189,23 @@ class ApiResponseHandler {
           return l10n.commonConnectionError;
         case DioExceptionType.badResponse:
           final data = error.response?.data;
-          if (data is Map<String, dynamic>) {
-            return _extractMessageFromBody(data) ?? fallbackMessage;
+          if (data is Map) {
+            final body = Map<String, dynamic>.from(data);
+            final message = _extractMessageFromBody(body);
+            if (message != null) return message;
+
+            final codeMessage = _messageForMachineCode(
+              _extractMachineCode(body),
+              l10n,
+            );
+            if (codeMessage != null) return codeMessage;
+          }
+          return _messageForStatus(error.response?.statusCode, l10n) ??
+              fallbackMessage;
+        case DioExceptionType.unknown:
+          final diagnostic = '${error.message ?? ''} ${error.error ?? ''}';
+          if (_looksLikeConnectivityFailure(diagnostic)) {
+            return l10n.commonConnectionError;
           }
           return fallbackMessage;
         default:
@@ -222,6 +240,8 @@ class ApiResponseHandler {
     final message = _stripGenericExceptionPrefix(raw).trim();
     if (message.isEmpty) return null;
     if (_looksLikeDiagnosticMessage(message)) return null;
+    if (_looksLikeMachineCode(message)) return null;
+    if (_looksLikeBackendBoilerplate(message)) return null;
 
     return message;
   }
@@ -238,6 +258,22 @@ class ApiResponseHandler {
         true,
       _ => false,
     };
+  }
+
+  /// Returns a stable API error code when the exception carries one.
+  ///
+  /// This is intended for feature-specific mappers (authentication, booking,
+  /// payments, etc.). The raw code must never be rendered directly.
+  static String? extractErrorCode(dynamic error) {
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map) {
+        return _extractMachineCode(Map<String, dynamic>.from(data));
+      }
+    }
+
+    final value = _stripGenericExceptionPrefix(error.toString()).trim();
+    return _looksLikeMachineCode(value) ? value.toLowerCase() : null;
   }
 
   /// Extracts a human-readable message from a Laravel error response body.
@@ -264,8 +300,8 @@ class ApiResponseHandler {
       return safeUserMessage(data['message']);
     }
 
-    // A string `error` is commonly a machine code (`booking_error`,
-    // `not_found`, …). Only surface it when the API supplied no human message.
+    // A string `error` can still be a human sentence. Machine codes such as
+    // `booking_error` are rejected by [safeUserMessage] and mapped separately.
     if (error is String) return safeUserMessage(error);
 
     return null;
@@ -274,11 +310,97 @@ class ApiResponseHandler {
   static String? _firstValidationMessage(dynamic errors) {
     if (errors is! Map || errors.isEmpty) return null;
 
-    final first = errors.values.first;
-    if (first is List && first.isNotEmpty) {
-      return safeUserMessage(first.first);
+    for (final value in errors.values) {
+      if (value is List) {
+        for (final item in value) {
+          final message = safeUserMessage(item);
+          if (message != null) return message;
+        }
+        continue;
+      }
+      if (value is Map) {
+        final message = _firstValidationMessage(value);
+        if (message != null) return message;
+        continue;
+      }
+      final message = safeUserMessage(value);
+      if (message != null) return message;
     }
-    return safeUserMessage(first);
+    return null;
+  }
+
+  static String? _extractMachineCode(Map<String, dynamic> body) {
+    final candidates = <dynamic>[
+      body['code'],
+      body['error_code'],
+      if (body['error'] is String) body['error'],
+      if (body['error'] is Map) (body['error'] as Map)['code'],
+      if (body['error'] is Map) (body['error'] as Map)['error_code'],
+    ];
+
+    for (final candidate in candidates) {
+      if (candidate is String && _looksLikeMachineCode(candidate.trim())) {
+        return candidate.trim().toLowerCase();
+      }
+    }
+    return null;
+  }
+
+  static String? _messageForMachineCode(
+    String? code,
+    AppLocalizations l10n,
+  ) {
+    if (code == null) return null;
+
+    return switch (code) {
+      'unauthenticated' ||
+      'unauthorized' ||
+      'authentication_required' ||
+      'session_expired' =>
+        l10n.commonSessionExpiredError,
+      'forbidden' ||
+      'access_denied' ||
+      'permission_denied' =>
+        l10n.commonAccessDeniedError,
+      'not_found' || 'resource_not_found' || 'gone' => l10n.commonNotFoundError,
+      'conflict' ||
+      'already_exists' ||
+      'state_conflict' =>
+        l10n.commonConflictError,
+      'invalid_request' ||
+      'validation_error' ||
+      'validation_failed' =>
+        l10n.commonValidationError,
+      'rate_limited' ||
+      'too_many_requests' ||
+      'too_many_attempts' =>
+        l10n.commonTooManyRequestsError,
+      'request_timeout' || 'timeout' => l10n.commonRequestTimeoutError,
+      'network_error' || 'connection_error' => l10n.commonConnectionError,
+      'internal_error' ||
+      'server_error' ||
+      'service_unavailable' =>
+        l10n.commonServiceUnavailableError,
+      _ => null,
+    };
+  }
+
+  static String? _messageForStatus(
+    int? statusCode,
+    AppLocalizations l10n,
+  ) {
+    return switch (statusCode) {
+      400 => l10n.commonValidationError,
+      401 => l10n.commonSessionExpiredError,
+      403 => l10n.commonAccessDeniedError,
+      404 || 410 => l10n.commonNotFoundError,
+      408 => l10n.commonRequestTimeoutError,
+      409 => l10n.commonConflictError,
+      422 => l10n.commonValidationError,
+      429 => l10n.commonTooManyRequestsError,
+      int code when code >= 500 => l10n.commonServiceUnavailableError,
+      _ => null,
+    };
   }
 
   static String _stripGenericExceptionPrefix(String value) {
@@ -303,6 +425,12 @@ class ApiResponseHandler {
       return true;
     }
     if (value.startsWith('Instance of ')) return true;
+    if (lower.startsWith('<!doctype') ||
+        lower.startsWith('<html') ||
+        value.startsWith('{') ||
+        value.startsWith('[')) {
+      return true;
+    }
     if (_looksLikeConnectivityFailure(value)) return true;
 
     final diagnosticTokens = <String>[
@@ -329,6 +457,9 @@ class ApiResponseHandler {
       'deepseek',
       'langchain',
       'insufficient_quota',
+      'sqlstate',
+      'queryexception',
+      'pdoexception',
     ];
     if (diagnosticTokens.any(lower.contains)) return true;
 
@@ -340,6 +471,45 @@ class ApiResponseHandler {
       RegExp(r'\.dart:\d+:\d+'),
     ];
     return diagnosticPatterns.any((pattern) => pattern.hasMatch(value));
+  }
+
+  static bool _looksLikeMachineCode(String value) {
+    return RegExp(
+      r'^[a-z0-9]+(?:[_-][a-z0-9]+)+$',
+      caseSensitive: false,
+    ).hasMatch(value);
+  }
+
+  static bool _looksLikeBackendBoilerplate(String value) {
+    final normalized =
+        value.trim().toLowerCase().replaceAll(RegExp(r'[.!:]+$'), '').trim();
+    final internalFailurePatterns = <RegExp>[
+      RegExp(r'^unexpected\b.*\b(response|payload|data|format)\b'),
+      RegExp(r'^failed to (load|fetch|parse|decode|save)\b'),
+      RegExp(r'^(missing|invalid)\b.*\b(response|payload|field|key)\b'),
+    ];
+    if (internalFailurePatterns
+        .any((pattern) => pattern.hasMatch(normalized))) {
+      return true;
+    }
+
+    return <String>{
+      'error',
+      'unknown error',
+      'an error occurred',
+      'something went wrong',
+      'bad request',
+      'unauthenticated',
+      'unauthorized',
+      'forbidden',
+      'not found',
+      'server error',
+      'internal server error',
+      'service unavailable',
+      'validation failed',
+      'the given data was invalid',
+      'too many requests',
+    }.contains(normalized);
   }
 
   // ---------------------------------------------------------------------------

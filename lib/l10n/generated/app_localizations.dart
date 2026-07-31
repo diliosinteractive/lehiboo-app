@@ -314,6 +314,12 @@ abstract class AppLocalizations {
   /// **'Faites un don volontaire à la plateforme'**
   String get profileSupportSubtitle;
 
+  /// No description provided for @commonShareFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir les options de partage. Réessayez.'**
+  String get commonShareFailed;
+
   /// No description provided for @donationsTitle.
   ///
   /// In fr, this message translates to:
@@ -416,6 +422,12 @@ abstract class AppLocalizations {
   /// **'Paiement annulé.'**
   String get donationsPaymentCancelled;
 
+  /// No description provided for @donationsCheckoutFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de préparer ou de finaliser votre don. Réessayez.'**
+  String get donationsCheckoutFailed;
+
   /// No description provided for @donationsSuccessTitle.
   ///
   /// In fr, this message translates to:
@@ -446,6 +458,36 @@ abstract class AppLocalizations {
   /// **'Recevoir les alertes sur ton téléphone'**
   String get settingsPushSubtitle;
 
+  /// No description provided for @settingsPushPermissionDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les notifications sont bloquées pour Le Hiboo. Autorisez-les dans les paramètres de votre téléphone, puis réessayez.'**
+  String get settingsPushPermissionDenied;
+
+  /// No description provided for @settingsPushSetupFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'activer les notifications sur cet appareil. Réessayez ou activez-les plus tard dans les paramètres.'**
+  String get settingsPushSetupFailed;
+
+  /// No description provided for @settingsPushDeviceSyncFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'autorisation a été accordée, mais cet appareil n\'a pas pu être associé à votre compte. Vérifiez votre connexion puis réessayez.'**
+  String get settingsPushDeviceSyncFailed;
+
+  /// No description provided for @settingsPushSubscriptionPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'autorisation a été accordée, mais l\'activation des notifications n\'est pas encore prête. Patientez un instant puis réessayez.'**
+  String get settingsPushSubscriptionPending;
+
+  /// No description provided for @settingsPushPreferenceUpdateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les notifications sont prêtes, mais la préférence de votre compte n\'a pas pu être enregistrée. Réessayez.'**
+  String get settingsPushPreferenceUpdateFailed;
+
   /// No description provided for @settingsNewsletterTitle.
   ///
   /// In fr, this message translates to:
@@ -457,6 +499,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Recommandations événements et bons plans par email'**
   String get settingsNewsletterSubtitle;
+
+  /// No description provided for @settingsNewsletterUpdateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de modifier votre préférence newsletter. Vérifiez votre connexion puis réessayez.'**
+  String get settingsNewsletterUpdateFailed;
 
   /// No description provided for @settingsLanguageTitle.
   ///
@@ -671,13 +719,13 @@ abstract class AppLocalizations {
   /// No description provided for @commonGenericError.
   ///
   /// In fr, this message translates to:
-  /// **'Une erreur est survenue.'**
+  /// **'Impossible de terminer cette action.'**
   String get commonGenericError;
 
   /// No description provided for @commonGenericRetryError.
   ///
   /// In fr, this message translates to:
-  /// **'Une erreur est survenue. Veuillez réessayer.'**
+  /// **'Impossible de terminer votre demande. Veuillez réessayer.'**
   String get commonGenericRetryError;
 
   /// No description provided for @commonConnectionError.
@@ -685,6 +733,54 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Erreur de connexion. Vérifiez votre connexion internet.'**
   String get commonConnectionError;
+
+  /// No description provided for @commonSessionExpiredError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre session a expiré. Reconnectez-vous.'**
+  String get commonSessionExpiredError;
+
+  /// No description provided for @commonAccessDeniedError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous n\'avez pas l\'autorisation d\'effectuer cette action.'**
+  String get commonAccessDeniedError;
+
+  /// No description provided for @commonNotFoundError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cet élément n\'est plus disponible. Actualisez puis réessayez.'**
+  String get commonNotFoundError;
+
+  /// No description provided for @commonRequestTimeoutError.
+  ///
+  /// In fr, this message translates to:
+  /// **'La demande a pris trop de temps. Vérifiez votre connexion puis réessayez.'**
+  String get commonRequestTimeoutError;
+
+  /// No description provided for @commonConflictError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ces informations ont changé. Actualisez puis réessayez.'**
+  String get commonConflictError;
+
+  /// No description provided for @commonValidationError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Certaines informations sont invalides. Vérifiez-les puis réessayez.'**
+  String get commonValidationError;
+
+  /// No description provided for @commonTooManyRequestsError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trop de tentatives. Patientez un instant puis réessayez.'**
+  String get commonTooManyRequestsError;
+
+  /// No description provided for @commonServiceUnavailableError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le service est temporairement indisponible. Réessayez dans quelques instants.'**
+  String get commonServiceUnavailableError;
 
   /// No description provided for @commonSearchHint.
   ///
@@ -974,6 +1070,12 @@ abstract class AppLocalizations {
   /// **'Impossible de charger vos questions.'**
   String get userQuestionsLoadError;
 
+  /// No description provided for @userQuestionsLoadMoreError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger plus de questions. Vérifiez votre connexion et réessayez.'**
+  String get userQuestionsLoadMoreError;
+
   /// No description provided for @userQuestionsEmptyTitle.
   ///
   /// In fr, this message translates to:
@@ -1196,6 +1298,24 @@ abstract class AppLocalizations {
   /// **'Photo de profil mise à jour'**
   String get profileAvatarUpdated;
 
+  /// No description provided for @profilePhotoPermissionDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'accès aux photos est bloqué. Autorisez Le Hiboo à accéder à vos photos dans les paramètres du téléphone, puis réessayez.'**
+  String get profilePhotoPermissionDenied;
+
+  /// No description provided for @profilePhotoPickerFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir votre photothèque. Veuillez réessayer.'**
+  String get profilePhotoPickerFailed;
+
+  /// No description provided for @profileAvatarUploadFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de mettre à jour votre photo de profil. Vérifiez votre connexion puis réessayez.'**
+  String get profileAvatarUploadFailed;
+
   /// No description provided for @profileAvatarUploadError.
   ///
   /// In fr, this message translates to:
@@ -1286,6 +1406,12 @@ abstract class AppLocalizations {
   /// **'Profil mis à jour avec succès'**
   String get profileUpdateSuccess;
 
+  /// No description provided for @profileUpdateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer les modifications du profil. Vérifiez votre connexion puis réessayez.'**
+  String get profileUpdateFailed;
+
   /// No description provided for @profileGenericError.
   ///
   /// In fr, this message translates to:
@@ -1315,6 +1441,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Mot de passe changé avec succès'**
   String get profilePasswordChangeSuccess;
+
+  /// No description provided for @profilePasswordChangeFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de changer votre mot de passe. Vérifiez votre mot de passe actuel puis réessayez.'**
+  String get profilePasswordChangeFailed;
 
   /// No description provided for @profileChangePasswordSubmit.
   ///
@@ -1357,6 +1489,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Participant supprimé'**
   String get profileParticipantDeleted;
+
+  /// No description provided for @profileParticipantAddFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ajouter ce participant. Vérifiez les informations puis réessayez.'**
+  String get profileParticipantAddFailed;
+
+  /// No description provided for @profileParticipantUpdateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer les modifications de ce participant. Veuillez réessayer.'**
+  String get profileParticipantUpdateFailed;
+
+  /// No description provided for @profileParticipantDeleteFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de supprimer ce participant. Veuillez réessayer.'**
+  String get profileParticipantDeleteFailed;
 
   /// No description provided for @profileParticipantsEmptyTitle.
   ///
@@ -1538,6 +1688,24 @@ abstract class AppLocalizations {
   /// **'Contacter un partenaire'**
   String get messagesContactPartner;
 
+  /// No description provided for @messagesRecipientSearchFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les destinataires. Vérifiez votre connexion puis réessayez.'**
+  String get messagesRecipientSearchFailed;
+
+  /// No description provided for @messagesOrganizationsLoadFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les organisations disponibles. Vérifiez votre connexion puis réessayez.'**
+  String get messagesOrganizationsLoadFailed;
+
+  /// No description provided for @messagesPartnersLoadFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger vos partenaires acceptés. Vérifiez votre connexion puis réessayez.'**
+  String get messagesPartnersLoadFailed;
+
   /// No description provided for @messagesBroadcastTitle.
   ///
   /// In fr, this message translates to:
@@ -1601,8 +1769,32 @@ abstract class AppLocalizations {
   /// No description provided for @messagesBroadcastRecipientsPreviewError.
   ///
   /// In fr, this message translates to:
-  /// **'Impossible de calculer les destinataires.'**
+  /// **'Impossible de calculer les destinataires. Vérifiez votre sélection puis réessayez.'**
   String get messagesBroadcastRecipientsPreviewError;
+
+  /// No description provided for @messagesBroadcastEventsLoadFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger vos événements. Vérifiez votre connexion puis réessayez.'**
+  String get messagesBroadcastEventsLoadFailed;
+
+  /// No description provided for @messagesBroadcastSlotsLoadFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les créneaux de l\'événement. Vérifiez votre connexion puis réessayez.'**
+  String get messagesBroadcastSlotsLoadFailed;
+
+  /// No description provided for @messagesBroadcastSendFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'envoyer cette diffusion. Votre brouillon est conservé : vérifiez les destinataires puis réessayez.'**
+  String get messagesBroadcastSendFailed;
+
+  /// No description provided for @messagesBroadcastDetailLoadFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger cette diffusion. Vérifiez votre connexion puis réessayez.'**
+  String get messagesBroadcastDetailLoadFailed;
 
   /// No description provided for @messagesBroadcastPotentialRecipients.
   ///
@@ -1739,8 +1931,26 @@ abstract class AppLocalizations {
   /// No description provided for @messagesGenericError.
   ///
   /// In fr, this message translates to:
-  /// **'Une erreur est survenue.'**
+  /// **'Impossible de démarrer cette conversation. Réessayez.'**
   String get messagesGenericError;
+
+  /// No description provided for @messagesConversationCreateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de démarrer cette conversation. Votre message est conservé : réessayez.'**
+  String get messagesConversationCreateFailed;
+
+  /// No description provided for @messagesBookingConversationCreateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de démarrer une conversation pour cette réservation. Vérifiez votre connexion puis réessayez.'**
+  String get messagesBookingConversationCreateFailed;
+
+  /// No description provided for @messagesSupportTicketCreateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de créer ce ticket support. Votre message est conservé : réessayez.'**
+  String get messagesSupportTicketCreateFailed;
 
   /// No description provided for @messagesFallbackOrganizer.
   ///
@@ -2144,6 +2354,24 @@ abstract class AppLocalizations {
   /// **'Erreur : {error}'**
   String messagesLoadError(String error);
 
+  /// No description provided for @messagesConversationsLoadMoreFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger plus de conversations. Les messages déjà affichés restent disponibles : réessayez.'**
+  String get messagesConversationsLoadMoreFailed;
+
+  /// No description provided for @messagesBroadcastsLoadMoreFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger plus de diffusions. Les diffusions déjà affichées restent disponibles : réessayez.'**
+  String get messagesBroadcastsLoadMoreFailed;
+
+  /// No description provided for @messagesReportsLoadMoreFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger plus de signalements. Les signalements déjà affichés restent disponibles : réessayez.'**
+  String get messagesReportsLoadMoreFailed;
+
   /// No description provided for @messagesSearchHint.
   ///
   /// In fr, this message translates to:
@@ -2318,17 +2546,47 @@ abstract class AppLocalizations {
   /// **'Supprimer'**
   String get messagesDeleteAction;
 
+  /// No description provided for @messagesEditFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer vos modifications. Votre message est conservé : réessayez.'**
+  String get messagesEditFailed;
+
+  /// No description provided for @messagesDeleteFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de supprimer ce message. Il est toujours visible : réessayez.'**
+  String get messagesDeleteFailed;
+
   /// No description provided for @messagesReopenTooltip.
   ///
   /// In fr, this message translates to:
   /// **'Rouvrir'**
   String get messagesReopenTooltip;
 
+  /// No description provided for @messagesReopenConversationFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de rouvrir cette conversation. Réessayez.'**
+  String get messagesReopenConversationFailed;
+
   /// No description provided for @messagesCloseConversation.
   ///
   /// In fr, this message translates to:
   /// **'Fermer la conversation'**
   String get messagesCloseConversation;
+
+  /// No description provided for @messagesCloseConversationFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de fermer cette conversation. Vous pouvez toujours envoyer des messages : réessayez.'**
+  String get messagesCloseConversationFailed;
+
+  /// No description provided for @messagesCloseSupportTicketFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de fermer ce ticket support. Vous pouvez toujours répondre : réessayez.'**
+  String get messagesCloseSupportTicketFailed;
 
   /// No description provided for @messagesReadonlyBanner.
   ///
@@ -2407,6 +2665,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Signaler'**
   String get messagesReportSubmit;
+
+  /// No description provided for @messagesReportSubmitFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'envoyer votre signalement. Vos choix sont conservés : réessayez.'**
+  String get messagesReportSubmitFailed;
 
   /// No description provided for @messagesReportSuccessTitle.
   ///
@@ -2654,6 +2918,42 @@ abstract class AppLocalizations {
   /// **'Je n\'ai rien entendu'**
   String get voiceNothingHeard;
 
+  /// No description provided for @voiceRecognitionPermissionRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autorisez le micro et la reconnaissance vocale dans les réglages pour utiliser la saisie vocale.'**
+  String get voiceRecognitionPermissionRequired;
+
+  /// No description provided for @voiceRecognitionNetworkError.
+  ///
+  /// In fr, this message translates to:
+  /// **'La saisie vocale nécessite une connexion. Vérifiez votre connexion internet puis réessayez.'**
+  String get voiceRecognitionNetworkError;
+
+  /// No description provided for @voiceRecognitionBusy.
+  ///
+  /// In fr, this message translates to:
+  /// **'La reconnaissance vocale est occupée. Patientez un instant puis réessayez.'**
+  String get voiceRecognitionBusy;
+
+  /// No description provided for @voiceRecognitionLanguageUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'La saisie vocale n\'est pas disponible dans cette langue. Vous pouvez écrire votre message.'**
+  String get voiceRecognitionLanguageUnavailable;
+
+  /// No description provided for @voiceRecognitionTooManyAttempts.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trop de tentatives vocales. Patientez un instant puis réessayez.'**
+  String get voiceRecognitionTooManyAttempts;
+
+  /// No description provided for @voiceRecognitionUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'La saisie vocale est indisponible pour le moment. Réessayez ou écrivez votre message.'**
+  String get voiceRecognitionUnavailable;
+
   /// No description provided for @petitBooChatHintListening.
   ///
   /// In fr, this message translates to:
@@ -2702,11 +3002,23 @@ abstract class AppLocalizations {
   /// **'Nouvelle conversation'**
   String get petitBooNewConversation;
 
+  /// No description provided for @petitBooServiceChecking.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vérification de la connexion à Petit Boo...'**
+  String get petitBooServiceChecking;
+
   /// No description provided for @petitBooServiceUnavailable.
   ///
   /// In fr, this message translates to:
   /// **'Petit Boo est temporairement indisponible'**
   String get petitBooServiceUnavailable;
+
+  /// No description provided for @petitBooServiceCheckFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de vérifier si Petit Boo est disponible. Vérifiez votre connexion internet puis réessayez.'**
+  String get petitBooServiceCheckFailed;
 
   /// No description provided for @petitBooGreetingMorning.
   ///
@@ -2917,6 +3229,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Impossible de charger les conversations'**
   String get petitBooConversationsLoadFailed;
+
+  /// No description provided for @petitBooConversationsLoadMoreFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les conversations précédentes. Vérifiez votre connexion et réessayez.'**
+  String get petitBooConversationsLoadMoreFailed;
+
+  /// No description provided for @petitBooConversationDeleteFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de supprimer cette conversation. Elle reste dans votre historique ; réessayez.'**
+  String get petitBooConversationDeleteFailed;
 
   /// No description provided for @petitBooEngagementWelcome.
   ///
@@ -4055,13 +4379,13 @@ abstract class AppLocalizations {
   /// No description provided for @petitBooApiErrorFallback.
   ///
   /// In fr, this message translates to:
-  /// **'Erreur Petit Boo'**
+  /// **'Petit Boo est temporairement indisponible. Réessayez dans quelques instants.'**
   String get petitBooApiErrorFallback;
 
   /// No description provided for @petitBooGenericError.
   ///
   /// In fr, this message translates to:
-  /// **'Une erreur est survenue'**
+  /// **'Petit Boo n\'a pas pu répondre. Réessayez dans quelques instants.'**
   String get petitBooGenericError;
 
   /// No description provided for @petitBooConfirmationTitle.
@@ -4307,7 +4631,7 @@ abstract class AppLocalizations {
   /// No description provided for @petitBooActionGenericError.
   ///
   /// In fr, this message translates to:
-  /// **'Une erreur est survenue'**
+  /// **'Petit Boo n\'a pas pu effectuer cette action. Réessayez.'**
   String get petitBooActionGenericError;
 
   /// No description provided for @petitBooFavoriteListsCount.
@@ -4586,6 +4910,24 @@ abstract class AppLocalizations {
   /// **'Quitter'**
   String get membershipLeaveAction;
 
+  /// No description provided for @membershipJoinFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'envoyer votre demande d\'adhésion. Veuillez réessayer.'**
+  String get membershipJoinFailed;
+
+  /// No description provided for @membershipCancelRequestFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'annuler votre demande d\'adhésion. Veuillez réessayer.'**
+  String get membershipCancelRequestFailed;
+
+  /// No description provided for @membershipLeaveFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de quitter cette organisation. Veuillez réessayer.'**
+  String get membershipLeaveFailed;
+
   /// No description provided for @membershipCancelRequestTitle.
   ///
   /// In fr, this message translates to:
@@ -4657,6 +4999,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Impossible de charger les événements.'**
   String get privateEventsLoadError;
+
+  /// No description provided for @privateEventsLoadMoreError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger plus d\'événements privés. Vérifiez votre connexion puis réessayez.'**
+  String get privateEventsLoadMoreError;
 
   /// No description provided for @privateEventsPrivateBadge.
   ///
@@ -4733,8 +5081,14 @@ abstract class AppLocalizations {
   /// No description provided for @membershipInvitationAcceptFailed.
   ///
   /// In fr, this message translates to:
-  /// **'Impossible d\'accepter cette invitation.'**
+  /// **'Impossible d\'accepter cette invitation. Veuillez réessayer.'**
   String get membershipInvitationAcceptFailed;
+
+  /// No description provided for @membershipInvitationDeclineFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de décliner cette invitation. Veuillez réessayer.'**
+  String get membershipInvitationDeclineFailed;
 
   /// No description provided for @membershipInvitationDeclineTitle.
   ///
@@ -4807,6 +5161,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Le lien a peut-être été désactivé. Demandez à l\'organisateur de vous renvoyer une invitation.'**
   String get membershipInvitationNotFoundBody;
+
+  /// No description provided for @membershipInvitationLoadFailedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger cette invitation.'**
+  String get membershipInvitationLoadFailedTitle;
+
+  /// No description provided for @membershipInvitationLoadFailedBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'invitation ne peut pas être chargée pour le moment. Veuillez réessayer.'**
+  String get membershipInvitationLoadFailedBody;
 
   /// No description provided for @personalizedFeedTitle.
   ///
@@ -4905,11 +5271,23 @@ abstract class AppLocalizations {
   /// **'Suivre'**
   String get organizerFollowAction;
 
+  /// No description provided for @organizerFollowError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de suivre cet organisateur. Veuillez réessayer.'**
+  String get organizerFollowError;
+
   /// No description provided for @organizerUnfollowAction.
   ///
   /// In fr, this message translates to:
   /// **'Ne plus suivre'**
   String get organizerUnfollowAction;
+
+  /// No description provided for @organizerUnfollowError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de ne plus suivre cet organisateur. Veuillez réessayer.'**
+  String get organizerUnfollowError;
 
   /// No description provided for @organizerFollowedSearchHint.
   ///
@@ -4971,6 +5349,12 @@ abstract class AppLocalizations {
   /// **'Essayez un autre mot-clé ou modifiez le tri.'**
   String get organizersDirectoryEmptyBody;
 
+  /// No description provided for @organizersLoadMoreError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger plus d\'organisateurs.'**
+  String get organizersLoadMoreError;
+
   /// No description provided for @organizersSortLabel.
   ///
   /// In fr, this message translates to:
@@ -5000,6 +5384,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Impossible de charger les activités.'**
   String get organizerActivitiesLoadError;
+
+  /// No description provided for @organizerActivitiesLoadMoreError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger plus d\'activités.'**
+  String get organizerActivitiesLoadMoreError;
 
   /// No description provided for @organizerActivitiesEmpty.
   ///
@@ -5036,6 +5426,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Impossible de charger les avis.'**
   String get organizerReviewsLoadError;
+
+  /// No description provided for @organizerReviewsLoadMoreError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger plus d\'avis.'**
+  String get organizerReviewsLoadMoreError;
 
   /// No description provided for @organizerReviewsTotal.
   ///
@@ -5388,7 +5784,7 @@ abstract class AppLocalizations {
   /// No description provided for @checkinBlockedUnknownTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Erreur'**
+  /// **'Contrôle indisponible'**
   String get checkinBlockedUnknownTitle;
 
   /// No description provided for @checkinBlockedDoNotAdmit.
@@ -5430,7 +5826,7 @@ abstract class AppLocalizations {
   /// No description provided for @checkinBlockedUnknownBody.
   ///
   /// In fr, this message translates to:
-  /// **'Erreur inattendue, réessayez.'**
+  /// **'Impossible de vérifier ce billet. Vérifiez votre connexion puis réessayez.'**
   String get checkinBlockedUnknownBody;
 
   /// No description provided for @authEmailLabel.
@@ -5919,6 +6315,18 @@ abstract class AppLocalizations {
   /// **'Localisation déjà activée'**
   String get authPermissionLocationGranted;
 
+  /// No description provided for @authPermissionLocationSetupFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de vérifier l\'accès à votre position sur cet appareil. Réessayez ou continuez sans la localisation et activez-la plus tard dans les réglages.'**
+  String get authPermissionLocationSetupFailed;
+
+  /// No description provided for @authPermissionLocationContinueWithout.
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer sans la localisation'**
+  String get authPermissionLocationContinueWithout;
+
   /// No description provided for @authPermissionAudioTitle.
   ///
   /// In fr, this message translates to:
@@ -5954,6 +6362,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Micro déjà activé'**
   String get authPermissionAudioGranted;
+
+  /// No description provided for @authPermissionAudioSetupFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de vérifier l\'accès au micro sur cet appareil. Réessayez ou continuez sans la saisie vocale et activez-la plus tard dans les réglages.'**
+  String get authPermissionAudioSetupFailed;
+
+  /// No description provided for @authPermissionAudioContinueWithout.
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer sans la saisie vocale'**
+  String get authPermissionAudioContinueWithout;
 
   /// No description provided for @authPermissionNotificationsTitle.
   ///
@@ -6002,6 +6422,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Notifications déjà activées'**
   String get authPermissionNotificationsGranted;
+
+  /// No description provided for @authPermissionNotificationsEnable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activer les notifications'**
+  String get authPermissionNotificationsEnable;
+
+  /// No description provided for @authPermissionNotificationsNotNow.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus tard'**
+  String get authPermissionNotificationsNotNow;
 
   /// No description provided for @authEmailAddressInvalid.
   ///
@@ -6741,6 +7173,24 @@ abstract class AppLocalizations {
   /// **'Recherchez {organizationPossessive} pour remplir automatiquement le formulaire'**
   String authCompanySearchHelper(String organizationPossessive);
 
+  /// No description provided for @authCompanySearchConnectionError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de joindre l\'annuaire officiel des entreprises. Vérifiez votre connexion, réessayez ou saisissez les informations manuellement.'**
+  String get authCompanySearchConnectionError;
+
+  /// No description provided for @authCompanySearchUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'annuaire officiel des entreprises est temporairement indisponible. Réessayez plus tard ou saisissez les informations manuellement.'**
+  String get authCompanySearchUnavailable;
+
+  /// No description provided for @authCompanySearchNoResults.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune entreprise trouvée. Vérifiez le nom ou saisissez les informations manuellement.'**
+  String get authCompanySearchNoResults;
+
   /// No description provided for @authSiretLine.
   ///
   /// In fr, this message translates to:
@@ -7028,6 +7478,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Aucune nouveauté trouvée.'**
   String get homeNoNewActivities;
+
+  /// No description provided for @homeRefreshPartialFailure.
+  ///
+  /// In fr, this message translates to:
+  /// **'Certaines sections n\'ont pas pu être actualisées. Réessayez.'**
+  String get homeRefreshPartialFailure;
 
   /// No description provided for @homeNearbyAvailableTitle.
   ///
@@ -7437,6 +7893,24 @@ abstract class AppLocalizations {
   /// **'Ville non trouvée'**
   String get homeCityNotFound;
 
+  /// No description provided for @homeCityLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger cette ville'**
+  String get homeCityLoadError;
+
+  /// No description provided for @homeCityActivitiesLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger les activités de cette ville'**
+  String get homeCityActivitiesLoadError;
+
+  /// No description provided for @homeCityActivitiesLoadMoreError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger plus d\'activités. Vérifiez votre connexion puis réessayez.'**
+  String get homeCityActivitiesLoadMoreError;
+
   /// No description provided for @homeCityDescriptionFallback.
   ///
   /// In fr, this message translates to:
@@ -7766,6 +8240,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Recherche \"{name}\" enregistrée !'**
   String searchSavedSearchCreated(String name);
+
+  /// No description provided for @searchSaveFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer cette recherche. Vérifiez votre connexion puis réessayez.'**
+  String get searchSaveFailed;
 
   /// No description provided for @searchAlreadySaved.
   ///
@@ -8145,6 +8625,12 @@ abstract class AppLocalizations {
   /// **'Chargement impossible'**
   String get searchLoadError;
 
+  /// No description provided for @searchLoadMoreError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger plus de résultats. Réessayez.'**
+  String get searchLoadMoreError;
+
   /// No description provided for @searchHintCity.
   ///
   /// In fr, this message translates to:
@@ -8490,7 +8976,7 @@ abstract class AppLocalizations {
   /// No description provided for @eventGenericErrorTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Une erreur est survenue'**
+  /// **'Activités indisponibles'**
   String get eventGenericErrorTitle;
 
   /// No description provided for @eventMapLocationError.
@@ -8630,6 +9116,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Lien de réservation invalide'**
   String get eventInvalidBookingLink;
+
+  /// No description provided for @eventOpenBookingLinkError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir la page de réservation. Vérifiez votre connexion ou réessayez plus tard.'**
+  String get eventOpenBookingLinkError;
 
   /// No description provided for @eventChooseDateFirst.
   ///
@@ -8978,6 +9470,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Me rappeler'**
   String get eventRemindMe;
+
+  /// No description provided for @eventReminderCreateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'activer ce rappel. Il n\'a pas été ajouté. Réessayez.'**
+  String get eventReminderCreateFailed;
+
+  /// No description provided for @eventReminderRemoveFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de supprimer ce rappel. Il est toujours actif. Réessayez.'**
+  String get eventReminderRemoveFailed;
 
   /// No description provided for @eventViewWebsite.
   ///
@@ -9333,6 +9837,12 @@ abstract class AppLocalizations {
   /// **'Erreur réseau. Réessaie.'**
   String get eventPasswordNetworkError;
 
+  /// No description provided for @eventPasswordCheckFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de vérifier le mot de passe car le service est temporairement indisponible. Réessayez dans quelques instants.'**
+  String get eventPasswordCheckFailed;
+
   /// No description provided for @eventPasswordRetryIn.
   ///
   /// In fr, this message translates to:
@@ -9459,6 +9969,12 @@ abstract class AppLocalizations {
   /// **'Votre question a été envoyée !'**
   String get eventQuestionSent;
 
+  /// No description provided for @eventQuestionSubmitFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre question n\'a pas pu être envoyée. Vérifiez votre connexion puis réessayez.'**
+  String get eventQuestionSubmitFailed;
+
   /// No description provided for @eventQuestionAlreadyAsked.
   ///
   /// In fr, this message translates to:
@@ -9524,6 +10040,30 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Impossible de charger les questions'**
   String get eventQuestionsLoadError;
+
+  /// No description provided for @eventMyQuestionLoadErrorTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Statut de votre question indisponible'**
+  String get eventMyQuestionLoadErrorTitle;
+
+  /// No description provided for @eventMyQuestionLoadErrorBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de vérifier si vous avez déjà posé une question. Réessayez avant d\'en envoyer une nouvelle.'**
+  String get eventMyQuestionLoadErrorBody;
+
+  /// No description provided for @eventQuestionsLoadMoreError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger plus de questions. Vérifiez votre connexion puis réessayez.'**
+  String get eventQuestionsLoadMoreError;
+
+  /// No description provided for @eventAvailabilityLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de vérifier la disponibilité des billets en temps réel. Les dates affichées ont peut-être changé.'**
+  String get eventAvailabilityLoadError;
 
   /// No description provided for @eventQuestionsEnd.
   ///
@@ -9954,8 +10494,56 @@ abstract class AppLocalizations {
   /// No description provided for @bookingPaymentCancelled.
   ///
   /// In fr, this message translates to:
-  /// **'Paiement annulé'**
+  /// **'Le paiement a été annulé. Vous pouvez réessayer quand vous le souhaitez.'**
   String get bookingPaymentCancelled;
+
+  /// No description provided for @bookingPaymentFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le paiement a été refusé ou n\'a pas pu aboutir. Vérifiez les informations de votre carte ou essayez un autre moyen de paiement.'**
+  String get bookingPaymentFailed;
+
+  /// No description provided for @bookingPaymentTimedOut.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le paiement a pris trop de temps. Vérifiez votre connexion internet, puis réessayez.'**
+  String get bookingPaymentTimedOut;
+
+  /// No description provided for @bookingPaymentUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le paiement par carte est temporairement indisponible. Réessayez plus tard ou contactez l\'assistance si le problème persiste.'**
+  String get bookingPaymentUnavailable;
+
+  /// No description provided for @bookingCheckoutConnectionError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de poursuivre la réservation en raison d\'un problème de connexion. Vérifiez votre connexion internet, puis réessayez.'**
+  String get bookingCheckoutConnectionError;
+
+  /// No description provided for @bookingCheckoutTimedOut.
+  ///
+  /// In fr, this message translates to:
+  /// **'La réservation a pris trop de temps. Vérifiez votre connexion internet, puis réessayez.'**
+  String get bookingCheckoutTimedOut;
+
+  /// No description provided for @bookingPaymentConfirmationUncertain.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nous n\'avons pas pu confirmer votre réservation après le paiement. Votre paiement a peut-être abouti. Vérifiez Mes réservations avant de payer à nouveau afin d\'éviter un double débit.'**
+  String get bookingPaymentConfirmationUncertain;
+
+  /// No description provided for @bookingCreateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de créer cette réservation. Votre sélection est conservée : vérifiez les disponibilités puis réessayez.'**
+  String get bookingCreateFailed;
+
+  /// No description provided for @bookingConfirmationFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de confirmer cette réservation. Elle n\'a pas été finalisée ; réessayez.'**
+  String get bookingConfirmationFailed;
 
   /// No description provided for @bookingTicketsCount.
   ///
@@ -10430,6 +11018,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Erreur de chargement : {message}'**
   String bookingLoadError(String message);
+
+  /// No description provided for @bookingDetailLoadFallback.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger cette réservation. Vérifiez votre connexion, puis réessayez.'**
+  String get bookingDetailLoadFallback;
 
   /// No description provided for @bookingEmptyAllTitle.
   ///
@@ -11073,6 +11667,12 @@ abstract class AppLocalizations {
   /// **'Plan \"{title}\" supprimé'**
   String tripPlansDeletedSnack(String title);
 
+  /// No description provided for @tripPlanDeleteFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de supprimer \"{title}\". Cette sortie est toujours enregistrée. Réessayez.'**
+  String tripPlanDeleteFailed(String title);
+
   /// No description provided for @tripPlansUntitledPlan.
   ///
   /// In fr, this message translates to:
@@ -11100,7 +11700,7 @@ abstract class AppLocalizations {
   /// No description provided for @tripPlansErrorTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Une erreur est survenue'**
+  /// **'Sorties indisponibles'**
   String get tripPlansErrorTitle;
 
   /// No description provided for @tripPlansLoadErrorBody.
@@ -11168,6 +11768,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Plan mis à jour'**
   String get tripPlanEditUpdatedSnack;
+
+  /// No description provided for @tripPlanUpdateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de modifier cette sortie. Vos changements n\'ont pas été enregistrés. Réessayez.'**
+  String get tripPlanUpdateFailed;
 
   /// No description provided for @tripPlanEditDiscardChangesTitle.
   ///
@@ -11384,6 +11990,48 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Impossible de charger la suite.'**
   String get reviewsUserLoadMoreError;
+
+  /// No description provided for @reviewsCreateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de publier votre avis. Vérifiez le formulaire et réessayez.'**
+  String get reviewsCreateFailed;
+
+  /// No description provided for @reviewsUpdateFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de modifier votre avis. Vos changements sont conservés ; réessayez.'**
+  String get reviewsUpdateFailed;
+
+  /// No description provided for @reviewsDeleteFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de supprimer votre avis. Réessayez.'**
+  String get reviewsDeleteFailed;
+
+  /// No description provided for @reviewsVoteFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'enregistrer votre vote. Réessayez.'**
+  String get reviewsVoteFailed;
+
+  /// No description provided for @reviewsReportFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'envoyer votre signalement. Réessayez.'**
+  String get reviewsReportFailed;
+
+  /// No description provided for @reviewsEligibilityChecking.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vérification de votre droit à laisser un avis…'**
+  String get reviewsEligibilityChecking;
+
+  /// No description provided for @reviewsEligibilityLoadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de vérifier si vous pouvez laisser un avis. Réessayez avant de rédiger votre avis.'**
+  String get reviewsEligibilityLoadError;
 
   /// No description provided for @reviewsMyEmptyBody.
   ///
@@ -11709,6 +12357,12 @@ abstract class AppLocalizations {
   /// **'Reviens demain !'**
   String get gamificationComeBackTomorrow;
 
+  /// No description provided for @gamificationComingSoonCta.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bientôt disponible'**
+  String get gamificationComingSoonCta;
+
   /// No description provided for @gamificationCompleted.
   ///
   /// In fr, this message translates to:
@@ -11724,8 +12378,14 @@ abstract class AppLocalizations {
   /// No description provided for @gamificationDailyClaimError.
   ///
   /// In fr, this message translates to:
-  /// **'Erreur lors de la réclamation'**
+  /// **'Impossible de récupérer ta récompense. Réessaie.'**
   String get gamificationDailyClaimError;
+
+  /// No description provided for @gamificationDailyRewardClaimed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Récompense récupérée : +{count} Hibons !'**
+  String gamificationDailyRewardClaimed(int count);
 
   /// No description provided for @gamificationDailyRewardAlreadyClaimed.
   ///
@@ -11913,6 +12573,12 @@ abstract class AppLocalizations {
   /// **'Aucune transaction'**
   String get gamificationNoTransactions;
 
+  /// No description provided for @gamificationTransactionsLoadMoreError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger plus de transactions Hibon. Vérifiez votre connexion et réessayez.'**
+  String get gamificationTransactionsLoadMoreError;
+
   /// No description provided for @gamificationPetitBooDailyBonus.
   ///
   /// In fr, this message translates to:
@@ -12081,6 +12747,12 @@ abstract class AppLocalizations {
   /// **'Lancer'**
   String get gamificationWheelSpinCta;
 
+  /// No description provided for @gamificationWheelSpinError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de lancer la roue. Réessaie.'**
+  String get gamificationWheelSpinError;
+
   /// No description provided for @gamificationWheelWinTitle.
   ///
   /// In fr, this message translates to:
@@ -12177,6 +12849,12 @@ abstract class AppLocalizations {
   /// **'Alerte « {name} » supprimée'**
   String alertsDeleted(String name);
 
+  /// No description provided for @alertsDeleteFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de supprimer cette alerte. Vérifiez votre connexion puis réessayez.'**
+  String get alertsDeleteFailed;
+
   /// No description provided for @alertsCreatedOn.
   ///
   /// In fr, this message translates to:
@@ -12198,7 +12876,7 @@ abstract class AppLocalizations {
   /// No description provided for @favoritesLoadError.
   ///
   /// In fr, this message translates to:
-  /// **'Erreur de chargement'**
+  /// **'Impossible de charger vos favoris'**
   String get favoritesLoadError;
 
   /// No description provided for @favoritesEmptyTitle.
@@ -12360,7 +13038,7 @@ abstract class AppLocalizations {
   /// No description provided for @favoriteListCreateError.
   ///
   /// In fr, this message translates to:
-  /// **'Erreur lors de la création de la liste'**
+  /// **'Impossible de créer cette liste. Vérifiez votre connexion puis réessayez.'**
   String get favoriteListCreateError;
 
   /// No description provided for @favoriteListEditTitle.
@@ -12378,7 +13056,7 @@ abstract class AppLocalizations {
   /// No description provided for @favoriteListUpdateError.
   ///
   /// In fr, this message translates to:
-  /// **'Erreur lors de la mise à jour'**
+  /// **'Impossible de modifier cette liste. Vérifiez votre connexion puis réessayez.'**
   String get favoriteListUpdateError;
 
   /// No description provided for @favoriteListDeleteTitle.
@@ -12408,7 +13086,7 @@ abstract class AppLocalizations {
   /// No description provided for @favoriteListDeleteError.
   ///
   /// In fr, this message translates to:
-  /// **'Erreur lors de la suppression'**
+  /// **'Impossible de supprimer cette liste. Vérifiez votre connexion puis réessayez.'**
   String get favoriteListDeleteError;
 
   /// No description provided for @favoriteListDeleteThisAction.
@@ -12498,7 +13176,7 @@ abstract class AppLocalizations {
   /// No description provided for @favoriteGenericError.
   ///
   /// In fr, this message translates to:
-  /// **'Une erreur est survenue.'**
+  /// **'Impossible de mettre à jour vos favoris. Réessayez.'**
   String get favoriteGenericError;
 
   /// No description provided for @notificationsTitle.
@@ -12566,6 +13244,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Action impossible pour le moment'**
   String get notificationsActionError;
+
+  /// No description provided for @notificationsMarkAllReadError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de marquer toutes les notifications comme lues. Réessayez.'**
+  String get notificationsMarkAllReadError;
+
+  /// No description provided for @notificationsLoadMoreError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de charger plus de notifications. Réessayez.'**
+  String get notificationsLoadMoreError;
 
   /// No description provided for @notificationsDeleted.
   ///
@@ -12728,6 +13418,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Rappel supprimé'**
   String get remindersDeleted;
+
+  /// No description provided for @remindersDeleteFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de supprimer ce rappel. Il est toujours actif. Réessayez.'**
+  String get remindersDeleteFailed;
 
   /// No description provided for @remindersDateFromTo.
   ///

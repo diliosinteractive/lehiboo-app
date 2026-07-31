@@ -39,6 +39,7 @@
   "settingsSectionInformation": "Informations",
   "profileSupportTitle": "Soutenir Le Hiboo",
   "profileSupportSubtitle": "Faites un don volontaire à la plateforme",
+  "commonShareFailed": "Impossible d'ouvrir les options de partage. Réessayez.",
   "donationsTitle": "Soutenir Le Hiboo",
   "donationsHeaderTitle": "Soutenez Le Hiboo",
   "donationsHeaderSubtitle": "Votre soutien libre aide Le Hiboo à rester indépendant et à grandir.",
@@ -63,6 +64,7 @@
   "donationsEmailRequired": "Veuillez saisir votre adresse email.",
   "donationsEmailInvalid": "Adresse email invalide.",
   "donationsPaymentCancelled": "Paiement annulé.",
+  "donationsCheckoutFailed": "Impossible de préparer ou de finaliser votre don. Réessayez.",
   "donationsSuccessTitle": "Merci pour votre soutien !",
   "donationsSuccessSubtitle": "Votre don de {amount} aide Le Hiboo à grandir. 🧡",
   "@donationsSuccessSubtitle": {
@@ -75,8 +77,14 @@
   "settingsPushReward": "Active les notifications pour gagner 30 Hibons",
   "settingsPushTitle": "Notifications push",
   "settingsPushSubtitle": "Recevoir les alertes sur ton téléphone",
+  "settingsPushPermissionDenied": "Les notifications sont bloquées pour Le Hiboo. Autorisez-les dans les paramètres de votre téléphone, puis réessayez.",
+  "settingsPushSetupFailed": "Impossible d'activer les notifications sur cet appareil. Réessayez ou activez-les plus tard dans les paramètres.",
+  "settingsPushDeviceSyncFailed": "L'autorisation a été accordée, mais cet appareil n'a pas pu être associé à votre compte. Vérifiez votre connexion puis réessayez.",
+  "settingsPushSubscriptionPending": "L'autorisation a été accordée, mais l'activation des notifications n'est pas encore prête. Patientez un instant puis réessayez.",
+  "settingsPushPreferenceUpdateFailed": "Les notifications sont prêtes, mais la préférence de votre compte n'a pas pu être enregistrée. Réessayez.",
   "settingsNewsletterTitle": "Newsletter",
   "settingsNewsletterSubtitle": "Recommandations événements et bons plans par email",
+  "settingsNewsletterUpdateFailed": "Impossible de modifier votre préférence newsletter. Vérifiez votre connexion puis réessayez.",
   "settingsLanguageTitle": "Langue",
   "settingsLanguageDialogTitle": "Choisir la langue",
   "settingsLanguageSubtitle": "{language}",
@@ -119,9 +127,17 @@
   "commonOk": "OK",
   "commonValidate": "Valider",
   "commonErrorTitle": "Oups !",
-  "commonGenericError": "Une erreur est survenue.",
-  "commonGenericRetryError": "Une erreur est survenue. Veuillez réessayer.",
+  "commonGenericError": "Impossible de terminer cette action.",
+  "commonGenericRetryError": "Impossible de terminer votre demande. Veuillez réessayer.",
   "commonConnectionError": "Erreur de connexion. Vérifiez votre connexion internet.",
+  "commonSessionExpiredError": "Votre session a expiré. Reconnectez-vous.",
+  "commonAccessDeniedError": "Vous n'avez pas l'autorisation d'effectuer cette action.",
+  "commonNotFoundError": "Cet élément n'est plus disponible. Actualisez puis réessayez.",
+  "commonRequestTimeoutError": "La demande a pris trop de temps. Vérifiez votre connexion puis réessayez.",
+  "commonConflictError": "Ces informations ont changé. Actualisez puis réessayez.",
+  "commonValidationError": "Certaines informations sont invalides. Vérifiez-les puis réessayez.",
+  "commonTooManyRequestsError": "Trop de tentatives. Patientez un instant puis réessayez.",
+  "commonServiceUnavailableError": "Le service est temporairement indisponible. Réessayez dans quelques instants.",
   "commonSearchHint": "Rechercher...",
   "commonNoInternetTitle": "Aucune connexion internet",
   "commonCheckConnectionRetry": "Vérifiez votre connexion puis réessayez.",
@@ -170,6 +186,7 @@
   "profileQuestionsSubtitle": "Vos questions sur les événements",
   "userQuestionsTitle": "Mes questions",
   "userQuestionsLoadError": "Impossible de charger vos questions.",
+  "userQuestionsLoadMoreError": "Impossible de charger plus de questions. Vérifiez votre connexion et réessayez.",
   "userQuestionsEmptyTitle": "Aucune question",
   "userQuestionsEmptyBody": "Vous n'avez encore posé aucune question sur un événement.",
   "userQuestionsExploreEvents": "Découvrir des événements",
@@ -217,6 +234,9 @@
   "profileLogoutDialogBody": "Êtes-vous sûr de vouloir vous déconnecter ?",
   "profileHelpOpenFailed": "Impossible d'ouvrir l'aide",
   "profileAvatarUpdated": "Photo de profil mise à jour",
+  "profilePhotoPermissionDenied": "L'accès aux photos est bloqué. Autorisez Le Hiboo à accéder à vos photos dans les paramètres du téléphone, puis réessayez.",
+  "profilePhotoPickerFailed": "Impossible d'ouvrir votre photothèque. Veuillez réessayer.",
+  "profileAvatarUploadFailed": "Impossible de mettre à jour votre photo de profil. Vérifiez votre connexion puis réessayez.",
   "profileAvatarUploadError": "Erreur lors de l'upload : {message}",
   "@profileAvatarUploadError": {
     "placeholders": {
@@ -246,6 +266,7 @@
     }
   },
   "profileUpdateSuccess": "Profil mis à jour avec succès",
+  "profileUpdateFailed": "Impossible d'enregistrer les modifications du profil. Vérifiez votre connexion puis réessayez.",
   "profileGenericError": "Erreur : {message}",
   "@profileGenericError": {
     "placeholders": {
@@ -258,6 +279,7 @@
   "profileCurrentPasswordLabel": "Mot de passe actuel",
   "profileNewPasswordLabel": "Nouveau mot de passe",
   "profilePasswordChangeSuccess": "Mot de passe changé avec succès",
+  "profilePasswordChangeFailed": "Impossible de changer votre mot de passe. Vérifiez votre mot de passe actuel puis réessayez.",
   "profileChangePasswordSubmit": "Changer",
   "profileParticipantsPersonalizationNotice": "Le prénom, la date de naissance, la ville et la relation aident Petit Boo et LeHiboo Expériences à vous proposer des offres et des événements plus pertinents.",
   "profileParticipantsAddShort": "Ajouter",
@@ -265,6 +287,9 @@
   "profileParticipantAdded": "Participant ajouté",
   "profileParticipantUpdated": "Participant modifié",
   "profileParticipantDeleted": "Participant supprimé",
+  "profileParticipantAddFailed": "Impossible d'ajouter ce participant. Vérifiez les informations puis réessayez.",
+  "profileParticipantUpdateFailed": "Impossible d'enregistrer les modifications de ce participant. Veuillez réessayer.",
+  "profileParticipantDeleteFailed": "Impossible de supprimer ce participant. Veuillez réessayer.",
   "profileParticipantsEmptyTitle": "Aucun participant",
   "profileParticipantsEmptyBody": "Ajoutez vos enfants, proches ou participants récurrents pour les choisir rapidement au moment de réserver.",
   "profileParticipantsAddCta": "Ajouter un participant",
@@ -295,6 +320,9 @@
   "messagesContactParticipant": "Contacter un participant",
   "messagesNewBroadcast": "Nouvelle diffusion",
   "messagesContactPartner": "Contacter un partenaire",
+  "messagesRecipientSearchFailed": "Impossible de charger les destinataires. Vérifiez votre connexion puis réessayez.",
+  "messagesOrganizationsLoadFailed": "Impossible de charger les organisations disponibles. Vérifiez votre connexion puis réessayez.",
+  "messagesPartnersLoadFailed": "Impossible de charger vos partenaires acceptés. Vérifiez votre connexion puis réessayez.",
   "messagesBroadcastTitle": "Diffusion",
   "messagesBroadcastCreateStepTitle": "Nouvelle diffusion - Étape {step}/{total}",
   "@messagesBroadcastCreateStepTitle": {
@@ -315,7 +343,11 @@
   "messagesBroadcastSelectEventFirst": "Sélectionnez d'abord un événement",
   "messagesBroadcastLoadingSlots": "Chargement des créneaux...",
   "messagesBroadcastCalculatingRecipients": "Calcul des destinataires...",
-  "messagesBroadcastRecipientsPreviewError": "Impossible de calculer les destinataires.",
+  "messagesBroadcastRecipientsPreviewError": "Impossible de calculer les destinataires. Vérifiez votre sélection puis réessayez.",
+  "messagesBroadcastEventsLoadFailed": "Impossible de charger vos événements. Vérifiez votre connexion puis réessayez.",
+  "messagesBroadcastSlotsLoadFailed": "Impossible de charger les créneaux de l'événement. Vérifiez votre connexion puis réessayez.",
+  "messagesBroadcastSendFailed": "Impossible d'envoyer cette diffusion. Votre brouillon est conservé : vérifiez les destinataires puis réessayez.",
+  "messagesBroadcastDetailLoadFailed": "Impossible de charger cette diffusion. Vérifiez votre connexion puis réessayez.",
   "messagesBroadcastPotentialRecipients": "{count, plural, =1{1 destinataire potentiel} other{{count} destinataires potentiels}}",
   "@messagesBroadcastPotentialRecipients": {
     "placeholders": {
@@ -366,7 +398,10 @@
   "messagesSupportTicket": "Ticket support",
   "messagesContactUser": "Contacter un utilisateur",
   "messagesContactOrganizer": "Contacter un organisateur",
-  "messagesGenericError": "Une erreur est survenue.",
+  "messagesGenericError": "Impossible de démarrer cette conversation. Réessayez.",
+  "messagesConversationCreateFailed": "Impossible de démarrer cette conversation. Votre message est conservé : réessayez.",
+  "messagesBookingConversationCreateFailed": "Impossible de démarrer une conversation pour cette réservation. Vérifiez votre connexion puis réessayez.",
+  "messagesSupportTicketCreateFailed": "Impossible de créer ce ticket support. Votre message est conservé : réessayez.",
   "messagesFallbackOrganizer": "Organisateur",
   "messagesNewConversationSubtitleSupport": "Décrivez votre problème et notre équipe vous répondra rapidement.",
   "messagesNewConversationSubtitleRecipient": "Sélectionnez un destinataire et composez votre message.",
@@ -441,6 +476,9 @@
   "messagesNoSupportTickets": "Aucun ticket support",
   "messagesNoReports": "Aucun signalement",
   "messagesLoadError": "Erreur : {error}",
+  "messagesConversationsLoadMoreFailed": "Impossible de charger plus de conversations. Les messages déjà affichés restent disponibles : réessayez.",
+  "messagesBroadcastsLoadMoreFailed": "Impossible de charger plus de diffusions. Les diffusions déjà affichées restent disponibles : réessayez.",
+  "messagesReportsLoadMoreFailed": "Impossible de charger plus de signalements. Les signalements déjà affichés restent disponibles : réessayez.",
   "@messagesLoadError": {
     "placeholders": {
       "error": {
@@ -484,8 +522,13 @@
   "messagesEditAction": "Modifier",
   "messagesCopyTextAction": "Copier le texte",
   "messagesDeleteAction": "Supprimer",
+  "messagesEditFailed": "Impossible d'enregistrer vos modifications. Votre message est conservé : réessayez.",
+  "messagesDeleteFailed": "Impossible de supprimer ce message. Il est toujours visible : réessayez.",
   "messagesReopenTooltip": "Rouvrir",
+  "messagesReopenConversationFailed": "Impossible de rouvrir cette conversation. Réessayez.",
   "messagesCloseConversation": "Fermer la conversation",
+  "messagesCloseConversationFailed": "Impossible de fermer cette conversation. Vous pouvez toujours envoyer des messages : réessayez.",
+  "messagesCloseSupportTicketFailed": "Impossible de fermer ce ticket support. Vous pouvez toujours répondre : réessayez.",
   "messagesReadonlyBanner": "Mode lecture seule - conversation liée à un signalement. Vous observez les échanges entre les deux parties.",
   "messagesClosedNotice": "Cette conversation est fermée.",
   "messagesEmptyThread": "Aucun message. Soyez le premier à écrire !",
@@ -499,6 +542,7 @@
   "messagesReportCommentMinError": "Minimum 10 caractères.",
   "messagesReportCommentHint": "Décrivez le problème…",
   "messagesReportSubmit": "Signaler",
+  "messagesReportSubmitFailed": "Impossible d'envoyer votre signalement. Vos choix sont conservés : réessayez.",
   "messagesReportSuccessTitle": "Signalement transmis",
   "messagesReportSuccessBody": "Votre signalement a bien été transmis à l'équipe LeHiboo.",
   "messagesReportSupportCreated": "Un ticket support a été créé pour le suivi.",
@@ -561,6 +605,12 @@
   "voiceAllowSpeechSettings": "Autorise la reconnaissance vocale dans Réglages",
   "voiceMicrophoneUnavailable": "Le micro n'est pas disponible",
   "voiceNothingHeard": "Je n'ai rien entendu",
+  "voiceRecognitionPermissionRequired": "Autorisez le micro et la reconnaissance vocale dans les réglages pour utiliser la saisie vocale.",
+  "voiceRecognitionNetworkError": "La saisie vocale nécessite une connexion. Vérifiez votre connexion internet puis réessayez.",
+  "voiceRecognitionBusy": "La reconnaissance vocale est occupée. Patientez un instant puis réessayez.",
+  "voiceRecognitionLanguageUnavailable": "La saisie vocale n'est pas disponible dans cette langue. Vous pouvez écrire votre message.",
+  "voiceRecognitionTooManyAttempts": "Trop de tentatives vocales. Patientez un instant puis réessayez.",
+  "voiceRecognitionUnavailable": "La saisie vocale est indisponible pour le moment. Réessayez ou écrivez votre message.",
   "petitBooChatHintListening": "Je vous écoute...",
   "petitBooChatHintStreaming": "Petit Boo réfléchit...",
   "petitBooChatHintIdle": "Posez une question à votre assistant ou tapez / pour les commandes...",
@@ -569,7 +619,9 @@
   "petitBooStatusAssistantAi": "Assistant IA",
   "petitBooHistoryTitle": "Historique",
   "petitBooNewConversation": "Nouvelle conversation",
+  "petitBooServiceChecking": "Vérification de la connexion à Petit Boo...",
   "petitBooServiceUnavailable": "Petit Boo est temporairement indisponible",
+  "petitBooServiceCheckFailed": "Impossible de vérifier si Petit Boo est disponible. Vérifiez votre connexion internet puis réessayez.",
   "petitBooGreetingMorning": "Bonjour",
   "petitBooGreetingAfternoon": "Bon après-midi",
   "petitBooGreetingEvening": "Bonsoir",
@@ -671,6 +723,8 @@
   "petitBooConversationFallbackTitle": "Conversation",
   "petitBooConversationsAuthRequired": "Connectez-vous pour voir vos conversations",
   "petitBooConversationsLoadFailed": "Impossible de charger les conversations",
+  "petitBooConversationsLoadMoreFailed": "Impossible de charger les conversations précédentes. Vérifiez votre connexion et réessayez.",
+  "petitBooConversationDeleteFailed": "Impossible de supprimer cette conversation. Elle reste dans votre historique ; réessayez.",
   "petitBooEngagementWelcome": "Bonjour ! Je peux vous aider ? 🌟",
   "petitBooEngagementInspiration": "Vous cherchez l'inspiration ? 💡",
   "petitBooEngagementNoResults": "Oups, rien trouvé ? Je peux chercher pour vous ! 🕵️‍♂️",
@@ -1051,8 +1105,8 @@
   "petitBooConnectionError": "Erreur de connexion",
   "petitBooAuthRequiredError": "Connectez-vous pour discuter avec Petit Boo",
   "petitBooConversationLoadFailed": "Impossible de charger la conversation",
-  "petitBooApiErrorFallback": "Erreur Petit Boo",
-  "petitBooGenericError": "Une erreur est survenue",
+  "petitBooApiErrorFallback": "Petit Boo est temporairement indisponible. Réessayez dans quelques instants.",
+  "petitBooGenericError": "Petit Boo n'a pas pu répondre. Réessayez dans quelques instants.",
   "petitBooConfirmationTitle": "Confirmation requise",
   "petitBooConfirmationBody": "Petit Boo souhaite effectuer cette action.",
   "petitBooConfirmationConfirm": "Confirmer",
@@ -1155,7 +1209,7 @@
   },
   "petitBooActionListRenamedSuccessfully": "Liste renommée avec succès",
   "petitBooActionErrorTitle": "Échec",
-  "petitBooActionGenericError": "Une erreur est survenue",
+  "petitBooActionGenericError": "Petit Boo n'a pas pu effectuer cette action. Réessayez.",
   "petitBooFavoriteListsCount": "{count, plural, =1{1 liste} other{{count} listes}}",
   "@petitBooFavoriteListsCount": {
     "placeholders": {
@@ -1272,6 +1326,9 @@
   "membershipRetryRequestAction": "Refaire la demande",
   "membershipCancelRequestAction": "Annuler la demande",
   "membershipLeaveAction": "Quitter",
+  "membershipJoinFailed": "Impossible d'envoyer votre demande d'adhésion. Veuillez réessayer.",
+  "membershipCancelRequestFailed": "Impossible d'annuler votre demande d'adhésion. Veuillez réessayer.",
+  "membershipLeaveFailed": "Impossible de quitter cette organisation. Veuillez réessayer.",
   "membershipCancelRequestTitle": "Annuler la demande ?",
   "membershipCancelRequestBody": "Votre demande de rejoindre {organizerName} sera annulée. Vous pourrez en refaire une à tout moment.",
   "@membershipCancelRequestBody": {
@@ -1319,6 +1376,7 @@
   "privateEventsTitle": "Mes événements privés",
   "privateEventsSearchHint": "Rechercher un événement…",
   "privateEventsLoadError": "Impossible de charger les événements.",
+  "privateEventsLoadMoreError": "Impossible de charger plus d'événements privés. Vérifiez votre connexion puis réessayez.",
   "privateEventsPrivateBadge": "Privé",
   "privateEventsAllOrganizations": "Toutes les organisations",
   "privateEventsEmptyTitle": "Aucun événement privé pour l'instant.",
@@ -1352,7 +1410,8 @@
       }
     }
   },
-  "membershipInvitationAcceptFailed": "Impossible d'accepter cette invitation.",
+  "membershipInvitationAcceptFailed": "Impossible d'accepter cette invitation. Veuillez réessayer.",
+  "membershipInvitationDeclineFailed": "Impossible de décliner cette invitation. Veuillez réessayer.",
   "membershipInvitationDeclineTitle": "Décliner l'invitation ?",
   "membershipInvitationDeclineBody": "Refuser l'invitation de {organizationName} ?",
   "@membershipInvitationDeclineBody": {
@@ -1386,6 +1445,8 @@
   },
   "membershipInvitationNotFoundTitle": "Cette invitation est introuvable.",
   "membershipInvitationNotFoundBody": "Le lien a peut-être été désactivé. Demandez à l'organisateur de vous renvoyer une invitation.",
+  "membershipInvitationLoadFailedTitle": "Impossible de charger cette invitation.",
+  "membershipInvitationLoadFailedBody": "L'invitation ne peut pas être chargée pour le moment. Veuillez réessayer.",
   "personalizedFeedTitle": "Pour vous",
   "organizerInvalidIdentifier": "Identifiant organisateur invalide",
   "organizerActivitiesTab": "Activités",
@@ -1445,7 +1506,9 @@
     }
   },
   "organizerFollowAction": "Suivre",
+  "organizerFollowError": "Impossible de suivre cet organisateur. Veuillez réessayer.",
   "organizerUnfollowAction": "Ne plus suivre",
+  "organizerUnfollowError": "Impossible de ne plus suivre cet organisateur. Veuillez réessayer.",
   "organizerFollowedSearchHint": "Rechercher un organisateur",
   "organizerFollowedEmptySearchTitle": "Aucun organisateur trouvé",
   "organizerFollowedEmptySearchBody": "Essayez un autre mot-clé.",
@@ -1456,11 +1519,13 @@
   "organizersDirectorySearchHint": "Rechercher un organisateur",
   "organizersDirectoryEmptyTitle": "Aucun organisateur trouvé",
   "organizersDirectoryEmptyBody": "Essayez un autre mot-clé ou modifiez le tri.",
+  "organizersLoadMoreError": "Impossible de charger plus d'organisateurs.",
   "organizersSortLabel": "Trier par",
   "organizersSortName": "Nom",
   "organizersSortEvents": "Événements",
   "organizersSortFollowers": "Abonnés",
   "organizerActivitiesLoadError": "Impossible de charger les activités.",
+  "organizerActivitiesLoadMoreError": "Impossible de charger plus d'activités.",
   "organizerActivitiesEmpty": "Aucune activité publiée pour le moment.",
   "organizerActivitiesNoUpcoming": "Pas d'événement à venir.",
   "organizerActivitiesNoPast": "Pas d'événement passé.",
@@ -1481,6 +1546,7 @@
     }
   },
   "organizerReviewsLoadError": "Impossible de charger les avis.",
+  "organizerReviewsLoadMoreError": "Impossible de charger plus d'avis.",
   "organizerReviewsTotal": "Sur {count, plural, =1{1 avis} other{{count} avis}}",
   "@organizerReviewsTotal": {
     "placeholders": {
@@ -1595,14 +1661,14 @@
   "checkinBlockedWrongEventTitle": "Mauvais événement",
   "checkinBlockedUnauthorizedTitle": "Non autorisé",
   "checkinBlockedTicketNotFoundTitle": "Billet introuvable",
-  "checkinBlockedUnknownTitle": "Erreur",
+  "checkinBlockedUnknownTitle": "Contrôle indisponible",
   "checkinBlockedDoNotAdmit": "Ne pas laisser entrer.",
   "checkinBlockedTicketTransferredBody": "Le billet a été transféré à un autre porteur — re-scannez son QR.",
   "checkinBlockedSlotNotStartedBody": "L'entrée n'est pas encore ouverte pour ce créneau.",
   "checkinBlockedWrongEventBody": "Ce billet ne correspond pas à l'événement filtré.",
   "checkinBlockedUnauthorizedBody": "Vous n'êtes pas autorisé à scanner ce billet pour cette organisation.",
   "checkinBlockedTicketNotFoundBody": "QR non reconnu — réessayez ou saisissez le code.",
-  "checkinBlockedUnknownBody": "Erreur inattendue, réessayez.",
+  "checkinBlockedUnknownBody": "Impossible de vérifier ce billet. Vérifiez votre connexion puis réessayez.",
   "authEmailLabel": "Email",
   "authEmailHint": "votre@email.com",
   "authPasswordLabel": "Mot de passe",
@@ -1698,12 +1764,16 @@
   "authPermissionLocationBulletSearch": "Filtrer la recherche selon votre position",
   "authPermissionLocationBulletSuggestions": "Recevoir des suggestions adaptées à votre ville",
   "authPermissionLocationGranted": "Localisation déjà activée",
+  "authPermissionLocationSetupFailed": "Impossible de vérifier l'accès à votre position sur cet appareil. Réessayez ou continuez sans la localisation et activez-la plus tard dans les réglages.",
+  "authPermissionLocationContinueWithout": "Continuer sans la localisation",
   "authPermissionAudioTitle": "Discutez en vocal avec Petit Boo",
   "authPermissionAudioIntro": "Activez le micro pour interagir à la voix avec Petit Boo, notre assistant IA dédié aux sorties.",
   "authPermissionAudioBulletQuestions": "Posez vos questions à la voix, sans clavier",
   "authPermissionAudioBulletDictate": "Dictez vos messages plus rapidement",
   "authPermissionAudioBulletHandsFree": "Trouvez des sorties les mains libres",
   "authPermissionAudioGranted": "Micro déjà activé",
+  "authPermissionAudioSetupFailed": "Impossible de vérifier l'accès au micro sur cet appareil. Réessayez ou continuez sans la saisie vocale et activez-la plus tard dans les réglages.",
+  "authPermissionAudioContinueWithout": "Continuer sans la saisie vocale",
   "authPermissionNotificationsTitle": "Ne ratez rien des bons plans",
   "authPermissionNotificationsIntro": "Activez les notifications pour recevoir l'essentiel directement sur votre téléphone.",
   "authPermissionNotificationsBulletTickets": "Vos billets et confirmations de réservation",
@@ -1712,6 +1782,8 @@
   "authPermissionNotificationsBulletReminders": "Vos rappels et alertes personnalisées",
   "authPermissionNotificationsBulletMessages": "Les réponses des organisateurs à vos messages",
   "authPermissionNotificationsGranted": "Notifications déjà activées",
+  "authPermissionNotificationsEnable": "Activer les notifications",
+  "authPermissionNotificationsNotNow": "Plus tard",
   "authEmailAddressInvalid": "Veuillez entrer une adresse email valide",
   "authOtpEmailVerified": "Email vérifié !",
   "authRegisterMissingVerificationToken": "Erreur : token de vérification manquant. Veuillez recommencer.",
@@ -1870,6 +1942,9 @@
     }
   },
   "authCompanySearchHelper": "Recherchez {organizationPossessive} pour remplir automatiquement le formulaire",
+  "authCompanySearchConnectionError": "Impossible de joindre l'annuaire officiel des entreprises. Vérifiez votre connexion, réessayez ou saisissez les informations manuellement.",
+  "authCompanySearchUnavailable": "L'annuaire officiel des entreprises est temporairement indisponible. Réessayez plus tard ou saisissez les informations manuellement.",
+  "authCompanySearchNoResults": "Aucune entreprise trouvée. Vérifiez le nom ou saisissez les informations manuellement.",
   "@authCompanySearchHelper": {
     "placeholders": {
       "organizationPossessive": {
@@ -1953,6 +2028,7 @@
   "homeMobileConfigExploreButton": "Explorer les activités",
   "homeNewActivitiesTitle": "Nouveautés",
   "homeNoNewActivities": "Aucune nouveauté trouvée.",
+  "homeRefreshPartialFailure": "Certaines sections n'ont pas pu être actualisées. Réessayez.",
   "homeNearbyAvailableTitle": "Activités disponibles à proximité",
   "homeWebCtaTitle": "Retrouvez vos événements en toute simplicité",
   "homeWebCtaBody": "Notre site web offre une expérience complète pour découvrir et réserver vos activités locales.",
@@ -2198,6 +2274,9 @@
   "homeUrgencyTitle": "Avant qu'il soit trop tard",
   "homeUrgencySubtitle": "Ces événements commencent bientôt",
   "homeCityNotFound": "Ville non trouvée",
+  "homeCityLoadError": "Impossible de charger cette ville",
+  "homeCityActivitiesLoadError": "Impossible de charger les activités de cette ville",
+  "homeCityActivitiesLoadMoreError": "Impossible de charger plus d'activités. Vérifiez votre connexion puis réessayez.",
   "homeCityDescriptionFallback": "Découvrez les activités à {cityName}.",
   "@homeCityDescriptionFallback": {
     "placeholders": {
@@ -2344,6 +2423,7 @@
     }
   },
   "searchSavedSearchCreated": "Recherche \"{name}\" enregistrée !",
+  "searchSaveFailed": "Impossible d'enregistrer cette recherche. Vérifiez votre connexion puis réessayez.",
   "@searchSavedSearchCreated": {
     "placeholders": {
       "name": {
@@ -2462,6 +2542,7 @@
     }
   },
   "searchLoadError": "Chargement impossible",
+  "searchLoadMoreError": "Impossible de charger plus de résultats. Réessayez.",
   "searchHintCity": "Rechercher une ville",
   "searchPopularCities": "VILLES POPULAIRES",
   "searchResults": "RÉSULTATS",
@@ -2540,7 +2621,7 @@
   "eventNoEventsTitle": "Aucun événement trouvé",
   "eventNoResultsWithFilters": "Aucun résultat avec les filtres actuels",
   "eventNoEventsAvailable": "Il n'y a pas d'événements disponibles pour le moment",
-  "eventGenericErrorTitle": "Une erreur est survenue",
+  "eventGenericErrorTitle": "Activités indisponibles",
   "eventMapLocationError": "Impossible de récupérer votre position",
   "eventMapEventsHere": "{count} événements ici",
   "@eventMapEventsHere": {
@@ -2615,6 +2696,7 @@
   "eventLocationIndoorOutdoor": "Intérieur/Extérieur",
   "eventCharacteristicsTitle": "Caractéristiques",
   "eventInvalidBookingLink": "Lien de réservation invalide",
+  "eventOpenBookingLinkError": "Impossible d'ouvrir la page de réservation. Vérifiez votre connexion ou réessayez plus tard.",
   "eventChooseDateFirst": "Veuillez d'abord choisir une date",
   "eventSelectAtLeastOneTicket": "Veuillez sélectionner au moins un billet",
   "eventBookingChoiceTitle": "Que voulez-vous faire ?",
@@ -2732,6 +2814,8 @@
   "eventViewDates": "Voir les dates",
   "eventReminded": "Rappelé",
   "eventRemindMe": "Me rappeler",
+  "eventReminderCreateFailed": "Impossible d'activer ce rappel. Il n'a pas été ajouté. Réessayez.",
+  "eventReminderRemoveFailed": "Impossible de supprimer ce rappel. Il est toujours actif. Réessayez.",
   "eventViewWebsite": "Voir le site",
   "eventIndicativePrice": "Prix indicatif",
   "eventDateFromTo": "{date} de {start} à {end}",
@@ -2821,6 +2905,7 @@
   "eventPasswordIncorrect": "Mot de passe incorrect.",
   "eventPasswordInvalidFormat": "Format invalide.",
   "eventPasswordNetworkError": "Erreur réseau. Réessaie.",
+  "eventPasswordCheckFailed": "Impossible de vérifier le mot de passe car le service est temporairement indisponible. Réessayez dans quelques instants.",
   "eventPasswordRetryIn": "Réessaye dans {seconds}s",
   "@eventPasswordRetryIn": {
     "placeholders": {
@@ -2872,6 +2957,7 @@
   "eventQuestionsTitle": "Questions",
   "eventAsk": "Poser",
   "eventQuestionSent": "Votre question a été envoyée !",
+  "eventQuestionSubmitFailed": "Votre question n'a pas pu être envoyée. Vérifiez votre connexion puis réessayez.",
   "eventQuestionAlreadyAsked": "Vous avez déjà posé une question sur cet événement.",
   "eventYourQuestion": "Votre question",
   "eventQuestionStatusPending": "En attente de modération",
@@ -2890,6 +2976,10 @@
   "eventNoQuestionsBody": "Soyez le premier à poser une question sur cet événement.",
   "eventAskQuestion": "Poser une question",
   "eventQuestionsLoadError": "Impossible de charger les questions",
+  "eventMyQuestionLoadErrorTitle": "Statut de votre question indisponible",
+  "eventMyQuestionLoadErrorBody": "Impossible de vérifier si vous avez déjà posé une question. Réessayez avant d'en envoyer une nouvelle.",
+  "eventQuestionsLoadMoreError": "Impossible de charger plus de questions. Vérifiez votre connexion puis réessayez.",
+  "eventAvailabilityLoadError": "Impossible de vérifier la disponibilité des billets en temps réel. Les dates affichées ont peut-être changé.",
   "eventQuestionsEnd": "Vous avez vu toutes les questions",
   "eventVoteUnavailable": "Impossible de voter pour le moment.",
   "eventQuestionsCount": "{count, plural, =1{1 question} other{{count} questions}}",
@@ -2996,7 +3086,15 @@
   "bookingConfirm": "Confirmer",
   "bookingPay": "Payer",
   "bookingContinueToPayment": "Continuer vers le paiement",
-  "bookingPaymentCancelled": "Paiement annulé",
+  "bookingPaymentCancelled": "Le paiement a été annulé. Vous pouvez réessayer quand vous le souhaitez.",
+  "bookingPaymentFailed": "Le paiement a été refusé ou n'a pas pu aboutir. Vérifiez les informations de votre carte ou essayez un autre moyen de paiement.",
+  "bookingPaymentTimedOut": "Le paiement a pris trop de temps. Vérifiez votre connexion internet, puis réessayez.",
+  "bookingPaymentUnavailable": "Le paiement par carte est temporairement indisponible. Réessayez plus tard ou contactez l'assistance si le problème persiste.",
+  "bookingCheckoutConnectionError": "Impossible de poursuivre la réservation en raison d'un problème de connexion. Vérifiez votre connexion internet, puis réessayez.",
+  "bookingCheckoutTimedOut": "La réservation a pris trop de temps. Vérifiez votre connexion internet, puis réessayez.",
+  "bookingPaymentConfirmationUncertain": "Nous n'avons pas pu confirmer votre réservation après le paiement. Votre paiement a peut-être abouti. Vérifiez Mes réservations avant de payer à nouveau afin d'éviter un double débit.",
+  "bookingCreateFailed": "Impossible de créer cette réservation. Votre sélection est conservée : vérifiez les disponibilités puis réessayez.",
+  "bookingConfirmationFailed": "Impossible de confirmer cette réservation. Elle n'a pas été finalisée ; réessayez.",
   "bookingTicketsCount": "{count, plural, =1{1 billet} other{{count} billets}}",
   "@bookingTicketsCount": {
     "placeholders": {
@@ -3149,6 +3247,7 @@
       }
     }
   },
+  "bookingDetailLoadFallback": "Impossible de charger cette réservation. Vérifiez votre connexion, puis réessayez.",
   "bookingEmptyAllTitle": "Aucune réservation",
   "bookingEmptyAllBody": "Vous n'avez pas encore de réservation.\nDécouvrez nos événements !",
   "bookingEmptyUpcomingTitle": "Aucune réservation à venir",
@@ -3384,11 +3483,19 @@
       }
     }
   },
+  "tripPlanDeleteFailed": "Impossible de supprimer \"{title}\". Cette sortie est toujours enregistrée. Réessayez.",
+  "@tripPlanDeleteFailed": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "tripPlansUntitledPlan": "Plan sans titre",
   "tripPlansEmptyTitle": "Aucune sortie planifiée",
   "tripPlansEmptyBody": "Demande à Petit Boo de te créer un itinéraire pour ta prochaine sortie !",
   "tripPlansTalkToPetitBoo": "Parler à Petit Boo",
-  "tripPlansErrorTitle": "Une erreur est survenue",
+  "tripPlansErrorTitle": "Sorties indisponibles",
   "tripPlansLoadErrorBody": "Impossible de charger vos sorties",
   "tripPlanEditTitle": "Modifier",
   "tripPlanEditErrorWithMessage": "Erreur : {message}",
@@ -3407,6 +3514,7 @@
   "tripPlanEditStopsLabel": "Étapes",
   "tripPlanEditReorderHint": "Glisser pour réorganiser",
   "tripPlanEditUpdatedSnack": "Plan mis à jour",
+  "tripPlanUpdateFailed": "Impossible de modifier cette sortie. Vos changements n'ont pas été enregistrés. Réessayez.",
   "tripPlanEditDiscardChangesTitle": "Abandonner les modifications ?",
   "tripPlanEditDiscardChangesBody": "Vos modifications ne seront pas sauvegardées.",
   "tripPlanEditDiscard": "Abandonner",
@@ -3495,6 +3603,13 @@
   "reviewsFeaturedFilter": "Mis en avant",
   "reviewsUserLoadError": "Impossible de charger vos avis.",
   "reviewsUserLoadMoreError": "Impossible de charger la suite.",
+  "reviewsCreateFailed": "Impossible de publier votre avis. Vérifiez le formulaire et réessayez.",
+  "reviewsUpdateFailed": "Impossible de modifier votre avis. Vos changements sont conservés ; réessayez.",
+  "reviewsDeleteFailed": "Impossible de supprimer votre avis. Réessayez.",
+  "reviewsVoteFailed": "Impossible d'enregistrer votre vote. Réessayez.",
+  "reviewsReportFailed": "Impossible d'envoyer votre signalement. Réessayez.",
+  "reviewsEligibilityChecking": "Vérification de votre droit à laisser un avis…",
+  "reviewsEligibilityLoadError": "Impossible de vérifier si vous pouvez laisser un avis. Réessayez avant de rédiger votre avis.",
   "reviewsMyEmptyBody": "Vous n'avez encore laissé aucun avis. Une fois un événement terminé, vous pourrez partager votre expérience !",
   "reviewsMyEmptyTitle": "Aucun avis",
   "reviewsNoFilteredResults": "Aucun avis ne correspond aux filtres sélectionnés.",
@@ -3563,9 +3678,18 @@
   "gamificationChallengesTitle": "Challenges",
   "gamificationClaimDailyReward": "Réclamer ma récompense",
   "gamificationComeBackTomorrow": "Reviens demain !",
+  "gamificationComingSoonCta": "Bientôt disponible",
   "gamificationCompleted": "Effectué",
   "gamificationCurrentRankPrefix": "Tu es",
-  "gamificationDailyClaimError": "Erreur lors de la réclamation",
+  "gamificationDailyClaimError": "Impossible de récupérer ta récompense. Réessaie.",
+  "gamificationDailyRewardClaimed": "Récompense récupérée : +{count} Hibons !",
+  "@gamificationDailyRewardClaimed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "gamificationDailyRewardAlreadyClaimed": "Tu as déjà réclamé ta récompense aujourd'hui !",
   "gamificationDailyRewardTitle": "Récompense quotidienne",
   "gamificationDayNumber": "J-{dayNumber}",
@@ -3680,6 +3804,7 @@
     }
   },
   "gamificationNoTransactions": "Aucune transaction",
+  "gamificationTransactionsLoadMoreError": "Impossible de charger plus de transactions Hibon. Vérifiez votre connexion et réessayez.",
   "gamificationPetitBooDailyBonus": "{count, plural, =1{+1 message Petit Boo / jour} other{+{count} messages Petit Boo / jour}}",
   "@gamificationPetitBooDailyBonus": {
     "placeholders": {
@@ -3756,6 +3881,7 @@
   "gamificationWheelAlreadyUsedToday": "Tu as déjà utilisé ta chance aujourd'hui.",
   "gamificationWheelLoseTitle": "Pas de chance...",
   "gamificationWheelSpinCta": "Lancer",
+  "gamificationWheelSpinError": "Impossible de lancer la roue. Réessaie.",
   "gamificationWheelWinTitle": "Félicitations !",
   "alertsListTitle": "Mes alertes et recherches",
   "alertsFilterAll": "Toutes",
@@ -3772,6 +3898,7 @@
   "alertsDeleteTitle": "Supprimer l'alerte",
   "alertsDeleteBody": "Voulez-vous vraiment supprimer cette recherche enregistrée ?",
   "alertsDeleted": "Alerte « {name} » supprimée",
+  "alertsDeleteFailed": "Impossible de supprimer cette alerte. Vérifiez votre connexion puis réessayez.",
   "@alertsDeleted": {
     "placeholders": {
       "name": {
@@ -3789,7 +3916,7 @@
   },
   "alertsAllEvents": "Tous les événements",
   "alertsUnnamed": "Alerte sans nom",
-  "favoritesLoadError": "Erreur de chargement",
+  "favoritesLoadError": "Impossible de charger vos favoris",
   "favoritesEmptyTitle": "Aucun favori",
   "favoritesEmptyBody": "Ajoutez des événements à vos favoris en cliquant sur le cœur pour les retrouver facilement.",
   "favoritesEmptyUncategorizedTitle": "Aucun favori non classé",
@@ -3816,7 +3943,7 @@
   "favoriteListColorLabel": "Couleur",
   "favoriteListIconLabel": "Icône",
   "favoriteListCreateAction": "Créer",
-  "favoriteListCreateError": "Erreur lors de la création de la liste",
+  "favoriteListCreateError": "Impossible de créer cette liste. Vérifiez votre connexion puis réessayez.",
   "favoriteListEditTitle": "Modifier la liste",
   "favoriteListFavoritesCount": "{count, plural, =0{0 favori} =1{1 favori} other{{count} favoris}}",
   "@favoriteListFavoritesCount": {
@@ -3826,7 +3953,7 @@
       }
     }
   },
-  "favoriteListUpdateError": "Erreur lors de la mise à jour",
+  "favoriteListUpdateError": "Impossible de modifier cette liste. Vérifiez votre connexion puis réessayez.",
   "favoriteListDeleteTitle": "Supprimer la liste ?",
   "favoriteListDeleteBody": "La liste « {name} » sera supprimée.",
   "@favoriteListDeleteBody": {
@@ -3845,7 +3972,7 @@
       }
     }
   },
-  "favoriteListDeleteError": "Erreur lors de la suppression",
+  "favoriteListDeleteError": "Impossible de supprimer cette liste. Vérifiez votre connexion puis réessayez.",
   "favoriteListDeleteThisAction": "Supprimer cette liste",
   "favoriteListPickerMoveTitle": "Déplacer vers...",
   "favoriteListPickerAddTitle": "Ajouter aux favoris",
@@ -3860,7 +3987,7 @@
   "favoriteMovedToList": "Déplacé vers la liste",
   "favoriteMovedToUncategorized": "Déplacé vers « Non classés »",
   "favoriteAddedToList": "Ajouté à la liste",
-  "favoriteGenericError": "Une erreur est survenue.",
+  "favoriteGenericError": "Impossible de mettre à jour vos favoris. Réessayez.",
   "notificationsTitle": "Notifications",
   "notificationsMarkAllRead": "Tout marquer comme lu",
   "notificationsFilterAll": "Toutes",
@@ -3872,6 +3999,8 @@
   "notificationsMarkReadError": "Impossible de marquer comme lu",
   "notificationsMarkedAllRead": "Notifications marquées comme lues",
   "notificationsActionError": "Action impossible pour le moment",
+  "notificationsMarkAllReadError": "Impossible de marquer toutes les notifications comme lues. Réessayez.",
+  "notificationsLoadMoreError": "Impossible de charger plus de notifications. Réessayez.",
   "notificationsDeleted": "Notification supprimée",
   "notificationsDeleteError": "Suppression impossible",
   "notificationsDeleteTitle": "Supprimer la notification",
@@ -3930,6 +4059,7 @@
     }
   },
   "remindersDeleted": "Rappel supprimé",
+  "remindersDeleteFailed": "Impossible de supprimer ce rappel. Il est toujours actif. Réessayez.",
   "remindersDateFromTo": "{date} de {start} à {end}",
   "@remindersDateFromTo": {
     "placeholders": {
