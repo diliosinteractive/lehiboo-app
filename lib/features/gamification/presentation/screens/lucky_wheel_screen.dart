@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../data/models/wheel_models.dart';
 import '../providers/gamification_provider.dart';
 import '../utils/gamification_action_error.dart';
@@ -20,6 +21,8 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
   late AnimationController _controller;
   double _currentRotation = 0.0;
   bool _isSpinning = false;
+  int _interactionGeneration = 0;
+  ProviderSubscription<GamificationSessionKey?>? _sessionSubscription;
 
   // Couleurs modernes pour la roue (inspirées du web)
   static const List<Color> _wheelColors = [
@@ -40,16 +43,41 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
       vsync: this,
       duration: const Duration(seconds: 5),
     );
+    _sessionSubscription = ref.listenManual<GamificationSessionKey?>(
+      gamificationSessionProvider,
+      (_, __) {
+        _interactionGeneration++;
+        _controller.stop();
+        if (!mounted) return;
+        setState(() {
+          _isSpinning = false;
+          _currentRotation = 0;
+        });
+      },
+    );
   }
 
   @override
   void dispose() {
+    _sessionSubscription?.close();
     _controller.dispose();
     super.dispose();
   }
 
-  void _spin(WheelConfig config, WidgetRef ref) async {
+  void _spin(
+    WheelConfig config,
+    WidgetRef ref,
+    GamificationSessionKey? viewSession,
+  ) async {
     if (_isSpinning) return;
+    final ownerSession = viewSession;
+    if (ownerSession == null ||
+        !identical(ref.read(gamificationSessionProvider), ownerSession) ||
+        config.prizes.isEmpty) {
+      return;
+    }
+    final ownerNotifier = ref.read(wheelSpinProvider.notifier);
+    final generation = ++_interactionGeneration;
 
     setState(() {
       _isSpinning = true;
@@ -57,7 +85,9 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
 
     try {
       // Appeler l'API pour obtenir le résultat
-      final result = await ref.read(wheelSpinProvider.notifier).spin();
+      final result = await ownerNotifier.spin();
+
+      if (!_ownsInteraction(ownerSession, ownerNotifier, generation)) return;
 
       if (result == null) {
         setState(() => _isSpinning = false);
@@ -76,6 +106,9 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
       //   R ≡ -prizeAngle (mod 2π)
       final prizeIndex = result.prizeIndex;
       final numPrizes = config.prizes.length;
+      if (prizeIndex < 0 || prizeIndex >= numPrizes) {
+        throw StateError('Invalid wheel prize index: $prizeIndex');
+      }
       final segmentAngle = (2 * pi) / numPrizes;
       final prizeAngle = prizeIndex * segmentAngle + segmentAngle / 2;
 
@@ -101,6 +134,7 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
       ));
 
       animation.addListener(() {
+        if (!_ownsInteraction(ownerSession, ownerNotifier, generation)) return;
         setState(() {
           _currentRotation = animation.value;
         });
@@ -108,16 +142,18 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
 
       await _controller.forward();
 
+      if (!mounted) return;
+      if (!_ownsInteraction(ownerSession, ownerNotifier, generation)) return;
+
       setState(() {
         _isSpinning = false;
         _currentRotation = targetRotation % (2 * pi);
       });
 
-      if (mounted) {
-        _showResultDialog(result);
-      }
+      _showResultDialog(result, ownerSession.accountId!);
     } catch (e) {
       if (!mounted) return;
+      if (!_ownsInteraction(ownerSession, ownerNotifier, generation)) return;
       setState(() => _isSpinning = false);
 
       final message = classifyWheelSpinFailure(e) ==
@@ -136,110 +172,125 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
     }
   }
 
-  void _showResultDialog(WheelSpinResult result) {
+  bool _ownsInteraction(
+    GamificationSessionKey ownerSession,
+    WheelSpinNotifier ownerNotifier,
+    int generation,
+  ) {
+    return mounted &&
+        generation == _interactionGeneration &&
+        identical(ref.read(gamificationSessionProvider), ownerSession) &&
+        identical(ref.read(wheelSpinProvider.notifier), ownerNotifier);
+  }
+
+  void _showResultDialog(WheelSpinResult result, String ownerAccountId) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icône animée
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: result.prize > 0
-                      ? Colors.amber.shade100
-                      : Colors.grey.shade100,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  result.prize > 0
-                      ? Icons.celebration
-                      : Icons.sentiment_dissatisfied,
-                  size: 48,
-                  color: result.prize > 0 ? Colors.amber : Colors.grey,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Titre
-              Text(
-                result.prize > 0
-                    ? context.l10n.gamificationWheelWinTitle
-                    : context.l10n.gamificationWheelLoseTitle,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Message
-              Text(
-                result.message,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-
-              if (result.prize > 0) ...[
-                const SizedBox(height: 16),
+      builder: (context) => AccountBoundRouteGuard<void>(
+        ownerAccountId: ownerAccountId,
+        builder: (context) => Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icône animée
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.green.shade200),
+                    color: result.prize > 0
+                        ? Colors.amber.shade100
+                        : Colors.grey.shade100,
+                    shape: BoxShape.circle,
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.account_balance_wallet,
-                          color: Colors.green.shade700),
-                      const SizedBox(width: 8),
-                      Text(
-                        context.l10n.gamificationNewHibonsBalance(
-                          result.newBalance,
+                  child: Icon(
+                    result.prize > 0
+                        ? Icons.celebration
+                        : Icons.sentiment_dissatisfied,
+                    size: 48,
+                    color: result.prize > 0 ? Colors.amber : Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Titre
+                Text(
+                  result.prize > 0
+                      ? context.l10n.gamificationWheelWinTitle
+                      : context.l10n.gamificationWheelLoseTitle,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Message
+                Text(
+                  result.message,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+
+                if (result.prize > 0) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.green.shade200),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.account_balance_wallet,
+                            color: Colors.green.shade700),
+                        const SizedBox(width: 8),
+                        Text(
+                          context.l10n.gamificationNewHibonsBalance(
+                            result.newBalance,
+                          ),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade700,
+                          ),
                         ),
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green.shade700,
-                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 24),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF601F),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ],
+                    ),
+                    child: Text(
+                      context.l10n.gamificationGreatCta,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ],
-
-              const SizedBox(height: 24),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF601F),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    context.l10n.gamificationGreatCta,
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -248,8 +299,9 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
 
   @override
   Widget build(BuildContext context) {
-    final configAsync = ref.watch(wheelConfigProvider);
-    final walletAsync = ref.watch(gamificationNotifierProvider);
+    final viewSession = ref.watch(gamificationSessionProvider);
+    final configAsync = ref.watch(wheelConfigProvider(viewSession));
+    final walletAsync = ref.watch(gamificationNotifierProvider(viewSession));
     final spinState = ref.watch(wheelSpinProvider);
 
     // Récupérer canSpinWheel du wallet
@@ -288,7 +340,7 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
                                 spinState.isLoading ||
                                 !canSpinWheel)
                             ? null
-                            : () => _spin(config, ref),
+                            : () => _spin(config, ref, viewSession),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: canSpinWheel
                               ? const Color(0xFFFF601F)
@@ -352,7 +404,14 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () => ref.invalidate(wheelConfigProvider),
+                onPressed: () {
+                  if (identical(
+                    ref.read(gamificationSessionProvider),
+                    viewSession,
+                  )) {
+                    ref.invalidate(wheelConfigProvider(viewSession));
+                  }
+                },
                 child: Text(context.l10n.commonRetry),
               ),
             ],

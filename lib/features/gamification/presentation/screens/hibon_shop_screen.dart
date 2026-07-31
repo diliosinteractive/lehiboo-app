@@ -28,9 +28,13 @@ class _HibonShopScreenState extends ConsumerState<HibonShopScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final transactionsAsync =
-        ref.watch(hibonTransactionsProvider(_pillarFilter));
-    final walletAsync = ref.watch(gamificationNotifierProvider);
+    final viewSession = ref.watch(gamificationSessionProvider);
+    final transactionsAsync = ref.watch(
+      hibonTransactionsProvider(
+        (session: viewSession, pillar: _pillarFilter),
+      ),
+    );
+    final walletAsync = ref.watch(gamificationNotifierProvider(viewSession));
 
     return Scaffold(
       appBar: AppBar(

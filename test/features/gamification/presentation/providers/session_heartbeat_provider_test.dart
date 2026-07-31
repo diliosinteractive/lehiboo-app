@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -31,13 +33,17 @@ class _FakeAuthRepository implements AuthRepository {
 
 class _FakeGamificationApiDataSource implements GamificationApiDataSource {
   int heartbeatCalls = 0;
+  Completer<HibonsRewardResponseDto>? nextHeartbeat;
 
   @override
   Future<HibonsRewardResponseDto> sendSessionHeartbeat(
     DateTime sessionStartedAt,
-  ) async {
+  ) {
     heartbeatCalls++;
-    return const HibonsRewardResponseDto(awarded: true, amount: 10);
+    return nextHeartbeat?.future ??
+        Future.value(
+          const HibonsRewardResponseDto(awarded: true, amount: 10),
+        );
   }
 
   @override
@@ -152,4 +158,54 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
+
+  testWidgets('no-yield A to B to A retires the old heartbeat notifier',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final pending = Completer<HibonsRewardResponseDto>();
+    final api = _FakeGamificationApiDataSource()..nextHeartbeat = pending;
+    final container = ProviderContainer(
+      overrides: [
+        analyticsServiceProvider.overrideWithValue(
+          const NoopAnalyticsService(),
+        ),
+        sharedPreferencesProvider.overrideWithValue(preferences),
+        authRepositoryProvider.overrideWithValue(_FakeAuthRepository()),
+        gamificationApiDataSourceProvider.overrideWithValue(api),
+      ],
+    );
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    container.read(authProvider);
+    await tester.pump();
+    container.read(authProvider.notifier).setAuthenticatedUser(_userOne);
+    final subscription = container.listen(
+      sessionHeartbeatProvider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    final accountANotifier = container.read(sessionHeartbeatProvider.notifier);
+    final staleSend = accountANotifier.sendHeartbeatNow();
+    await tester.pump();
+    expect(api.heartbeatCalls, 1);
+
+    container.read(authProvider.notifier).setAuthenticatedUser(_userTwo);
+    container.read(authProvider.notifier).setAuthenticatedUser(_userOne);
+    final accountA2Notifier = container.read(sessionHeartbeatProvider.notifier);
+    expect(identical(accountA2Notifier, accountANotifier), isFalse);
+    await tester.pump();
+
+    pending.complete(
+      const HibonsRewardResponseDto(awarded: true, amount: 10),
+    );
+    await staleSend;
+    expect(
+      preferences.getString(sessionHeartbeatDateKeyForUser(_userOne.id)),
+      isNull,
+    );
+    subscription.close();
+    container.dispose();
+    await tester.pump(const Duration(milliseconds: 1));
+  });
 }

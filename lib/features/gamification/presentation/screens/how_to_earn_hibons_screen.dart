@@ -14,7 +14,8 @@ class HowToEarnHibonsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final catalogAsync = ref.watch(actionsCatalogProvider);
+    final viewSession = ref.watch(gamificationSessionProvider);
+    final catalogAsync = ref.watch(actionsCatalogProvider(viewSession));
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -40,7 +41,16 @@ class HowToEarnHibonsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 OutlinedButton(
-                  onPressed: () => ref.invalidate(actionsCatalogProvider),
+                  onPressed: () {
+                    if (viewSession == null ||
+                        !identical(
+                          ref.read(gamificationSessionProvider),
+                          viewSession,
+                        )) {
+                      return;
+                    }
+                    ref.invalidate(actionsCatalogProvider(viewSession));
+                  },
                   child: Text(context.l10n.commonRetry),
                 ),
               ],
@@ -61,7 +71,16 @@ class HowToEarnHibonsScreen extends ConsumerWidget {
           }
 
           return RefreshIndicator(
-            onRefresh: () async => ref.invalidate(actionsCatalogProvider),
+            onRefresh: () async {
+              if (viewSession == null ||
+                  !identical(
+                    ref.read(gamificationSessionProvider),
+                    viewSession,
+                  )) {
+                return;
+              }
+              ref.invalidate(actionsCatalogProvider(viewSession));
+            },
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [

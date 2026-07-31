@@ -1,40 +1,30 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../auth/presentation/providers/auth_provider.dart';
 import '../presentation/providers/gamification_provider.dart';
 
-/// Invalide les providers hibons/wallet utilisés sur la home dès que le statut
-/// d'auth bascule. Cible les deux requêtes lancées par `HibonCounterWidget` :
-/// `gamificationNotifierProvider` (`/me/wallet`) et `hibonsBalanceProvider`
-/// (`/me/balance`).
-///
-/// Pourquoi : ces providers ne sont pas `autoDispose`, donc leur `AsyncValue`
-/// survit à un logout. Sans invalidation, après un nouveau login le compteur
-/// affiche la balance/le wallet du compte précédent jusqu'au prochain
-/// pull-to-refresh.
+/// Evicts the retired exact-session wallet/balance cache on auth changes.
+/// Current consumers switch to a new family element synchronously, so an old
+/// account's data is never used as `AsyncValue.previous` for the new account.
 ///
 /// Garder en vie : `ref.watch` dans `LeHibooApp.build` — le `ref.listen` ne
 /// déclenche que tant que le provider est observé.
 final hibonsAuthSyncProvider = Provider<void>((ref) {
-  ref.listen<AuthStatus>(
-    authProvider.select((s) => s.status),
+  ref.listen<GamificationSessionKey?>(
+    gamificationSessionProvider,
     (previous, next) {
-      final isLogin = next == AuthStatus.authenticated &&
-          previous != AuthStatus.authenticated &&
-          previous != AuthStatus.initial;
-      final isLogout = didTransitionToUnauthenticated(previous, next);
-
-      if (!isLogin && !isLogout) return;
+      if (identical(previous, next)) return;
 
       if (kDebugMode) {
         debugPrint(
-          '🪙 hibonsAuthSync: ${previous?.name ?? "null"} → ${next.name} '
-          '→ invalidate wallet + balance',
+          '🪙 hibonsAuthSync: exact session changed → evict retired wallet '
+          '+ balance',
         );
       }
-      ref.invalidate(gamificationNotifierProvider);
-      ref.invalidate(hibonsBalanceProvider);
+      if (previous != null) {
+        ref.invalidate(gamificationNotifierProvider(previous));
+        ref.invalidate(hibonsBalanceProvider(previous));
+      }
     },
   );
 });

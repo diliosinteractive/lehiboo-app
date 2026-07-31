@@ -6,12 +6,12 @@ import '../../../../core/l10n/l10n.dart';
 /// Overlay plein écran affiché lors du franchissement d'un palier de rang.
 /// Auto-dismiss après 6 s ou au tap sur le bouton "Continuer".
 class RankUpOverlay {
-  static void show(
+  static OverlayEntry show(
     BuildContext context, {
     required String rankLabel,
     String? rankIcon,
   }) {
-    showOnOverlay(
+    return showOnOverlay(
       Overlay.of(context),
       rankLabel: rankLabel,
       rankIcon: rankIcon,
@@ -20,7 +20,7 @@ class RankUpOverlay {
 
   /// Variante qui prend un [OverlayState] directement (Plan 05) — utile
   /// quand on n'a pas de descendant d'Overlay sous la main.
-  static void showOnOverlay(
+  static OverlayEntry showOnOverlay(
     OverlayState overlay, {
     required String rankLabel,
     String? rankIcon,
@@ -39,6 +39,7 @@ class RankUpOverlay {
     );
 
     overlay.insert(entry);
+    return entry;
   }
 }
 

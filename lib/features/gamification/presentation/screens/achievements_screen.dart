@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../data/models/hibon_badge.dart';
 import '../providers/gamification_provider.dart';
 
@@ -11,7 +12,8 @@ class AchievementsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final badgesAsync = ref.watch(hibonBadgesProvider);
+    final viewSession = ref.watch(gamificationSessionProvider);
+    final badgesAsync = ref.watch(hibonBadgesProvider(viewSession));
 
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F8),
@@ -27,9 +29,14 @@ class AchievementsScreen extends ConsumerWidget {
         iconTheme: const IconThemeData(color: Colors.black87),
       ),
       body: badgesAsync.when(
-        data: (result) => _buildContent(context, ref, result),
+        data: (result) => _buildContent(
+          context,
+          ref,
+          result,
+          viewSession,
+        ),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => _buildError(context, ref, e),
+        error: (e, _) => _buildError(context, ref, e, viewSession),
       ),
     );
   }
@@ -38,10 +45,20 @@ class AchievementsScreen extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     HibonBadgesResult result,
+    GamificationSessionKey? viewSession,
   ) {
     return RefreshIndicator(
       color: HbColors.brandPrimary,
-      onRefresh: () => ref.refresh(hibonBadgesProvider.future),
+      onRefresh: () async {
+        if (viewSession == null ||
+            !identical(
+              ref.read(gamificationSessionProvider),
+              viewSession,
+            )) {
+          return;
+        }
+        final _ = await ref.refresh(hibonBadgesProvider(viewSession).future);
+      },
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         physics: const AlwaysScrollableScrollPhysics(),
@@ -54,7 +71,12 @@ class AchievementsScreen extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 14),
                 child: _BadgeCard(
                   badge: badge,
-                  onTap: () => _showDetail(context, badge),
+                  onTap: () => _showDetail(
+                    context,
+                    ref,
+                    badge,
+                    viewSession,
+                  ),
                 ),
               )),
         ],
@@ -62,7 +84,12 @@ class AchievementsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
+  Widget _buildError(
+    BuildContext context,
+    WidgetRef ref,
+    Object error,
+    GamificationSessionKey? viewSession,
+  ) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -86,7 +113,16 @@ class AchievementsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () => ref.invalidate(hibonBadgesProvider),
+              onPressed: () {
+                if (viewSession == null ||
+                    !identical(
+                      ref.read(gamificationSessionProvider),
+                      viewSession,
+                    )) {
+                  return;
+                }
+                ref.invalidate(hibonBadgesProvider(viewSession));
+              },
               icon: const Icon(Icons.refresh_rounded),
               label: Text(context.l10n.commonRetry),
               style: ElevatedButton.styleFrom(
@@ -107,13 +143,26 @@ class AchievementsScreen extends ConsumerWidget {
     );
   }
 
-  void _showDetail(BuildContext context, HibonBadge badge) {
+  void _showDetail(
+    BuildContext context,
+    WidgetRef ref,
+    HibonBadge badge,
+    GamificationSessionKey? viewSession,
+  ) {
+    final ownerSession = viewSession;
+    if (ownerSession == null ||
+        !identical(ref.read(gamificationSessionProvider), ownerSession)) {
+      return;
+    }
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 32),
-        child: _BadgeDetailDialog(badge: badge),
+      builder: (context) => AccountBoundRouteGuard<void>(
+        ownerAccountId: ownerSession.accountId,
+        builder: (context) => Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+          child: _BadgeDetailDialog(badge: badge),
+        ),
       ),
     );
   }

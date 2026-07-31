@@ -13,16 +13,17 @@ class HibonCounterWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Only load hibons if user is authenticated
     final isAuthenticated = ref.watch(isAuthenticatedProvider);
+    final viewSession = ref.watch(gamificationSessionProvider);
 
     if (!isAuthenticated) {
       // Return empty placeholder when not authenticated
       return const SizedBox.shrink();
     }
 
-    final profileAsync = ref.watch(gamificationNotifierProvider);
+    final profileAsync = ref.watch(gamificationNotifierProvider(viewSession));
 
     // Fallback /balance pendant que /wallet charge au cold start (Plan 05).
-    final balanceAsync = ref.watch(hibonsBalanceProvider);
+    final balanceAsync = ref.watch(hibonsBalanceProvider(viewSession));
     final fallbackBalance = balanceAsync.valueOrNull?.balance;
 
     return profileAsync.when(

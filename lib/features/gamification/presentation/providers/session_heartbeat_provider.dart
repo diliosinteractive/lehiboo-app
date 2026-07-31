@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../data/datasources/gamification_api_datasource.dart';
 
 /// Clé SharedPrefs : dernière date (yyyy-MM-dd) à laquelle le heartbeat
@@ -17,12 +17,11 @@ const _kHeartbeatDelay = Duration(minutes: 3);
 
 final sessionHeartbeatProvider =
     StateNotifierProvider<SessionHeartbeatNotifier, void>((ref) {
-  final userId = ref.watch(
-    authProvider.select(
-      (state) => state.isAuthenticated ? state.user?.id : null,
-    ),
+  final session = ref.watch(authSessionKeyProvider);
+  return SessionHeartbeatNotifier(
+    ref,
+    ownerSession: session.accountId == null ? null : session,
   );
-  return SessionHeartbeatNotifier(ref, userId: userId);
 });
 
 /// Observe le lifecycle, démarre un Timer de 3 min à chaque foreground et
@@ -31,13 +30,15 @@ final sessionHeartbeatProvider =
 class SessionHeartbeatNotifier extends StateNotifier<void>
     with WidgetsBindingObserver {
   final Ref _ref;
-  final String? _userId;
+  final AuthSessionKey? _ownerSession;
   Timer? _timer;
   DateTime? _sessionStartedAt;
   bool _registered = false;
 
-  SessionHeartbeatNotifier(this._ref, {required String? userId})
-      : _userId = userId,
+  SessionHeartbeatNotifier(
+    this._ref, {
+    required AuthSessionKey? ownerSession,
+  })  : _ownerSession = ownerSession,
         super(null) {
     WidgetsBinding.instance.addObserver(this);
     _registered = true;
@@ -73,7 +74,7 @@ class SessionHeartbeatNotifier extends StateNotifier<void>
   }
 
   void _onForeground() {
-    if (_userId == null) return;
+    if (_ownerSession == null) return;
 
     _sessionStartedAt = DateTime.now().toUtc();
     _timer?.cancel();
@@ -85,39 +86,51 @@ class SessionHeartbeatNotifier extends StateNotifier<void>
   }
 
   Future<void> _sendHeartbeat() async {
-    final userId = _userId;
+    final ownerSession = _ownerSession;
+    final userId = ownerSession?.accountId;
     final sessionStartedAt = _sessionStartedAt;
-    if (userId == null || sessionStartedAt == null) return;
-    if (!_isCurrentSession(userId)) return;
+    if (ownerSession == null || userId == null || sessionStartedAt == null) {
+      return;
+    }
+    if (!_isCurrentSession(ownerSession)) return;
 
     // Skip si déjà crédité aujourd'hui (évite un round-trip inutile).
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted || !_isCurrentSession(ownerSession)) return;
     final heartbeatDateKey = sessionHeartbeatDateKeyForUser(userId);
     final lastDate = prefs.getString(heartbeatDateKey);
     final today = _todayLocalKey();
     if (lastDate == today) return;
-    if (!mounted || !_isCurrentSession(userId)) return;
+    if (!mounted || !_isCurrentSession(ownerSession)) return;
 
     final api = _ref.read(gamificationApiDataSourceProvider);
     try {
       final result = await api.sendSessionHeartbeat(sessionStartedAt);
+      if (!mounted || !_isCurrentSession(ownerSession)) return;
       if (result.awarded) {
         await prefs.setString(heartbeatDateKey, today);
+        if (!mounted || !_isCurrentSession(ownerSession)) return;
         // Plan 05 : la balance est mise à jour par HibonsUpdateInterceptor
         // (enveloppe `hibons_update` à la racine). Pas d'invalidation manuelle.
       } else if (result.reason == 'already_today') {
         // Le serveur sait que c'est déjà fait — synchroniser le cache local.
         await prefs.setString(heartbeatDateKey, today);
+        if (!mounted || !_isCurrentSession(ownerSession)) return;
       }
     } catch (_) {
       // Best-effort : silencieux en cas d'erreur réseau.
     }
   }
 
-  bool _isCurrentSession(String userId) {
-    final authState = _ref.read(authProvider);
-    return authState.isAuthenticated && authState.user?.id == userId;
+  bool _isCurrentSession(AuthSessionKey ownerSession) {
+    return identical(
+      _ref.read(authSessionKeyProvider),
+      ownerSession,
+    );
   }
+
+  @visibleForTesting
+  Future<void> sendHeartbeatNow() => _sendHeartbeat();
 
   String _todayLocalKey() {
     final now = DateTime.now();

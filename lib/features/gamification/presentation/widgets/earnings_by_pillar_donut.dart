@@ -15,7 +15,8 @@ class EarningsByPillarDonut extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncValue = ref.watch(earningsByPillarProvider);
+    final viewSession = ref.watch(gamificationSessionProvider);
+    final asyncValue = ref.watch(earningsByPillarProvider(viewSession));
 
     return asyncValue.when(
       loading: () => const _DonutSkeleton(),

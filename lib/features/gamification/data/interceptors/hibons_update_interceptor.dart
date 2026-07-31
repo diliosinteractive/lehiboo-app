@@ -7,6 +7,9 @@ import '../../application/hibons_service.dart';
 /// Hibons-modifying par le backend (Plan 05). Coût négligeable :
 /// un `is Map` + un lookup, sur chaque réponse.
 class HibonsUpdateInterceptor extends Interceptor {
+  @visibleForTesting
+  static const requestOwnerExtraKey = 'lehiboo.hibons_request_owner';
+
   /// Routes pour lesquelles l'enveloppe doit mettre à jour le state mais
   /// **sans** déclencher de snackbar — l'écran a déjà sa propre UI de
   /// célébration (dialog roue, animation daily reward, etc.).
@@ -14,6 +17,18 @@ class HibonsUpdateInterceptor extends Interceptor {
     '/mobile/hibons/wheel',
     '/mobile/hibons/daily',
   ];
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    // Keep the first owner when Dio retries/redirects a RequestOptions object.
+    // Re-stamping a request after an account switch could incorrectly make an
+    // old response look as though it belonged to the new account.
+    if (!options.extra.containsKey(requestOwnerExtraKey)) {
+      options.extra[requestOwnerExtraKey] =
+          HibonsService.instance.captureRequestOwner();
+    }
+    handler.next(options);
+  }
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
@@ -27,10 +42,17 @@ class HibonsUpdateInterceptor extends Interceptor {
           '🪙 HibonsUpdateInterceptor: envelope detected on $path (silent=$silent) → $envelope',
         );
         try {
-          HibonsService.instance.handleEnvelope(data, silent: silent);
+          final owner = response.requestOptions.extra[requestOwnerExtraKey]
+              as HibonsRequestOwner?;
+          HibonsService.instance.handleEnvelope(
+            data,
+            owner: owner,
+            silent: silent,
+          );
         } catch (e, st) {
           // Best-effort : ne jamais casser une réponse à cause de l'enveloppe.
-          debugPrint('🪙 HibonsUpdateInterceptor: handleEnvelope error: $e\n$st');
+          debugPrint(
+              '🪙 HibonsUpdateInterceptor: handleEnvelope error: $e\n$st');
         }
       } else {
         debugPrint(

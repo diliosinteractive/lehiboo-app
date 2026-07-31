@@ -2,11 +2,13 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../routes/app_router.dart';
 import '../../application/hibons_service.dart';
 import '../../data/models/hibons_update.dart';
+import '../providers/gamification_provider.dart';
 import 'rank_up_overlay.dart';
 
 /// Widget invisible, monté une seule fois sous le router (`LeHibooApp`),
@@ -18,22 +20,25 @@ import 'rank_up_overlay.dart';
 /// — celui-ci se trouve au-dessus du Navigator et n'a pas d'Overlay ancêtre.
 ///
 /// Sérialise les toasts pour éviter le télescopage en cas de mass-favoriting.
-class HibonsAnimationCoordinator extends StatefulWidget {
+class HibonsAnimationCoordinator extends ConsumerStatefulWidget {
   final Widget child;
 
   const HibonsAnimationCoordinator({super.key, required this.child});
 
   @override
-  State<HibonsAnimationCoordinator> createState() =>
+  ConsumerState<HibonsAnimationCoordinator> createState() =>
       _HibonsAnimationCoordinatorState();
 }
 
 class _HibonsAnimationCoordinatorState
-    extends State<HibonsAnimationCoordinator> {
-  StreamSubscription<HibonsUpdate>? _deltaSub;
+    extends ConsumerState<HibonsAnimationCoordinator> {
+  StreamSubscription<HibonsDeltaEvent>? _deltaSub;
   StreamSubscription<RankUpEvent>? _rankUpSub;
-  final Queue<HibonsUpdate> _toastQueue = Queue();
+  ProviderSubscription<GamificationSessionKey?>? _sessionSub;
+  final Queue<HibonsDeltaEvent> _toastQueue = Queue();
+  OverlayEntry? _rankUpEntry;
   bool _showingToast = false;
+  int _animationGeneration = 0;
 
   @override
   void initState() {
@@ -41,12 +46,18 @@ class _HibonsAnimationCoordinatorState
     debugPrint('🪙 HibonsAnimationCoordinator: subscribing to streams');
     _deltaSub = HibonsService.instance.deltaStream.listen(_enqueueToast);
     _rankUpSub = HibonsService.instance.rankUpStream.listen(_showRankUp);
+    _sessionSub = ref.listenManual<GamificationSessionKey?>(
+      gamificationSessionProvider,
+      (_, __) => _clearAccountAnimations(),
+    );
   }
 
   @override
   void dispose() {
     _deltaSub?.cancel();
     _rankUpSub?.cancel();
+    _sessionSub?.close();
+    if (_rankUpEntry?.mounted ?? false) _rankUpEntry!.remove();
     super.dispose();
   }
 
@@ -60,11 +71,30 @@ class _HibonsAnimationCoordinatorState
     return overlay;
   }
 
-  void _enqueueToast(HibonsUpdate update) {
+  bool _ownsSession(GamificationSessionKey ownerSession) {
+    return mounted &&
+        identical(ref.read(gamificationSessionProvider), ownerSession);
+  }
+
+  void _clearAccountAnimations() {
+    _animationGeneration++;
+    _toastQueue.clear();
+    _showingToast = false;
+    if (_rankUpEntry?.mounted ?? false) _rankUpEntry!.remove();
+    _rankUpEntry = null;
+    try {
+      scaffoldMessengerKey.currentState?.hideCurrentSnackBar();
+    } catch (_) {
+      // The global key can be temporarily unavailable during router teardown.
+    }
+  }
+
+  void _enqueueToast(HibonsDeltaEvent event) {
+    if (!_ownsSession(event.ownerSession)) return;
     debugPrint(
-        '🪙 HibonsAnimationCoordinator: enqueue toast delta=${update.delta}');
-    _toastQueue.add(update);
-    _drainToastQueue();
+        '🪙 HibonsAnimationCoordinator: enqueue toast delta=${event.update.delta}');
+    _toastQueue.add(event);
+    unawaited(_drainToastQueue());
   }
 
   Future<void> _drainToastQueue() async {
@@ -74,22 +104,24 @@ class _HibonsAnimationCoordinatorState
       debugPrint('🪙 drain: already showing, skip');
       return;
     }
+    final generation = _animationGeneration;
+    _showingToast = true;
     while (_toastQueue.isNotEmpty) {
-      if (!mounted) {
+      if (!mounted || generation != _animationGeneration) {
         debugPrint('🪙 drain: not mounted, abort');
         return;
       }
-      final update = _toastQueue.removeFirst();
-      _showingToast = true;
+      final event = _toastQueue.removeFirst();
+      if (!_ownsSession(event.ownerSession)) continue;
       try {
-        _showToast(update);
+        _showToast(event.update);
       } catch (e, st) {
         debugPrint('🪙 _showToast error: $e\n$st');
       }
       // Attendre la durée du toast avant le suivant pour éviter l'empilement.
       await Future.delayed(const Duration(milliseconds: 800));
-      _showingToast = false;
     }
+    if (generation == _animationGeneration) _showingToast = false;
   }
 
   void _showToast(HibonsUpdate update) {
@@ -159,9 +191,14 @@ class _HibonsAnimationCoordinatorState
   }
 
   void _showRankUp(RankUpEvent event) {
+    if (!_ownsSession(event.ownerSession)) return;
     final overlay = _rootOverlay;
     if (overlay == null) return;
-    RankUpOverlay.showOnOverlay(overlay, rankLabel: event.rankLabel);
+    if (_rankUpEntry?.mounted ?? false) _rankUpEntry!.remove();
+    _rankUpEntry = RankUpOverlay.showOnOverlay(
+      overlay,
+      rankLabel: event.rankLabel,
+    );
   }
 
   @override

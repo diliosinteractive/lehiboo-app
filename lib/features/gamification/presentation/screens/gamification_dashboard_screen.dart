@@ -16,8 +16,9 @@ class GamificationDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dailyRewardAsync = ref.watch(dailyRewardProvider);
-    final walletAsync = ref.watch(gamificationNotifierProvider);
+    final viewSession = ref.watch(gamificationSessionProvider);
+    final dailyRewardAsync = ref.watch(dailyRewardProvider(viewSession));
+    final walletAsync = ref.watch(gamificationNotifierProvider(viewSession));
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA), // Light premium grey
@@ -115,7 +116,12 @@ class GamificationDashboardScreen extends ConsumerWidget {
                   // Daily Reward Section
 
                   _buildDailyRewardSection(
-                      context, ref, walletAsync, dailyRewardAsync),
+                    context,
+                    ref,
+                    walletAsync,
+                    dailyRewardAsync,
+                    viewSession,
+                  ),
 
                   const SizedBox(height: 32),
 
@@ -375,6 +381,7 @@ class GamificationDashboardScreen extends ConsumerWidget {
     WidgetRef ref,
     AsyncValue<HibonsWallet> walletAsync,
     AsyncValue<DailyRewardState> dailyRewardAsync,
+    GamificationSessionKey? viewSession,
   ) {
     // Récupérer canClaimDaily du wallet
     final canClaimDaily = walletAsync.maybeWhen(
@@ -388,9 +395,32 @@ class GamificationDashboardScreen extends ConsumerWidget {
         canClaim: canClaimDaily,
         isLoading: false,
         onClaim: () async {
+          final ownerSession = viewSession;
+          if (ownerSession == null ||
+              !identical(
+                ref.read(gamificationSessionProvider),
+                ownerSession,
+              )) {
+            return;
+          }
+          final ownerNotifier =
+              ref.read(dailyRewardProvider(ownerSession).notifier);
           try {
-            final result = await ref.read(dailyRewardProvider.notifier).claim();
-            if (context.mounted && result != null) {
+            final result = await ownerNotifier.claim(
+              expectedSession: ownerSession,
+            );
+            if (!context.mounted ||
+                !identical(
+                  ref.read(gamificationSessionProvider),
+                  ownerSession,
+                ) ||
+                !identical(
+                  ref.read(dailyRewardProvider(ownerSession).notifier),
+                  ownerNotifier,
+                )) {
+              return;
+            }
+            if (result != null) {
               final message = dailyRewardSuccessMessage(
                 result.message,
                 context.l10n
@@ -413,7 +443,15 @@ class GamificationDashboardScreen extends ConsumerWidget {
               );
             }
           } catch (e) {
-            if (context.mounted) {
+            if (context.mounted &&
+                identical(
+                  ref.read(gamificationSessionProvider),
+                  ownerSession,
+                ) &&
+                identical(
+                  ref.read(dailyRewardProvider(ownerSession).notifier),
+                  ownerNotifier,
+                )) {
               final errorMessage = classifyDailyRewardFailure(e) ==
                       GamificationActionFailure.dailyRewardAlreadyClaimed
                   ? context.l10n.gamificationDailyRewardAlreadyClaimed

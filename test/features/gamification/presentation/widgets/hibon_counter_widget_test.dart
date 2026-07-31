@@ -14,7 +14,8 @@ class _TestGamificationNotifier extends GamificationNotifier {
   final Future<HibonsWallet> Function() _loadWallet;
 
   @override
-  Future<HibonsWallet> build() => _loadWallet();
+  Future<HibonsWallet> build(GamificationSessionKey? ownerSession) =>
+      _loadWallet();
 
   void failRefreshWhilePreservingValue() {
     final previous = state;
@@ -41,13 +42,14 @@ void main() {
       ProviderScope(
         overrides: [
           isAuthenticatedProvider.overrideWithValue(true),
+          gamificationSessionProvider.overrideWith((ref) => null),
           gamificationNotifierProvider.overrideWith(
             () => _TestGamificationNotifier(
               () async => const HibonsWallet(balance: 42),
             ),
           ),
           hibonsBalanceProvider.overrideWith(
-            (ref) async => _fallbackBalance,
+            (ref, ownerSession) async => _fallbackBalance,
           ),
         ],
         child: MaterialApp(
@@ -64,8 +66,10 @@ void main() {
     final container = ProviderScope.containerOf(
       tester.element(find.byType(HibonCounterWidget)),
     );
-    final notifier = container.read(gamificationNotifierProvider.notifier)
-        as _TestGamificationNotifier;
+    final ownerSession = container.read(gamificationSessionProvider);
+    final notifier =
+        container.read(gamificationNotifierProvider(ownerSession).notifier)
+            as _TestGamificationNotifier;
     notifier.failRefreshWhilePreservingValue();
     await tester.pump();
 
@@ -80,13 +84,14 @@ void main() {
       ProviderScope(
         overrides: [
           isAuthenticatedProvider.overrideWithValue(true),
+          gamificationSessionProvider.overrideWith((ref) => null),
           gamificationNotifierProvider.overrideWith(
             () => _TestGamificationNotifier(
               () async => throw StateError('wallet unavailable'),
             ),
           ),
           hibonsBalanceProvider.overrideWith(
-            (ref) async => _fallbackBalance,
+            (ref, ownerSession) async => _fallbackBalance,
           ),
         ],
         child: MaterialApp(

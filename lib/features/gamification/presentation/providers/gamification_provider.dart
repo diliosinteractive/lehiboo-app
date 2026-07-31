@@ -16,98 +16,123 @@ import 'package:lehiboo/features/gamification/data/datasources/gamification_api_
     show gamificationApiDataSourceProvider, HibonsPurchaseDisabledException;
 import 'package:lehiboo/features/gamification/data/repositories/gamification_repository_impl.dart';
 import 'package:lehiboo/features/gamification/domain/repositories/gamification_repository.dart';
-import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 
 // ==== Providers ====
 
-/// Identity key shared by every account-scoped gamification provider.
+/// Backwards-compatible name for the app-wide exact authentication epoch.
 ///
-/// Watching this provider guarantees that cached wallet, progress, transaction,
-/// and mutation state is destroyed when the active account changes.
-final _gamificationSessionUserIdProvider = Provider<String?>((ref) {
-  final authState = ref.watch(authProvider);
-  if (!authState.isAuthenticated) return null;
-  return authState.user?.id;
+/// Keeping one central identity prevents gamification from inventing a new
+/// epoch on harmless same-account profile publications while still making an
+/// A -> B -> A cycle distinct from the original A session.
+typedef GamificationSessionKey = AuthSessionKey;
+
+final gamificationSessionProvider = Provider<GamificationSessionKey?>((ref) {
+  final session = ref.watch(authSessionKeyProvider);
+  return session.accountId == null ? null : session;
 });
 
 final gamificationRepositoryProvider = Provider<GamificationRepository>((ref) {
   // Recreate the repository as well: it owns an in-memory wallet cache used by
   // wheel configuration and must never cross an account boundary.
-  ref.watch(_gamificationSessionUserIdProvider);
+  ref.watch(gamificationSessionProvider);
   final dataSource = ref.read(gamificationApiDataSourceProvider);
   return GamificationRepositoryImpl(dataSource);
 });
 
 // ==== Wallet Provider ====
 
-final gamificationNotifierProvider =
-    AsyncNotifierProvider<GamificationNotifier, HibonsWallet>(() {
-  return GamificationNotifier();
-});
+final gamificationNotifierProvider = AsyncNotifierProvider.family<
+    GamificationNotifier,
+    HibonsWallet,
+    GamificationSessionKey?>(GamificationNotifier.new);
 
-class GamificationNotifier extends AsyncNotifier<HibonsWallet> {
+class GamificationNotifier
+    extends FamilyAsyncNotifier<HibonsWallet, GamificationSessionKey?> {
   int _requestGeneration = 0;
   Future<void>? _refreshInFlight;
-  String? _refreshUserId;
+  GamificationSessionKey? _refreshSession;
+  GamificationSessionKey? _ownerSession;
+  bool _disposed = false;
+
+  void _registerBuildLifecycle() {
+    _disposed = false;
+    ref.onDispose(() {
+      _disposed = true;
+      _requestGeneration++;
+    });
+  }
 
   @override
-  Future<HibonsWallet> build() async {
+  Future<HibonsWallet> build(GamificationSessionKey? ownerSession) async {
+    _registerBuildLifecycle();
+    _ownerSession = ownerSession;
     final generation = ++_requestGeneration;
-    final userId = ref.watch(_gamificationSessionUserIdProvider);
-    if (userId == null) {
+    final currentSession = ref.watch(gamificationSessionProvider);
+    if (ownerSession == null || !identical(currentSession, ownerSession)) {
       return const HibonsWallet();
     }
 
     final repository = ref.watch(gamificationRepositoryProvider);
     try {
       final wallet = await repository.getWallet();
-      if (generation != _requestGeneration) {
+      if (!_isCurrent(ownerSession, generation)) {
         return _settleStaleBuild();
       }
       return wallet;
     } catch (error, stackTrace) {
-      if (generation == _requestGeneration) {
+      if (_isCurrent(ownerSession, generation)) {
         Error.throwWithStackTrace(error, stackTrace);
       }
       return _settleStaleBuild();
     }
   }
 
-  Future<void> refresh() {
-    final userId = ref.read(_gamificationSessionUserIdProvider);
-    if (userId == null) {
+  Future<void> refresh({GamificationSessionKey? expectedSession}) {
+    if (_disposed) return Future.value();
+    final session = ref.read(gamificationSessionProvider);
+    if (!identical(session, _ownerSession)) return Future.value();
+    if (expectedSession != null && !identical(session, expectedSession)) {
+      return Future.value();
+    }
+    if (session == null) {
       _requestGeneration++;
       state = const AsyncValue.data(HibonsWallet());
       return Future.value();
     }
 
     final inFlight = _refreshInFlight;
-    if (inFlight != null && _refreshUserId == userId) return inFlight;
+    if (inFlight != null && identical(_refreshSession, session)) {
+      return inFlight;
+    }
 
     final generation = ++_requestGeneration;
-    _refreshUserId = userId;
+    _refreshSession = session;
     late final Future<void> refresh;
-    refresh = _performRefresh(userId, generation).whenComplete(() {
+    refresh = _performRefresh(session, generation).whenComplete(() {
       if (identical(_refreshInFlight, refresh)) {
         _refreshInFlight = null;
-        _refreshUserId = null;
+        _refreshSession = null;
       }
     });
     _refreshInFlight = refresh;
     return refresh;
   }
 
-  Future<void> _performRefresh(String userId, int generation) async {
+  Future<void> _performRefresh(
+    GamificationSessionKey session,
+    int generation,
+  ) async {
     final previous = state;
     state = const AsyncLoading<HibonsWallet>().copyWithPrevious(previous);
     final repository = ref.read(gamificationRepositoryProvider);
     try {
       final wallet = await repository.getWallet();
-      if (_isCurrent(userId, generation)) {
+      if (_isCurrent(session, generation)) {
         state = AsyncValue.data(wallet);
       }
     } catch (error, stackTrace) {
-      if (_isCurrent(userId, generation)) {
+      if (_isCurrent(session, generation)) {
         state = AsyncError<HibonsWallet>(
           error,
           stackTrace,
@@ -118,6 +143,7 @@ class GamificationNotifier extends AsyncNotifier<HibonsWallet> {
   }
 
   Future<HibonsWallet> _settleStaleBuild() async {
+    if (_disposed) return const HibonsWallet();
     final inFlight = _refreshInFlight;
     if (inFlight != null) {
       try {
@@ -138,13 +164,18 @@ class GamificationNotifier extends AsyncNotifier<HibonsWallet> {
     return current.valueOrNull ?? const HibonsWallet();
   }
 
-  bool _isCurrent(String userId, int generation) {
-    return generation == _requestGeneration &&
-        ref.read(_gamificationSessionUserIdProvider) == userId;
+  bool _isCurrent(GamificationSessionKey session, int generation) {
+    return !_disposed &&
+        generation == _requestGeneration &&
+        identical(ref.read(gamificationSessionProvider), session);
   }
 
   /// Rafraîchit le wallet après une action (claim, spin, etc.)
-  Future<void> invalidateAndRefresh() async {
+  Future<void> invalidateAndRefresh({
+    required GamificationSessionKey ownerSession,
+  }) async {
+    if (_disposed) return;
+    if (!identical(ref.read(gamificationSessionProvider), ownerSession)) return;
     ref.invalidateSelf();
   }
 
@@ -154,7 +185,12 @@ class GamificationNotifier extends AsyncNotifier<HibonsWallet> {
   /// Pas de round-trip réseau : l'UI se met à jour instantanément. Si le
   /// wallet n'a jamais été chargé, no-op (le prochain `build()` récupérera
   /// la valeur fraîche côté serveur de toute façon).
-  void setBalance(int newBalance) {
+  void setBalance(
+    int newBalance, {
+    required GamificationSessionKey ownerSession,
+  }) {
+    if (_disposed) return;
+    if (!identical(ref.read(gamificationSessionProvider), ownerSession)) return;
     final current = state.valueOrNull;
     if (current == null) return;
     state = AsyncValue.data(current.copyWith(balance: newBalance));
@@ -162,7 +198,12 @@ class GamificationNotifier extends AsyncNotifier<HibonsWallet> {
 
   /// Applique l'enveloppe `hibons_update` reçue par l'intercepteur Dio.
   /// Met à jour balance, lifetime, et (si `rankChanged`) rank + rankLabel.
-  void applyUpdate(HibonsUpdate update) {
+  void applyUpdate(
+    HibonsUpdate update, {
+    required GamificationSessionKey ownerSession,
+  }) {
+    if (_disposed) return;
+    if (!identical(ref.read(gamificationSessionProvider), ownerSession)) return;
     final current = state.valueOrNull;
     if (current == null) return;
 
@@ -185,51 +226,76 @@ class GamificationNotifier extends AsyncNotifier<HibonsWallet> {
 
 // ==== Daily Reward Provider ====
 
-final dailyRewardProvider =
-    AsyncNotifierProvider<DailyRewardNotifier, DailyRewardState>(() {
-  return DailyRewardNotifier();
-});
+final dailyRewardProvider = AsyncNotifierProvider.family<DailyRewardNotifier,
+    DailyRewardState, GamificationSessionKey?>(DailyRewardNotifier.new);
 
-class DailyRewardNotifier extends AsyncNotifier<DailyRewardState> {
+class DailyRewardNotifier
+    extends FamilyAsyncNotifier<DailyRewardState, GamificationSessionKey?> {
+  GamificationSessionKey? _ownerSession;
+  bool _disposed = false;
+
+  void _registerBuildLifecycle() {
+    _disposed = false;
+    ref.onDispose(() => _disposed = true);
+  }
+
   @override
-  Future<DailyRewardState> build() async {
-    final userId = ref.watch(_gamificationSessionUserIdProvider);
-    if (userId == null) return _emptyDailyRewardState();
+  Future<DailyRewardState> build(GamificationSessionKey? ownerSession) async {
+    _registerBuildLifecycle();
+    _ownerSession = ownerSession;
+    final currentSession = ref.watch(gamificationSessionProvider);
+    if (ownerSession == null || !identical(currentSession, ownerSession)) {
+      return _emptyDailyRewardState();
+    }
 
     final repository = ref.watch(gamificationRepositoryProvider);
     return repository.getDailyRewardState();
   }
 
-  Future<DailyClaimResult?> claim() async {
-    final userId = ref.read(_gamificationSessionUserIdProvider);
-    if (userId == null) return null;
+  Future<DailyClaimResult?> claim({
+    required GamificationSessionKey expectedSession,
+  }) async {
+    if (_disposed) return null;
+    final session = ref.read(gamificationSessionProvider);
+    if (session == null ||
+        !identical(session, _ownerSession) ||
+        !identical(session, expectedSession)) {
+      return null;
+    }
 
     final repository = ref.read(gamificationRepositoryProvider);
 
     try {
       final result = await repository.claimDailyReward();
-      if (ref.read(_gamificationSessionUserIdProvider) != userId) {
-        return result;
-      }
+      if (!_ownsSession(session)) return null;
 
       // Rafraîchir le state
       ref.invalidateSelf();
       // Rafraîchir le wallet aussi
-      ref.invalidate(gamificationNotifierProvider);
+      ref.invalidate(gamificationNotifierProvider(session));
 
       return result;
     } catch (e) {
+      if (!_ownsSession(session)) return null;
       debugPrint('🎮 DailyRewardNotifier.claim error: $e');
       rethrow;
     }
+  }
+
+  bool _ownsSession(GamificationSessionKey session) {
+    return !_disposed &&
+        identical(ref.read(gamificationSessionProvider), session);
   }
 }
 
 // ==== Wheel Providers ====
 
-final wheelConfigProvider = FutureProvider<WheelConfig>((ref) {
-  final userId = ref.watch(_gamificationSessionUserIdProvider);
-  if (userId == null) return Future.value(const WheelConfig(prizes: []));
+final wheelConfigProvider =
+    FutureProvider.family<WheelConfig, GamificationSessionKey?>((ref, session) {
+  if (session == null ||
+      !identical(ref.watch(gamificationSessionProvider), session)) {
+    return Future.value(const WheelConfig(prizes: []));
+  }
 
   final repository = ref.watch(gamificationRepositoryProvider);
   return repository.getWheelConfig();
@@ -238,69 +304,90 @@ final wheelConfigProvider = FutureProvider<WheelConfig>((ref) {
 final wheelSpinProvider =
     StateNotifierProvider<WheelSpinNotifier, AsyncValue<WheelSpinResult?>>(
         (ref) {
-  final userId = ref.watch(_gamificationSessionUserIdProvider);
-  return WheelSpinNotifier(ref, isAuthenticated: userId != null);
+  final session = ref.watch(gamificationSessionProvider);
+  return WheelSpinNotifier(ref, ownerSession: session);
 });
 
 class WheelSpinNotifier extends StateNotifier<AsyncValue<WheelSpinResult?>> {
   final Ref _ref;
-  final bool _isAuthenticated;
+  final GamificationSessionKey? _ownerSession;
+  int _operationGeneration = 0;
 
   WheelSpinNotifier(
     this._ref, {
-    required bool isAuthenticated,
-  })  : _isAuthenticated = isAuthenticated,
+    required GamificationSessionKey? ownerSession,
+  })  : _ownerSession = ownerSession,
         super(const AsyncValue.data(null));
 
+  bool get _ownsSession {
+    final owner = _ownerSession;
+    return mounted &&
+        owner != null &&
+        identical(_ref.read(gamificationSessionProvider), owner);
+  }
+
   Future<WheelSpinResult?> spin() async {
-    if (!_isAuthenticated) return null;
+    if (!_ownsSession) return null;
+    final generation = ++_operationGeneration;
 
     state = const AsyncValue.loading();
 
     try {
       final repository = _ref.read(gamificationRepositoryProvider);
       final result = await repository.spinWheel();
-      if (!mounted) return null;
+      if (!_ownsSession || generation != _operationGeneration) return null;
 
       // Rafraîchir le wallet
-      _ref.invalidate(gamificationNotifierProvider);
+      _ref.invalidate(gamificationNotifierProvider(_ownerSession));
 
       state = AsyncValue.data(result);
       return result;
     } catch (e, st) {
+      if (!_ownsSession || generation != _operationGeneration) return null;
       debugPrint('🎮 WheelSpinNotifier.spin error: $e');
-      if (mounted) {
-        state = AsyncValue.error(e, st);
-      }
+      state = AsyncValue.error(e, st);
       Error.throwWithStackTrace(e, st);
     }
   }
 
   void reset() {
+    if (!_ownsSession) return;
+    _operationGeneration++;
     state = const AsyncValue.data(null);
   }
 }
 
 // ==== Transactions Provider ====
 
+/// Exact-session query for the transactions summary endpoint.
+typedef HibonTransactionsQuery = ({
+  GamificationSessionKey? session,
+  String? pillar,
+});
+
 /// Liste des transactions + agrégats meta. Param `pillar` (nullable) filtre.
 final hibonTransactionsProvider =
-    FutureProvider.family<TransactionsListResult, String?>((ref, pillar) async {
-  final userId = ref.watch(_gamificationSessionUserIdProvider);
-  if (userId == null) return TransactionsListResult.empty;
+    FutureProvider.family<TransactionsListResult, HibonTransactionsQuery>(
+        (ref, query) async {
+  final session = query.session;
+  if (session == null ||
+      !identical(ref.watch(gamificationSessionProvider), session)) {
+    return TransactionsListResult.empty;
+  }
 
   final repository = ref.watch(gamificationRepositoryProvider);
   // Watch the wallet to refresh transactions when it changes
-  ref.watch(gamificationNotifierProvider);
-  return repository.getTransactions(pillar: pillar);
+  ref.watch(gamificationNotifierProvider(session));
+  return repository.getTransactions(pillar: query.pillar);
 });
 
 /// Breakdown des gains par pilier — dérivé du même appel `/transactions`,
 /// pas de round-trip supplémentaire.
-final earningsByPillarProvider =
-    Provider<AsyncValue<List<EarningsByPillarEntry>>>((ref) {
+final earningsByPillarProvider = Provider.family<
+    AsyncValue<List<EarningsByPillarEntry>>,
+    GamificationSessionKey?>((ref, session) {
   return ref
-      .watch(hibonTransactionsProvider(null))
+      .watch(hibonTransactionsProvider((session: session, pillar: null)))
       .whenData((r) => r.earningsByPillar);
 });
 
@@ -310,6 +397,11 @@ final earningsByPillarProvider =
 /// une égalité structurelle, donc changer de filtre crée une nouvelle instance
 /// de notifier qui charge automatiquement la page 1.
 typedef TransactionsFilter = ({String? type, String? pillar});
+
+typedef SessionTransactionsFilter = ({
+  GamificationSessionKey? session,
+  TransactionsFilter filter,
+});
 
 const _transactionsPerPage = 20;
 
@@ -362,20 +454,42 @@ class HibonsTransactionsNotifier
     extends StateNotifier<HibonsTransactionsState> {
   final GamificationRepository _repository;
   final TransactionsFilter _filter;
+  final bool Function() _ownsSession;
+  int _requestGeneration = 0;
 
-  HibonsTransactionsNotifier(this._repository, this._filter)
-      : super(const HibonsTransactionsState()) {
-    load();
+  HibonsTransactionsNotifier(
+    this._repository,
+    this._filter, {
+    bool hasActiveSession = true,
+    bool Function()? ownsSession,
+  })  : _ownsSession = ownsSession ?? (() => true),
+        super(
+          hasActiveSession
+              ? const HibonsTransactionsState()
+              : const HibonsTransactionsState(
+                  transactions: AsyncValue.data([]),
+                ),
+        ) {
+    if (hasActiveSession) load();
+  }
+
+  bool get _canPublish => mounted && _ownsSession();
+
+  void _publish(HibonsTransactionsState next) {
+    if (_canPublish) state = next;
   }
 
   /// Charge (ou recharge) la première page.
   Future<void> load() async {
-    state = state.copyWith(
+    if (!_canPublish) return;
+    final generation = ++_requestGeneration;
+    _publish(state.copyWith(
       transactions: const AsyncValue.loading(),
       currentPage: 1,
       hasMore: false,
+      isLoadingMore: false,
       loadMoreError: null,
-    );
+    ));
     try {
       final result = await _repository.getTransactions(
         type: _filter.type,
@@ -383,16 +497,18 @@ class HibonsTransactionsNotifier
         page: 1,
         perPage: _transactionsPerPage,
       );
-      state = state.copyWith(
+      if (!_canPublish || generation != _requestGeneration) return;
+      _publish(state.copyWith(
         transactions: AsyncValue.data(result.items),
         currentPage: 1,
         hasMore: result.hasMore,
         currentBalance: result.currentBalance,
         lifetimeEarned: result.lifetimeEarned,
-      );
+      ));
     } catch (e, st) {
       debugPrint('🎮 HibonsTransactionsNotifier.load error: $e\n$st');
-      state = state.copyWith(transactions: AsyncValue.error(e, st));
+      if (!_canPublish || generation != _requestGeneration) return;
+      _publish(state.copyWith(transactions: AsyncValue.error(e, st)));
     }
   }
 
@@ -401,22 +517,27 @@ class HibonsTransactionsNotifier
 
   /// Charge la page suivante et l'ajoute à la liste existante.
   Future<void> loadMore() async {
-    if (state.isLoadingMore || !state.hasMore || state.loadMoreError != null) {
+    if (!_canPublish ||
+        state.isLoadingMore ||
+        !state.hasMore ||
+        state.loadMoreError != null) {
       return;
     }
     final current = state.transactions.valueOrNull;
     if (current == null) return;
 
-    state = state.copyWith(isLoadingMore: true, loadMoreError: null);
+    final generation = ++_requestGeneration;
+    final nextPage = state.currentPage + 1;
+    _publish(state.copyWith(isLoadingMore: true, loadMoreError: null));
     try {
-      final nextPage = state.currentPage + 1;
       final result = await _repository.getTransactions(
         type: _filter.type,
         pillar: _filter.pillar,
         page: nextPage,
         perPage: _transactionsPerPage,
       );
-      state = state.copyWith(
+      if (!_canPublish || generation != _requestGeneration) return;
+      _publish(state.copyWith(
         transactions: AsyncValue.data([...current, ...result.items]),
         currentPage: nextPage,
         hasMore: result.hasMore,
@@ -424,18 +545,19 @@ class HibonsTransactionsNotifier
         loadMoreError: null,
         currentBalance: result.currentBalance,
         lifetimeEarned: result.lifetimeEarned,
-      );
+      ));
     } catch (error) {
-      state = state.copyWith(
+      if (!_canPublish || generation != _requestGeneration) return;
+      _publish(state.copyWith(
         isLoadingMore: false,
         loadMoreError: error,
-      );
+      ));
     }
   }
 
   Future<void> retryLoadMore() async {
-    if (state.loadMoreError == null) return;
-    state = state.copyWith(loadMoreError: null);
+    if (!_canPublish || state.loadMoreError == null) return;
+    _publish(state.copyWith(loadMoreError: null));
     await loadMore();
   }
 }
@@ -444,17 +566,28 @@ class HibonsTransactionsNotifier
 final hibonsTransactionsListProvider = StateNotifierProvider.autoDispose.family<
     HibonsTransactionsNotifier,
     HibonsTransactionsState,
-    TransactionsFilter>((ref, filter) {
+    SessionTransactionsFilter>((ref, query) {
+  final session = query.session;
+  final currentSession = ref.watch(gamificationSessionProvider);
   final repository = ref.watch(gamificationRepositoryProvider);
-  return HibonsTransactionsNotifier(repository, filter);
+  return HibonsTransactionsNotifier(
+    repository,
+    query.filter,
+    hasActiveSession: session != null && identical(currentSession, session),
+    ownsSession: () =>
+        session != null &&
+        identical(ref.read(gamificationSessionProvider), session),
+  );
 });
 
 // ==== Balance & Actions Catalog (Plan 05) ====
 
 /// Endpoint léger pour le badge header au cold start / pull-to-refresh.
-final hibonsBalanceProvider = FutureProvider<HibonsBalance>((ref) {
-  final userId = ref.watch(_gamificationSessionUserIdProvider);
-  if (userId == null) {
+final hibonsBalanceProvider =
+    FutureProvider.family<HibonsBalance, GamificationSessionKey?>(
+        (ref, session) {
+  if (session == null ||
+      !identical(ref.watch(gamificationSessionProvider), session)) {
     return Future.value(_emptyHibonsBalance);
   }
 
@@ -471,9 +604,13 @@ const _emptyHibonsBalance = HibonsBalance(
 );
 
 /// Catalogue dynamique des 15 actions Hibons (avec caps live).
-final actionsCatalogProvider = FutureProvider<List<HibonsActionEntry>>((ref) {
-  final userId = ref.watch(_gamificationSessionUserIdProvider);
-  if (userId == null) return Future.value(const []);
+final actionsCatalogProvider =
+    FutureProvider.family<List<HibonsActionEntry>, GamificationSessionKey?>(
+        (ref, session) {
+  if (session == null ||
+      !identical(ref.watch(gamificationSessionProvider), session)) {
+    return Future.value(const []);
+  }
 
   final repository = ref.watch(gamificationRepositoryProvider);
   return repository.getActionsCatalog();
@@ -482,9 +619,13 @@ final actionsCatalogProvider = FutureProvider<List<HibonsActionEntry>>((ref) {
 // ==== Achievements & Challenges Providers ====
 // Note: Ces endpoints ne sont pas implémentés côté API
 
-final achievementsProvider = FutureProvider<List<Achievement>>((ref) {
-  final userId = ref.watch(_gamificationSessionUserIdProvider);
-  if (userId == null) return Future.value(const []);
+final achievementsProvider =
+    FutureProvider.family<List<Achievement>, GamificationSessionKey?>(
+        (ref, session) {
+  if (session == null ||
+      !identical(ref.watch(gamificationSessionProvider), session)) {
+    return Future.value(const []);
+  }
 
   final repository = ref.watch(gamificationRepositoryProvider);
   return repository.getAchievements();
@@ -493,18 +634,26 @@ final achievementsProvider = FutureProvider<List<Achievement>>((ref) {
 /// 4 paliers de rang HIBONs (Curieux/Explorateur/Aventurier/Légende) avec
 /// progression de l'utilisateur courant. Watch `gamificationNotifierProvider`
 /// pour rafraîchir automatiquement quand le wallet change (lifetime_earned).
-final hibonBadgesProvider = FutureProvider<HibonBadgesResult>((ref) {
-  final userId = ref.watch(_gamificationSessionUserIdProvider);
-  if (userId == null) return Future.value(HibonBadgesResult.empty);
+final hibonBadgesProvider =
+    FutureProvider.family<HibonBadgesResult, GamificationSessionKey?>(
+        (ref, session) {
+  if (session == null ||
+      !identical(ref.watch(gamificationSessionProvider), session)) {
+    return Future.value(HibonBadgesResult.empty);
+  }
 
-  ref.watch(gamificationNotifierProvider);
+  ref.watch(gamificationNotifierProvider(session));
   final repository = ref.watch(gamificationRepositoryProvider);
   return repository.getBadges();
 });
 
-final challengesProvider = FutureProvider<List<Challenge>>((ref) {
-  final userId = ref.watch(_gamificationSessionUserIdProvider);
-  if (userId == null) return Future.value(const []);
+final challengesProvider =
+    FutureProvider.family<List<Challenge>, GamificationSessionKey?>(
+        (ref, session) {
+  if (session == null ||
+      !identical(ref.watch(gamificationSessionProvider), session)) {
+    return Future.value(const []);
+  }
 
   final repository = ref.watch(gamificationRepositoryProvider);
   return repository.getChallenges();
@@ -512,9 +661,13 @@ final challengesProvider = FutureProvider<List<Challenge>>((ref) {
 
 // ==== Packages & Purchase Providers ====
 
-final hibonPackagesProvider = FutureProvider<List<HibonPackage>>((ref) {
-  final userId = ref.watch(_gamificationSessionUserIdProvider);
-  if (userId == null) return Future.value(const []);
+final hibonPackagesProvider =
+    FutureProvider.family<List<HibonPackage>, GamificationSessionKey?>(
+        (ref, session) {
+  if (session == null ||
+      !identical(ref.watch(gamificationSessionProvider), session)) {
+    return Future.value(const []);
+  }
 
   final repository = ref.watch(gamificationRepositoryProvider);
   return repository.getPackages();
@@ -522,38 +675,47 @@ final hibonPackagesProvider = FutureProvider<List<HibonPackage>>((ref) {
 
 final purchaseNotifierProvider =
     StateNotifierProvider<PurchaseNotifier, AsyncValue<PurchaseResult?>>((ref) {
-  final userId = ref.watch(_gamificationSessionUserIdProvider);
-  return PurchaseNotifier(ref, isAuthenticated: userId != null);
+  final session = ref.watch(gamificationSessionProvider);
+  return PurchaseNotifier(ref, ownerSession: session);
 });
 
 class PurchaseNotifier extends StateNotifier<AsyncValue<PurchaseResult?>> {
   final Ref _ref;
-  final bool _isAuthenticated;
+  final GamificationSessionKey? _ownerSession;
+  int _operationGeneration = 0;
 
   PurchaseNotifier(
     this._ref, {
-    required bool isAuthenticated,
-  })  : _isAuthenticated = isAuthenticated,
+    required GamificationSessionKey? ownerSession,
+  })  : _ownerSession = ownerSession,
         super(const AsyncValue.data(null));
 
+  bool get _ownsSession {
+    final owner = _ownerSession;
+    return mounted &&
+        owner != null &&
+        identical(_ref.read(gamificationSessionProvider), owner);
+  }
+
   Future<PurchaseResult?> createPurchase(String packageId) async {
-    if (!_isAuthenticated) return null;
+    if (!_ownsSession) return null;
+    final generation = ++_operationGeneration;
 
     state = const AsyncValue.loading();
 
     try {
       final repository = _ref.read(gamificationRepositoryProvider);
       final result = await repository.createPurchase(packageId);
-      if (!mounted) return null;
+      if (!_ownsSession || generation != _operationGeneration) return null;
       state = AsyncValue.data(result);
       return result;
     } on HibonsPurchaseDisabledException {
-      if (!mounted) return null;
+      if (!_ownsSession || generation != _operationGeneration) return null;
       debugPrint('🎮 PurchaseNotifier: purchase disabled, ignoring');
       state = const AsyncValue.data(null);
       return null;
     } catch (e, st) {
-      if (!mounted) return null;
+      if (!_ownsSession || generation != _operationGeneration) return null;
       debugPrint('🎮 PurchaseNotifier.createPurchase error: $e');
       state = AsyncValue.error(e, st);
       return null;
@@ -561,31 +723,34 @@ class PurchaseNotifier extends StateNotifier<AsyncValue<PurchaseResult?>> {
   }
 
   Future<bool> confirmPurchase(String paymentIntentId) async {
-    if (!_isAuthenticated) return false;
+    if (!_ownsSession) return false;
+    final generation = ++_operationGeneration;
 
     try {
       final repository = _ref.read(gamificationRepositoryProvider);
       await repository.confirmPurchase(paymentIntentId);
-      if (!mounted) return false;
+      if (!_ownsSession || generation != _operationGeneration) return false;
 
       // Rafraîchir le wallet
-      _ref.invalidate(gamificationNotifierProvider);
+      _ref.invalidate(gamificationNotifierProvider(_ownerSession));
 
       state = const AsyncValue.data(null);
       return true;
     } on HibonsPurchaseDisabledException {
-      if (!mounted) return false;
+      if (!_ownsSession || generation != _operationGeneration) return false;
       debugPrint('🎮 PurchaseNotifier: purchase disabled, ignoring');
       state = const AsyncValue.data(null);
       return false;
     } catch (e) {
-      if (!mounted) return false;
+      if (!_ownsSession || generation != _operationGeneration) return false;
       debugPrint('🎮 PurchaseNotifier.confirmPurchase error: $e');
       return false;
     }
   }
 
   void reset() {
+    if (!_ownsSession) return;
+    _operationGeneration++;
     state = const AsyncValue.data(null);
   }
 }
@@ -594,37 +759,50 @@ class PurchaseNotifier extends StateNotifier<AsyncValue<PurchaseResult?>> {
 
 final chatUnlockProvider =
     StateNotifierProvider<ChatUnlockNotifier, AsyncValue<bool>>((ref) {
-  final userId = ref.watch(_gamificationSessionUserIdProvider);
-  return ChatUnlockNotifier(ref, isAuthenticated: userId != null);
+  final session = ref.watch(gamificationSessionProvider);
+  return ChatUnlockNotifier(ref, ownerSession: session);
 });
 
 class ChatUnlockNotifier extends StateNotifier<AsyncValue<bool>> {
   final Ref _ref;
-  final bool _isAuthenticated;
+  final GamificationSessionKey? _ownerSession;
+  int _operationGeneration = 0;
 
   ChatUnlockNotifier(
     this._ref, {
-    required bool isAuthenticated,
-  })  : _isAuthenticated = isAuthenticated,
+    required GamificationSessionKey? ownerSession,
+  })  : _ownerSession = ownerSession,
         super(const AsyncValue.data(false));
 
-  Future<bool> unlock() async {
-    if (!_isAuthenticated) return false;
+  bool get _ownsSession {
+    final owner = _ownerSession;
+    return mounted &&
+        owner != null &&
+        identical(_ref.read(gamificationSessionProvider), owner);
+  }
+
+  Future<bool> unlock({GamificationSessionKey? expectedSession}) async {
+    if (!_ownsSession ||
+        (expectedSession != null &&
+            !identical(_ownerSession, expectedSession))) {
+      return false;
+    }
+    final generation = ++_operationGeneration;
 
     state = const AsyncValue.loading();
 
     try {
       final repository = _ref.read(gamificationRepositoryProvider);
       await repository.unlockChatMessages();
-      if (!mounted) return false;
+      if (!_ownsSession || generation != _operationGeneration) return false;
 
       // Rafraîchir le wallet
-      _ref.invalidate(gamificationNotifierProvider);
+      _ref.invalidate(gamificationNotifierProvider(_ownerSession));
 
       state = const AsyncValue.data(true);
       return true;
     } catch (e, st) {
-      if (!mounted) return false;
+      if (!_ownsSession || generation != _operationGeneration) return false;
       debugPrint('🎮 ChatUnlockNotifier.unlock error: $e');
       state = AsyncValue.error(e, st);
       return false;
@@ -632,6 +810,8 @@ class ChatUnlockNotifier extends StateNotifier<AsyncValue<bool>> {
   }
 
   void reset() {
+    if (!_ownsSession) return;
+    _operationGeneration++;
     state = const AsyncValue.data(false);
   }
 }

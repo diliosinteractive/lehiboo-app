@@ -36,8 +36,14 @@ class _HibonsTransactionsScreenState
   final ScrollController _scrollController = ScrollController();
   String? _pillarFilter;
   String? _typeFilter;
+  GamificationSessionKey? _renderedSession;
 
   TransactionsFilter get _filter => (type: _typeFilter, pillar: _pillarFilter);
+
+  SessionTransactionsFilter _query(GamificationSessionKey? session) => (
+        session: session,
+        filter: _filter,
+      );
 
   @override
   void initState() {
@@ -53,15 +59,29 @@ class _HibonsTransactionsScreenState
   }
 
   void _onScroll() {
+    final renderedSession = _renderedSession;
+    if (renderedSession == null ||
+        !identical(
+          ref.read(gamificationSessionProvider),
+          renderedSession,
+        )) {
+      return;
+    }
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
-      ref.read(hibonsTransactionsListProvider(_filter).notifier).loadMore();
+      ref
+          .read(
+              hibonsTransactionsListProvider(_query(renderedSession)).notifier)
+          .loadMore();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final txState = ref.watch(hibonsTransactionsListProvider(_filter));
+    final viewSession = ref.watch(gamificationSessionProvider);
+    _renderedSession = viewSession;
+    final txState =
+        ref.watch(hibonsTransactionsListProvider(_query(viewSession)));
 
     return Scaffold(
       appBar: AppBar(
@@ -77,9 +97,14 @@ class _HibonsTransactionsScreenState
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () => ref
-            .read(hibonsTransactionsListProvider(_filter).notifier)
-            .refresh(),
+        onRefresh: () {
+          if (!_ownsView(viewSession)) return Future.value();
+          return ref
+              .read(
+                hibonsTransactionsListProvider(_query(viewSession)).notifier,
+              )
+              .refresh();
+        },
         child: SingleChildScrollView(
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
@@ -100,17 +125,22 @@ class _HibonsTransactionsScreenState
                           FilterChip(
                             label: Text(context.l10n.gamificationAllFilter),
                             selected: _typeFilter == null,
-                            onSelected: (_) =>
-                                setState(() => _typeFilter = null),
+                            onSelected: (_) {
+                              if (!_ownsView(viewSession)) return;
+                              setState(() => _typeFilter = null);
+                            },
                           ),
                           const SizedBox(width: 8),
                           for (final t in _typeFilters) ...[
                             FilterChip(
                               label: Text(_typeFilterLabel(context, t)),
                               selected: _typeFilter == t,
-                              onSelected: (selected) => setState(
-                                () => _typeFilter = selected ? t : null,
-                              ),
+                              onSelected: (selected) {
+                                if (!_ownsView(viewSession)) return;
+                                setState(
+                                  () => _typeFilter = selected ? t : null,
+                                );
+                              },
                             ),
                             const SizedBox(width: 8),
                           ],
@@ -127,17 +157,22 @@ class _HibonsTransactionsScreenState
                           FilterChip(
                             label: Text(context.l10n.gamificationAllFilter),
                             selected: _pillarFilter == null,
-                            onSelected: (_) =>
-                                setState(() => _pillarFilter = null),
+                            onSelected: (_) {
+                              if (!_ownsView(viewSession)) return;
+                              setState(() => _pillarFilter = null);
+                            },
                           ),
                           const SizedBox(width: 8),
                           for (final p in _pillarFilters) ...[
                             FilterChip(
                               label: Text(_pillarFilterLabel(context, p)),
                               selected: _pillarFilter == p,
-                              onSelected: (selected) => setState(
-                                () => _pillarFilter = selected ? p : null,
-                              ),
+                              onSelected: (selected) {
+                                if (!_ownsView(viewSession)) return;
+                                setState(
+                                  () => _pillarFilter = selected ? p : null,
+                                );
+                              },
                             ),
                             const SizedBox(width: 8),
                           ],
@@ -146,7 +181,7 @@ class _HibonsTransactionsScreenState
                     ),
                     const SizedBox(height: 12),
 
-                    _buildTransactionsList(context, txState),
+                    _buildTransactionsList(context, txState, viewSession),
                   ],
                 ),
               ),
@@ -188,7 +223,10 @@ class _HibonsTransactionsScreenState
   }
 
   Widget _buildTransactionsList(
-      BuildContext context, HibonsTransactionsState txState) {
+    BuildContext context,
+    HibonsTransactionsState txState,
+    GamificationSessionKey? viewSession,
+  ) {
     return txState.transactions.when(
       data: (txs) {
         if (txs.isEmpty) {
@@ -231,11 +269,16 @@ class _HibonsTransactionsScreenState
                       textAlign: TextAlign.center,
                     ),
                     TextButton.icon(
-                      onPressed: () => ref
-                          .read(
-                            hibonsTransactionsListProvider(_filter).notifier,
-                          )
-                          .retryLoadMore(),
+                      onPressed: () {
+                        if (!_ownsView(viewSession)) return;
+                        ref
+                            .read(
+                              hibonsTransactionsListProvider(
+                                _query(viewSession),
+                              ).notifier,
+                            )
+                            .retryLoadMore();
+                      },
                       icon: const Icon(Icons.refresh),
                       label: Text(context.l10n.commonRetry),
                     ),
@@ -258,6 +301,11 @@ class _HibonsTransactionsScreenState
         ),
       ),
     );
+  }
+
+  bool _ownsView(GamificationSessionKey? viewSession) {
+    return viewSession != null &&
+        identical(ref.read(gamificationSessionProvider), viewSession);
   }
 
   String _pillarFilterLabel(BuildContext context, String pillar) {
