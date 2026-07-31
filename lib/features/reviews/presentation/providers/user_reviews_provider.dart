@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10n.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../domain/entities/paginated_reviews.dart';
 import '../../domain/entities/user_review.dart';
 import '../../domain/repositories/reviews_repository.dart';
@@ -57,27 +57,33 @@ const Object _sentinel = Object();
 class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
   final ReviewsRepository _repo;
   final Ref _ref;
+  final AuthSessionKey _ownerSession;
+  int _requestGeneration = 0;
   static const int _perPage = 10;
 
-  UserReviewsNotifier(this._repo, this._ref) : super(const UserReviewsState()) {
-    refresh();
-    _ref.listen<AuthStatus>(
-      authProvider.select((s) => s.status),
-      (previous, next) {
-        final loggedOut = didTransitionToUnauthenticated(previous, next);
-        final loggedIn = next == AuthStatus.authenticated &&
-            previous != AuthStatus.authenticated &&
-            previous != AuthStatus.initial;
-        if (loggedOut) {
-          state = const UserReviewsState();
-        } else if (loggedIn) {
-          refresh();
-        }
-      },
-    );
+  UserReviewsNotifier(
+    this._repo, {
+    required Ref ref,
+    required AuthSessionKey ownerSession,
+  })  : _ref = ref,
+        _ownerSession = ownerSession,
+        super(const UserReviewsState()) {
+    if (_hasActiveAccount) refresh();
   }
 
+  bool get _hasActiveAccount => _ownerSession.accountId != null;
+
+  bool get _ownsActiveSession =>
+      mounted && identical(_ref.read(authSessionKeyProvider), _ownerSession);
+
   Future<void> refresh() async {
+    if (!_ownsActiveSession) return;
+    final requestGeneration = ++_requestGeneration;
+    if (!_hasActiveAccount) {
+      state = const UserReviewsState();
+      return;
+    }
+
     state = state.copyWith(
       isLoading: true,
       error: null,
@@ -85,6 +91,9 @@ class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
     );
     try {
       final page = await _repo.getUserReviews(page: 1, perPage: _perPage);
+      if (!_ownsActiveSession || requestGeneration != _requestGeneration) {
+        return;
+      }
       state = state.copyWith(
         items: page.items,
         isLoading: false,
@@ -93,6 +102,9 @@ class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
       );
     } catch (e) {
       debugPrint('UserReviewsNotifier.refresh error: $e');
+      if (!_ownsActiveSession || requestGeneration != _requestGeneration) {
+        return;
+      }
       state = state.copyWith(
         isLoading: false,
         error: cachedAppLocalizations().reviewsUserLoadError,
@@ -101,18 +113,24 @@ class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
   }
 
   Future<void> loadMore() async {
+    if (!_ownsActiveSession || !_hasActiveAccount) return;
     if (state.isLoadingMore ||
         !state.hasMore ||
         state.isLoading ||
         state.loadMoreError != null) {
       return;
     }
+    final requestGeneration = ++_requestGeneration;
+    final nextPage = state.currentPage + 1;
     state = state.copyWith(isLoadingMore: true, loadMoreError: null);
     try {
       final next = await _repo.getUserReviews(
-        page: state.currentPage + 1,
+        page: nextPage,
         perPage: _perPage,
       );
+      if (!_ownsActiveSession || requestGeneration != _requestGeneration) {
+        return;
+      }
       state = state.copyWith(
         items: [...state.items, ...next.items],
         isLoadingMore: false,
@@ -122,6 +140,9 @@ class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
       );
     } catch (e) {
       debugPrint('UserReviewsNotifier.loadMore error: $e');
+      if (!_ownsActiveSession || requestGeneration != _requestGeneration) {
+        return;
+      }
       state = state.copyWith(
         isLoadingMore: false,
         loadMoreError: cachedAppLocalizations().reviewsUserLoadMoreError,
@@ -130,12 +151,15 @@ class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
   }
 
   Future<void> retryLoadMore() async {
+    if (!_ownsActiveSession) return;
     state = state.copyWith(loadMoreError: null);
     await loadMore();
   }
 
   /// Optimistic remove (utilisé après suppression confirmée d'un avis).
   void removeLocal(String reviewUuid) {
+    if (!_ownsActiveSession) return;
+    _requestGeneration++;
     state = state.copyWith(
       items: state.items.where((r) => r.uuid != reviewUuid).toList(),
     );
@@ -143,6 +167,8 @@ class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
 
   /// Optimistic update (utilisé après édition d'un avis).
   void updateLocal(UserReview updated) {
+    if (!_ownsActiveSession) return;
+    _requestGeneration++;
     state = state.copyWith(
       items:
           state.items.map((r) => r.uuid == updated.uuid ? updated : r).toList(),
@@ -152,8 +178,13 @@ class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
 
 final userReviewsProvider =
     StateNotifierProvider<UserReviewsNotifier, UserReviewsState>((ref) {
+  final ownerSession = ref.watch(authSessionKeyProvider);
   final repo = ref.watch(reviewsRepositoryProvider);
-  return UserReviewsNotifier(repo, ref);
+  return UserReviewsNotifier(
+    repo,
+    ref: ref,
+    ownerSession: ownerSession,
+  );
 });
 
 /// Helper pour récupérer un PaginatedUserReviews factice depuis le state.

@@ -8,6 +8,7 @@ import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/features/favorites/presentation/providers/favorites_provider.dart';
 import 'package:lehiboo/features/favorites/presentation/providers/favorite_lists_provider.dart';
 import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import '../widgets/favorite_lists_sidebar.dart';
 
 class FavoritesScreen extends ConsumerStatefulWidget {
@@ -96,6 +97,7 @@ class _FavoritesContent extends ConsumerWidget {
     // Écoute les favoris filtrés par liste sélectionnée
     final favoritesAsync = ref.watch(filteredFavoritesProvider);
     final selectedListId = ref.watch(selectedFavoriteListProvider);
+    final renderedEventsSession = ref.watch(authSessionKeyProvider);
 
     return favoritesAsync.when(
       data: (favorites) {
@@ -123,6 +125,7 @@ class _FavoritesContent extends ConsumerWidget {
             itemBuilder: (context, index) {
               return EventCard(
                 activity: activities[index],
+                ownerSession: renderedEventsSession,
                 isCompact: true,
                 fillContainer: true,
               );

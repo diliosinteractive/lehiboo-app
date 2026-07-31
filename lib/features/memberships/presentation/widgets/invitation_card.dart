@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../../partners/presentation/widgets/organizer_avatar.dart';
 import '../../data/models/invitation_dto.dart';
 import '../../data/models/membership_dto.dart';
@@ -23,12 +25,14 @@ class InvitationCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final initiatingAccountId = ref.watch(authSessionUserIdProvider);
     final org = invitation.organization;
     final orgName = org?.name ?? '—';
     final token = invitation.token ?? '';
     final action = ref.watch(invitationActionControllerProvider(token));
-    final isInFlight =
-        action.isLoading || (action.valueOrNull?.isInFlight ?? false);
+    final isInFlight = action.isLoading ||
+        (action.valueOrNull?.isInFlight ?? false) ||
+        initiatingAccountId == null;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -117,7 +121,17 @@ class InvitationCard extends ConsumerWidget {
                   isInFlight: isInFlight,
                   onTap: token.isEmpty
                       ? null
-                      : () => _onDecline(context, ref, token, orgName),
+                      : () {
+                          final accountId = initiatingAccountId;
+                          if (accountId == null) return;
+                          _onDecline(
+                            context,
+                            ref,
+                            token,
+                            orgName,
+                            accountId,
+                          );
+                        },
                 ),
               ),
               const SizedBox(width: 8),
@@ -128,7 +142,17 @@ class InvitationCard extends ConsumerWidget {
                   isInFlight: isInFlight,
                   onTap: token.isEmpty
                       ? null
-                      : () => _onAccept(context, ref, token, orgName),
+                      : () {
+                          final accountId = initiatingAccountId;
+                          if (accountId == null) return;
+                          _onAccept(
+                            context,
+                            ref,
+                            token,
+                            orgName,
+                            accountId,
+                          );
+                        },
                 ),
               ),
             ],
@@ -158,13 +182,21 @@ class InvitationCard extends ConsumerWidget {
     WidgetRef ref,
     String token,
     String orgName,
+    String initiatingAccountId,
   ) async {
+    final ownerAccountId = initiatingAccountId;
+    if (ref.read(authSessionUserIdProvider) != ownerAccountId) return;
     final provider = invitationActionControllerProvider(token);
+    final actionController = ref.read(provider.notifier);
     final fallback = context.l10n.membershipInvitationAcceptFailed;
-    final ok = await ref.read(provider.notifier).accept(
-          fallbackMessage: fallback,
-        );
-    if (!context.mounted) return;
+    final ok = await actionController.accept(
+      fallbackMessage: fallback,
+    );
+    if (!context.mounted ||
+        ref.read(authSessionUserIdProvider) != ownerAccountId ||
+        !identical(ref.read(provider.notifier), actionController)) {
+      return;
+    }
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -187,34 +219,56 @@ class InvitationCard extends ConsumerWidget {
     WidgetRef ref,
     String token,
     String orgName,
+    String initiatingAccountId,
   ) async {
+    final ownerAccountId = initiatingAccountId;
+    if (ref.read(authSessionUserIdProvider) != ownerAccountId) return;
+    final provider = invitationActionControllerProvider(token);
+    final actionController = ref.read(provider.notifier);
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(context.l10n.membershipInvitationDeclineTitle),
-        content: Text(
-          context.l10n.membershipInvitationDeclineBody(orgName),
+      builder: (_) => AccountBoundRouteGuard<bool>(
+        ownerAccountId: ownerAccountId,
+        invalidResult: false,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(
+            dialogContext.l10n.membershipInvitationDeclineTitle,
+          ),
+          content: Text(
+            dialogContext.l10n.membershipInvitationDeclineBody(orgName),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(dialogContext.l10n.commonBack),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: TextButton.styleFrom(foregroundColor: HbColors.error),
+              child: Text(
+                dialogContext.l10n.membershipInvitationDeclineAction,
+              ),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(context.l10n.commonBack),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: HbColors.error),
-            child: Text(context.l10n.membershipInvitationDeclineAction),
-          ),
-        ],
       ),
     );
-    if (confirmed != true || !context.mounted) return;
-    final provider = invitationActionControllerProvider(token);
+    if (confirmed != true ||
+        !context.mounted ||
+        ref.read(authSessionUserIdProvider) != ownerAccountId ||
+        !identical(ref.read(provider.notifier), actionController)) {
+      return;
+    }
     final fallback = context.l10n.membershipInvitationDeclineFailed;
-    final ok = await ref.read(provider.notifier).decline(
-          fallbackMessage: fallback,
-        );
-    if (!context.mounted) return;
+    final ok = await actionController.decline(
+      fallbackMessage: fallback,
+    );
+    if (!context.mounted ||
+        ref.read(authSessionUserIdProvider) != ownerAccountId ||
+        !identical(ref.read(provider.notifier), actionController)) {
+      return;
+    }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(

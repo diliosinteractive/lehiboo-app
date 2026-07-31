@@ -63,6 +63,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guestFeatureReportReview => 'report a review';
 
   @override
+  String get guestFeatureVoteReview => 'vote on a review';
+
+  @override
   String get guestFeatureSaveSearch => 'save a search';
 
   @override

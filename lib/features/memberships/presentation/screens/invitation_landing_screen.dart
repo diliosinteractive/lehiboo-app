@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../../partners/presentation/widgets/organizer_avatar.dart';
 import '../../data/models/invitation_dto.dart';
 import '../../data/models/membership_dto.dart';
@@ -94,12 +95,14 @@ class _Body extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final initiatingAccountId = ref.watch(authSessionUserIdProvider);
     final org = invitation.organization;
     final orgName = org?.name ?? '—';
     final isExpiredOrAccepted = invitation.isExpired || invitation.isAccepted;
     final action = ref.watch(invitationActionControllerProvider(token));
-    final isInFlight =
-        action.isLoading || (action.valueOrNull?.isInFlight ?? false);
+    final isInFlight = action.isLoading ||
+        (action.valueOrNull?.isInFlight ?? false) ||
+        (isAuthenticated && initiatingAccountId == null);
 
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -182,8 +185,16 @@ class _Body extends ConsumerWidget {
         else
           _AcceptDeclineRow(
             isInFlight: isInFlight,
-            onAccept: () => _onAccept(context, ref, orgName),
-            onDecline: () => _onDecline(context, ref, orgName),
+            onAccept: () {
+              final accountId = initiatingAccountId;
+              if (accountId == null) return;
+              _onAccept(context, ref, orgName, accountId);
+            },
+            onDecline: () {
+              final accountId = initiatingAccountId;
+              if (accountId == null) return;
+              _onDecline(context, ref, orgName, accountId);
+            },
           ),
       ],
     );
@@ -212,13 +223,21 @@ class _Body extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     String orgName,
+    String initiatingAccountId,
   ) async {
+    final ownerAccountId = initiatingAccountId;
+    if (ref.read(authSessionUserIdProvider) != ownerAccountId) return;
     final provider = invitationActionControllerProvider(token);
+    final actionController = ref.read(provider.notifier);
     final fallback = context.l10n.membershipInvitationAcceptFailed;
-    final ok = await ref.read(provider.notifier).accept(
-          fallbackMessage: fallback,
-        );
-    if (!context.mounted) return;
+    final ok = await actionController.accept(
+      fallbackMessage: fallback,
+    );
+    if (!context.mounted ||
+        ref.read(authSessionUserIdProvider) != ownerAccountId ||
+        !identical(ref.read(provider.notifier), actionController)) {
+      return;
+    }
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -240,34 +259,56 @@ class _Body extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     String orgName,
+    String initiatingAccountId,
   ) async {
+    final ownerAccountId = initiatingAccountId;
+    if (ref.read(authSessionUserIdProvider) != ownerAccountId) return;
+    final provider = invitationActionControllerProvider(token);
+    final actionController = ref.read(provider.notifier);
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(context.l10n.membershipInvitationDeclineTitle),
-        content: Text(
-          context.l10n.membershipInvitationDeclineBody(orgName),
+      builder: (_) => AccountBoundRouteGuard<bool>(
+        ownerAccountId: ownerAccountId,
+        invalidResult: false,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(
+            dialogContext.l10n.membershipInvitationDeclineTitle,
+          ),
+          content: Text(
+            dialogContext.l10n.membershipInvitationDeclineBody(orgName),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(dialogContext.l10n.commonBack),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: TextButton.styleFrom(foregroundColor: HbColors.error),
+              child: Text(
+                dialogContext.l10n.membershipInvitationDeclineAction,
+              ),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(context.l10n.commonBack),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: HbColors.error),
-            child: Text(context.l10n.membershipInvitationDeclineAction),
-          ),
-        ],
       ),
     );
-    if (confirmed != true || !context.mounted) return;
-    final provider = invitationActionControllerProvider(token);
+    if (confirmed != true ||
+        !context.mounted ||
+        ref.read(authSessionUserIdProvider) != ownerAccountId ||
+        !identical(ref.read(provider.notifier), actionController)) {
+      return;
+    }
     final fallback = context.l10n.membershipInvitationDeclineFailed;
-    final ok = await ref.read(provider.notifier).decline(
-          fallbackMessage: fallback,
-        );
-    if (!context.mounted) return;
+    final ok = await actionController.decline(
+      fallbackMessage: fallback,
+    );
+    if (!context.mounted ||
+        ref.read(authSessionUserIdProvider) != ownerAccountId ||
+        !identical(ref.read(provider.notifier), actionController)) {
+      return;
+    }
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.membershipInvitationDeclined)),

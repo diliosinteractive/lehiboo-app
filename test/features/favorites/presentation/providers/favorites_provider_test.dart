@@ -32,6 +32,7 @@ void main() {
         authRepositoryProvider.overrideWithValue(
           _PendingAuthRepository(),
         ),
+        authSessionUserIdProvider.overrideWithValue('user-1'),
         isAuthenticatedProvider.overrideWithValue(true),
         favoritesRepositoryProvider.overrideWithValue(repository),
       ],

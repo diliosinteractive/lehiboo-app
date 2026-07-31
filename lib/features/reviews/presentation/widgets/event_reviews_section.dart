@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../../../../core/utils/guest_guard.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../domain/entities/can_review_result.dart';
 import '../../domain/entities/paginated_reviews.dart';
 import '../../domain/entities/review.dart';
@@ -38,14 +40,20 @@ class EventReviewsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final viewSession = ref.watch(authSessionKeyProvider);
     final statsAsync = ref.watch(eventReviewStatsProvider(eventSlug));
     final reviewsAsync = ref.watch(
       eventReviewsProvider(EventReviewsParams(
         eventSlug: eventSlug,
+        ownerSession: viewSession,
         query: const ReviewsQuery(perPage: 3),
       )),
     );
-    final canReviewAsync = ref.watch(canReviewProvider(eventSlug));
+    final canReviewParams = CanReviewParams(
+      eventSlug: eventSlug,
+      ownerSession: viewSession,
+    );
+    final canReviewAsync = ref.watch(canReviewProvider(canReviewParams));
     final explicitCanReview = !canReviewAsync.isLoading &&
             !canReviewAsync.hasError &&
             canReviewAsync.hasValue
@@ -91,7 +99,7 @@ class EventReviewsSection extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: CanReviewLoadError(
               error: error,
-              onRetry: () => ref.invalidate(canReviewProvider(eventSlug)),
+              onRetry: () => ref.invalidate(canReviewProvider(canReviewParams)),
             ),
           ),
           data: (result) => result is CanReviewDenied &&
@@ -139,6 +147,7 @@ class EventReviewsSection extends ConsumerWidget {
                   stats,
                   page.items,
                   myReview: myReviewToShow,
+                  viewSession: viewSession,
                 );
               },
             );
@@ -344,6 +353,7 @@ class EventReviewsSection extends ConsumerWidget {
     ReviewStats stats,
     List<Review> reviews, {
     Review? myReview,
+    required AuthSessionKey viewSession,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -354,6 +364,7 @@ class EventReviewsSection extends ConsumerWidget {
               review: myReview,
               eventSlug: eventSlug,
               eventTitle: eventTitle,
+              ownerSession: viewSession,
             ),
           if (stats.hasReviews) ...[
             ReviewStatsCard(stats: stats),
@@ -365,6 +376,7 @@ class EventReviewsSection extends ConsumerWidget {
               child: _EventSectionReviewCard(
                 review: review,
                 eventSlug: eventSlug,
+                ownerSession: viewSession,
               ),
             );
           }),
@@ -400,10 +412,12 @@ class EventReviewsSection extends ConsumerWidget {
 class _EventSectionReviewCard extends ConsumerStatefulWidget {
   final Review review;
   final String eventSlug;
+  final AuthSessionKey ownerSession;
 
   const _EventSectionReviewCard({
     required this.review,
     required this.eventSlug,
+    required this.ownerSession,
   });
 
   @override
@@ -419,12 +433,32 @@ class _EventSectionReviewCardState
   @override
   void didUpdateWidget(covariant _EventSectionReviewCard oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.ownerSession, widget.ownerSession)) {
+      _isVoting = false;
+      _review = widget.review.copyWith(userVote: null);
+      return;
+    }
     if (!_isVoting && oldWidget.review != widget.review) {
       _review = widget.review;
     }
   }
 
   Future<void> _vote(String uuid, bool isHelpful) async {
+    if (!mounted) return;
+    final renderOwner = widget.ownerSession;
+    if (!identical(ref.read(authSessionKeyProvider), renderOwner)) return;
+    final allowed = await GuestGuard.check(
+      context: context,
+      ref: ref,
+      featureName: context.l10n.guestFeatureVoteReview,
+    );
+    if (!allowed || !mounted) return;
+    final actionOwner = ref.read(authSessionKeyProvider);
+    if (actionOwner.accountId == null ||
+        (renderOwner.accountId != null &&
+            !identical(actionOwner, renderOwner))) {
+      return;
+    }
     if (_isVoting || _review.userVote != null) return;
     final original = _review;
     setState(() {
@@ -437,13 +471,14 @@ class _EventSectionReviewCardState
     });
 
     final voteFailureFallback = context.l10n.reviewsVoteFailed;
+    final actionsNotifier = ref.read(reviewsActionsProvider.notifier);
     ReviewActionResult<VoteCounts> result;
     try {
-      result = await ref.read(reviewsActionsProvider.notifier).voteReview(
-            reviewUuid: uuid,
-            isHelpful: isHelpful,
-            eventSlug: widget.eventSlug,
-          );
+      result = await actionsNotifier.voteReview(
+        reviewUuid: uuid,
+        isHelpful: isHelpful,
+        eventSlug: widget.eventSlug,
+      );
     } catch (error) {
       result = ReviewActionFailure(
         ApiResponseHandler.extractError(
@@ -454,7 +489,14 @@ class _EventSectionReviewCardState
       );
     }
 
-    if (!mounted) return;
+    if (!mounted ||
+        !identical(ref.read(authSessionKeyProvider), actionOwner) ||
+        !identical(
+          ref.read(reviewsActionsProvider.notifier),
+          actionsNotifier,
+        )) {
+      return;
+    }
     setState(() {
       _isVoting = false;
       switch (result) {

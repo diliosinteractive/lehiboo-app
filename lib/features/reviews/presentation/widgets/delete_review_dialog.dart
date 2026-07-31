@@ -2,16 +2,26 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 
 /// Dialog de confirmation pour la suppression d'un avis.
 /// Renvoie `true` si l'utilisateur confirme.
 class DeleteReviewDialog extends StatelessWidget {
   const DeleteReviewDialog({super.key});
 
-  static Future<bool> show(BuildContext context) async {
+  static Future<bool> show(
+    BuildContext context, {
+    required AuthSessionKey ownerSession,
+  }) async {
     final result = await showDialog<bool>(
       context: context,
-      builder: (_) => const DeleteReviewDialog(),
+      builder: (_) => AccountBoundRouteGuard<bool>(
+        ownerAccountId: ownerSession.accountId,
+        ownerSession: ownerSession,
+        invalidResult: false,
+        builder: (_) => const DeleteReviewDialog(),
+      ),
     );
     return result ?? false;
   }

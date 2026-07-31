@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../domain/entities/can_review_result.dart';
 import '../../domain/entities/review.dart';
 import '../providers/reviews_actions_provider.dart';
@@ -19,12 +21,14 @@ import 'rating_stars.dart';
 class WriteReviewSheet extends ConsumerStatefulWidget {
   final String eventSlug;
   final String eventTitle;
+  final AuthSessionKey ownerSession;
   final Review? existingReview;
 
   const WriteReviewSheet({
     super.key,
     required this.eventSlug,
     required this.eventTitle,
+    required this.ownerSession,
     this.existingReview,
   });
 
@@ -34,14 +38,20 @@ class WriteReviewSheet extends ConsumerStatefulWidget {
     BuildContext context, {
     required String eventSlug,
     required String eventTitle,
+    required AuthSessionKey ownerSession,
   }) {
     return showModalBottomSheet<Review>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => WriteReviewSheet(
-        eventSlug: eventSlug,
-        eventTitle: eventTitle,
+      builder: (_) => AccountBoundRouteGuard<Review>(
+        ownerAccountId: ownerSession.accountId,
+        ownerSession: ownerSession,
+        builder: (_) => WriteReviewSheet(
+          eventSlug: eventSlug,
+          eventTitle: eventTitle,
+          ownerSession: ownerSession,
+        ),
       ),
     );
   }
@@ -51,15 +61,21 @@ class WriteReviewSheet extends ConsumerStatefulWidget {
     required Review review,
     required String eventSlug,
     required String eventTitle,
+    required AuthSessionKey ownerSession,
   }) {
     return showModalBottomSheet<Review>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => WriteReviewSheet(
-        eventSlug: eventSlug,
-        eventTitle: eventTitle,
-        existingReview: review,
+      builder: (_) => AccountBoundRouteGuard<Review>(
+        ownerAccountId: ownerSession.accountId,
+        ownerSession: ownerSession,
+        builder: (_) => WriteReviewSheet(
+          eventSlug: eventSlug,
+          eventTitle: eventTitle,
+          ownerSession: ownerSession,
+          existingReview: review,
+        ),
       ),
     );
   }
@@ -84,7 +100,20 @@ class _WriteReviewSheetState extends ConsumerState<WriteReviewSheet> {
     _titleController = TextEditingController(text: existing?.title ?? '');
     _commentController = TextEditingController(text: existing?.comment ?? '');
     _rating = existing?.rating.toDouble() ?? 0;
+    ref.listenManual<AuthSessionKey>(authSessionKeyProvider, (_, next) {
+      if (identical(next, widget.ownerSession)) return;
+      // Erase account-A content synchronously. The route guard closes the
+      // sheet, including any descendant modal, on the next frame.
+      _titleController.clear();
+      _commentController.clear();
+      _rating = 0;
+      _serverError = null;
+      _isSubmitting = false;
+    });
   }
+
+  bool get _ownsActiveSession =>
+      identical(ref.read(authSessionKeyProvider), widget.ownerSession);
 
   @override
   void dispose() {
@@ -94,6 +123,7 @@ class _WriteReviewSheetState extends ConsumerState<WriteReviewSheet> {
   }
 
   Future<void> _submit() async {
+    if (!_ownsActiveSession || widget.ownerSession.accountId == null) return;
     if (_rating < 1) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -130,7 +160,11 @@ class _WriteReviewSheetState extends ConsumerState<WriteReviewSheet> {
             comment: comment,
           );
 
-    if (!mounted) return;
+    if (!mounted ||
+        !_ownsActiveSession ||
+        !identical(ref.read(reviewsActionsProvider.notifier), notifier)) {
+      return;
+    }
 
     switch (result) {
       case ReviewActionSuccess(value: final review):
@@ -162,7 +196,14 @@ class _WriteReviewSheetState extends ConsumerState<WriteReviewSheet> {
     // pas connecté…).
     final canReviewAsync = widget.isEditMode
         ? null
-        : ref.watch(canReviewProvider(widget.eventSlug));
+        : ref.watch(
+            canReviewProvider(
+              CanReviewParams(
+                eventSlug: widget.eventSlug,
+                ownerSession: widget.ownerSession,
+              ),
+            ),
+          );
     final denied = canReviewAsync?.maybeWhen(
       data: (r) => r is CanReviewDenied ? r : null,
       orElse: () => null,

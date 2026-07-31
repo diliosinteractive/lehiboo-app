@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../domain/entities/favorite_list.dart';
 import '../../domain/repositories/favorites_repository.dart';
 
@@ -8,14 +9,24 @@ import '../../domain/repositories/favorites_repository.dart';
 /// null = tous les favoris
 /// 'uncategorized' = non classés
 /// 'uuid' = liste spécifique
-final selectedFavoriteListProvider = StateProvider<String?>((ref) => null);
+final selectedFavoriteListProvider = StateProvider<String?>((ref) {
+  // Recreate the selection for every account so a route kept alive during an
+  // account switch cannot retain a list UUID owned by the previous user.
+  ref.watch(authSessionKeyProvider);
+  return null;
+});
 
 /// Provider pour les listes de favoris
 final favoriteListsProvider = StateNotifierProvider<FavoriteListsNotifier,
     AsyncValue<List<FavoriteList>>>(
   (ref) {
+    ref.watch(authSessionKeyProvider);
+    final hasActiveAccount = ref.watch(authSessionUserIdProvider) != null;
     final repository = ref.watch(favoritesRepositoryProvider);
-    return FavoriteListsNotifier(repository, ref);
+    return FavoriteListsNotifier(
+      repository,
+      hasActiveAccount: hasActiveAccount,
+    );
   },
 );
 
@@ -23,38 +34,46 @@ final favoriteListsProvider = StateNotifierProvider<FavoriteListsNotifier,
 class FavoriteListsNotifier
     extends StateNotifier<AsyncValue<List<FavoriteList>>> {
   final FavoritesRepository _repository;
-  final Ref _ref;
+  final bool _hasActiveAccount;
+  int _loadGeneration = 0;
+  int _stateRevision = 0;
 
-  FavoriteListsNotifier(this._repository, this._ref)
-      : super(const AsyncValue.loading()) {
-    loadLists();
-    // Lists are user-scoped; reset on real auth transitions.
-    _ref.listen<AuthStatus>(
-      authProvider.select((s) => s.status),
-      (previous, next) {
-        final loggedOut = didTransitionToUnauthenticated(previous, next);
-        final loggedIn = next == AuthStatus.authenticated &&
-            previous != AuthStatus.authenticated &&
-            previous != AuthStatus.initial;
-        if (loggedOut) {
-          state = const AsyncValue.data([]);
-          _ref.read(selectedFavoriteListProvider.notifier).state = null;
-        } else if (loggedIn) {
-          loadLists();
-        }
-      },
-    );
+  FavoriteListsNotifier(
+    this._repository, {
+    required bool hasActiveAccount,
+  })  : _hasActiveAccount = hasActiveAccount,
+        super(
+          hasActiveAccount
+              ? const AsyncValue.loading()
+              : const AsyncValue.data([]),
+        ) {
+    if (hasActiveAccount) loadLists();
+  }
+
+  void _publish(AsyncValue<List<FavoriteList>> next) {
+    if (!mounted) return;
+    state = next;
+    _stateRevision++;
   }
 
   /// Charger les listes depuis l'API
   Future<void> loadLists() async {
+    if (!mounted) return;
+    final requestGeneration = ++_loadGeneration;
+    if (!_hasActiveAccount) {
+      _publish(const AsyncValue.data([]));
+      return;
+    }
+
     try {
-      state = const AsyncValue.loading();
+      _publish(const AsyncValue.loading());
       final lists = await _repository.getLists();
-      state = AsyncValue.data(lists);
+      if (!mounted || requestGeneration != _loadGeneration) return;
+      _publish(AsyncValue.data(lists));
     } catch (e, stack) {
       debugPrint('Error loading favorite lists: $e');
-      state = AsyncValue.error(e, stack);
+      if (!mounted || requestGeneration != _loadGeneration) return;
+      _publish(AsyncValue.error(e, stack));
     }
   }
 
@@ -77,10 +96,11 @@ class FavoriteListsNotifier
         color: color,
         icon: icon,
       );
+      if (!mounted) return newList;
 
       // Ajouter la nouvelle liste à l'état actuel
       final currentLists = state.valueOrNull ?? [];
-      state = AsyncValue.data([...currentLists, newList]);
+      _publish(AsyncValue.data([...currentLists, newList]));
 
       return newList;
     } catch (e, stack) {
@@ -105,6 +125,7 @@ class FavoriteListsNotifier
         color: color,
         icon: icon,
       );
+      if (!mounted) return updatedList;
 
       // Mettre à jour la liste dans l'état
       final currentLists = state.valueOrNull ?? [];
@@ -113,7 +134,7 @@ class FavoriteListsNotifier
         return l;
       }).toList();
 
-      state = AsyncValue.data(updatedLists);
+      _publish(AsyncValue.data(updatedLists));
 
       return updatedList;
     } catch (e, stack) {
@@ -126,11 +147,12 @@ class FavoriteListsNotifier
   Future<bool> deleteList(String listId) async {
     try {
       await _repository.deleteList(listId);
+      if (!mounted) return true;
 
       // Retirer la liste de l'état
       final currentLists = state.valueOrNull ?? [];
       final updatedLists = currentLists.where((l) => l.id != listId).toList();
-      state = AsyncValue.data(updatedLists);
+      _publish(AsyncValue.data(updatedLists));
 
       return true;
     } catch (e, stack) {
@@ -153,15 +175,19 @@ class FavoriteListsNotifier
       reorderedLists.add(list.copyWith(sortOrder: reorderedLists.length));
     }
 
-    state = AsyncValue.data(reorderedLists);
+    _publish(AsyncValue.data(reorderedLists));
+    final optimisticRevision = _stateRevision;
 
     try {
       await _repository.reorderLists(orderedIds);
       return true;
     } catch (e) {
       debugPrint('Error reordering lists: $e');
-      // Revert on error
-      state = AsyncValue.data(currentLists);
+      // Revert only while this exact optimistic snapshot still owns state.
+      // A disposed notifier belongs to the previous account.
+      if (mounted && _stateRevision == optimisticRevision) {
+        _publish(AsyncValue.data(currentLists));
+      }
       return false;
     }
   }
@@ -176,6 +202,7 @@ class FavoriteListsNotifier
 
   /// Incrémenter le compteur d'une liste
   void incrementListCount(String listId) {
+    if (!mounted) return;
     final currentLists = state.valueOrNull;
     if (currentLists == null) return;
 
@@ -186,11 +213,12 @@ class FavoriteListsNotifier
       return l;
     }).toList();
 
-    state = AsyncValue.data(updatedLists);
+    _publish(AsyncValue.data(updatedLists));
   }
 
   /// Décrémenter le compteur d'une liste
   void decrementListCount(String listId) {
+    if (!mounted) return;
     final currentLists = state.valueOrNull;
     if (currentLists == null) return;
 
@@ -201,7 +229,7 @@ class FavoriteListsNotifier
       return l;
     }).toList();
 
-    state = AsyncValue.data(updatedLists);
+    _publish(AsyncValue.data(updatedLists));
   }
 }
 

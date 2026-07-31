@@ -11,7 +11,10 @@ void main() {
     final repository = _FailingFavoritesRepository(failure);
     final provider = StateNotifierProvider<FavoriteListsNotifier,
         AsyncValue<List<FavoriteList>>>(
-      (ref) => FavoriteListsNotifier(repository, ref),
+      (ref) => FavoriteListsNotifier(
+        repository,
+        hasActiveAccount: false,
+      ),
     );
     final container = ProviderContainer(
       overrides: [

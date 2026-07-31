@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/partners/data/datasources/organizer_api_datasource.dart';
 import 'package:lehiboo/features/partners/data/models/organizer_profile_dto.dart';
 import 'package:lehiboo/features/partners/domain/repositories/organizer_repository.dart';
@@ -60,7 +61,9 @@ void main() {
       fireImmediately: true,
     );
     addTearDown(subscription.close);
-    await container.read(provider.future);
+    await container
+        .read(organizerProfileFutureProvider(_organizer.uuid).notifier)
+        .refresh();
 
     final mutation = container.read(provider.notifier).toggle();
     expect(container.read(provider).valueOrNull?.isFollowed, isTrue);
@@ -85,7 +88,9 @@ void main() {
       fireImmediately: true,
     );
     addTearDown(subscription.close);
-    await container.read(followedOrganizersControllerProvider.future);
+    await container
+        .read(followedOrganizersControllerProvider.notifier)
+        .refresh();
 
     final mutation = container
         .read(followedOrganizersControllerProvider.notifier)
@@ -112,6 +117,7 @@ void main() {
 ProviderContainer _containerWithFailure(Object failure) {
   return ProviderContainer(
     overrides: [
+      authSessionUserIdProvider.overrideWithValue('user-a'),
       organizerRepositoryProvider.overrideWithValue(
         _FailingOrganizerRepository(failure),
       ),

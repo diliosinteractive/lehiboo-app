@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lehiboo/core/analytics/analytics_provider.dart';
+import 'package:lehiboo/core/analytics/noop_analytics_service.dart';
 import 'package:lehiboo/features/auth/domain/repositories/auth_repository.dart';
 import 'package:lehiboo/features/events/data/models/event_dto.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
@@ -58,9 +60,14 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          analyticsServiceProvider.overrideWithValue(
+            const NoopAnalyticsService(),
+          ),
           authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
           favoritesRepositoryProvider.overrideWithValue(_FakeFavoritesRepo()),
-          personalizedFeedProvider.overrideWith((ref) async => view),
+          personalizedFeedProvider.overrideWith(
+            (ref) => _FakePersonalizedFeedController(view),
+          ),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -76,6 +83,17 @@ void main() {
     expect(find.text('Past booking'), findsNothing);
     expect(find.text('Future booking'), findsOneWidget);
   });
+}
+
+class _FakePersonalizedFeedController extends PersonalizedFeedStateController {
+  _FakePersonalizedFeedController(PersonalizedFeedView view)
+      : super(AsyncData(view));
+
+  @override
+  Future<void> refresh() => Future.value();
+
+  @override
+  Future<void> waitForInitialLoad() => Future.value();
 }
 
 EventDto _event({

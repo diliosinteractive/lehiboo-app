@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
+import 'package:lehiboo/features/auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../domain/entities/favorite_list.dart';
 import '../providers/favorite_lists_provider.dart';
 import '../../../petit_boo/presentation/widgets/animated_toast.dart';
@@ -15,13 +18,31 @@ class EditListDialog extends ConsumerStatefulWidget {
   const EditListDialog({
     super.key,
     required this.list,
+    required this.ownerSession,
   });
 
+  final AuthSessionKey ownerSession;
+
   /// Affiche le dialog et retourne la liste mise à jour ou null si annulé
-  static Future<FavoriteList?> show(BuildContext context, FavoriteList list) {
+  static Future<FavoriteList?> show(
+    BuildContext context,
+    FavoriteList list, {
+    required AuthSessionKey ownerSession,
+  }) {
     return showDialog<FavoriteList>(
       context: context,
-      builder: (context) => EditListDialog(list: list),
+      builder: (context) {
+        final ownerAccountId = ownerSession.accountId;
+        if (ownerAccountId == null) return const SizedBox.shrink();
+        return AccountBoundRouteGuard<FavoriteList>(
+          ownerAccountId: ownerAccountId,
+          ownerSession: ownerSession,
+          builder: (_) => EditListDialog(
+            list: list,
+            ownerSession: ownerSession,
+          ),
+        );
+      },
     );
   }
 
@@ -38,6 +59,10 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
   late IconData _selectedIcon;
   bool _isLoading = false;
   bool _isDeleting = false;
+  late final AuthSessionKey _ownerSession;
+  late final String? _ownerAccountId;
+  late final FavoriteListsNotifier _ownerNotifier;
+  bool _sessionInvalid = false;
 
   @override
   void initState() {
@@ -47,6 +72,29 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
         TextEditingController(text: widget.list.description ?? '');
     _selectedColor = widget.list.color;
     _selectedIcon = widget.list.icon;
+    _ownerSession = widget.ownerSession;
+    _ownerAccountId = _ownerSession.accountId;
+    _ownerNotifier = ref.read(favoriteListsProvider.notifier);
+  }
+
+  bool get _ownsCurrentAccount =>
+      !_sessionInvalid &&
+      _ownerAccountId != null &&
+      ref.read(authSessionUserIdProvider) == _ownerAccountId &&
+      identical(ref.read(authSessionKeyProvider), _ownerSession) &&
+      identical(ref.read(favoriteListsProvider.notifier), _ownerNotifier);
+
+  void _handleSessionChange(AuthSessionKey nextSession) {
+    if (identical(nextSession, _ownerSession) || _sessionInvalid) return;
+    _sessionInvalid = true;
+    _nameController.clear();
+    _descriptionController.clear();
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+        _isDeleting = false;
+      });
+    }
   }
 
   @override
@@ -60,12 +108,14 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
     return _nameController.text.trim() != widget.list.name ||
         (_descriptionController.text.trim()) !=
             (widget.list.description ?? '') ||
-        _selectedColor.value != widget.list.color.value ||
+        _selectedColor.toARGB32() != widget.list.color.toARGB32() ||
         _selectedIcon.codePoint != widget.list.icon.codePoint;
   }
 
   Future<void> _updateList() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_ownsCurrentAccount || _formKey.currentState?.validate() != true) {
+      return;
+    }
     if (!_hasChanges) {
       Navigator.of(context).pop(widget.list);
       return;
@@ -77,25 +127,24 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
     final iconKey = FavoriteListIcons.toIconKey(_selectedIcon);
 
     try {
-      final updatedList =
-          await ref.read(favoriteListsProvider.notifier).updateList(
-                widget.list.id,
-                name: _nameController.text.trim(),
-                description: _descriptionController.text.trim().isEmpty
-                    ? null
-                    : _descriptionController.text.trim(),
-                color: colorKey,
-                icon: iconKey,
-              );
+      final updatedList = await _ownerNotifier.updateList(
+        widget.list.id,
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+        color: colorKey,
+        icon: iconKey,
+      );
 
-      if (!mounted) return;
+      if (!mounted || !_ownsCurrentAccount) return;
       setState(() => _isLoading = false);
       if (updatedList != null) {
         HapticFeedback.mediumImpact();
         Navigator.of(context).pop(updatedList);
       }
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || !_ownsCurrentAccount) return;
       setState(() => _isLoading = false);
       PetitBooToast.error(
         context,
@@ -108,6 +157,7 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
   }
 
   Future<void> _deleteList() async {
+    if (!_ownsCurrentAccount) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -148,16 +198,14 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !_ownsCurrentAccount) return;
 
     setState(() => _isDeleting = true);
 
     try {
-      final success = await ref
-          .read(favoriteListsProvider.notifier)
-          .deleteList(widget.list.id);
+      final success = await _ownerNotifier.deleteList(widget.list.id);
 
-      if (!mounted) return;
+      if (!mounted || !_ownsCurrentAccount) return;
       setState(() => _isDeleting = false);
       if (success) {
         HapticFeedback.mediumImpact();
@@ -174,7 +222,7 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
         );
       }
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || !_ownsCurrentAccount) return;
       setState(() => _isDeleting = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -192,6 +240,19 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AuthSessionKey>(authSessionKeyProvider, (_, next) {
+      _handleSessionChange(next);
+    });
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    final currentSession = ref.watch(authSessionKeyProvider);
+    if (_ownerAccountId == null ||
+        currentAccountId != _ownerAccountId ||
+        !identical(currentSession, _ownerSession) ||
+        _sessionInvalid) {
+      return const SizedBox.shrink(
+        key: Key('edit-favorite-list-session-invalid'),
+      );
+    }
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: SingleChildScrollView(
@@ -209,7 +270,7 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _selectedColor.withOpacity(0.1),
+                        color: _selectedColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(

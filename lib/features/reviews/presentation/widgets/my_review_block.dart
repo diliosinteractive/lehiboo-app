@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../domain/entities/review.dart';
 import '../providers/reviews_actions_provider.dart';
 import '../providers/user_reviews_provider.dart';
@@ -21,6 +22,7 @@ class MyReviewBlock extends ConsumerWidget {
   final Review review;
   final String eventSlug;
   final String eventTitle;
+  final AuthSessionKey ownerSession;
   final VoidCallback? onChanged;
 
   const MyReviewBlock({
@@ -28,37 +30,90 @@ class MyReviewBlock extends ConsumerWidget {
     required this.review,
     required this.eventSlug,
     required this.eventTitle,
+    required this.ownerSession,
     this.onChanged,
   });
 
-  Future<void> _handleEdit(BuildContext context) async {
+  Future<void> _handleEdit(
+    BuildContext context,
+    WidgetRef ref,
+    AuthSessionKey ownerSession,
+  ) async {
     HapticFeedback.lightImpact();
+    if (!context.mounted) return;
+    if (ownerSession.accountId == null ||
+        !identical(ref.read(authSessionKeyProvider), ownerSession)) {
+      return;
+    }
+    final actionsNotifier = ref.read(reviewsActionsProvider.notifier);
     final updated = await WriteReviewSheet.showEdit(
       context,
       review: review,
       eventSlug: eventSlug,
       eventTitle: eventTitle,
+      ownerSession: ownerSession,
     );
+    if (!context.mounted ||
+        !identical(ref.read(authSessionKeyProvider), ownerSession) ||
+        !identical(
+          ref.read(reviewsActionsProvider.notifier),
+          actionsNotifier,
+        )) {
+      return;
+    }
     if (updated != null) onChanged?.call();
   }
 
-  Future<void> _handleDelete(BuildContext context, WidgetRef ref) async {
+  Future<void> _handleDelete(
+    BuildContext context,
+    WidgetRef ref,
+    AuthSessionKey ownerSession,
+  ) async {
     HapticFeedback.lightImpact();
-    final confirmed = await DeleteReviewDialog.show(context);
-    if (!confirmed || !context.mounted) return;
-
-    final result = await ref.read(reviewsActionsProvider.notifier).deleteReview(
-          reviewUuid: review.uuid,
-          eventSlug: eventSlug,
-        );
-
     if (!context.mounted) return;
+    if (ownerSession.accountId == null ||
+        !identical(ref.read(authSessionKeyProvider), ownerSession)) {
+      return;
+    }
+    final actionsNotifier = ref.read(reviewsActionsProvider.notifier);
+    final confirmed = await DeleteReviewDialog.show(
+      context,
+      ownerSession: ownerSession,
+    );
+    if (!confirmed ||
+        !context.mounted ||
+        !identical(ref.read(authSessionKeyProvider), ownerSession) ||
+        !identical(
+          ref.read(reviewsActionsProvider.notifier),
+          actionsNotifier,
+        )) {
+      return;
+    }
+
+    final userReviewsNotifier = ref.read(userReviewsProvider.notifier);
+    final result = await actionsNotifier.deleteReview(
+      reviewUuid: review.uuid,
+      eventSlug: eventSlug,
+    );
+
+    if (!context.mounted ||
+        !identical(ref.read(authSessionKeyProvider), ownerSession) ||
+        !identical(
+          ref.read(reviewsActionsProvider.notifier),
+          actionsNotifier,
+        ) ||
+        !identical(
+          ref.read(userReviewsProvider.notifier),
+          userReviewsNotifier,
+        )) {
+      return;
+    }
 
     switch (result) {
       case ReviewActionSuccess():
         // Si la liste "Mes Avis" est ouverte ailleurs, la nettoyer aussi.
         try {
-          ref.read(userReviewsProvider.notifier).removeLocal(review.uuid);
+          userReviewsNotifier.removeLocal(review.uuid);
         } catch (_) {}
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -76,6 +131,10 @@ class MyReviewBlock extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final currentSession = ref.watch(authSessionKeyProvider);
+    if (!identical(currentSession, ownerSession)) {
+      return const SizedBox.shrink();
+    }
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
@@ -108,13 +167,13 @@ class MyReviewBlock extends ConsumerWidget {
                 icon: Icons.edit_outlined,
                 tooltip: context.l10n.reviewsEditAction,
                 color: HbColors.brandPrimary,
-                onPressed: () => _handleEdit(context),
+                onPressed: () => _handleEdit(context, ref, ownerSession),
               ),
               _buildIconAction(
                 icon: Icons.delete_outline,
                 tooltip: context.l10n.reviewsDeleteAction,
                 color: Colors.red.shade400,
-                onPressed: () => _handleDelete(context, ref),
+                onPressed: () => _handleDelete(context, ref, ownerSession),
               ),
             ],
           ),

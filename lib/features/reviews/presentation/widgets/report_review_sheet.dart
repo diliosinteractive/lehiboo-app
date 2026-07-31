@@ -3,24 +3,40 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../domain/entities/review_enums.dart';
 import '../providers/reviews_actions_provider.dart';
 
 /// Modal pour signaler un avis inapproprié (cf. spec §2.8).
 class ReportReviewSheet extends ConsumerStatefulWidget {
   final String reviewUuid;
+  final AuthSessionKey ownerSession;
 
-  const ReportReviewSheet({super.key, required this.reviewUuid});
+  const ReportReviewSheet({
+    super.key,
+    required this.reviewUuid,
+    required this.ownerSession,
+  });
 
   static Future<bool> show(
     BuildContext context, {
     required String reviewUuid,
+    required AuthSessionKey ownerSession,
   }) async {
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => ReportReviewSheet(reviewUuid: reviewUuid),
+      builder: (_) => AccountBoundRouteGuard<bool>(
+        ownerAccountId: ownerSession.accountId,
+        ownerSession: ownerSession,
+        invalidResult: false,
+        builder: (_) => ReportReviewSheet(
+          reviewUuid: reviewUuid,
+          ownerSession: ownerSession,
+        ),
+      ),
     );
     return result ?? false;
   }
@@ -36,25 +52,46 @@ class _ReportReviewSheetState extends ConsumerState<ReportReviewSheet> {
   String? _serverError;
 
   @override
+  void initState() {
+    super.initState();
+    ref.listenManual<AuthSessionKey>(authSessionKeyProvider, (_, next) {
+      if (identical(next, widget.ownerSession)) return;
+      _detailsController.clear();
+      _selectedReason = ReportReason.spam;
+      _serverError = null;
+      _isSubmitting = false;
+    });
+  }
+
+  bool get _ownsActiveSession =>
+      identical(ref.read(authSessionKeyProvider), widget.ownerSession);
+
+  @override
   void dispose() {
     _detailsController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
+    if (!_ownsActiveSession || widget.ownerSession.accountId == null) return;
     setState(() {
       _isSubmitting = true;
       _serverError = null;
     });
 
     final details = _detailsController.text.trim();
-    final result = await ref.read(reviewsActionsProvider.notifier).reportReview(
-          reviewUuid: widget.reviewUuid,
-          reason: _selectedReason,
-          details: details.isEmpty ? null : details,
-        );
+    final notifier = ref.read(reviewsActionsProvider.notifier);
+    final result = await notifier.reportReview(
+      reviewUuid: widget.reviewUuid,
+      reason: _selectedReason,
+      details: details.isEmpty ? null : details,
+    );
 
-    if (!mounted) return;
+    if (!mounted ||
+        !_ownsActiveSession ||
+        !identical(ref.read(reviewsActionsProvider.notifier), notifier)) {
+      return;
+    }
 
     switch (result) {
       case ReviewActionSuccess():

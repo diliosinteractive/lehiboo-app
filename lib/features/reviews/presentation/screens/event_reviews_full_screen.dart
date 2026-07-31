@@ -7,6 +7,7 @@ import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../../core/utils/guest_guard.dart';
 import '../../../../core/widgets/feedback/hb_feedback.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../domain/entities/can_review_result.dart';
 import '../../domain/entities/paginated_reviews.dart';
 import '../../domain/entities/review.dart';
@@ -26,11 +27,13 @@ import '../widgets/write_review_sheet.dart';
 class EventReviewsFullScreen extends ConsumerStatefulWidget {
   final String eventSlug;
   final String? eventTitle;
+  final AuthSessionKey? ownerSession;
 
   const EventReviewsFullScreen({
     super.key,
     required this.eventSlug,
     this.eventTitle,
+    this.ownerSession,
   });
 
   @override
@@ -50,18 +53,72 @@ class _EventReviewsFullScreenState
   String? _error;
   String? _loadMoreError;
   final Set<String> _pendingVoteUuids = <String>{};
+  ProviderSubscription<AuthSessionKey>? _accountSubscription;
+  int _requestGeneration = 0;
+  bool _routePayloadInvalid = false;
+  AuthSessionKey? _routeOwnerSession;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    _loadFirstPage();
+    final initialSession = ref.read(authSessionKeyProvider);
+    _routeOwnerSession = widget.ownerSession;
+    _routePayloadInvalid = _routeOwnerSession != null &&
+        !identical(initialSession, _routeOwnerSession);
+    _accountSubscription = ref.listenManual<AuthSessionKey>(
+      authSessionKeyProvider,
+      (previous, next) {
+        if (identical(previous, next) || !mounted) return;
+        setState(() {
+          final routeOwner = _routeOwnerSession;
+          if (routeOwner != null && !identical(next, routeOwner)) {
+            // A public route opened by a guest may deliberately continue
+            // after GuestGuard's inline login. Authenticated route payloads
+            // never adopt another session, including A -> B -> A.
+            if (identical(previous, routeOwner) &&
+                routeOwner.accountId == null &&
+                next.accountId != null) {
+              _routeOwnerSession = next;
+            } else {
+              _routePayloadInvalid = true;
+            }
+          }
+          // Anonymous review content is public and can safely remain visible
+          // after inline login, but any personalized vote marker must go. For
+          // logout or A -> B, clear the page entirely so neither an optimistic
+          // A vote nor any personalized payload can be rendered for B.
+          if (!_routePayloadInvalid &&
+              previous?.accountId == null &&
+              next.accountId != null) {
+            final publicItems = _items
+                .map((review) => review.copyWith(userVote: null))
+                .toList();
+            _items
+              ..clear()
+              ..addAll(publicItems);
+          } else {
+            _items.clear();
+          }
+          _pendingVoteUuids.clear();
+          _isLoading = false;
+          _isLoadingMore = false;
+          _hasMore = true;
+          _error = null;
+          _loadMoreError = null;
+          _query = _query.copyWith(page: 1);
+        });
+        if (!_routePayloadInvalid) _loadFirstPage();
+      },
+    );
+    if (!_routePayloadInvalid) _loadFirstPage();
   }
 
   @override
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _accountSubscription?.close();
     super.dispose();
   }
 
@@ -73,6 +130,9 @@ class _EventReviewsFullScreenState
   }
 
   Future<void> _loadFirstPage() async {
+    if (_routePayloadInvalid) return;
+    final requestGeneration = ++_requestGeneration;
+    final requestSession = ref.read(authSessionKeyProvider);
     setState(() {
       _isLoading = true;
       _error = null;
@@ -84,7 +144,11 @@ class _EventReviewsFullScreenState
         widget.eventSlug,
         query: _query.copyWith(page: 1),
       );
-      if (!mounted) return;
+      if (!mounted ||
+          requestGeneration != _requestGeneration ||
+          !identical(ref.read(authSessionKeyProvider), requestSession)) {
+        return;
+      }
       setState(() {
         _items
           ..clear()
@@ -94,7 +158,11 @@ class _EventReviewsFullScreenState
         _isLoading = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted ||
+          requestGeneration != _requestGeneration ||
+          !identical(ref.read(authSessionKeyProvider), requestSession)) {
+        return;
+      }
       setState(() {
         _isLoading = false;
         _error = context.l10n.organizerReviewsLoadError;
@@ -103,20 +171,30 @@ class _EventReviewsFullScreenState
   }
 
   Future<void> _loadMore() async {
-    if (_isLoadingMore || !_hasMore || _isLoading || _loadMoreError != null) {
+    if (_routePayloadInvalid ||
+        _isLoadingMore ||
+        !_hasMore ||
+        _isLoading ||
+        _loadMoreError != null) {
       return;
     }
     setState(() {
       _isLoadingMore = true;
       _loadMoreError = null;
     });
+    final requestGeneration = ++_requestGeneration;
+    final requestSession = ref.read(authSessionKeyProvider);
     try {
       final repo = ref.read(reviewsRepositoryProvider);
       final next = await repo.getEventReviews(
         widget.eventSlug,
         query: _query.copyWith(page: _query.page + 1),
       );
-      if (!mounted) return;
+      if (!mounted ||
+          requestGeneration != _requestGeneration ||
+          !identical(ref.read(authSessionKeyProvider), requestSession)) {
+        return;
+      }
       setState(() {
         _items.addAll(next.items);
         _query = _query.copyWith(page: next.meta.currentPage);
@@ -125,7 +203,11 @@ class _EventReviewsFullScreenState
         _loadMoreError = null;
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted ||
+          requestGeneration != _requestGeneration ||
+          !identical(ref.read(authSessionKeyProvider), requestSession)) {
+        return;
+      }
       setState(() {
         _isLoadingMore = false;
         _loadMoreError = ApiResponseHandler.extractError(
@@ -141,32 +223,103 @@ class _EventReviewsFullScreenState
     _loadFirstPage();
   }
 
-  Future<void> _handleWriteReview() async {
+  Future<void> _handleWriteReview(AuthSessionKey renderOwner) async {
+    if (_routePayloadInvalid ||
+        !identical(ref.read(authSessionKeyProvider), renderOwner)) {
+      return;
+    }
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
       featureName: context.l10n.guestFeatureWriteReview,
     );
     if (!allowed || !mounted) return;
+    final actionOwner = ref.read(authSessionKeyProvider);
+    if (_routePayloadInvalid ||
+        actionOwner.accountId == null ||
+        (renderOwner.accountId != null &&
+            !identical(actionOwner, renderOwner))) {
+      return;
+    }
+    final actionsNotifier = ref.read(reviewsActionsProvider.notifier);
     final created = await WriteReviewSheet.show(
       context,
       eventSlug: widget.eventSlug,
       eventTitle: widget.eventTitle ?? '',
+      ownerSession: actionOwner,
     );
+    if (!mounted ||
+        _routePayloadInvalid ||
+        !identical(ref.read(authSessionKeyProvider), actionOwner) ||
+        !identical(
+          ref.read(reviewsActionsProvider.notifier),
+          actionsNotifier,
+        )) {
+      return;
+    }
     if (created != null) _loadFirstPage();
   }
 
-  Future<void> _handleReport(Review review) async {
+  Future<void> _handleReport(
+    Review review,
+    AuthSessionKey renderOwner,
+  ) async {
+    if (_routePayloadInvalid ||
+        !identical(ref.read(authSessionKeyProvider), renderOwner)) {
+      return;
+    }
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
       featureName: context.l10n.guestFeatureReportReview,
     );
     if (!allowed || !mounted) return;
-    await ReportReviewSheet.show(context, reviewUuid: review.uuid);
+    final actionOwner = ref.read(authSessionKeyProvider);
+    if (_routePayloadInvalid ||
+        actionOwner.accountId == null ||
+        (renderOwner.accountId != null &&
+            !identical(actionOwner, renderOwner))) {
+      return;
+    }
+    final actionsNotifier = ref.read(reviewsActionsProvider.notifier);
+    await ReportReviewSheet.show(
+      context,
+      reviewUuid: review.uuid,
+      ownerSession: actionOwner,
+    );
+    if (!mounted ||
+        _routePayloadInvalid ||
+        !identical(ref.read(authSessionKeyProvider), actionOwner) ||
+        !identical(
+          ref.read(reviewsActionsProvider.notifier),
+          actionsNotifier,
+        )) {
+      return;
+    }
   }
 
-  Future<void> _handleVote(String uuid, bool isHelpful) async {
+  Future<void> _handleVote(
+    String uuid,
+    bool isHelpful,
+    AuthSessionKey renderOwner,
+  ) async {
+    if (_routePayloadInvalid ||
+        !identical(ref.read(authSessionKeyProvider), renderOwner)) {
+      return;
+    }
+    final allowed = await GuestGuard.check(
+      context: context,
+      ref: ref,
+      featureName: context.l10n.guestFeatureVoteReview,
+    );
+    if (!allowed || !mounted) return;
+    final actionOwner = ref.read(authSessionKeyProvider);
+    if (_routePayloadInvalid ||
+        actionOwner.accountId == null ||
+        (renderOwner.accountId != null &&
+            !identical(actionOwner, renderOwner))) {
+      return;
+    }
     if (_pendingVoteUuids.contains(uuid)) return;
 
     final reviewIndex = _items.indexWhere((r) => r.uuid == uuid);
@@ -188,13 +341,14 @@ class _EventReviewsFullScreenState
     });
 
     final voteFailureFallback = context.l10n.reviewsVoteFailed;
+    final actionsNotifier = ref.read(reviewsActionsProvider.notifier);
     ReviewActionResult<VoteCounts> result;
     try {
-      result = await ref.read(reviewsActionsProvider.notifier).voteReview(
-            reviewUuid: uuid,
-            isHelpful: isHelpful,
-            eventSlug: widget.eventSlug,
-          );
+      result = await actionsNotifier.voteReview(
+        reviewUuid: uuid,
+        isHelpful: isHelpful,
+        eventSlug: widget.eventSlug,
+      );
     } catch (error) {
       result = ReviewActionFailure(
         ApiResponseHandler.extractError(
@@ -205,7 +359,15 @@ class _EventReviewsFullScreenState
       );
     }
 
-    if (!mounted) return;
+    if (!mounted ||
+        _routePayloadInvalid ||
+        !identical(ref.read(authSessionKeyProvider), actionOwner) ||
+        !identical(
+          ref.read(reviewsActionsProvider.notifier),
+          actionsNotifier,
+        )) {
+      return;
+    }
     final currentIndex = _items.indexWhere((review) => review.uuid == uuid);
     setState(() {
       _pendingVoteUuids.remove(uuid);
@@ -231,8 +393,18 @@ class _EventReviewsFullScreenState
 
   @override
   Widget build(BuildContext context) {
+    final viewSession = ref.watch(authSessionKeyProvider);
+    if (_routePayloadInvalid ||
+        (_routeOwnerSession != null &&
+            !identical(viewSession, _routeOwnerSession))) {
+      return const SizedBox.shrink();
+    }
     final statsAsync = ref.watch(eventReviewStatsProvider(widget.eventSlug));
-    final canReviewAsync = ref.watch(canReviewProvider(widget.eventSlug));
+    final canReviewParams = CanReviewParams(
+      eventSlug: widget.eventSlug,
+      ownerSession: viewSession,
+    );
+    final canReviewAsync = ref.watch(canReviewProvider(canReviewParams));
     final explicitCanReview = !canReviewAsync.isLoading &&
             !canReviewAsync.hasError &&
             canReviewAsync.hasValue
@@ -263,7 +435,7 @@ class _EventReviewsFullScreenState
           ? FloatingActionButton.extended(
               onPressed: () {
                 HapticFeedback.lightImpact();
-                _handleWriteReview();
+                _handleWriteReview(viewSession);
               },
               backgroundColor: HbColors.brandPrimary,
               icon: const Icon(Icons.edit_outlined, color: Colors.white),
@@ -307,6 +479,7 @@ class _EventReviewsFullScreenState
                     review: myReviewToShow,
                     eventSlug: widget.eventSlug,
                     eventTitle: widget.eventTitle ?? '',
+                    ownerSession: viewSession,
                     onChanged: _loadFirstPage,
                   ),
                 ),
@@ -334,7 +507,7 @@ class _EventReviewsFullScreenState
                   child: CanReviewLoadError(
                     error: error,
                     onRetry: () => ref.invalidate(
-                      canReviewProvider(widget.eventSlug),
+                      canReviewProvider(canReviewParams),
                     ),
                   ),
                 ),
@@ -353,7 +526,7 @@ class _EventReviewsFullScreenState
               ),
             ),
             SliverToBoxAdapter(child: _buildFiltersBar()),
-            _buildList(),
+            _buildList(viewSession),
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
         ),
@@ -438,7 +611,7 @@ class _EventReviewsFullScreenState
     );
   }
 
-  Widget _buildList() {
+  Widget _buildList(AuthSessionKey viewSession) {
     if (_isLoading && _items.isEmpty) {
       return const SliverFillRemaining(
         hasScrollBody: false,
@@ -503,8 +676,9 @@ class _EventReviewsFullScreenState
               padding: const EdgeInsets.only(bottom: 12),
               child: ReviewCard(
                 review: _items[index],
-                onVote: _handleVote,
-                onReport: () => _handleReport(_items[index]),
+                onVote: (uuid, isHelpful) =>
+                    _handleVote(uuid, isHelpful, viewSession),
+                onReport: () => _handleReport(_items[index], viewSession),
                 isVotePending: _pendingVoteUuids.contains(_items[index].uuid),
               ),
             );

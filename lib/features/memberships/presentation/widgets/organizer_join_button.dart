@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../auth/presentation/widgets/guest_restriction_dialog.dart';
-import '../../../partners/presentation/providers/organizer_profile_providers.dart';
+import '../../../../core/utils/guest_guard.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../data/models/membership_dto.dart';
 import '../providers/membership_state_providers.dart';
 
@@ -18,11 +18,13 @@ import '../providers/membership_state_providers.dart';
 class OrganizerJoinButton extends ConsumerWidget {
   final String organizerUuid;
   final String organizerName;
+  final AuthSessionKey ownerSession;
 
   const OrganizerJoinButton({
     super.key,
     required this.organizerUuid,
     required this.organizerName,
+    required this.ownerSession,
   });
 
   @override
@@ -35,8 +37,14 @@ class OrganizerJoinButton extends ConsumerWidget {
     final spec = _specFor(context, membership);
 
     return InkWell(
-      onTap:
-          isInFlight ? null : () => _handleTap(ref, context, membership, spec),
+      onTap: isInFlight
+          ? null
+          : () => _handleTap(
+                ref,
+                context,
+                membership,
+                ownerSession,
+              ),
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -86,27 +94,37 @@ class OrganizerJoinButton extends ConsumerWidget {
     WidgetRef ref,
     BuildContext context,
     MembershipDto? membership,
-    _ButtonSpec spec,
+    AuthSessionKey ownerSession,
   ) {
-    final isAuthenticated = ref.read(authProvider).isAuthenticated;
-    if (!isAuthenticated) {
-      ref.read(pendingOrganizerActionProvider.notifier).state =
-          PendingOrganizerAction.join;
-      GuestRestrictionDialog.show(
-        context,
-        featureName: context.l10n.guestFeatureJoinOrganizer,
-      );
-      return;
-    }
-
+    if (!identical(ref.read(authSessionKeyProvider), ownerSession)) return;
     switch (membership?.status) {
       case null:
       case MembershipStatus.rejected:
-        confirmAndJoin(context, ref, organizerUuid, organizerName);
+        confirmAndJoin(
+          context,
+          ref,
+          organizerUuid,
+          organizerName,
+          ownerSession: ownerSession,
+        );
       case MembershipStatus.pending:
-        confirmAndCancelMembership(context, ref, organizerUuid, organizerName);
+        if (ownerSession.accountId == null) return;
+        confirmAndCancelMembership(
+          context,
+          ref,
+          organizerUuid,
+          organizerName,
+          ownerSession: ownerSession,
+        );
       case MembershipStatus.active:
-        confirmAndLeaveMembership(context, ref, organizerUuid, organizerName);
+        if (ownerSession.accountId == null) return;
+        confirmAndLeaveMembership(
+          context,
+          ref,
+          organizerUuid,
+          organizerName,
+          ownerSession: ownerSession,
+        );
     }
   }
 
@@ -143,35 +161,60 @@ Future<void> confirmAndCancelMembership(
   BuildContext context,
   WidgetRef ref,
   String organizerUuid,
-  String organizerName,
-) async {
+  String organizerName, {
+  required AuthSessionKey ownerSession,
+}) async {
+  final ownerAccountId = ownerSession.accountId;
+  if (ownerAccountId == null ||
+      !identical(ref.read(authSessionKeyProvider), ownerSession)) {
+    return;
+  }
+  final provider = membershipActionControllerProvider(organizerUuid);
+  final actionController = ref.read(provider.notifier);
+
   final confirmed = await showDialog<bool>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(context.l10n.membershipCancelRequestTitle),
-      content: Text(
-        context.l10n.membershipCancelRequestBody(organizerName),
+    builder: (_) => AccountBoundRouteGuard<bool>(
+      ownerAccountId: ownerAccountId,
+      ownerSession: ownerSession,
+      invalidResult: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(dialogContext.l10n.membershipCancelRequestTitle),
+        content: Text(
+          dialogContext.l10n.membershipCancelRequestBody(organizerName),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(dialogContext.l10n.commonBack),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: HbColors.brandPrimary,
+            ),
+            child: Text(dialogContext.l10n.membershipCancelRequestAction),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(false),
-          child: Text(context.l10n.commonBack),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(true),
-          style: TextButton.styleFrom(foregroundColor: HbColors.brandPrimary),
-          child: Text(context.l10n.membershipCancelRequestAction),
-        ),
-      ],
     ),
   );
-  if (confirmed != true || !context.mounted) return;
-  final provider = membershipActionControllerProvider(organizerUuid);
+  if (confirmed != true ||
+      !context.mounted ||
+      !identical(ref.read(authSessionKeyProvider), ownerSession) ||
+      !identical(ref.read(provider.notifier), actionController)) {
+    return;
+  }
   final fallback = context.l10n.membershipCancelRequestFailed;
-  final succeeded = await ref.read(provider.notifier).cancelOrLeave(
-        fallbackMessage: fallback,
-      );
-  if (succeeded || !context.mounted) return;
+  final succeeded = await actionController.cancelOrLeave(
+    fallbackMessage: fallback,
+  );
+  if (succeeded ||
+      !context.mounted ||
+      !identical(ref.read(authSessionKeyProvider), ownerSession) ||
+      !identical(ref.read(provider.notifier), actionController)) {
+    return;
+  }
   _showMembershipActionError(
     context,
     ref.read(provider).valueOrNull?.error ?? fallback,
@@ -184,35 +227,58 @@ Future<void> confirmAndLeaveMembership(
   BuildContext context,
   WidgetRef ref,
   String organizerUuid,
-  String organizerName,
-) async {
+  String organizerName, {
+  required AuthSessionKey ownerSession,
+}) async {
+  final ownerAccountId = ownerSession.accountId;
+  if (ownerAccountId == null ||
+      !identical(ref.read(authSessionKeyProvider), ownerSession)) {
+    return;
+  }
+  final provider = membershipActionControllerProvider(organizerUuid);
+  final actionController = ref.read(provider.notifier);
+
   final confirmed = await showDialog<bool>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(context.l10n.membershipLeaveTitle),
-      content: Text(
-        context.l10n.membershipLeaveBody(organizerName),
+    builder: (_) => AccountBoundRouteGuard<bool>(
+      ownerAccountId: ownerAccountId,
+      ownerSession: ownerSession,
+      invalidResult: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(dialogContext.l10n.membershipLeaveTitle),
+        content: Text(
+          dialogContext.l10n.membershipLeaveBody(organizerName),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(dialogContext.l10n.commonBack),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(foregroundColor: HbColors.error),
+            child: Text(dialogContext.l10n.membershipLeaveAction),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(false),
-          child: Text(context.l10n.commonBack),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(true),
-          style: TextButton.styleFrom(foregroundColor: HbColors.error),
-          child: Text(context.l10n.membershipLeaveAction),
-        ),
-      ],
     ),
   );
-  if (confirmed != true || !context.mounted) return;
-  final provider = membershipActionControllerProvider(organizerUuid);
+  if (confirmed != true ||
+      !context.mounted ||
+      !identical(ref.read(authSessionKeyProvider), ownerSession) ||
+      !identical(ref.read(provider.notifier), actionController)) {
+    return;
+  }
   final fallback = context.l10n.membershipLeaveFailed;
-  final succeeded = await ref.read(provider.notifier).cancelOrLeave(
-        fallbackMessage: fallback,
-      );
-  if (succeeded || !context.mounted) return;
+  final succeeded = await actionController.cancelOrLeave(
+    fallbackMessage: fallback,
+  );
+  if (succeeded ||
+      !context.mounted ||
+      !identical(ref.read(authSessionKeyProvider), ownerSession) ||
+      !identical(ref.read(provider.notifier), actionController)) {
+    return;
+  }
   _showMembershipActionError(
     context,
     ref.read(provider).valueOrNull?.error ?? fallback,
@@ -226,37 +292,93 @@ Future<void> confirmAndJoin(
   BuildContext context,
   WidgetRef ref,
   String organizerUuid,
-  String organizerName,
-) async {
+  String organizerName, {
+  required AuthSessionKey ownerSession,
+}) async {
+  if (!identical(ref.read(authSessionKeyProvider), ownerSession)) return;
+  var actionOwner = ownerSession;
+  if (ownerSession.accountId == null) {
+    var sessionTransitions = 0;
+    var lastSession = ownerSession;
+    final subscription = ref.listenManual<AuthSessionKey>(
+      authSessionKeyProvider,
+      (_, next) {
+        if (identical(next, lastSession)) return;
+        lastSession = next;
+        sessionTransitions++;
+      },
+    );
+    bool allowed;
+    try {
+      allowed = await GuestGuard.check(
+        context: context,
+        ref: ref,
+        featureName: context.l10n.guestFeatureJoinOrganizer,
+      );
+    } finally {
+      subscription.close();
+    }
+    if (!allowed || !context.mounted || sessionTransitions != 1) {
+      return;
+    }
+    final authenticatedOwner = ref.read(authSessionKeyProvider);
+    if (authenticatedOwner.accountId == null) return;
+    actionOwner = authenticatedOwner;
+  }
+
+  final ownerAccountId = actionOwner.accountId;
+  if (ownerAccountId == null ||
+      !identical(ref.read(authSessionKeyProvider), actionOwner)) {
+    return;
+  }
+  final provider = membershipActionControllerProvider(organizerUuid);
+  final actionController = ref.read(provider.notifier);
+
   final confirmed = await showDialog<bool>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text(context.l10n.membershipJoinTitle(organizerName)),
-      content: Text(context.l10n.membershipJoinBody),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(false),
-          child: Text(context.l10n.commonBack),
+    builder: (_) => AccountBoundRouteGuard<bool>(
+      ownerAccountId: ownerAccountId,
+      ownerSession: actionOwner,
+      invalidResult: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          dialogContext.l10n.membershipJoinTitle(organizerName),
         ),
-        ElevatedButton(
-          onPressed: () => Navigator.of(ctx).pop(true),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: HbColors.brandPrimary,
-            foregroundColor: Colors.white,
+        content: Text(dialogContext.l10n.membershipJoinBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(dialogContext.l10n.commonBack),
           ),
-          child: Text(context.l10n.membershipJoinAction),
-        ),
-      ],
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: HbColors.brandPrimary,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(dialogContext.l10n.membershipJoinAction),
+          ),
+        ],
+      ),
     ),
   );
-  if (confirmed != true || !context.mounted) return;
+  if (confirmed != true ||
+      !context.mounted ||
+      !identical(ref.read(authSessionKeyProvider), actionOwner) ||
+      !identical(ref.read(provider.notifier), actionController)) {
+    return;
+  }
 
-  final provider = membershipActionControllerProvider(organizerUuid);
   final fallback = context.l10n.membershipJoinFailed;
-  final succeeded = await ref.read(provider.notifier).requestJoin(
-        fallbackMessage: fallback,
-      );
-  if (succeeded || !context.mounted) return;
+  final succeeded = await actionController.requestJoin(
+    fallbackMessage: fallback,
+  );
+  if (succeeded ||
+      !context.mounted ||
+      !identical(ref.read(authSessionKeyProvider), actionOwner) ||
+      !identical(ref.read(provider.notifier), actionController)) {
+    return;
+  }
   _showMembershipActionError(
     context,
     ref.read(provider).valueOrNull?.error ?? fallback,

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../data/models/organizer_profile_dto.dart';
 import '../providers/organizer_profile_providers.dart';
 import '../widgets/organizer_about_section.dart';
@@ -44,6 +45,7 @@ class _OrganizerProfileScreenState
 
     final profileAsync =
         ref.watch(organizerProfileFutureProvider(widget.identifier));
+    final renderedProfileSession = ref.watch(authSessionKeyProvider);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -54,15 +56,17 @@ class _OrganizerProfileScreenState
         error: (e, _) => _ErrorState(onBack: () => context.pop()),
         data: (organizer) => _Content(
           organizer: organizer,
+          ownerSession: renderedProfileSession,
           coordinatesOpen: _coordinatesOpen,
           onCoordinatesToggle: (open) =>
               setState(() => _coordinatesOpen = open),
           onRefresh: () async {
-            ref.invalidate(organizerProfileFutureProvider(widget.identifier));
             ref.invalidate(
                 organizerEventsControllerProvider(widget.identifier));
             await ref
-                .read(organizerProfileFutureProvider(widget.identifier).future);
+                .read(
+                    organizerProfileFutureProvider(widget.identifier).notifier)
+                .refresh();
           },
         ),
       ),
@@ -72,12 +76,14 @@ class _OrganizerProfileScreenState
 
 class _Content extends ConsumerWidget {
   final OrganizerProfileDto organizer;
+  final AuthSessionKey ownerSession;
   final bool coordinatesOpen;
   final ValueChanged<bool> onCoordinatesToggle;
   final Future<void> Function() onRefresh;
 
   const _Content({
     required this.organizer,
+    required this.ownerSession,
     required this.coordinatesOpen,
     required this.onCoordinatesToggle,
     required this.onRefresh,
@@ -111,6 +117,7 @@ class _Content extends ConsumerWidget {
             SliverToBoxAdapter(
               child: OrganizerIdentityCard(
                 organizer: organizer,
+                ownerSession: ownerSession,
                 liveFollowersCount: liveFollowers,
               ),
             ),
@@ -120,6 +127,7 @@ class _Content extends ConsumerWidget {
             SliverToBoxAdapter(
               child: OrganizerActionBar(
                 organizer: organizer,
+                ownerSession: ownerSession,
                 coordinatesOpen: coordinatesOpen,
                 onCoordinatesToggle: onCoordinatesToggle,
               ),
@@ -151,7 +159,10 @@ class _Content extends ConsumerWidget {
           ],
           body: TabBarView(
             children: [
-              OrganizerActivitiesTab(organizerIdentifier: organizer.uuid),
+              OrganizerActivitiesTab(
+                organizerIdentifier: organizer.uuid,
+                ownerSession: ownerSession,
+              ),
               OrganizerReviewsTab(organizerIdentifier: organizer.uuid),
             ],
           ),

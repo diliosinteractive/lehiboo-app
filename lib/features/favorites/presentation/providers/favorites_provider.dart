@@ -4,6 +4,7 @@ import 'package:lehiboo/features/events/domain/entities/event.dart';
 import '../../../../core/analytics/analytics_event.dart';
 import '../../../../core/analytics/analytics_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
 import '../../data/models/toggle_favorite_result.dart';
 import '../../domain/repositories/favorites_repository.dart';
@@ -13,6 +14,10 @@ import 'favorite_lists_provider.dart';
 class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
   final FavoritesRepository _repository;
   final Ref _ref;
+  final bool _hasActiveAccount;
+
+  int _loadGeneration = 0;
+  int _stateRevision = 0;
 
   /// Set of favorite IDs for O(1) lookup
   final Set<String> _favoriteIds = {};
@@ -20,42 +25,42 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
   /// Current list ID filter (null = all)
   String? _currentListId;
 
-  FavoritesNotifier(this._repository, this._ref)
-      : super(const AsyncValue.loading()) {
-    loadFavorites();
-    // Favorites are user-scoped; reset state on real auth transitions so a
-    // second sign-in on the same app session doesn't show the previous user's
-    // list. Skip the `loading` hop that logout() flips through.
-    _ref.listen<AuthStatus>(
-      authProvider.select((s) => s.status),
-      (previous, next) {
-        final loggedOut = didTransitionToUnauthenticated(previous, next);
-        final loggedIn = next == AuthStatus.authenticated &&
-            previous != AuthStatus.authenticated &&
-            previous != AuthStatus.initial;
-        if (loggedOut) {
-          _favoriteIds.clear();
-          _currentListId = null;
-          state = const AsyncValue.data([]);
-        } else if (loggedIn) {
-          loadFavorites();
-        }
-      },
-    );
+  FavoritesNotifier(
+    this._repository,
+    this._ref, {
+    required bool hasActiveAccount,
+  })  : _hasActiveAccount = hasActiveAccount,
+        super(
+          hasActiveAccount
+              ? const AsyncValue.loading()
+              : const AsyncValue.data([]),
+        ) {
+    if (hasActiveAccount) loadFavorites();
+  }
+
+  void _publish(AsyncValue<List<Event>> next) {
+    if (!mounted) return;
+    state = next;
+    _stateRevision++;
   }
 
   Future<void> loadFavorites({String? listId}) async {
-    // Anonymous users have no favorites — skip the API call
-    final isAuthenticated = _ref.read(isAuthenticatedProvider);
-    if (!isAuthenticated) {
-      state = const AsyncValue.data([]);
+    if (!mounted) return;
+    final requestGeneration = ++_loadGeneration;
+
+    // Anonymous users have no favorites — skip the API call.
+    if (!_hasActiveAccount) {
+      _favoriteIds.clear();
+      _currentListId = null;
+      _publish(const AsyncValue.data([]));
       return;
     }
 
     try {
       _currentListId = listId;
-      state = const AsyncValue.loading();
+      _publish(const AsyncValue.loading());
       final favorites = await _repository.getFavorites(listId: listId);
+      if (!mounted || requestGeneration != _loadGeneration) return;
 
       // Update ID cache
       _favoriteIds.clear();
@@ -63,10 +68,11 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
         _favoriteIds.add(event.id);
       }
 
-      state = AsyncValue.data(favorites);
+      _publish(AsyncValue.data(favorites));
     } catch (e, stack) {
       debugPrint('Error loading favorites: $e');
-      state = AsyncValue.error(e, stack);
+      if (!mounted || requestGeneration != _loadGeneration) return;
+      _publish(AsyncValue.error(e, stack));
     }
   }
 
@@ -98,6 +104,10 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
     final isFav = isFavorite(event.id);
     final wasAdding = !isFav;
 
+    // A load started before this mutation must not overwrite its optimistic
+    // state when it eventually completes.
+    _loadGeneration++;
+
     List<Event> newList;
     if (isFav) {
       newList = currentList.where((e) => e.id != event.id).toList();
@@ -106,11 +116,13 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
       newList = [...currentList, event.copyWith(isFavorite: true)];
       _favoriteIds.add(event.id);
     }
-    state = AsyncValue.data(newList);
+    _publish(AsyncValue.data(newList));
+    final optimisticRevision = _stateRevision;
 
     try {
       final result =
           await _repository.toggleFavorite(eventUuid, listId: listId);
+      if (!mounted) return result;
 
       // Analytics : add_to_wishlist (standard GA4) ou remove_from_wishlist
       // (custom). Le résultat backend `result.isFavorite` est la source de
@@ -148,19 +160,23 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
       await loadFavorites(listId: _currentListId);
 
       // Favourite signal changed — drop the personalized feed (spec §7).
-      _ref.invalidate(personalizedFeedProvider);
+      if (mounted) _ref.invalidate(personalizedFeedProvider);
 
       return result;
     } catch (e, stackTrace) {
       debugPrint('Error toggling favorite: $e');
 
-      // Revert optimistic update
-      if (wasAdding) {
-        _favoriteIds.remove(event.id);
-      } else {
-        _favoriteIds.add(event.id);
+      // Revert only if this optimistic snapshot still owns the state. A
+      // disposed notifier belongs to a previous account; a newer operation
+      // may also have legitimately replaced this snapshot.
+      if (mounted && _stateRevision == optimisticRevision) {
+        if (wasAdding) {
+          _favoriteIds.remove(event.id);
+        } else {
+          _favoriteIds.add(event.id);
+        }
+        _publish(AsyncValue.data(currentList));
       }
-      state = AsyncValue.data(currentList);
 
       Error.throwWithStackTrace(e, stackTrace);
     }
@@ -191,8 +207,10 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
       } else {
         // Sinon, ajouter aux favoris avec la liste
         result = await _repository.addToFavorites(eventUuid, listId: listId);
+        if (!mounted) return result;
         _favoriteIds.add(event.id);
       }
+      if (!mounted) return result;
 
       // Mettre à jour les compteurs
       _ref.read(favoriteListsProvider.notifier).incrementListCount(listId);
@@ -205,7 +223,7 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
       // Favourite signal changed if a new favourite was added (spec §7);
       // pure list moves don't change the set of favourited events but the
       // server-side strata are cheap to invalidate.
-      if (!isFav) {
+      if (!isFav && mounted) {
         _ref.invalidate(personalizedFeedProvider);
       }
 
@@ -231,6 +249,7 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
 
     try {
       await _repository.moveFavoriteToList(eventUuid, newListId);
+      if (!mounted) return true;
 
       // Mettre à jour les compteurs
       if (oldListId != null) {
@@ -288,8 +307,16 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
 
 final favoritesProvider =
     StateNotifierProvider<FavoritesNotifier, AsyncValue<List<Event>>>((ref) {
+  // The opaque dependency forces a fresh blank notifier even for a rapid
+  // A -> B -> A cycle whose final account-id string equals the initial one.
+  ref.watch(authSessionKeyProvider);
+  final hasActiveAccount = ref.watch(authSessionUserIdProvider) != null;
   final repository = ref.watch(favoritesRepositoryProvider);
-  return FavoritesNotifier(repository, ref);
+  return FavoritesNotifier(
+    repository,
+    ref,
+    hasActiveAccount: hasActiveAccount,
+  );
 });
 
 /// Provider filtré par liste sélectionnée

@@ -5,22 +5,24 @@ import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../../auth/presentation/widgets/guest_restriction_dialog.dart';
 import '../providers/organizer_profile_providers.dart';
 
 /// Compact pill-shaped follow button rendered inline next to the organizer
 /// name and verified badge.
 ///
-/// Auth gating: tapping while unauthenticated stores
-/// [PendingOrganizerAction.follow] in [pendingOrganizerActionProvider] and
-/// opens [GuestRestrictionDialog]. The auth-replay listener in
-/// [OrganizerActionBar] picks it back up after login and triggers the
-/// toggle through [followStateControllerProvider] — independently of where
-/// the visible button lives.
+/// Auth gating is awaited here so the resumed action remains bound to this
+/// exact organizer instead of passing through a global replay slot.
 class OrganizerFollowButton extends ConsumerWidget {
   final String organizerUuid;
+  final AuthSessionKey ownerSession;
 
-  const OrganizerFollowButton({super.key, required this.organizerUuid});
+  const OrganizerFollowButton({
+    super.key,
+    required this.organizerUuid,
+    required this.ownerSession,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -76,28 +78,60 @@ class OrganizerFollowButton extends ConsumerWidget {
   }
 
   Future<void> _onTap(WidgetRef ref, BuildContext context) async {
+    if (!identical(ref.read(authSessionKeyProvider), ownerSession)) return;
+    final initiatingOrganizerUuid = organizerUuid;
+    var actionOwner = ownerSession;
     final isAuthenticated = ref.read(authProvider).isAuthenticated;
     if (!isAuthenticated) {
-      ref.read(pendingOrganizerActionProvider.notifier).state =
-          PendingOrganizerAction.follow;
-      GuestRestrictionDialog.show(
-        context,
-        featureName: context.l10n.guestFeatureFollowOrganizer,
+      var sessionTransitions = 0;
+      var lastSession = ownerSession;
+      final subscription = ref.listenManual<AuthSessionKey>(
+        authSessionKeyProvider,
+        (_, next) {
+          if (identical(next, lastSession)) return;
+          lastSession = next;
+          sessionTransitions++;
+        },
       );
-      return;
+      bool allowed;
+      try {
+        allowed = await GuestRestrictionDialog.show(
+          context,
+          featureName: context.l10n.guestFeatureFollowOrganizer,
+        );
+      } finally {
+        subscription.close();
+      }
+      if (!allowed || !context.mounted || sessionTransitions != 1) {
+        return;
+      }
+      final authenticatedOwner = ref.read(authSessionKeyProvider);
+      if (authenticatedOwner.accountId == null) return;
+      actionOwner = authenticatedOwner;
     }
 
-    final wasFollowing = ref
-            .read(followStateControllerProvider(organizerUuid))
-            .valueOrNull
-            ?.isFollowed ??
-        false;
+    final ownerAccountId = actionOwner.accountId;
+    if (ownerAccountId == null ||
+        !identical(ref.read(authSessionKeyProvider), actionOwner) ||
+        organizerUuid != initiatingOrganizerUuid) {
+      return;
+    }
+    final provider = followStateControllerProvider(initiatingOrganizerUuid);
+    final ownerNotifier = ref.read(provider.notifier);
+    final wasFollowing = ref.read(provider).valueOrNull?.isFollowed ?? false;
     try {
-      await ref
-          .read(followStateControllerProvider(organizerUuid).notifier)
-          .toggle();
+      await ownerNotifier.toggle();
+      if (!context.mounted ||
+          !identical(ref.read(authSessionKeyProvider), actionOwner) ||
+          !identical(ref.read(provider.notifier), ownerNotifier)) {
+        return;
+      }
     } catch (error) {
-      if (!context.mounted) return;
+      if (!context.mounted ||
+          !identical(ref.read(authSessionKeyProvider), actionOwner) ||
+          !identical(ref.read(provider.notifier), ownerNotifier)) {
+        return;
+      }
       final fallback = wasFollowing
           ? context.l10n.organizerUnfollowError
           : context.l10n.organizerFollowError;

@@ -12,6 +12,8 @@ import '../../../../core/utils/api_response_handler.dart';
 import '../../../events/data/mappers/event_mapper.dart';
 import '../../../events/domain/entities/event.dart';
 import '../../../events/presentation/utils/open_event.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../data/models/membership_dto.dart';
 import '../providers/membership_state_providers.dart';
 import '../providers/private_events_provider.dart';
@@ -37,14 +39,29 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
   Timer? _searchDebounce;
+  ProviderSubscription<String?>? _sessionSubscription;
+  late final AuthSessionKey _initialSession;
 
   @override
   void initState() {
     super.initState();
+    _initialSession = ref.read(authSessionKeyProvider);
     _scrollController.addListener(_onScroll);
+    _sessionSubscription = ref.listenManual<String?>(
+      authSessionUserIdProvider,
+      (previous, next) {
+        if (previous == next) return;
+        _searchDebounce?.cancel();
+        _searchController.clear();
+      },
+    );
     if (widget.initialOrgFilter != null &&
         widget.initialOrgFilter!.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted ||
+            !identical(ref.read(authSessionKeyProvider), _initialSession)) {
+          return;
+        }
         ref.read(privateEventsOrgFilterProvider.notifier).state =
             widget.initialOrgFilter;
       });
@@ -58,6 +75,7 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
       ..dispose();
     _searchController.dispose();
     _searchDebounce?.cancel();
+    _sessionSubscription?.close();
     super.dispose();
   }
 
@@ -78,6 +96,7 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final ownerSession = ref.watch(authSessionKeyProvider);
     final activeOrgs =
         (ref.watch(myMembershipsListProvider).valueOrNull?.data ??
                 const <MembershipDto>[])
@@ -209,7 +228,10 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
                         );
                       }
                       final event = EventMapper.toEvent(state.events[index]);
-                      return _PrivateEventTile(event: event);
+                      return _PrivateEventTile(
+                        event: event,
+                        ownerSession: ownerSession,
+                      );
                     },
                   ),
                 );
@@ -363,13 +385,22 @@ class _OrgFilterDropdown extends StatelessWidget {
 
 class _PrivateEventTile extends ConsumerWidget {
   final Event event;
+  final AuthSessionKey ownerSession;
 
-  const _PrivateEventTile({required this.event});
+  const _PrivateEventTile({
+    required this.event,
+    required this.ownerSession,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return InkWell(
-      onTap: () => openEvent(context, ref, event),
+      onTap: () => openEvent(
+        context,
+        ref,
+        event,
+        ownerSession: ownerSession,
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(

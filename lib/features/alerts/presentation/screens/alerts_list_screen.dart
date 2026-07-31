@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../../../../features/auth/presentation/providers/auth_session_key_provider.dart';
+import '../../../../features/auth/presentation/widgets/account_bound_route_guard.dart';
 import '../providers/alerts_provider.dart';
 import '../../domain/entities/alert.dart';
 import '../../../../features/search/presentation/providers/filter_provider.dart';
@@ -67,6 +69,7 @@ class _AlertsListScreenState extends ConsumerState<AlertsListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ownerSession = ref.watch(authSessionKeyProvider);
     final alertsAsync = ref.watch(alertsProvider);
     final l10n = context.l10n;
 
@@ -140,7 +143,10 @@ class _AlertsListScreenState extends ConsumerState<AlertsListScreen> {
                           separatorBuilder: (context, index) =>
                               const SizedBox(height: 12),
                           itemBuilder: (context, index) {
-                            return _AlertItemCard(alert: filteredAlerts[index]);
+                            return _AlertItemCard(
+                              alert: filteredAlerts[index],
+                              ownerSession: ownerSession,
+                            );
                           },
                         ),
                       ),
@@ -261,13 +267,33 @@ class _AlertsListScreenState extends ConsumerState<AlertsListScreen> {
   }
 }
 
-class _AlertItemCard extends ConsumerWidget {
+class _AlertItemCard extends ConsumerStatefulWidget {
   final Alert alert;
+  final AuthSessionKey ownerSession;
 
-  const _AlertItemCard({required this.alert});
+  const _AlertItemCard({
+    required this.alert,
+    required this.ownerSession,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_AlertItemCard> createState() => _AlertItemCardState();
+}
+
+class _AlertItemCardState extends ConsumerState<_AlertItemCard> {
+  AuthSessionKey? _deleteOwnerSession;
+  AlertsNotifier? _deleteOwnerNotifier;
+
+  bool _ownsAction(AuthSessionKey owner, AlertsNotifier notifier) {
+    return mounted &&
+        owner.accountId != null &&
+        identical(ref.read(authSessionKeyProvider), owner) &&
+        identical(ref.read(alertsProvider.notifier), notifier);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final alert = widget.alert;
     return Dismissible(
       key: ValueKey(alert.id),
       direction: DismissDirection.endToStart,
@@ -281,38 +307,58 @@ class _AlertItemCard extends ConsumerWidget {
         child: const Icon(Icons.delete_outline, color: Colors.red),
       ),
       confirmDismiss: (direction) async {
+        final ownerSession = widget.ownerSession;
+        if (ownerSession.accountId == null ||
+            !identical(ref.read(authSessionKeyProvider), ownerSession)) {
+          return false;
+        }
+        final ownerNotifier = ref.read(alertsProvider.notifier);
+        if (!_ownsAction(ownerSession, ownerNotifier)) return false;
         final confirmed = await showDialog<bool>(
           context: context,
           builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text(context.l10n.alertsDeleteTitle),
-              content: Text(context.l10n.alertsDeleteBody),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(context.l10n.commonCancel),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
-                  child: Text(context.l10n.messagesDeleteAction),
-                ),
-              ],
+            return AccountBoundRouteGuard<bool>(
+              ownerAccountId: ownerSession.accountId,
+              ownerSession: ownerSession,
+              invalidResult: false,
+              builder: (context) => AlertDialog(
+                title: Text(context.l10n.alertsDeleteTitle),
+                content: Text(context.l10n.alertsDeleteBody),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: Text(context.l10n.commonCancel),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    style: TextButton.styleFrom(foregroundColor: Colors.red),
+                    child: Text(context.l10n.messagesDeleteAction),
+                  ),
+                ],
+              ),
             );
           },
         );
-        if (confirmed != true || !context.mounted) return false;
+        if (confirmed != true ||
+            !context.mounted ||
+            !_ownsAction(ownerSession, ownerNotifier)) {
+          return false;
+        }
 
         try {
-          await ref.read(alertsProvider.notifier).deleteAlert(alert.id);
-          if (!context.mounted) return false;
+          await ownerNotifier.deleteAlert(alert.id);
+          if (!context.mounted || !_ownsAction(ownerSession, ownerNotifier)) {
+            return false;
+          }
+          _deleteOwnerSession = ownerSession;
+          _deleteOwnerNotifier = ownerNotifier;
           PetitBooToast.success(
             context,
             context.l10n.alertsDeleted(alert.name),
           );
           return true;
         } catch (error) {
-          if (context.mounted) {
+          if (context.mounted && _ownsAction(ownerSession, ownerNotifier)) {
             PetitBooToast.error(
               context,
               ApiResponseHandler.extractError(
@@ -325,10 +371,24 @@ class _AlertItemCard extends ConsumerWidget {
         }
       },
       onDismissed: (direction) {
-        ref.read(alertsProvider.notifier).removeDeletedAlert(alert.id);
+        final ownerSession = _deleteOwnerSession;
+        final ownerNotifier = _deleteOwnerNotifier;
+        _deleteOwnerSession = null;
+        _deleteOwnerNotifier = null;
+        if (ownerSession == null ||
+            ownerNotifier == null ||
+            !_ownsAction(ownerSession, ownerNotifier)) {
+          return;
+        }
+        ownerNotifier.removeDeletedAlert(alert.id);
       },
       child: GestureDetector(
+        key: ValueKey('alert-card-${alert.id}'),
         onTap: () {
+          final ownerSession = widget.ownerSession;
+          if (!identical(ref.read(authSessionKeyProvider), ownerSession)) {
+            return;
+          }
           ref.read(eventFilterProvider.notifier).applyFilters(alert.filter);
           context.push('/search');
         },

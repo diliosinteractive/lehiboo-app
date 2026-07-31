@@ -3,19 +3,40 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
+import 'package:lehiboo/features/auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../domain/entities/favorite_list.dart';
 import '../providers/favorite_lists_provider.dart';
 import 'list_color_picker.dart';
 
 /// Dialog pour créer une nouvelle liste de favoris
 class CreateListDialog extends ConsumerStatefulWidget {
-  const CreateListDialog({super.key});
+  const CreateListDialog({
+    super.key,
+    required this.ownerSession,
+  });
+
+  final AuthSessionKey ownerSession;
 
   /// Affiche le dialog et retourne la liste créée ou null si annulé
-  static Future<FavoriteList?> show(BuildContext context) {
+  static Future<FavoriteList?> show(
+    BuildContext context, {
+    required AuthSessionKey ownerSession,
+  }) {
     return showDialog<FavoriteList>(
       context: context,
-      builder: (context) => const CreateListDialog(),
+      builder: (context) {
+        final ownerAccountId = ownerSession.accountId;
+        if (ownerAccountId == null) return const SizedBox.shrink();
+        return AccountBoundRouteGuard<FavoriteList>(
+          ownerAccountId: ownerAccountId,
+          ownerSession: ownerSession,
+          builder: (_) => CreateListDialog(
+            ownerSession: ownerSession,
+          ),
+        );
+      },
     );
   }
 
@@ -31,6 +52,33 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
   Color _selectedColor = FavoriteListColors.values['orange']!;
   IconData _selectedIcon = FavoriteListIcons.values['heart']!;
   bool _isLoading = false;
+  late final AuthSessionKey _ownerSession;
+  late final String? _ownerAccountId;
+  late final FavoriteListsNotifier _ownerNotifier;
+  bool _sessionInvalid = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ownerSession = widget.ownerSession;
+    _ownerAccountId = _ownerSession.accountId;
+    _ownerNotifier = ref.read(favoriteListsProvider.notifier);
+  }
+
+  bool get _ownsCurrentAccount =>
+      !_sessionInvalid &&
+      _ownerAccountId != null &&
+      ref.read(authSessionUserIdProvider) == _ownerAccountId &&
+      identical(ref.read(authSessionKeyProvider), _ownerSession) &&
+      identical(ref.read(favoriteListsProvider.notifier), _ownerNotifier);
+
+  void _handleSessionChange(AuthSessionKey nextSession) {
+    if (identical(nextSession, _ownerSession) || _sessionInvalid) return;
+    _sessionInvalid = true;
+    _nameController.clear();
+    _descriptionController.clear();
+    if (mounted) setState(() => _isLoading = false);
+  }
 
   @override
   void dispose() {
@@ -40,7 +88,9 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
   }
 
   Future<void> _createList() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_ownsCurrentAccount || _formKey.currentState?.validate() != true) {
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -48,23 +98,23 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
     final iconKey = FavoriteListIcons.toIconKey(_selectedIcon);
 
     try {
-      final newList = await ref.read(favoriteListsProvider.notifier).createList(
-            name: _nameController.text.trim(),
-            description: _descriptionController.text.trim().isEmpty
-                ? null
-                : _descriptionController.text.trim(),
-            color: colorKey,
-            icon: iconKey,
-          );
+      final newList = await _ownerNotifier.createList(
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+        color: colorKey,
+        icon: iconKey,
+      );
 
-      if (!mounted) return;
+      if (!mounted || !_ownsCurrentAccount) return;
       setState(() => _isLoading = false);
       if (newList != null) {
         HapticFeedback.mediumImpact();
         Navigator.of(context).pop(newList);
       }
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || !_ownsCurrentAccount) return;
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -82,6 +132,19 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AuthSessionKey>(authSessionKeyProvider, (_, next) {
+      _handleSessionChange(next);
+    });
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    final currentSession = ref.watch(authSessionKeyProvider);
+    if (_ownerAccountId == null ||
+        currentAccountId != _ownerAccountId ||
+        !identical(currentSession, _ownerSession) ||
+        _sessionInvalid) {
+      return const SizedBox.shrink(
+        key: Key('create-favorite-list-session-invalid'),
+      );
+    }
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: SingleChildScrollView(
@@ -99,7 +162,7 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _selectedColor.withOpacity(0.1),
+                        color: _selectedColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(

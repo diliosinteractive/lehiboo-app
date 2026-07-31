@@ -4,37 +4,45 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/analytics/analytics_event.dart';
 import '../../../../core/analytics/analytics_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../domain/entities/alert.dart';
 import '../../domain/repositories/alerts_repository.dart';
 import '../../../search/domain/models/event_filter.dart';
 
 final alertsProvider =
     StateNotifierProvider<AlertsNotifier, AsyncValue<List<Alert>>>((ref) {
-  final authenticatedUserId = ref.watch(
-    authProvider.select(
-      (state) => state.isAuthenticated ? state.user?.id : null,
-    ),
-  );
+  final ownerSession = ref.watch(authSessionKeyProvider);
   return AlertsNotifier(
     ref.watch(alertsRepositoryProvider),
     ref,
-    isAuthenticated: authenticatedUserId != null,
+    ownerAccountId: ownerSession.accountId,
+    ownerSession: ownerSession,
   );
 });
+
+class AlertSessionChangedException implements Exception {
+  const AlertSessionChangedException();
+
+  @override
+  String toString() => 'The alert action no longer owns the active account.';
+}
 
 class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
   final AlertsRepository _repository;
   final Ref _ref;
-  final bool _isAuthenticated;
+  final String? _ownerAccountId;
+  final AuthSessionKey? _ownerSession;
   Future<void>? _loadInFlight;
 
   AlertsNotifier(
     this._repository,
     this._ref, {
-    required bool isAuthenticated,
-  })  : _isAuthenticated = isAuthenticated,
+    required String? ownerAccountId,
+    AuthSessionKey? ownerSession,
+  })  : _ownerAccountId = ownerAccountId,
+        _ownerSession = ownerSession,
         super(const AsyncValue.data([])) {
-    if (_isAuthenticated) {
+    if (_ownerAccountId != null) {
       // Initial loading is fire-and-forget. Manual refresh callers await
       // [loadAlerts] and receive failures so aggregate refresh can report them.
       unawaited(loadAlerts().catchError((_) {}));
@@ -42,7 +50,7 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
   }
 
   Future<void> loadAlerts() {
-    if (!_isAuthenticated) {
+    if (_ownerAccountId == null) {
       state = const AsyncValue.data([]);
       return Future.value();
     }
@@ -65,10 +73,10 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
     try {
       state = const AsyncLoading<List<Alert>>().copyWithPrevious(previous);
       final alerts = await _repository.getAlerts();
-      if (!mounted) return;
+      if (!_ownsCurrentAccount) return;
       state = AsyncValue.data(alerts);
     } catch (e, stack) {
-      if (mounted) {
+      if (_ownsCurrentAccount) {
         state = AsyncError<List<Alert>>(e, stack).copyWithPrevious(previous);
       }
       rethrow;
@@ -81,6 +89,7 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
     bool enablePush = true,
     bool enableEmail = false,
   }) async {
+    _requireCurrentAccount();
     final previous = state;
     try {
       final newAlert = await _repository.createAlert(
@@ -90,7 +99,7 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
         enableEmail: enableEmail,
       );
 
-      if (!mounted) return;
+      _requireCurrentAccount();
       final currentList = state.valueOrNull ?? [];
       state = AsyncValue.data([newAlert, ...currentList]);
 
@@ -103,7 +112,7 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
         },
       );
     } catch (e, stack) {
-      if (mounted) {
+      if (_ownsCurrentAccount) {
         state = AsyncError<List<Alert>>(e, stack).copyWithPrevious(previous);
       }
       // Callers own the action-specific feedback. Preserve the original
@@ -113,17 +122,36 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
   }
 
   Future<void> deleteAlert(String id) async {
+    _requireCurrentAccount();
     // Let the dismiss animation complete before mutating the list. More
     // importantly, propagate failures so the UI cannot announce a deletion
     // that the backend rejected.
     await _repository.deleteAlert(id);
+    _requireCurrentAccount();
   }
 
   void removeDeletedAlert(String id) {
-    if (!mounted) return;
+    if (!_ownsCurrentAccount) return;
     final currentList = state.valueOrNull ?? [];
     state =
         AsyncValue.data(currentList.where((alert) => alert.id != id).toList());
+  }
+
+  bool get _ownsCurrentAccount {
+    final ownerAccountId = _ownerAccountId;
+    if (!mounted || ownerAccountId == null) return false;
+    final ownerSession = _ownerSession;
+    if (ownerSession != null) {
+      return ownerSession.accountId == ownerAccountId &&
+          identical(_ref.read(authSessionKeyProvider), ownerSession);
+    }
+    // Compatibility seam for focused notifier tests. The application provider
+    // always supplies the opaque session key above.
+    return _ref.read(authSessionUserIdProvider) == ownerAccountId;
+  }
+
+  void _requireCurrentAccount() {
+    if (!_ownsCurrentAccount) throw const AlertSessionChangedException();
   }
 
   /// Helper to check if a filter combination is already saved

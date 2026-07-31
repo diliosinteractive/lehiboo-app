@@ -206,6 +206,12 @@ abstract class AppLocalizations {
   /// **'signaler un avis'**
   String get guestFeatureReportReview;
 
+  /// No description provided for @guestFeatureVoteReview.
+  ///
+  /// In fr, this message translates to:
+  /// **'voter sur un avis'**
+  String get guestFeatureVoteReview;
+
   /// No description provided for @guestFeatureSaveSearch.
   ///
   /// In fr, this message translates to:

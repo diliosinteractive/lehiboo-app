@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/l10n/l10n.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../domain/entities/trip_plan.dart';
 
 /// Card displaying a trip plan in the profile list
@@ -12,10 +14,14 @@ class TripPlanListCard extends StatefulWidget {
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final String ownerAccountId;
+  final AuthSessionKey ownerSession;
 
   const TripPlanListCard({
     super.key,
     required this.plan,
+    required this.ownerAccountId,
+    required this.ownerSession,
     this.onTap,
     this.onEdit,
     this.onDelete,
@@ -573,41 +579,45 @@ class _TripPlanListCardState extends State<TripPlanListCard> {
     launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 
-  void _confirmDelete() {
+  Future<void> _confirmDelete() async {
     HapticFeedback.mediumImpact();
-    showDialog(
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.l10n.tripPlansDeleteDialogTitle),
-        content: Text(
-          context.l10n.tripPlansDeleteDialogBody(_planTitle(context)),
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              context.l10n.commonCancel,
-              style: TextStyle(color: Colors.grey[600]),
-            ),
+      builder: (context) => AccountBoundRouteGuard<bool>(
+        ownerAccountId: widget.ownerAccountId,
+        ownerSession: widget.ownerSession,
+        invalidResult: false,
+        builder: (context) => AlertDialog(
+          title: Text(context.l10n.tripPlansDeleteDialogTitle),
+          content: Text(
+            context.l10n.tripPlansDeleteDialogBody(_planTitle(context)),
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              widget.onDelete?.call();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                context.l10n.commonCancel,
+                style: TextStyle(color: Colors.grey[600]),
               ),
             ),
-            child: Text(context.l10n.commonDelete),
-          ),
-        ],
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(context.l10n.commonDelete),
+            ),
+          ],
+        ),
       ),
     );
+    if (confirmed == true && mounted) widget.onDelete?.call();
   }
 
   String _formatDate(BuildContext context, DateTime date) {

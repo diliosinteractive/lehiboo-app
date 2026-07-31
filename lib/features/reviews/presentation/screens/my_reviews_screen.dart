@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/widgets/feedback/hb_feedback.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../domain/entities/user_review.dart';
 import '../providers/reviews_actions_provider.dart';
 import '../providers/user_reviews_provider.dart';
@@ -49,33 +50,86 @@ class _MyReviewsScreenState extends ConsumerState<MyReviewsScreen> {
     }
   }
 
-  Future<void> _handleEdit(UserReview review) async {
+  Future<void> _handleEdit(
+    UserReview review,
+    AuthSessionKey ownerSession,
+  ) async {
+    if (ownerSession.accountId == null ||
+        !identical(ref.read(authSessionKeyProvider), ownerSession)) {
+      return;
+    }
+    final actionsNotifier = ref.read(reviewsActionsProvider.notifier);
+    final userReviewsNotifier = ref.read(userReviewsProvider.notifier);
     final updated = await WriteReviewSheet.showEdit(
       context,
       review: review,
       eventSlug: review.eventSlug,
       eventTitle: review.eventTitle,
+      ownerSession: ownerSession,
     );
+    if (!mounted ||
+        !identical(ref.read(authSessionKeyProvider), ownerSession) ||
+        !identical(
+          ref.read(reviewsActionsProvider.notifier),
+          actionsNotifier,
+        ) ||
+        !identical(
+          ref.read(userReviewsProvider.notifier),
+          userReviewsNotifier,
+        )) {
+      return;
+    }
     if (updated != null) {
       // L'action provider invalide déjà — refresh explicite par sécurité.
-      ref.read(userReviewsProvider.notifier).refresh();
+      userReviewsNotifier.refresh();
     }
   }
 
-  Future<void> _handleDelete(UserReview review) async {
-    final confirmed = await DeleteReviewDialog.show(context);
-    if (!confirmed || !mounted) return;
+  Future<void> _handleDelete(
+    UserReview review,
+    AuthSessionKey ownerSession,
+  ) async {
+    if (ownerSession.accountId == null ||
+        !identical(ref.read(authSessionKeyProvider), ownerSession)) {
+      return;
+    }
+    final actionsNotifier = ref.read(reviewsActionsProvider.notifier);
+    final confirmed = await DeleteReviewDialog.show(
+      context,
+      ownerSession: ownerSession,
+    );
+    if (!confirmed ||
+        !mounted ||
+        !identical(ref.read(authSessionKeyProvider), ownerSession) ||
+        !identical(
+          ref.read(reviewsActionsProvider.notifier),
+          actionsNotifier,
+        )) {
+      return;
+    }
 
-    final result = await ref.read(reviewsActionsProvider.notifier).deleteReview(
-          reviewUuid: review.uuid,
-          eventSlug: review.eventSlug,
-        );
+    final userReviewsNotifier = ref.read(userReviewsProvider.notifier);
+    final result = await actionsNotifier.deleteReview(
+      reviewUuid: review.uuid,
+      eventSlug: review.eventSlug,
+    );
 
-    if (!mounted) return;
+    if (!mounted ||
+        !identical(ref.read(authSessionKeyProvider), ownerSession) ||
+        !identical(
+          ref.read(reviewsActionsProvider.notifier),
+          actionsNotifier,
+        ) ||
+        !identical(
+          ref.read(userReviewsProvider.notifier),
+          userReviewsNotifier,
+        )) {
+      return;
+    }
 
     switch (result) {
       case ReviewActionSuccess():
-        ref.read(userReviewsProvider.notifier).removeLocal(review.uuid);
+        userReviewsNotifier.removeLocal(review.uuid);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(context.l10n.reviewsDeleteSuccess),
@@ -115,6 +169,7 @@ class _MyReviewsScreenState extends ConsumerState<MyReviewsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final viewSession = ref.watch(authSessionKeyProvider);
     final state = ref.watch(userReviewsProvider);
     final items = state.items;
 
@@ -131,12 +186,12 @@ class _MyReviewsScreenState extends ConsumerState<MyReviewsScreen> {
       body: RefreshIndicator(
         color: HbColors.brandPrimary,
         onRefresh: () => ref.read(userReviewsProvider.notifier).refresh(),
-        child: _buildBody(state),
+        child: _buildBody(state, viewSession),
       ),
     );
   }
 
-  Widget _buildBody(UserReviewsState state) {
+  Widget _buildBody(UserReviewsState state, AuthSessionKey viewSession) {
     if (state.isLoading && state.items.isEmpty) {
       return const Center(
         child: CircularProgressIndicator(color: HbColors.brandPrimary),
@@ -228,10 +283,18 @@ class _MyReviewsScreenState extends ConsumerState<MyReviewsScreen> {
             child: UserReviewCard(
               review: review,
               onTap: review.eventSlug.isNotEmpty
-                  ? () => context.push('/event/${review.eventSlug}')
+                  ? () {
+                      if (!identical(
+                        ref.read(authSessionKeyProvider),
+                        viewSession,
+                      )) {
+                        return;
+                      }
+                      context.push('/event/${review.eventSlug}');
+                    }
                   : null,
-              onEdit: () => _handleEdit(review),
-              onDelete: () => _handleDelete(review),
+              onEdit: () => _handleEdit(review, viewSession),
+              onDelete: () => _handleDelete(review, viewSession),
             ),
           ),
         );

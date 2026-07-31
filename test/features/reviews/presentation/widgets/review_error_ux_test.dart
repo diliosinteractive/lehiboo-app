@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lehiboo/core/l10n/app_locale.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/reviews/domain/entities/can_review_result.dart';
 import 'package:lehiboo/features/reviews/domain/entities/paginated_reviews.dart';
 import 'package:lehiboo/features/reviews/domain/entities/review.dart';
@@ -183,7 +184,11 @@ Finder _reviewCount(String value) {
 
 Widget _app(ReviewsRepository repository, Widget home) {
   return ProviderScope(
-    overrides: [reviewsRepositoryProvider.overrideWithValue(repository)],
+    overrides: [
+      reviewsRepositoryProvider.overrideWithValue(repository),
+      authSessionUserIdProvider.overrideWithValue('test-user'),
+      isAuthenticatedProvider.overrideWithValue(true),
+    ],
     child: MaterialApp(
       locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,

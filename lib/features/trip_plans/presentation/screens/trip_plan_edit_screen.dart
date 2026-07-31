@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../domain/entities/trip_plan.dart';
 import '../providers/trip_plans_provider.dart';
 
@@ -26,6 +28,11 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
   bool _isLoading = false;
   bool _hasChanges = false;
   bool _initialized = false;
+  late final String? _ownerAccountId;
+  late final TripPlansNotifier _ownerNotifier;
+  ProviderSubscription<String?>? _sessionSubscription;
+  bool _sessionInvalid = false;
+  int _sessionGeneration = 0;
 
   static const Color _accentColor = Color(0xFF27AE60);
 
@@ -33,24 +40,71 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
   void initState() {
     super.initState();
     _titleController = TextEditingController();
+    _ownerAccountId = ref.read(authSessionUserIdProvider);
+    _ownerNotifier = ref.read(tripPlansProvider.notifier);
+    _sessionInvalid = _ownerAccountId == null;
+    _sessionSubscription = ref.listenManual<String?>(
+      authSessionUserIdProvider,
+      (_, next) {
+        if (next != _ownerAccountId) _invalidateSession();
+      },
+    );
   }
 
   void _initFromPlan(TripPlan plan) {
-    if (_initialized) return;
+    if (_initialized || !_ownsSession()) return;
     _initialized = true;
     _titleController.text = plan.title;
     _selectedDate = plan.plannedDate;
     _stops = List.from(plan.stops);
   }
 
+  bool _ownsSession() {
+    return mounted &&
+        !_sessionInvalid &&
+        _ownerAccountId != null &&
+        ref.read(authSessionUserIdProvider) == _ownerAccountId &&
+        identical(ref.read(tripPlansProvider.notifier), _ownerNotifier);
+  }
+
+  bool _ownsAction(int generation, TripPlansNotifier notifier) {
+    return generation == _sessionGeneration &&
+        identical(notifier, _ownerNotifier) &&
+        _ownsSession();
+  }
+
+  void _invalidateSession() {
+    if (_sessionInvalid) return;
+    _sessionInvalid = true;
+    _sessionGeneration++;
+    _titleController.clear();
+    _selectedDate = null;
+    _stops = [];
+    _isLoading = false;
+    _hasChanges = false;
+    _initialized = false;
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    _sessionSubscription?.close();
     _titleController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_sessionInvalid ||
+        _ownerAccountId == null ||
+        currentAccountId != _ownerAccountId) {
+      return const Scaffold(
+        key: Key('trip-plan-edit-session-invalid'),
+        body: SizedBox.shrink(),
+      );
+    }
+
     final plansAsync = ref.watch(tripPlansProvider);
 
     return plansAsync.when(
@@ -110,9 +164,12 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
 
         // Initialize form data from plan
         if (!_initialized) {
+          final generation = _sessionGeneration;
+          final notifier = _ownerNotifier;
           WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!_ownsAction(generation, notifier)) return;
             _initFromPlan(plan);
-            setState(() {});
+            if (mounted) setState(() {});
           });
         }
 
@@ -400,6 +457,13 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
   }
 
   void _onReorder(int oldIndex, int newIndex) {
+    if (!_ownsSession() ||
+        oldIndex < 0 ||
+        oldIndex >= _stops.length ||
+        newIndex < 0 ||
+        newIndex > _stops.length) {
+      return;
+    }
     HapticFeedback.mediumImpact();
     setState(() {
       if (newIndex > oldIndex) {
@@ -418,6 +482,10 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
   }
 
   Future<void> _pickDate() async {
+    if (!_ownsSession()) return;
+    final generation = _sessionGeneration;
+    final notifier = _ownerNotifier;
+    final ownerAccountId = _ownerAccountId!;
     HapticFeedback.selectionClick();
     final date = await showDatePicker(
       context: context,
@@ -425,20 +493,24 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: _accentColor,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Color(0xFF2D3748),
+        return AccountBoundRouteGuard<DateTime>(
+          ownerAccountId: ownerAccountId,
+          builder: (context) => Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: const ColorScheme.light(
+                primary: _accentColor,
+                onPrimary: Colors.white,
+                surface: Colors.white,
+                onSurface: Color(0xFF2D3748),
+              ),
             ),
+            child: child!,
           ),
-          child: child!,
         );
       },
     );
 
+    if (!_ownsAction(generation, notifier)) return;
     if (date != null && date != _selectedDate) {
       setState(() {
         _selectedDate = date;
@@ -448,8 +520,8 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
   }
 
   void _checkChanges() {
-    final plan =
-        ref.read(tripPlansProvider.notifier).getTripPlan(widget.planUuid);
+    if (!_ownsSession()) return;
+    final plan = _ownerNotifier.getTripPlan(widget.planUuid);
     if (plan == null) return;
 
     final titleChanged = _titleController.text != plan.title;
@@ -470,28 +542,35 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
   }
 
   Future<void> _onSave() async {
-    if (!_hasChanges) return;
+    if (!_hasChanges || !_ownsSession()) return;
+
+    final generation = _sessionGeneration;
+    final notifier = _ownerNotifier;
+    final title = _titleController.text.trim();
+    final plannedDate = _selectedDate;
+    final stopsOrder = _stops
+        .where((stop) => stop.eventUuid != null)
+        .map((stop) => stop.eventUuid!)
+        .toList(growable: false);
+    final l10n = context.l10n;
+    final updatedMessage = l10n.tripPlanEditUpdatedSnack;
+    final updateFailedMessage = l10n.tripPlanUpdateFailed;
 
     HapticFeedback.mediumImpact();
     setState(() => _isLoading = true);
 
     try {
-      final stopsOrder = _stops
-          .where((s) => s.eventUuid != null)
-          .map((s) => s.eventUuid!)
-          .toList();
+      await notifier.updateTripPlan(
+        uuid: widget.planUuid,
+        title: title,
+        plannedDate: plannedDate,
+        stopsOrder: stopsOrder.isNotEmpty ? stopsOrder : null,
+      );
 
-      await ref.read(tripPlansProvider.notifier).updateTripPlan(
-            uuid: widget.planUuid,
-            title: _titleController.text.trim(),
-            plannedDate: _selectedDate,
-            stopsOrder: stopsOrder.isNotEmpty ? stopsOrder : null,
-          );
-
-      if (mounted) {
+      if (mounted && _ownsAction(generation, notifier)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.tripPlanEditUpdatedSnack),
+            content: Text(updatedMessage),
             behavior: SnackBarBehavior.floating,
             backgroundColor: _accentColor,
             shape: RoundedRectangleBorder(
@@ -502,14 +581,14 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
         context.pop();
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && _ownsAction(generation, notifier)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              context.l10n.tripPlanEditErrorWithMessage(
+              l10n.tripPlanEditErrorWithMessage(
                 ApiResponseHandler.extractError(
                   e,
-                  fallback: context.l10n.tripPlanUpdateFailed,
+                  fallback: updateFailedMessage,
                 ),
               ),
             ),
@@ -522,34 +601,42 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
         );
       }
     } finally {
-      if (mounted) {
+      if (_ownsAction(generation, notifier)) {
         setState(() => _isLoading = false);
       }
     }
   }
 
-  void _onBack(BuildContext context) {
-    if (_hasChanges) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(context.l10n.tripPlanEditDiscardChangesTitle),
-          content: Text(context.l10n.tripPlanEditDiscardChangesBody),
+  Future<void> _onBack(BuildContext context) async {
+    if (!_ownsSession()) return;
+    if (!_hasChanges) {
+      context.pop();
+      return;
+    }
+
+    final generation = _sessionGeneration;
+    final notifier = _ownerNotifier;
+    final ownerAccountId = _ownerAccountId!;
+    final shouldDiscard = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AccountBoundRouteGuard<bool>(
+        ownerAccountId: ownerAccountId,
+        invalidResult: false,
+        builder: (guardedContext) => AlertDialog(
+          title: Text(guardedContext.l10n.tripPlanEditDiscardChangesTitle),
+          content: Text(guardedContext.l10n.tripPlanEditDiscardChangesBody),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogContext).pop(false),
               child: Text(
-                context.l10n.commonContinue,
+                guardedContext.l10n.commonContinue,
                 style: TextStyle(color: Colors.grey[600]),
               ),
             ),
             ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                context.pop();
-              },
+              onPressed: () => Navigator.of(dialogContext).pop(true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _accentColor,
                 foregroundColor: Colors.white,
@@ -557,12 +644,16 @@ class _TripPlanEditScreenState extends ConsumerState<TripPlanEditScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: Text(context.l10n.tripPlanEditDiscard),
+              child: Text(guardedContext.l10n.tripPlanEditDiscard),
             ),
           ],
         ),
-      );
-    } else {
+      ),
+    );
+
+    if (context.mounted &&
+        shouldDiscard == true &&
+        _ownsAction(generation, notifier)) {
       context.pop();
     }
   }

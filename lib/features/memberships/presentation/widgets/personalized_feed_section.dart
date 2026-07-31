@@ -10,6 +10,7 @@ import '../../../events/domain/entities/event.dart';
 import '../../../events/domain/entities/event_submodels.dart';
 import '../../../home/presentation/widgets/event_card.dart';
 import '../../../home/presentation/widgets/home_section_title.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../data/models/personalized_feed_dto.dart';
 import '../providers/personalized_feed_provider.dart';
 
@@ -214,6 +215,7 @@ class PersonalizedFeedSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final feedAsync = ref.watch(personalizedFeedProvider);
+    final renderedEventsSession = ref.watch(authSessionKeyProvider);
 
     return feedAsync.when(
       skipError: true,
@@ -269,6 +271,7 @@ class PersonalizedFeedSection extends ConsumerWidget {
                       width: 200,
                       child: EventCard(
                         activity: item.activity,
+                        ownerSession: renderedEventsSession,
                         isCompact: true,
                         isToday:
                             _isSameDate(item.displaySlot.startDateTime, now),

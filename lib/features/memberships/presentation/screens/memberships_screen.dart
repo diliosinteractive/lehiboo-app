@@ -7,6 +7,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../data/models/membership_dto.dart';
 import '../providers/membership_state_providers.dart';
 import '../providers/memberships_screen_providers.dart';
@@ -34,6 +36,7 @@ class _MembershipsScreenState extends ConsumerState<MembershipsScreen>
   late final TabController _tabController;
   final _searchController = TextEditingController();
   Timer? _searchDebounce;
+  ProviderSubscription<String?>? _sessionSubscription;
 
   @override
   void initState() {
@@ -42,6 +45,14 @@ class _MembershipsScreenState extends ConsumerState<MembershipsScreen>
       length: 4,
       vsync: this,
       initialIndex: _resolveInitialIndex(widget.initialTab),
+    );
+    _sessionSubscription = ref.listenManual<String?>(
+      authSessionUserIdProvider,
+      (previous, next) {
+        if (previous == next) return;
+        _searchDebounce?.cancel();
+        _searchController.clear();
+      },
     );
   }
 
@@ -60,6 +71,7 @@ class _MembershipsScreenState extends ConsumerState<MembershipsScreen>
     _tabController.dispose();
     _searchController.dispose();
     _searchDebounce?.cancel();
+    _sessionSubscription?.close();
     super.dispose();
   }
 
@@ -71,11 +83,9 @@ class _MembershipsScreenState extends ConsumerState<MembershipsScreen>
   }
 
   Future<void> _refresh() async {
-    ref.invalidate(myMembershipsListProvider);
-    ref.invalidate(myInvitationsProvider);
     await Future.wait([
-      ref.read(myMembershipsListProvider.future),
-      ref.read(myInvitationsProvider.future),
+      ref.read(myMembershipsListProvider.notifier).refresh(),
+      ref.read(myInvitationsProvider.notifier).refresh(),
     ]);
   }
 
@@ -85,6 +95,7 @@ class _MembershipsScreenState extends ConsumerState<MembershipsScreen>
     final listAsync = ref.watch(myMembershipsListProvider);
     final invitationsAsync = ref.watch(myInvitationsProvider);
     final searchQuery = ref.watch(membershipsSearchProvider).toLowerCase();
+    final renderedMembershipsSession = ref.watch(authSessionKeyProvider);
 
     final all = listAsync.valueOrNull?.data ?? const <MembershipDto>[];
     final filtered = searchQuery.isEmpty
@@ -179,15 +190,18 @@ class _MembershipsScreenState extends ConsumerState<MembershipsScreen>
             children: [
               _MembershipList(
                 items: active,
+                ownerSession: renderedMembershipsSession,
                 emptyCopy: l10n.membershipEmptyActive,
                 showDiscoverCta: true,
               ),
               _MembershipList(
                 items: pending,
+                ownerSession: renderedMembershipsSession,
                 emptyCopy: l10n.membershipEmptyPending,
               ),
               _MembershipList(
                 items: rejected,
+                ownerSession: renderedMembershipsSession,
                 emptyCopy: l10n.membershipEmptyRejected,
               ),
               _InvitationsList(
@@ -204,11 +218,13 @@ class _MembershipsScreenState extends ConsumerState<MembershipsScreen>
 
 class _MembershipList extends StatelessWidget {
   final List<MembershipDto> items;
+  final AuthSessionKey ownerSession;
   final String emptyCopy;
   final bool showDiscoverCta;
 
   const _MembershipList({
     required this.items,
+    required this.ownerSession,
     required this.emptyCopy,
     this.showDiscoverCta = false,
   });
@@ -256,7 +272,10 @@ class _MembershipList extends StatelessWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(vertical: 6),
       itemCount: items.length,
-      itemBuilder: (context, index) => MembershipCard(membership: items[index]),
+      itemBuilder: (context, index) => MembershipCard(
+        membership: items[index],
+        ownerSession: ownerSession,
+      ),
     );
   }
 }

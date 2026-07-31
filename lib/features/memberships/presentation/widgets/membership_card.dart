@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../../partners/presentation/widgets/organizer_avatar.dart';
 import '../../data/models/membership_dto.dart';
 import '../providers/membership_state_providers.dart';
@@ -20,8 +21,13 @@ import 'organizer_join_button.dart';
 /// - `rejected` → Refaire une demande + Voir la fiche
 class MembershipCard extends ConsumerWidget {
   final MembershipDto membership;
+  final AuthSessionKey ownerSession;
 
-  const MembershipCard({super.key, required this.membership});
+  const MembershipCard({
+    super.key,
+    required this.membership,
+    required this.ownerSession,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -101,7 +107,15 @@ class MembershipCard extends ConsumerWidget {
                 icon: Icons.open_in_new,
                 onTap: orgUuid.isEmpty
                     ? null
-                    : () => context.push('/organizers/$orgUuid'),
+                    : () {
+                        if (!identical(
+                          ref.read(authSessionKeyProvider),
+                          ownerSession,
+                        )) {
+                          return;
+                        }
+                        context.push('/organizers/$orgUuid');
+                      },
               ),
               if (membership.status == MembershipStatus.active)
                 _OutlinedAction(
@@ -109,14 +123,28 @@ class MembershipCard extends ConsumerWidget {
                   icon: Icons.lock_outline,
                   onTap: orgUuid.isEmpty
                       ? null
-                      : () => context.push('/me/private-events?org=$orgUuid'),
+                      : () {
+                          if (!identical(
+                            ref.read(authSessionKeyProvider),
+                            ownerSession,
+                          )) {
+                            return;
+                          }
+                          context.push('/me/private-events?org=$orgUuid');
+                        },
                 ),
               SizedBox(
                 width: 180,
                 child: _PrimaryAction(
                   membership: membership,
                   isInFlight: isInFlight,
-                  onAction: () => _onPrimary(context, ref, orgUuid, orgName),
+                  onAction: () => _onPrimary(
+                    context,
+                    ref,
+                    orgUuid,
+                    orgName,
+                    ownerSession,
+                  ),
                 ),
               ),
             ],
@@ -159,15 +187,38 @@ class MembershipCard extends ConsumerWidget {
     WidgetRef ref,
     String orgUuid,
     String orgName,
+    AuthSessionKey ownerSession,
   ) {
-    if (orgUuid.isEmpty) return;
+    if (orgUuid.isEmpty ||
+        ownerSession.accountId == null ||
+        !identical(ref.read(authSessionKeyProvider), ownerSession)) {
+      return;
+    }
     switch (membership.status) {
       case MembershipStatus.pending:
-        confirmAndCancelMembership(context, ref, orgUuid, orgName);
+        confirmAndCancelMembership(
+          context,
+          ref,
+          orgUuid,
+          orgName,
+          ownerSession: ownerSession,
+        );
       case MembershipStatus.active:
-        confirmAndLeaveMembership(context, ref, orgUuid, orgName);
+        confirmAndLeaveMembership(
+          context,
+          ref,
+          orgUuid,
+          orgName,
+          ownerSession: ownerSession,
+        );
       case MembershipStatus.rejected:
-        confirmAndJoin(context, ref, orgUuid, orgName);
+        confirmAndJoin(
+          context,
+          ref,
+          orgUuid,
+          orgName,
+          ownerSession: ownerSession,
+        );
     }
   }
 }

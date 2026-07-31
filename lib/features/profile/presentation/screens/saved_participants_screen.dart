@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/profile/domain/models/saved_participant.dart';
 import 'package:lehiboo/features/profile/presentation/providers/saved_participants_provider.dart';
 
@@ -17,8 +18,35 @@ class SavedParticipantsScreen extends ConsumerStatefulWidget {
 
 class _SavedParticipantsScreenState
     extends ConsumerState<SavedParticipantsScreen> {
+  late final String? _ownerAccountId;
+  bool _sessionInvalid = false;
+
+  bool get _ownsCurrentSession {
+    if (_sessionInvalid || _ownerAccountId == null || !mounted) return false;
+    return ref.read(authSessionUserIdProvider) == _ownerAccountId;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _ownerAccountId = ref.read(authSessionUserIdProvider);
+    _sessionInvalid = _ownerAccountId == null;
+    ref.listenManual<String?>(authSessionUserIdProvider, (_, next) {
+      if (next == _ownerAccountId || _sessionInvalid) return;
+      _sessionInvalid = true;
+      if (mounted) setState(() {});
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_sessionInvalid ||
+        _ownerAccountId == null ||
+        currentAccountId != _ownerAccountId) {
+      return const Scaffold(body: SizedBox.shrink());
+    }
+
     final participantsAsync = ref.watch(savedParticipantsProvider);
 
     return Scaffold(
@@ -81,8 +109,11 @@ class _SavedParticipantsScreenState
                       Text(context.l10n.profileParticipantsLoadError),
                       const SizedBox(height: 16),
                       OutlinedButton(
-                        onPressed: () =>
-                            ref.invalidate(savedParticipantsProvider),
+                        onPressed: () {
+                          if (_ownsCurrentSession) {
+                            ref.invalidate(savedParticipantsProvider);
+                          }
+                        },
                         child: Text(context.l10n.commonRetry),
                       ),
                     ],
@@ -100,6 +131,11 @@ class _SavedParticipantsScreenState
     BuildContext context, [
     SavedParticipant? participant,
   ]) async {
+    if (!_ownsCurrentSession) return;
+    final ownerAccountId = _ownerAccountId!;
+    // Capture account-A's guarded action object before opening the sheet. A
+    // draft created under A must never be handed to account B's provider.
+    final actions = ref.read(savedParticipantsActionsProvider);
     final messenger = ScaffoldMessenger.of(context);
     final addedMessage = context.l10n.profileParticipantAdded;
     final updatedMessage = context.l10n.profileParticipantUpdated;
@@ -109,19 +145,21 @@ class _SavedParticipantsScreenState
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (context) => _ParticipantFormSheet(participant: participant),
+      builder: (context) => _ParticipantFormSheet(
+        ownerAccountId: ownerAccountId,
+        participant: participant,
+      ),
     );
 
-    if (result == null) return;
+    if (!_ownsCurrentSession || result == null) return;
 
     try {
-      final actions = ref.read(savedParticipantsActionsProvider);
       if (participant == null) {
         await actions.create(result);
       } else {
         await actions.update(result);
       }
-      if (!mounted) return;
+      if (!_ownsCurrentSession) return;
       messenger.showSnackBar(
         SnackBar(
           content: Text(
@@ -130,7 +168,7 @@ class _SavedParticipantsScreenState
         ),
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!_ownsCurrentSession) return;
       messenger.showSnackBar(
         SnackBar(
           content: Text(ApiResponseHandler.extractError(
@@ -146,14 +184,16 @@ class _SavedParticipantsScreenState
   }
 
   Future<void> _deleteParticipant(SavedParticipant participant) async {
+    if (!_ownsCurrentSession) return;
+    final actions = ref.read(savedParticipantsActionsProvider);
     try {
-      await ref.read(savedParticipantsActionsProvider).delete(participant.uuid);
-      if (!mounted) return;
+      await actions.delete(participant.uuid);
+      if (!mounted || !_ownsCurrentSession) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.profileParticipantDeleted)),
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || !_ownsCurrentSession) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(ApiResponseHandler.extractError(
@@ -343,16 +383,21 @@ class _ParticipantTile extends StatelessWidget {
   }
 }
 
-class _ParticipantFormSheet extends StatefulWidget {
+class _ParticipantFormSheet extends ConsumerStatefulWidget {
+  final String ownerAccountId;
   final SavedParticipant? participant;
 
-  const _ParticipantFormSheet({this.participant});
+  const _ParticipantFormSheet({
+    required this.ownerAccountId,
+    this.participant,
+  });
 
   @override
-  State<_ParticipantFormSheet> createState() => _ParticipantFormSheetState();
+  ConsumerState<_ParticipantFormSheet> createState() =>
+      _ParticipantFormSheetState();
 }
 
-class _ParticipantFormSheetState extends State<_ParticipantFormSheet> {
+class _ParticipantFormSheetState extends ConsumerState<_ParticipantFormSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _labelCtrl;
   late final TextEditingController _firstNameCtrl;
@@ -363,6 +408,11 @@ class _ParticipantFormSheetState extends State<_ParticipantFormSheet> {
   DateTime? _birthDate;
   String? _relationship;
   bool _birthDateMissing = false;
+  bool _sessionInvalid = false;
+
+  bool get _ownsCurrentSession =>
+      !_sessionInvalid &&
+      ref.read(authSessionUserIdProvider) == widget.ownerAccountId;
 
   @override
   void initState() {
@@ -376,6 +426,29 @@ class _ParticipantFormSheetState extends State<_ParticipantFormSheet> {
     _cityCtrl = TextEditingController(text: participant?.membershipCity ?? '');
     _birthDate = _parseInitialBirthDate(participant?.birthDate);
     _relationship = participant?.relationship;
+    ref.listenManual<String?>(authSessionUserIdProvider, (_, next) {
+      if (next == widget.ownerAccountId || _sessionInvalid) return;
+
+      // Remove account-A's draft from both the visible tree and its mutable
+      // controllers before the replacement account can interact with it.
+      _sessionInvalid = true;
+      _clearDraft();
+      if (!mounted) return;
+      setState(() {});
+      final navigator = Navigator.of(context);
+      if (navigator.canPop()) navigator.pop();
+    });
+  }
+
+  void _clearDraft() {
+    _labelCtrl.clear();
+    _firstNameCtrl.clear();
+    _lastNameCtrl.clear();
+    _emailCtrl.clear();
+    _phoneCtrl.clear();
+    _cityCtrl.clear();
+    _birthDate = null;
+    _relationship = null;
   }
 
   /// Accepts ISO (yyyy-MM-dd or full ISO) and dd/MM/yyyy fallback.
@@ -402,6 +475,7 @@ class _ParticipantFormSheetState extends State<_ParticipantFormSheet> {
   }
 
   Future<void> _pickBirthDate() async {
+    if (!_ownsCurrentSession) return;
     final now = DateTime.now();
     final initial = _birthDate ?? DateTime(now.year - 8, now.month, now.day);
     final picked = await showDatePicker(
@@ -413,6 +487,7 @@ class _ParticipantFormSheetState extends State<_ParticipantFormSheet> {
       cancelText: context.l10n.commonCancel,
       confirmText: context.l10n.commonValidate,
     );
+    if (!_ownsCurrentSession) return;
     if (picked != null && mounted) {
       setState(() {
         _birthDate = picked;
@@ -423,6 +498,11 @@ class _ParticipantFormSheetState extends State<_ParticipantFormSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_sessionInvalid || currentAccountId != widget.ownerAccountId) {
+      return const SizedBox.shrink();
+    }
+
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Padding(
@@ -589,8 +669,10 @@ class _ParticipantFormSheetState extends State<_ParticipantFormSheet> {
   }
 
   void _submit() {
+    if (!_ownsCurrentSession) return;
     setState(() => _birthDateMissing = _birthDate == null);
     if (!_formKey.currentState!.validate() || _birthDateMissing) return;
+    if (!_ownsCurrentSession) return;
 
     Navigator.of(context).pop(
       SavedParticipant(

@@ -3,12 +3,19 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/favorites/data/models/toggle_favorite_result.dart';
 import 'package:lehiboo/features/favorites/presentation/providers/favorites_provider.dart';
 import 'package:lehiboo/features/petit_boo/presentation/widgets/animated_toast.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
 import 'favorite_list_picker_sheet.dart';
+
+typedef _FavoriteInteraction = ({
+  AuthSessionKey ownerSession,
+  FavoritesNotifier notifier,
+  int generation,
+});
 
 /// A reusable animated favorite button widget
 ///
@@ -23,6 +30,12 @@ import 'favorite_list_picker_sheet.dart';
 class FavoriteButton extends ConsumerStatefulWidget {
   /// The event to favorite/unfavorite
   final Event event;
+
+  /// Exact authentication session that owns the rendered event.
+  ///
+  /// Identity equality is intentional: an A -> B -> A replacement must not
+  /// revive an action started by the first A session.
+  final AuthSessionKey ownerSession;
 
   /// Optional numeric ID for API (if not in event.additionalInfo)
   final int? internalId;
@@ -61,6 +74,7 @@ class FavoriteButton extends ConsumerStatefulWidget {
   const FavoriteButton({
     super.key,
     required this.event,
+    required this.ownerSession,
     this.internalId,
     this.iconSize = 20,
     this.containerSize = 36,
@@ -81,6 +95,9 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   bool _isLoading = false;
+  int _interactionGeneration = 0;
+  int? _pendingGuestGeneration;
+  AuthSessionKey? _pendingGuestAdoptionSession;
 
   @override
   void initState() {
@@ -104,12 +121,129 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant FavoriteButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.event.id != widget.event.id) {
+      _invalidateInteraction();
+      return;
+    }
+    if (identical(oldWidget.ownerSession, widget.ownerSession)) return;
+
+    // A public event rendered as a guest may legitimately survive the single
+    // guest -> authenticated transition completed by GuestGuard. Any other
+    // owner replacement invalidates the action.
+    final adoptsPendingGuest =
+        _pendingGuestGeneration == _interactionGeneration &&
+            oldWidget.ownerSession.accountId == null &&
+            identical(
+              widget.ownerSession,
+              _pendingGuestAdoptionSession,
+            );
+    if (!adoptsPendingGuest) _invalidateInteraction();
+  }
+
   bool get _isFavorite {
     return ref.read(favoritesProvider.notifier).isFavorite(widget.event.id);
   }
 
+  bool _ownsRenderedSession() {
+    return mounted &&
+        identical(ref.read(authSessionKeyProvider), widget.ownerSession);
+  }
+
+  Future<_FavoriteInteraction?> _authorizeInteraction() async {
+    // Capture every ownership component before the first async boundary. A
+    // stale rendered button must not even open the guest/auth flow.
+    if (!_ownsRenderedSession()) return null;
+    final interaction = (
+      ownerSession: widget.ownerSession,
+      notifier: ref.read(favoritesProvider.notifier),
+      generation: ++_interactionGeneration,
+    );
+    if (!_ownsInteraction(interaction)) return null;
+    final startedAsGuest = interaction.ownerSession.accountId == null;
+    if (startedAsGuest) {
+      _pendingGuestGeneration = interaction.generation;
+      _pendingGuestAdoptionSession = null;
+    } else {
+      _pendingGuestGeneration = null;
+      _pendingGuestAdoptionSession = null;
+    }
+
+    final canProceed = await GuestGuard.check(
+      context: context,
+      ref: ref,
+      featureName: context.l10n.guestFeatureManageFavorites,
+    );
+    if (!canProceed || !mounted) {
+      _clearPendingGuestAdoption(interaction.generation);
+      return null;
+    }
+
+    if (!startedAsGuest) {
+      if (!_ownsInteraction(interaction)) return null;
+      return interaction;
+    }
+
+    final adoptedSession = ref.read(authSessionKeyProvider);
+    if (_pendingGuestGeneration != interaction.generation ||
+        adoptedSession.accountId == null ||
+        !identical(adoptedSession, _pendingGuestAdoptionSession)) {
+      _clearPendingGuestAdoption(interaction.generation);
+      return null;
+    }
+    final adopted = (
+      ownerSession: adoptedSession,
+      notifier: ref.read(favoritesProvider.notifier),
+      generation: interaction.generation,
+    );
+    _clearPendingGuestAdoption(interaction.generation);
+    return _ownsInteraction(adopted) ? adopted : null;
+  }
+
+  bool _ownsInteraction(_FavoriteInteraction interaction) {
+    return mounted &&
+        interaction.generation == _interactionGeneration &&
+        identical(
+          ref.read(authSessionKeyProvider),
+          interaction.ownerSession,
+        ) &&
+        identical(ref.read(favoritesProvider.notifier), interaction.notifier);
+  }
+
+  void _handleSessionChange(
+    AuthSessionKey? previous,
+    AuthSessionKey next,
+  ) {
+    if (identical(previous, next)) return;
+    final mayAdoptGuest = _pendingGuestGeneration == _interactionGeneration &&
+        previous?.accountId == null &&
+        next.accountId != null &&
+        _pendingGuestAdoptionSession == null;
+    if (mayAdoptGuest) {
+      _pendingGuestAdoptionSession = next;
+      return;
+    }
+    _invalidateInteraction();
+  }
+
+  void _invalidateInteraction() {
+    _interactionGeneration++;
+    _pendingGuestGeneration = null;
+    _pendingGuestAdoptionSession = null;
+    if (mounted && _isLoading) setState(() => _isLoading = false);
+  }
+
+  void _clearPendingGuestAdoption(int generation) {
+    if (_pendingGuestGeneration != generation) return;
+    _pendingGuestGeneration = null;
+    _pendingGuestAdoptionSession = null;
+  }
+
   /// Handle tap: if already favorite, remove it. Otherwise open picker.
   Future<void> _onTap() async {
+    if (!_ownsRenderedSession()) return;
     if (_isFavorite) {
       // Already favorite: remove directly
       await _removeFavorite();
@@ -122,22 +256,22 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
   }
 
   Future<void> _addFavoriteDirectly() async {
-    final canProceed = await GuestGuard.check(
-      context: context,
-      ref: ref,
-      featureName: context.l10n.guestFeatureManageFavorites,
-    );
-
-    if (!canProceed || !mounted || _isLoading) return;
+    final interaction = await _authorizeInteraction();
+    if (interaction == null ||
+        !mounted ||
+        !_ownsInteraction(interaction) ||
+        _isLoading) {
+      return;
+    }
 
     setState(() => _isLoading = true);
     HapticFeedback.lightImpact();
     try {
-      final result = await ref.read(favoritesProvider.notifier).toggleFavorite(
-            widget.event,
-            internalId: widget.internalId,
-          );
-      if (!mounted) return;
+      final result = await interaction.notifier.toggleFavorite(
+        widget.event,
+        internalId: widget.internalId,
+      );
+      if (!mounted || !_ownsInteraction(interaction)) return;
       widget.onChanged?.call(result.isFavorite);
       if (result.isFavorite) {
         _controller.forward(from: 0);
@@ -147,7 +281,7 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
       }
       _showRewardToastIfAny(result);
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || !_ownsInteraction(interaction)) return;
       HapticFeedback.heavyImpact();
       PetitBooToast.error(
         context,
@@ -157,44 +291,44 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
         ),
       );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted && _ownsInteraction(interaction)) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   /// Remove from favorites directly
   Future<void> _removeFavorite() async {
-    final canProceed = await GuestGuard.check(
-      context: context,
-      ref: ref,
-      featureName: context.l10n.guestFeatureManageFavorites,
-    );
-
-    if (!canProceed || !mounted) return;
-    if (_isLoading) return;
+    final interaction = await _authorizeInteraction();
+    if (interaction == null ||
+        !mounted ||
+        !_ownsInteraction(interaction) ||
+        _isLoading) {
+      return;
+    }
 
     setState(() => _isLoading = true);
     HapticFeedback.lightImpact();
     _controller.forward(from: 0);
 
     try {
-      final result = await ref.read(favoritesProvider.notifier).toggleFavorite(
-            widget.event,
-            internalId: widget.internalId,
-          );
+      final result = await interaction.notifier.toggleFavorite(
+        widget.event,
+        internalId: widget.internalId,
+      );
 
-      if (mounted) {
-        widget.onChanged?.call(result.isFavorite);
-        if (result.isFavorite) {
-          PetitBooToast.favoriteAdded(context, eventTitle: widget.event.title);
-        } else {
-          PetitBooToast.favoriteRemoved(context);
-        }
-        // Un retrait ne déclenche jamais de reward côté backend, mais on
-        // reste défensif au cas où le contrat évoluerait.
-        _showRewardToastIfAny(result);
+      if (!mounted || !_ownsInteraction(interaction)) return;
+      widget.onChanged?.call(result.isFavorite);
+      if (result.isFavorite) {
+        PetitBooToast.favoriteAdded(context, eventTitle: widget.event.title);
+      } else {
+        PetitBooToast.favoriteRemoved(context);
       }
+      // Un retrait ne déclenche jamais de reward côté backend, mais on
+      // reste défensif au cas où le contrat évoluerait.
+      _showRewardToastIfAny(result);
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || !_ownsInteraction(interaction)) return;
       HapticFeedback.heavyImpact();
       PetitBooToast.error(
         context,
@@ -204,7 +338,9 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
         ),
       );
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted && _ownsInteraction(interaction)) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -214,14 +350,10 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
   void _showRewardToastIfAny(ToggleFavoriteResult? result) {}
 
   Future<void> _showListPicker() async {
-    // Check guest guard
-    final canProceed = await GuestGuard.check(
-      context: context,
-      ref: ref,
-      featureName: context.l10n.guestFeatureManageFavorites,
-    );
-
-    if (!canProceed || !mounted) return;
+    final interaction = await _authorizeInteraction();
+    if (interaction == null || !mounted || !_ownsInteraction(interaction)) {
+      return;
+    }
 
     HapticFeedback.mediumImpact();
 
@@ -229,18 +361,20 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
     // `widget.event.additionalInfo` ne marche que quand l'event vient de
     // l'endpoint `/me/favorites` ; depuis la home ou le détail, ce champ est
     // absent → la liste actuelle ne serait pas highlight dans le picker.
-    final currentListId =
-        ref.read(favoritesProvider.notifier).getEventListId(widget.event.id);
+    final currentListId = interaction.notifier.getEventListId(widget.event.id);
 
-    if (!mounted) return;
+    // Check immediately before creating the route: the picker must never be
+    // opened by a button rendered for an obsolete exact session.
+    if (!mounted || !_ownsInteraction(interaction)) return;
 
     final result = await FavoriteListPickerSheet.show(
       context,
+      ownerSession: interaction.ownerSession,
       currentListId: currentListId,
-      isAlreadyFavorite: _isFavorite,
+      isAlreadyFavorite: interaction.notifier.isFavorite(widget.event.id),
     );
 
-    if (result == null || !mounted) return;
+    if (!mounted || !_ownsInteraction(interaction) || result == null) return;
 
     setState(() => _isLoading = true);
 
@@ -252,14 +386,14 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
       if (result.removeFromFavorites) {
         failureMessage = context.l10n.favoriteRemoveError;
         // Retirer des favoris
-        final toggleResult =
-            await ref.read(favoritesProvider.notifier).toggleFavorite(
-                  widget.event,
-                  internalId: widget.internalId,
-                );
+        final toggleResult = await interaction.notifier.toggleFavorite(
+          widget.event,
+          internalId: widget.internalId,
+        );
+        if (!mounted || !_ownsInteraction(interaction)) return;
         success = true;
 
-        if (success && mounted) {
+        if (success) {
           widget.onChanged?.call(toggleResult.isFavorite);
           if (toggleResult.isFavorite) {
             PetitBooToast.favoriteAdded(
@@ -270,16 +404,17 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
             PetitBooToast.favoriteRemoved(context);
           }
         }
-      } else if (_isFavorite) {
+      } else if (interaction.notifier.isFavorite(widget.event.id)) {
         failureMessage = context.l10n.favoriteUpdateError;
         // Déjà favori: déplacer vers une autre liste (jamais de reward)
-        success = await ref.read(favoritesProvider.notifier).moveToList(
-              widget.event,
-              result.listId,
-              internalId: widget.internalId,
-            );
+        success = await interaction.notifier.moveToList(
+          widget.event,
+          result.listId,
+          internalId: widget.internalId,
+        );
+        if (!mounted || !_ownsInteraction(interaction)) return;
 
-        if (success && mounted) {
+        if (success) {
           PetitBooToast.success(
             context,
             result.listId != null
@@ -290,15 +425,16 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
       } else {
         failureMessage = context.l10n.favoriteAddError;
         // Pas encore favori: ajouter avec la liste sélectionnée (reward possible)
-        final addResult = await ref.read(favoritesProvider.notifier).addToList(
-              widget.event,
-              result.listId ?? '',
-              internalId: widget.internalId,
-            );
+        final addResult = await interaction.notifier.addToList(
+          widget.event,
+          result.listId ?? '',
+          internalId: widget.internalId,
+        );
+        if (!mounted || !_ownsInteraction(interaction)) return;
         success = true;
         rewardSource = addResult;
 
-        if (success && mounted) {
+        if (success) {
           widget.onChanged?.call(true);
 
           // Animation
@@ -312,18 +448,18 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
         }
       }
 
-      if (success && rewardSource != null) {
+      if (_ownsInteraction(interaction) && success && rewardSource != null) {
         _showRewardToastIfAny(rewardSource);
       }
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || !_ownsInteraction(interaction)) return;
       HapticFeedback.heavyImpact();
       PetitBooToast.error(
         context,
         ApiResponseHandler.extractError(error, fallback: failureMessage),
       );
     } finally {
-      if (mounted) {
+      if (mounted && _ownsInteraction(interaction)) {
         setState(() => _isLoading = false);
       }
     }
@@ -331,6 +467,11 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AuthSessionKey>(authSessionKeyProvider, (previous, next) {
+      _handleSessionChange(previous, next);
+    });
+    final activeSession = ref.watch(authSessionKeyProvider);
+    final ownsRenderedSession = identical(activeSession, widget.ownerSession);
     // Watch favorites to rebuild when state changes
     final favoritesState = ref.watch(favoritesProvider);
 
@@ -346,8 +487,8 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
     }
 
     return GestureDetector(
-      onTap: _onTap,
-      onLongPress: _isFavorite
+      onTap: ownsRenderedSession ? _onTap : null,
+      onLongPress: ownsRenderedSession && _isFavorite
           ? _showListPicker
           : null, // Long press to move to another folder
       child: AnimatedBuilder(

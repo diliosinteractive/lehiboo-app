@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +14,8 @@ import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../../checkin/presentation/providers/vendor_eligibility_provider.dart';
 import '../../../messages/presentation/providers/unread_count_provider.dart';
 import '../../../reviews/presentation/providers/pending_count_provider.dart';
@@ -20,6 +23,22 @@ import '../../../gamification/presentation/providers/gamification_provider.dart'
 import '../../data/datasources/profile_api_datasource.dart';
 import '../providers/profile_provider.dart';
 import '../utils/profile_image_picker_error.dart';
+
+typedef ProfileAvatarImagePicker = Future<XFile?> Function();
+
+/// Indirection kept at the UI boundary so an account switch while the native
+/// gallery is open can be covered deterministically in widget tests.
+final profileAvatarImagePickerProvider = Provider<ProfileAvatarImagePicker>(
+  (ref) {
+    final picker = ImagePicker();
+    return () => picker.pickImage(
+          source: ImageSource.gallery,
+          maxWidth: 512,
+          maxHeight: 512,
+          imageQuality: 85,
+        );
+  },
+);
 
 class _ProfileField {
   final String label;
@@ -50,6 +69,8 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildAuthenticatedContent(BuildContext context, WidgetRef ref, user) {
+    final ownerSession = ref.watch(authSessionKeyProvider);
+    final accountId = ownerSession.accountId;
     final displayName = user.displayName.isNotEmpty
         ? user.displayName
         : '${user.firstName ?? ''} ${user.lastName ?? ''}'.trim();
@@ -76,6 +97,8 @@ class ProfileScreen extends ConsumerWidget {
             children: [
               // Avatar (tap to change — same flow as Mon Compte)
               _EditableAvatar(
+                key: ValueKey('profile-avatar-$accountId'),
+                ownerAccountId: accountId,
                 avatarUrl: avatarUrl,
                 displayName: displayName,
                 size: 80,
@@ -216,7 +239,8 @@ class ProfileScreen extends ConsumerWidget {
           icon: Icons.rate_review_outlined,
           title: context.l10n.profileReviewsTitle,
           subtitle: context.l10n.profileReviewsSubtitle,
-          badge: ref.watch(pendingReviewCountProvider).valueOrNull,
+          badge:
+              ref.watch(pendingReviewCountProvider(ownerSession)).valueOrNull,
           onTap: () => context.push('/my-reviews'),
         ),
         _buildMenuItem(
@@ -287,6 +311,7 @@ class ProfileScreen extends ConsumerWidget {
                 color: Colors.red,
               ),
             ),
+            key: const ValueKey('profile-logout'),
             onTap: () => _handleLogout(context, ref),
           ),
         ),
@@ -737,8 +762,10 @@ class ProfileScreen extends ConsumerWidget {
   /// as `HibonCounterWidget`). Hidden entirely if neither source has data
   /// yet — better than briefly flashing a stale "Membre"-style label.
   Widget _buildRankBadge(WidgetRef ref) {
-    final wallet = ref.watch(gamificationNotifierProvider).valueOrNull;
-    final balance = ref.watch(hibonsBalanceProvider).valueOrNull;
+    final viewSession = ref.watch(gamificationSessionProvider);
+    final wallet =
+        ref.watch(gamificationNotifierProvider(viewSession)).valueOrNull;
+    final balance = ref.watch(hibonsBalanceProvider(viewSession)).valueOrNull;
 
     final rankLabel = wallet?.rankLabel ?? balance?.rankLabel;
     final rankIcon = wallet?.rankIcon ?? balance?.rankIcon;
@@ -774,40 +801,57 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
+    final ownerAccountId = ref.read(authSessionUserIdProvider);
+    if (ownerAccountId == null) return;
+    final ownerAuthNotifier = ref.read(authProvider.notifier);
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.l10n.profileLogout),
-        content: Text(context.l10n.profileLogoutDialogBody),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              context.l10n.commonCancel,
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+      builder: (routeContext) => AccountBoundRouteGuard<bool>(
+        ownerAccountId: ownerAccountId,
+        invalidResult: false,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(dialogContext.l10n.profileLogout),
+          content: Text(dialogContext.l10n.profileLogoutDialogBody),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(
+                dialogContext.l10n.commonCancel,
+                style: TextStyle(color: Colors.grey[600]),
               ),
             ),
-            child: Text(context.l10n.profileLogout),
-          ),
-        ],
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(dialogContext.l10n.profileLogout),
+            ),
+          ],
+        ),
       ),
     );
 
-    if (confirmed == true) {
-      await ref.read(authProvider.notifier).logout();
-      if (context.mounted) {
-        context.go('/');
-      }
+    if (confirmed != true || !context.mounted) return;
+    if (ref.read(authSessionUserIdProvider) != ownerAccountId ||
+        !identical(ref.read(authProvider.notifier), ownerAuthNotifier)) {
+      return;
+    }
+
+    await ownerAuthNotifier.logout();
+    if (!context.mounted ||
+        !identical(ref.read(authProvider.notifier), ownerAuthNotifier)) {
+      return;
+    }
+    if (ref.read(authSessionUserIdProvider) == null) {
+      context.go('/');
     }
   }
 
@@ -829,11 +873,14 @@ class ProfileScreen extends ConsumerWidget {
 }
 
 class _EditableAvatar extends ConsumerStatefulWidget {
+  final String? ownerAccountId;
   final String? avatarUrl;
   final String displayName;
   final double size;
 
   const _EditableAvatar({
+    super.key,
+    required this.ownerAccountId,
     required this.avatarUrl,
     required this.displayName,
     this.size = 80,
@@ -846,6 +893,61 @@ class _EditableAvatar extends ConsumerStatefulWidget {
 class _EditableAvatarState extends ConsumerState<_EditableAvatar> {
   File? _selectedImage;
   bool _isUploading = false;
+  CancelToken? _uploadCancelToken;
+  late final AuthNotifier _ownerAuthNotifier;
+  late final ProviderSubscription<String?> _sessionSubscription;
+  int _sessionGeneration = 0;
+  bool _sessionInvalidated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ownerAuthNotifier = ref.read(authProvider.notifier);
+    _sessionSubscription = ref.listenManual<String?>(
+      authSessionUserIdProvider,
+      (_, next) {
+        if (next != widget.ownerAccountId) _invalidateSession();
+      },
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _EditableAvatar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.ownerAccountId != widget.ownerAccountId) {
+      _invalidateSession();
+    }
+  }
+
+  @override
+  void dispose() {
+    _sessionGeneration++;
+    _uploadCancelToken?.cancel('Authentication session changed');
+    _uploadCancelToken = null;
+    _sessionSubscription.close();
+    super.dispose();
+  }
+
+  bool _ownsSession(int generation) {
+    final ownerAccountId = widget.ownerAccountId;
+    return mounted &&
+        !_sessionInvalidated &&
+        ownerAccountId != null &&
+        generation == _sessionGeneration &&
+        ref.read(authSessionUserIdProvider) == ownerAccountId &&
+        identical(ref.read(authProvider.notifier), _ownerAuthNotifier);
+  }
+
+  void _invalidateSession() {
+    if (_sessionInvalidated) return;
+    _sessionInvalidated = true;
+    _sessionGeneration++;
+    _uploadCancelToken?.cancel('Authentication session changed');
+    _uploadCancelToken = null;
+    _selectedImage = null;
+    _isUploading = false;
+    if (mounted) setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -856,6 +958,7 @@ class _EditableAvatarState extends ConsumerState<_EditableAvatar> {
     return Stack(
       children: [
         GestureDetector(
+          key: const ValueKey('profile-avatar-edit'),
           onTap: _isUploading ? null : _pickImage,
           child: Container(
             width: size,
@@ -946,26 +1049,23 @@ class _EditableAvatarState extends ConsumerState<_EditableAvatar> {
   }
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
+    final generation = _sessionGeneration;
+    if (!_ownsSession(generation)) return;
+    final pickImage = ref.read(profileAvatarImagePickerProvider);
     try {
-      final pickedFile = await picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 512,
-        maxHeight: 512,
-        imageQuality: 85,
-      );
+      final pickedFile = await pickImage();
 
-      if (!mounted || pickedFile == null) return;
+      if (!_ownsSession(generation) || pickedFile == null) return;
       setState(() {
         _selectedImage = File(pickedFile.path);
       });
-      await _uploadAvatar();
+      await _uploadAvatar(generation);
     } on PlatformException catch (error) {
-      if (!mounted) return;
+      if (!_ownsSession(generation)) return;
       final failure = classifyProfileImagePickerFailure(error);
       _showImagePickerError(failure);
     } catch (_) {
-      if (!mounted) return;
+      if (!_ownsSession(generation)) return;
       _showImagePickerError(ProfileImagePickerFailure.pickerUnavailable);
     }
   }
@@ -982,42 +1082,59 @@ class _EditableAvatarState extends ConsumerState<_EditableAvatar> {
     );
   }
 
-  Future<void> _uploadAvatar() async {
-    if (_selectedImage == null) return;
+  Future<void> _uploadAvatar(int generation) async {
+    final selectedImage = _selectedImage;
+    if (selectedImage == null || !_ownsSession(generation)) return;
+
+    final cancelToken = CancelToken();
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    _uploadCancelToken?.cancel('Superseded avatar upload');
+    _uploadCancelToken = cancelToken;
 
     setState(() => _isUploading = true);
 
     try {
       final previousAvatarUrl = ref.read(authProvider).user?.avatarUrl;
       final profileDataSource = ref.read(profileApiDataSourceProvider);
-      final updatedUser = await profileDataSource.uploadAvatar(_selectedImage!);
+      final updatedUser = await profileDataSource.uploadAvatar(
+        selectedImage,
+        cancelToken: cancelToken,
+      );
+      if (!_ownsSession(generation) ||
+          !identical(_uploadCancelToken, cancelToken)) {
+        return;
+      }
 
       if (previousAvatarUrl != null && previousAvatarUrl.isNotEmpty) {
         await CachedNetworkImage.evictFromCache(previousAvatarUrl);
+        if (!_ownsSession(generation)) return;
       }
       if (updatedUser.avatarUrl != null && updatedUser.avatarUrl!.isNotEmpty) {
         await CachedNetworkImage.evictFromCache(updatedUser.avatarUrl!);
+        if (!_ownsSession(generation)) return;
       }
 
-      ref.read(authProvider.notifier).updateUser(updatedUser);
+      _ownerAuthNotifier.updateUser(updatedUser);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (_ownsSession(generation)) {
+        messenger.showSnackBar(
           SnackBar(
-            content: Text(context.l10n.profileAvatarUpdated),
+            content: Text(l10n.profileAvatarUpdated),
             backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
-      if (mounted) {
+      if (_ownsSession(generation) &&
+          !(e is DioException && CancelToken.isCancel(e))) {
         setState(() => _selectedImage = null);
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text(
               ApiResponseHandler.extractError(
                 e,
-                fallback: context.l10n.profileAvatarUploadFailed,
+                fallback: l10n.profileAvatarUploadFailed,
               ),
             ),
             backgroundColor: Colors.red,
@@ -1025,7 +1142,10 @@ class _EditableAvatarState extends ConsumerState<_EditableAvatar> {
         );
       }
     } finally {
-      if (mounted) {
+      if (identical(_uploadCancelToken, cancelToken)) {
+        _uploadCancelToken = null;
+      }
+      if (_ownsSession(generation)) {
         setState(() => _isUploading = false);
       }
     }

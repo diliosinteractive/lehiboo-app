@@ -21,6 +21,7 @@
   "guestFeatureManageFavorites": "gérer les favoris",
   "guestFeatureWriteReview": "laisser un avis",
   "guestFeatureReportReview": "signaler un avis",
+  "guestFeatureVoteReview": "voter sur un avis",
   "guestFeatureSaveSearch": "sauvegarder une recherche",
   "guestFeatureAskQuestion": "poser une question",
   "guestFeatureVoteQuestion": "voter pour cette question",

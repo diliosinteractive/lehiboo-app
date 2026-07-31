@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../providers/trip_plans_provider.dart';
 import '../widgets/trip_plan_list_card.dart';
 
@@ -13,6 +15,15 @@ class TripPlansListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final plansAsync = ref.watch(tripPlansProvider);
+    final ownerSession = ref.watch(authSessionKeyProvider);
+    final ownerAccountId = ownerSession.accountId;
+    final ownerNotifier = ref.read(tripPlansProvider.notifier);
+
+    bool ownsRenderedSession() {
+      return ownerAccountId != null &&
+          ref.read(authSessionUserIdProvider) == ownerAccountId &&
+          identical(ref.read(tripPlansProvider.notifier), ownerNotifier);
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FA),
@@ -28,8 +39,9 @@ class TripPlansListScreen extends ConsumerWidget {
       ),
       body: RefreshIndicator(
         onRefresh: () async {
+          if (!ownsRenderedSession()) return;
           HapticFeedback.mediumImpact();
-          await ref.read(tripPlansProvider.notifier).refresh();
+          await ownerNotifier.refresh();
         },
         color: const Color(0xFF27AE60),
         child: plansAsync.when(
@@ -37,6 +49,7 @@ class TripPlansListScreen extends ConsumerWidget {
             if (plans.isEmpty) {
               return _buildEmptyState(context);
             }
+            if (ownerAccountId == null) return _buildEmptyState(context);
 
             return ListView.builder(
               padding: const EdgeInsets.all(16),
@@ -48,22 +61,27 @@ class TripPlansListScreen extends ConsumerWidget {
                     : plan.title;
                 return TripPlanListCard(
                   plan: plan,
+                  ownerAccountId: ownerAccountId,
+                  ownerSession: ownerSession,
                   onEdit: () {
+                    if (!ownsRenderedSession()) return;
                     HapticFeedback.selectionClick();
                     context.push('/trip-plans/${plan.uuid}/edit');
                   },
                   onDelete: () async {
+                    if (!ownsRenderedSession()) return;
                     HapticFeedback.mediumImpact();
+                    final messenger = ScaffoldMessenger.of(context);
+                    final deletedMessage =
+                        context.l10n.tripPlansDeletedSnack(planTitle);
+                    final failedMessage =
+                        context.l10n.tripPlanDeleteFailed(planTitle);
                     try {
-                      await ref
-                          .read(tripPlansProvider.notifier)
-                          .deleteTripPlan(plan.uuid);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
+                      await ownerNotifier.deleteTripPlan(plan.uuid);
+                      if (context.mounted && ownsRenderedSession()) {
+                        messenger.showSnackBar(
                           SnackBar(
-                            content: Text(
-                              context.l10n.tripPlansDeletedSnack(planTitle),
-                            ),
+                            content: Text(deletedMessage),
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
@@ -72,12 +90,12 @@ class TripPlansListScreen extends ConsumerWidget {
                         );
                       }
                     } catch (error) {
-                      if (!context.mounted) return;
+                      if (!context.mounted || !ownsRenderedSession()) return;
                       final message = ApiResponseHandler.extractError(
                         error,
-                        fallback: context.l10n.tripPlanDeleteFailed(planTitle),
+                        fallback: failedMessage,
                       );
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      messenger.showSnackBar(
                         SnackBar(
                           content: Text(message),
                           backgroundColor: Colors.red,

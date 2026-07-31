@@ -7,6 +7,8 @@ import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../../features/petit_boo/presentation/widgets/animated_toast.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../domain/entities/reminder.dart';
 import '../providers/reminders_provider.dart';
 
@@ -19,8 +21,65 @@ class RemindersListScreen extends ConsumerStatefulWidget {
 }
 
 class _RemindersListScreenState extends ConsumerState<RemindersListScreen> {
+  late final String? _ownerAccountId;
+  late final RemindersListNotifier _ownerNotifier;
+  ProviderSubscription<String?>? _sessionSubscription;
+  bool _sessionInvalid = false;
+  int _sessionGeneration = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _ownerAccountId = ref.read(authSessionUserIdProvider);
+    _ownerNotifier = ref.read(remindersListProvider.notifier);
+    _sessionInvalid = _ownerAccountId == null;
+    _sessionSubscription = ref.listenManual<String?>(
+      authSessionUserIdProvider,
+      (_, next) {
+        if (next != _ownerAccountId) _invalidateSession();
+      },
+    );
+  }
+
+  bool _ownsSession() {
+    return mounted &&
+        !_sessionInvalid &&
+        _ownerAccountId != null &&
+        ref.read(authSessionUserIdProvider) == _ownerAccountId &&
+        identical(ref.read(remindersListProvider.notifier), _ownerNotifier);
+  }
+
+  bool _ownsAction(int generation, RemindersListNotifier notifier) {
+    return generation == _sessionGeneration &&
+        identical(notifier, _ownerNotifier) &&
+        _ownsSession();
+  }
+
+  void _invalidateSession() {
+    if (_sessionInvalid) return;
+    _sessionInvalid = true;
+    _sessionGeneration++;
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _sessionSubscription?.close();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_sessionInvalid ||
+        _ownerAccountId == null ||
+        currentAccountId != _ownerAccountId) {
+      return const Scaffold(
+        key: Key('reminders-list-session-invalid'),
+        body: SizedBox.shrink(),
+      );
+    }
+
     final remindersAsync = ref.watch(remindersListProvider);
 
     return Scaffold(
@@ -37,8 +96,7 @@ class _RemindersListScreenState extends ConsumerState<RemindersListScreen> {
       ),
       body: RefreshIndicator(
         color: HbColors.brandPrimary,
-        onRefresh: () =>
-            ref.read(remindersListProvider.notifier).loadReminders(),
+        onRefresh: _refresh,
         child: remindersAsync.when(
           loading: () => const Center(
             child: CircularProgressIndicator(color: HbColors.brandPrimary),
@@ -123,7 +181,11 @@ class _RemindersListScreenState extends ConsumerState<RemindersListScreen> {
       ),
       confirmDismiss: (_) => _confirmDelete(reminder),
       child: GestureDetector(
-        onTap: () => context.push('/event/${reminder.eventSlug}'),
+        onTap: () {
+          if (_ownsSession()) {
+            context.push('/event/${reminder.eventSlug}');
+          }
+        },
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           padding: const EdgeInsets.all(12),
@@ -291,57 +353,79 @@ class _RemindersListScreenState extends ConsumerState<RemindersListScreen> {
   }
 
   Future<bool> _confirmDelete(Reminder reminder) async {
+    if (!_ownsSession()) return false;
+    final generation = _sessionGeneration;
+    final notifier = _ownerNotifier;
+    final ownerAccountId = _ownerAccountId!;
+    final deletedMessage = context.l10n.remindersDeleted;
+    final deleteFailedMessage = context.l10n.remindersDeleteFailed;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(context.l10n.remindersDeleteTitle),
-        content: Text(
-          context.l10n.remindersDeleteBody(
-            reminder.eventTitle,
-            _formatSlotDate(context, reminder),
+      builder: (dialogContext) => AccountBoundRouteGuard<bool>(
+        ownerAccountId: ownerAccountId,
+        invalidResult: false,
+        builder: (guardedContext) => AlertDialog(
+          title: Text(guardedContext.l10n.remindersDeleteTitle),
+          content: Text(
+            guardedContext.l10n.remindersDeleteBody(
+              reminder.eventTitle,
+              _formatSlotDate(guardedContext, reminder),
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(guardedContext.l10n.commonCancel),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: Text(guardedContext.l10n.messagesDeleteAction),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(context.l10n.commonCancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(context.l10n.messagesDeleteAction),
-          ),
-        ],
       ),
     );
 
-    if (confirmed == true) {
+    if (confirmed == true && mounted && _ownsAction(generation, notifier)) {
       try {
-        await ref.read(remindersListProvider.notifier).deleteReminder(
-              eventUuid: reminder.eventUuid,
-              slotUuid: reminder.id,
-            );
-        if (mounted) {
+        await notifier.deleteReminder(
+          eventUuid: reminder.eventUuid,
+          slotUuid: reminder.id,
+        );
+        if (mounted && _ownsAction(generation, notifier)) {
           PetitBooToast.show(
             context,
-            message: context.l10n.remindersDeleted,
+            message: deletedMessage,
             icon: Icons.delete_outline,
           );
+          return true;
         }
-        return true;
       } catch (error) {
-        if (mounted) {
+        if (mounted && _ownsAction(generation, notifier)) {
           PetitBooToast.error(
             context,
             ApiResponseHandler.extractError(
               error,
-              fallback: context.l10n.remindersDeleteFailed,
+              fallback: deleteFailedMessage,
             ),
           );
         }
       }
     }
     return false;
+  }
+
+  Future<void> _refresh() async {
+    if (!_ownsSession()) return;
+    final generation = _sessionGeneration;
+    final notifier = _ownerNotifier;
+    await notifier.loadReminders();
+    if (!_ownsAction(generation, notifier)) return;
+  }
+
+  void _retry() {
+    if (_ownsSession()) _ownerNotifier.loadReminders();
   }
 
   String _formatSlotDate(BuildContext context, Reminder reminder) {
@@ -430,8 +514,7 @@ class _RemindersListScreenState extends ConsumerState<RemindersListScreen> {
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
-              onPressed: () =>
-                  ref.read(remindersListProvider.notifier).loadReminders(),
+              onPressed: _retry,
               icon: const Icon(Icons.refresh, size: 18),
               label: Text(context.l10n.commonRetry),
               style: ElevatedButton.styleFrom(

@@ -18,6 +18,7 @@
   "guestFeatureManageFavorites": "manage favorites",
   "guestFeatureWriteReview": "write a review",
   "guestFeatureReportReview": "report a review",
+  "guestFeatureVoteReview": "vote on a review",
   "guestFeatureSaveSearch": "save a search",
   "guestFeatureAskQuestion": "ask a question",
   "guestFeatureVoteQuestion": "vote for this question",

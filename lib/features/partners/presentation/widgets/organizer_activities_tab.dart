@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../../events/data/mappers/event_mapper.dart';
 import '../../../events/domain/entities/event.dart';
 import '../../../events/presentation/utils/open_event.dart';
@@ -17,8 +18,13 @@ import 'organizer_load_more_error.dart';
 /// Spec §1, §4, §7
 class OrganizerActivitiesTab extends ConsumerStatefulWidget {
   final String organizerIdentifier;
+  final AuthSessionKey ownerSession;
 
-  const OrganizerActivitiesTab({super.key, required this.organizerIdentifier});
+  const OrganizerActivitiesTab({
+    super.key,
+    required this.organizerIdentifier,
+    required this.ownerSession,
+  });
 
   @override
   ConsumerState<OrganizerActivitiesTab> createState() =>
@@ -109,7 +115,10 @@ class _OrganizerActivitiesTabState
               else
                 ...visible.map((e) => Padding(
                       padding: const EdgeInsets.only(bottom: 14),
-                      child: _OrganizerEventTile(event: e),
+                      child: _OrganizerEventTile(
+                        event: e,
+                        ownerSession: widget.ownerSession,
+                      ),
                     )),
               if (state.isLoadingMore)
                 const Padding(
@@ -232,12 +241,22 @@ class _SegmentedToggle extends StatelessWidget {
 
 class _OrganizerEventTile extends ConsumerWidget {
   final Event event;
-  const _OrganizerEventTile({required this.event});
+  final AuthSessionKey ownerSession;
+
+  const _OrganizerEventTile({
+    required this.event,
+    required this.ownerSession,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return InkWell(
-      onTap: () => openEvent(context, ref, event),
+      onTap: () => openEvent(
+        context,
+        ref,
+        event,
+        ownerSession: ownerSession,
+      ),
       borderRadius: BorderRadius.circular(12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

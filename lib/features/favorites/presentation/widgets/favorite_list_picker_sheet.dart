@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
+import 'package:lehiboo/features/auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../domain/entities/favorite_list.dart';
 import '../providers/favorite_lists_provider.dart';
 import 'create_list_dialog.dart';
@@ -35,17 +38,22 @@ class FavoriteListPickerSheet extends ConsumerWidget {
 
   /// Titre personnalisé
   final String? title;
+  final String ownerAccountId;
+  final AuthSessionKey ownerSession;
 
   const FavoriteListPickerSheet({
     super.key,
     this.currentListId,
     this.isAlreadyFavorite = false,
     this.title,
+    required this.ownerAccountId,
+    required this.ownerSession,
   });
 
   /// Affiche le bottom sheet et retourne le résultat de sélection
   static Future<FavoriteListPickerResult?> show(
     BuildContext context, {
+    required AuthSessionKey ownerSession,
     String? currentListId,
     bool isAlreadyFavorite = false,
     String? title,
@@ -54,16 +62,34 @@ class FavoriteListPickerSheet extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => FavoriteListPickerSheet(
-        currentListId: currentListId,
-        isAlreadyFavorite: isAlreadyFavorite,
-        title: title,
-      ),
+      builder: (context) {
+        final ownerAccountId = ownerSession.accountId;
+        if (ownerAccountId == null) return const SizedBox.shrink();
+        return AccountBoundRouteGuard<FavoriteListPickerResult>(
+          ownerAccountId: ownerAccountId,
+          ownerSession: ownerSession,
+          builder: (_) => FavoriteListPickerSheet(
+            currentListId: currentListId,
+            isAlreadyFavorite: isAlreadyFavorite,
+            title: title,
+            ownerAccountId: ownerAccountId,
+            ownerSession: ownerSession,
+          ),
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    final currentSession = ref.watch(authSessionKeyProvider);
+    if (currentAccountId != ownerAccountId ||
+        !identical(currentSession, ownerSession)) {
+      return const SizedBox.shrink(
+        key: Key('favorite-list-picker-session-invalid'),
+      );
+    }
     final listsAsync = ref.watch(favoriteListsProvider);
 
     return Container(
@@ -162,6 +188,10 @@ class FavoriteListPickerSheet extends ConsumerWidget {
     List<FavoriteList> lists,
     ScrollController scrollController,
   ) {
+    bool ownsCurrentAccount() =>
+        ref.read(authSessionUserIdProvider) == ownerAccountId &&
+        identical(ref.read(authSessionKeyProvider), ownerSession);
+
     return ListView(
       controller: scrollController,
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -178,6 +208,7 @@ class FavoriteListPickerSheet extends ConsumerWidget {
           // évitait de simuler un état désactivé / déjà coché.
           isSelected: isAlreadyFavorite && currentListId == null,
           onTap: () {
+            if (!ownsCurrentAccount()) return;
             HapticFeedback.selectionClick();
             Navigator.of(context)
                 .pop(const FavoriteListPickerResult(listId: null));
@@ -196,6 +227,7 @@ class FavoriteListPickerSheet extends ConsumerWidget {
               ),
               isSelected: currentListId == list.id,
               onTap: () {
+                if (!ownsCurrentAccount()) return;
                 HapticFeedback.selectionClick();
                 Navigator.of(context)
                     .pop(FavoriteListPickerResult(listId: list.id));
@@ -212,8 +244,12 @@ class FavoriteListPickerSheet extends ConsumerWidget {
           subtitle: context.l10n.favoriteListCreateSheetSubtitle,
           showChevron: true,
           onTap: () async {
-            final newList = await CreateListDialog.show(context);
-            if (newList != null && context.mounted) {
+            if (!ownsCurrentAccount()) return;
+            final newList = await CreateListDialog.show(
+              context,
+              ownerSession: ownerSession,
+            );
+            if (newList != null && context.mounted && ownsCurrentAccount()) {
               Navigator.of(context)
                   .pop(FavoriteListPickerResult(listId: newList.id));
             }
@@ -229,6 +265,7 @@ class FavoriteListPickerSheet extends ConsumerWidget {
             title: context.l10n.favoriteListPickerRemoveTitle,
             subtitle: context.l10n.favoriteListPickerRemoveSubtitle,
             onTap: () {
+              if (!ownsCurrentAccount()) return;
               HapticFeedback.mediumImpact();
               Navigator.of(context)
                   .pop(const FavoriteListPickerResult.remove());
@@ -264,7 +301,7 @@ class _ListOptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: isSelected ? iconColor.withOpacity(0.1) : Colors.transparent,
+      color: isSelected ? iconColor.withValues(alpha: 0.1) : Colors.transparent,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -275,7 +312,7 @@ class _ListOptionTile extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.1),
+                  color: iconColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: iconColor, size: 22),

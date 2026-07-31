@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/followed_organizers_providers.dart';
 import '../widgets/followed_organizer_tile.dart';
 import '../widgets/organizer_load_more_error.dart';
@@ -27,11 +28,20 @@ class _FollowedOrganizersScreenState
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
   Timer? _searchDebounce;
+  ProviderSubscription<String?>? _sessionSubscription;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _sessionSubscription = ref.listenManual<String?>(
+      authSessionUserIdProvider,
+      (previous, next) {
+        if (previous == next) return;
+        _searchDebounce?.cancel();
+        _searchController.clear();
+      },
+    );
   }
 
   @override
@@ -40,6 +50,7 @@ class _FollowedOrganizersScreenState
       ..removeListener(_onScroll)
       ..dispose();
     _searchDebounce?.cancel();
+    _sessionSubscription?.close();
     _searchController.dispose();
     super.dispose();
   }
@@ -63,12 +74,21 @@ class _FollowedOrganizersScreenState
   }
 
   Future<void> _unfollow(String uuid) async {
+    final ownerAccountId = ref.read(authSessionUserIdProvider);
+    if (ownerAccountId == null) return;
+    final ownerNotifier =
+        ref.read(followedOrganizersControllerProvider.notifier);
     try {
-      await ref
-          .read(followedOrganizersControllerProvider.notifier)
-          .unfollow(uuid);
+      await ownerNotifier.unfollow(uuid);
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted ||
+          ref.read(authSessionUserIdProvider) != ownerAccountId ||
+          !identical(
+            ref.read(followedOrganizersControllerProvider.notifier),
+            ownerNotifier,
+          )) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

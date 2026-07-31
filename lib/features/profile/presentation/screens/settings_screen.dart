@@ -1,11 +1,9 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/analytics/analytics_consent.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../../config/dio_client.dart';
 import '../../../../config/env_config.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/l10n/app_locale.dart';
@@ -13,6 +11,7 @@ import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../../shared/legal/legal_links.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../../notifications/presentation/providers/push_notification_provider.dart';
 import '../../../notifications/presentation/utils/push_notification_error_message.dart';
 import '../../../petit_boo/presentation/widgets/animated_toast.dart';
@@ -28,14 +27,107 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _busyNewsletter = false;
   bool _busyPush = false;
-  bool _testingRefresh = false;
+  late final String? _ownerAccountId;
+  late final AuthNotifier _ownerAuthNotifier;
+  late final ProviderSubscription<String?> _sessionSubscription;
+  int _sessionGeneration = 0;
+  bool _sessionInvalidated = false;
+  bool _exitScheduled = false;
+  CancelToken? _newsletterMutationCancelToken;
+  CancelToken? _pushMutationCancelToken;
+
+  @override
+  void initState() {
+    super.initState();
+    _ownerAccountId = ref.read(authSessionUserIdProvider);
+    _ownerAuthNotifier = ref.read(authProvider.notifier);
+    _sessionSubscription = ref.listenManual<String?>(
+      authSessionUserIdProvider,
+      (_, next) {
+        if (next != _ownerAccountId) _invalidateSession();
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _sessionGeneration++;
+    _cancelOutstandingWork();
+    _sessionSubscription.close();
+    super.dispose();
+  }
+
+  bool _ownsSession(int generation) {
+    final ownerAccountId = _ownerAccountId;
+    return mounted &&
+        !_sessionInvalidated &&
+        ownerAccountId != null &&
+        generation == _sessionGeneration &&
+        ref.read(authSessionUserIdProvider) == ownerAccountId &&
+        identical(ref.read(authProvider.notifier), _ownerAuthNotifier);
+  }
+
+  void _cancelOutstandingWork() {
+    _newsletterMutationCancelToken?.cancel('Authentication session changed');
+    _pushMutationCancelToken?.cancel('Authentication session changed');
+    _newsletterMutationCancelToken = null;
+    _pushMutationCancelToken = null;
+  }
+
+  void _invalidateSession() {
+    if (_sessionInvalidated) return;
+    _sessionInvalidated = true;
+    _sessionGeneration++;
+    _cancelOutstandingWork();
+    _busyNewsletter = false;
+    _busyPush = false;
+    if (mounted) setState(() {});
+    _scheduleFailClosedExit();
+  }
+
+  void _scheduleFailClosedExit() {
+    if (_exitScheduled || !mounted) return;
+    _exitScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final ownedRoute = ModalRoute.of(context);
+      final navigator = Navigator.of(context);
+      if (ownedRoute != null) {
+        navigator.popUntil((route) => identical(route, ownedRoute));
+        if (ownedRoute.isCurrent && navigator.canPop()) {
+          navigator.pop();
+          return;
+        }
+      }
+      try {
+        GoRouter.of(context).go('/');
+      } catch (_) {
+        // Standalone widget tests may not provide GoRouter. The invalidated
+        // screen remains blank and cannot expose or mutate account data.
+      }
+    });
+  }
 
   Future<void> _togglePref({
     required bool current,
     required bool isPush,
   }) async {
+    final generation = _sessionGeneration;
+    if (!_ownsSession(generation)) return;
+
     final newValue = !current;
     final l10n = context.l10n;
+    final ownerPushNotifier =
+        isPush ? ref.read(pushNotificationProvider.notifier) : null;
+    final profileApi = ref.read(profileApiDataSourceProvider);
+    final cancelToken = CancelToken();
+    if (isPush) {
+      _pushMutationCancelToken?.cancel('Superseded preference update');
+      _pushMutationCancelToken = cancelToken;
+    } else {
+      _newsletterMutationCancelToken?.cancel('Superseded preference update');
+      _newsletterMutationCancelToken = cancelToken;
+    }
     setState(() {
       if (isPush) {
         _busyPush = true;
@@ -49,35 +141,47 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         // Do not persist an enabled preference until device permission and
         // token registration have both succeeded. Otherwise the switch would
         // claim notifications are active after a denied/failed setup.
-        final registered = await ref
-            .read(pushNotificationProvider.notifier)
-            .requestPermission();
+        final registered = await ownerPushNotifier!.requestPermission();
+        if (!_ownsSession(generation) ||
+            !identical(
+              ref.read(pushNotificationProvider.notifier),
+              ownerPushNotifier,
+            )) {
+          return;
+        }
         if (!registered) {
-          if (mounted) {
-            final failure = ref.read(pushNotificationProvider).failureReason;
-            PetitBooToast.error(
-              context,
-              pushNotificationErrorMessage(l10n, failure),
-            );
-          }
+          if (!mounted) return;
+          final failure = ref.read(pushNotificationProvider).failureReason;
+          PetitBooToast.error(
+            context,
+            pushNotificationErrorMessage(l10n, failure),
+          );
           return;
         }
       }
 
-      final api = ref.read(profileApiDataSourceProvider);
-
-      final updatedDto = await api.updateProfile(
+      if (!_ownsSession(generation)) return;
+      final updatedDto = await profileApi.updateProfile(
         newsletter: isPush ? null : newValue,
         pushNotificationsEnabled: isPush ? newValue : null,
+        cancelToken: cancelToken,
       );
+      if (!_ownsSession(generation) ||
+          (isPush
+              ? !identical(_pushMutationCancelToken, cancelToken)
+              : !identical(_newsletterMutationCancelToken, cancelToken))) {
+        return;
+      }
 
       // Synchroniser l'auth state local
-      ref.read(authProvider.notifier).updateUser(updatedDto);
+      _ownerAuthNotifier.updateUser(updatedDto);
 
       // Plan 05 : la mise à jour wallet et le toast `+30 H NotificationsOptIn`
       // sont gérés globalement par HibonsUpdateInterceptor.
     } catch (e) {
-      if (mounted) {
+      if (_ownsSession(generation) &&
+          !(e is DioException && CancelToken.isCancel(e))) {
+        if (!mounted) return;
         final fallback = isPush
             ? l10n.settingsPushPreferenceUpdateFailed
             : l10n.settingsNewsletterUpdateFailed;
@@ -87,10 +191,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         );
       }
     } finally {
-      if (mounted) {
+      if (isPush && identical(_pushMutationCancelToken, cancelToken)) {
+        _pushMutationCancelToken = null;
+      } else if (!isPush &&
+          identical(_newsletterMutationCancelToken, cancelToken)) {
+        _newsletterMutationCancelToken = null;
+      }
+      if (_ownsSession(generation)) {
         setState(() {
-          _busyPush = false;
-          _busyNewsletter = false;
+          if (isPush) {
+            _busyPush = false;
+          } else {
+            _busyNewsletter = false;
+          }
         });
       }
     }
@@ -100,6 +213,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final locale = ref.watch(appLocaleControllerProvider);
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_ownerAccountId == null ||
+        currentAccountId != _ownerAccountId ||
+        _sessionInvalidated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _invalidateSession();
+      });
+      return const Scaffold(body: SizedBox.shrink());
+    }
     final user = ref.watch(authProvider).user;
     final newsletter = user?.newsletter ?? false;
     final pushEnabled = user?.pushNotificationsEnabled ?? false;
@@ -153,6 +275,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
           SwitchListTile(
+            key: const ValueKey('settings-push-switch'),
             secondary: const Icon(
               Icons.notifications_active_outlined,
               color: Color(0xFFFF601F),
@@ -165,6 +288,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 : (_) => _togglePref(current: pushEnabled, isPush: true),
           ),
           SwitchListTile(
+            key: const ValueKey('settings-newsletter-switch'),
             secondary: const Icon(
               Icons.email_outlined,
               color: Color(0xFFFF601F),
@@ -231,6 +355,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               color: Colors.grey,
             ),
             onTap: () => _showAccountDeletionConfirmation(context),
+            key: const ValueKey('settings-account-deletion'),
           ),
           const Divider(),
           _buildSectionHeader(l10n.settingsSectionLegal),
@@ -252,106 +377,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: Text(l10n.settingsVersionTitle),
             trailing: const Text(AppConstants.appVersion),
           ),
-          // ── Debug only ────────────────────────────────────────────────────
-          // Outil de diagnostic du flow de refresh token (cf.
-          // docs/audits/analyse-authentification-deconnexions.md). Corrompt
-          // l'access token puis tape une route protégée pour forcer un vrai 401
-          // → l'intercepteur JwtAuthInterceptor déclenche _refreshAccessToken().
-          // Jamais compilé en release (kDebugMode).
-          if (kDebugMode) ...[
-            const Divider(),
-            _buildSectionHeader('Debug'),
-            ListTile(
-              leading: _testingRefresh
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2.5),
-                    )
-                  : const Icon(Icons.refresh, color: Color(0xFFFF601F)),
-              title: const Text('Tester le refresh token'),
-              subtitle: const Text(
-                'Simule un 401 → déclenche le flow de refresh',
-              ),
-              onTap: _testingRefresh ? null : _testTokenRefreshFlow,
-            ),
-          ],
         ],
-      ),
-    );
-  }
-
-  /// Diagnostic : force un 401 réel sur une route protégée pour exercer le
-  /// vrai chemin de refresh de [JwtAuthInterceptor].
-  ///
-  /// 1. lit access + refresh token (et détecte le cas `refresh == access`,
-  ///    hypothèse C1 de l'audit) ;
-  /// 2. corrompt l'access token en storage ;
-  /// 3. tape `/me/alerts` via `DioClient.instance` (passe par l'intercepteur) ;
-  /// 4. interprète le résultat :
-  ///    - 200 → le refresh a réussi et la requête a été rejouée ;
-  ///    - exception 401 → le refresh a échoué (et `forceLogout` se déclenche).
-  Future<void> _testTokenRefreshFlow() async {
-    final messenger = ScaffoldMessenger.of(context);
-    const storage = SharedSecureStorage.instance;
-
-    final accessBefore = await storage.read(key: AppConstants.keyAuthToken);
-    final refreshBefore = await storage.read(key: AppConstants.keyRefreshToken);
-
-    if (accessBefore == null || accessBefore.isEmpty) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Aucun token en storage — connecte-toi d’abord.'),
-        ),
-      );
-      return;
-    }
-
-    final sameToken = accessBefore == refreshBefore;
-    debugPrint(
-      '🧪 RefreshTest: access.len=${accessBefore.length}, '
-      'refresh.len=${refreshBefore?.length}, refresh==access: $sameToken',
-    );
-
-    setState(() => _testingRefresh = true);
-
-    // Corrompt l'access token : le prochain appel protégé renverra un vrai 401.
-    final corrupted = 'invalid.$accessBefore';
-    await storage.write(key: AppConstants.keyAuthToken, value: corrupted);
-    debugPrint('🧪 RefreshTest: access token corrompu → appel /me/alerts');
-
-    String result;
-    Color color;
-    try {
-      await DioClient.instance.get<dynamic>('/me/alerts');
-      final accessAfter = await storage.read(key: AppConstants.keyAuthToken);
-      final rotated = accessAfter != null && accessAfter != corrupted;
-      if (rotated) {
-        result = '✅ Refresh OK : nouveau token obtenu, requête rejouée.';
-        color = Colors.green.shade700;
-      } else {
-        result = '⚠️ Requête passée mais token inchangé — à vérifier.';
-        color = Colors.orange.shade800;
-      }
-    } on DioException catch (e) {
-      final code = e.response?.statusCode;
-      result = '❌ Refresh échoué (HTTP $code). '
-          '${sameToken ? "refresh_token == access_token (cause C1). " : ""}'
-          'Déconnexion forcée déclenchée.';
-      color = Colors.red.shade700;
-    } catch (e) {
-      result = '❌ Erreur inattendue : $e';
-      color = Colors.red.shade700;
-    }
-
-    debugPrint('🧪 RefreshTest: $result');
-    if (!mounted) return;
-    setState(() => _testingRefresh = false);
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(result),
-        backgroundColor: color,
-        duration: const Duration(seconds: 6),
       ),
     );
   }
@@ -441,46 +467,74 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Uri.parse('$baseUrl/$locale/account-deletion');
   }
 
-  Future<void> _openAccountDeletionPage(BuildContext context) async {
+  Future<void> _openAccountDeletionPage(
+    BuildContext context, {
+    required String ownerAccountId,
+    required int generation,
+  }) async {
+    if (!_ownsSession(generation) || ownerAccountId != _ownerAccountId) return;
     final l10n = context.l10n;
     final uri = _accountDeletionUri(context);
+    final messenger = ScaffoldMessenger.of(context);
 
     final ok = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
     if (ok) return;
-    if (!context.mounted) return;
+    if (!context.mounted ||
+        !_ownsSession(generation) ||
+        ownerAccountId != _ownerAccountId) {
+      return;
+    }
 
     final fallbackOk =
         await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (fallbackOk) return;
-    if (!context.mounted) return;
+    if (!context.mounted ||
+        !_ownsSession(generation) ||
+        ownerAccountId != _ownerAccountId) {
+      return;
+    }
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    messenger.showSnackBar(
       SnackBar(content: Text(l10n.settingsAccountDeletionOpenFailed)),
     );
   }
 
   void _showAccountDeletionConfirmation(BuildContext context) {
+    final ownerAccountId = _ownerAccountId;
+    final generation = _sessionGeneration;
+    if (ownerAccountId == null || !_ownsSession(generation)) return;
     final l10n = context.l10n;
 
     showDialog<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.settingsAccountDeletionDialogTitle),
-        content: Text(l10n.settingsAccountDeletionDialogContent),
-        actions: [
-          TextButton(
-            onPressed: () => dialogContext.pop(),
-            child: Text(l10n.commonCancel),
-          ),
-          TextButton(
-            onPressed: () {
-              dialogContext.pop();
-              _openAccountDeletionPage(context);
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red.shade700),
-            child: Text(l10n.commonContinue),
-          ),
-        ],
+      builder: (routeContext) => AccountBoundRouteGuard<void>(
+        ownerAccountId: ownerAccountId,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(l10n.settingsAccountDeletionDialogTitle),
+          content: Text(l10n.settingsAccountDeletionDialogContent),
+          actions: [
+            TextButton(
+              onPressed: () => dialogContext.pop(),
+              child: Text(l10n.commonCancel),
+            ),
+            TextButton(
+              onPressed: () {
+                if (!_ownsSession(generation)) {
+                  dialogContext.pop();
+                  return;
+                }
+                dialogContext.pop();
+                _openAccountDeletionPage(
+                  context,
+                  ownerAccountId: ownerAccountId,
+                  generation: generation,
+                );
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red.shade700),
+              child: Text(l10n.commonContinue),
+            ),
+          ],
+        ),
       ),
     );
   }

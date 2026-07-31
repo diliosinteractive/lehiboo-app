@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import '../../../../core/themes/colors.dart';
 import '../../domain/entities/favorite_list.dart';
 import '../providers/favorite_lists_provider.dart';
@@ -19,6 +20,7 @@ class FavoriteListsSidebar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final ownerSession = ref.watch(authSessionKeyProvider);
     final listsAsync = ref.watch(favoriteListsProvider);
     final selectedListId = ref.watch(selectedFavoriteListProvider);
 
@@ -56,7 +58,18 @@ class FavoriteListsSidebar extends ConsumerWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.add, size: 22),
-                  onPressed: () => CreateListDialog.show(context),
+                  onPressed: () {
+                    if (!identical(
+                      ref.read(authSessionKeyProvider),
+                      ownerSession,
+                    )) {
+                      return;
+                    }
+                    CreateListDialog.show(
+                      context,
+                      ownerSession: ownerSession,
+                    );
+                  },
                   tooltip: context.l10n.favoriteListNewTitle,
                   style: IconButton.styleFrom(
                     backgroundColor:
@@ -71,8 +84,13 @@ class FavoriteListsSidebar extends ConsumerWidget {
           // Listes
           Expanded(
             child: listsAsync.when(
-              data: (lists) =>
-                  _buildListView(context, ref, lists, selectedListId),
+              data: (lists) => _buildListView(
+                context,
+                ref,
+                lists,
+                selectedListId,
+                ownerSession,
+              ),
               loading: () => const Center(
                 child: CircularProgressIndicator(color: HbColors.brandPrimary),
               ),
@@ -89,7 +107,14 @@ class FavoriteListsSidebar extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
                     TextButton(
-                      onPressed: () => ref.refresh(favoriteListsProvider),
+                      onPressed: () {
+                        if (identical(
+                          ref.read(authSessionKeyProvider),
+                          ownerSession,
+                        )) {
+                          ref.invalidate(favoriteListsProvider);
+                        }
+                      },
                       child: Text(context.l10n.commonRetry),
                     ),
                   ],
@@ -107,8 +132,11 @@ class FavoriteListsSidebar extends ConsumerWidget {
     WidgetRef ref,
     List<FavoriteList> lists,
     String? selectedListId,
+    AuthSessionKey ownerSession,
   ) {
     final totalCount = lists.fold(0, (sum, l) => sum + l.favoritesCount);
+    bool ownsSession() =>
+        identical(ref.read(authSessionKeyProvider), ownerSession);
 
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -121,6 +149,7 @@ class FavoriteListsSidebar extends ConsumerWidget {
           count: totalCount,
           isSelected: selectedListId == null,
           onTap: () {
+            if (!ownsSession()) return;
             HapticFeedback.selectionClick();
             ref.read(selectedFavoriteListProvider.notifier).state = null;
           },
@@ -134,6 +163,7 @@ class FavoriteListsSidebar extends ConsumerWidget {
           count: null, // On ne connaît pas le compte exact
           isSelected: selectedListId == 'uncategorized',
           onTap: () {
+            if (!ownsSession()) return;
             HapticFeedback.selectionClick();
             ref.read(selectedFavoriteListProvider.notifier).state =
                 'uncategorized';
@@ -163,12 +193,21 @@ class FavoriteListsSidebar extends ConsumerWidget {
               count: list.favoritesCount,
               isSelected: selectedListId == list.id,
               onTap: () {
+                if (!ownsSession()) return;
                 HapticFeedback.selectionClick();
                 ref.read(selectedFavoriteListProvider.notifier).state = list.id;
               },
               onLongPress: () async {
+                if (!ownsSession()) return;
                 HapticFeedback.mediumImpact();
-                final result = await EditListDialog.show(context, list);
+                final result = await EditListDialog.show(
+                  context,
+                  list,
+                  ownerSession: ownerSession,
+                );
+                if (!context.mounted || !ownsSession()) {
+                  return;
+                }
 
                 // Si la liste a été supprimée et était sélectionnée, revenir à "tous"
                 if (result == null && selectedListId == list.id) {
@@ -182,7 +221,13 @@ class FavoriteListsSidebar extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: TextButton.icon(
-            onPressed: () => CreateListDialog.show(context),
+            onPressed: () {
+              if (!ownsSession()) return;
+              CreateListDialog.show(
+                context,
+                ownerSession: ownerSession,
+              );
+            },
             icon: const Icon(Icons.add, size: 20),
             label: Text(context.l10n.favoriteListNewTitle),
             style: TextButton.styleFrom(
@@ -326,11 +371,17 @@ class _FavoriteListsChipsState extends ConsumerState<FavoriteListsChips> {
 
   @override
   Widget build(BuildContext context) {
+    final ownerSession = ref.watch(authSessionKeyProvider);
     final listsAsync = ref.watch(favoriteListsProvider);
     final selectedListId = ref.watch(selectedFavoriteListProvider);
 
     return listsAsync.when(
-      data: (lists) => _buildChips(context, lists, selectedListId),
+      data: (lists) => _buildChips(
+        context,
+        lists,
+        selectedListId,
+        ownerSession,
+      ),
       loading: () => Container(
         height: 64,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -389,8 +440,11 @@ class _FavoriteListsChipsState extends ConsumerState<FavoriteListsChips> {
     BuildContext context,
     List<FavoriteList> lists,
     String? selectedListId,
+    AuthSessionKey ownerSession,
   ) {
     final totalCount = lists.fold(0, (sum, l) => sum + l.favoritesCount);
+    bool ownsSession() =>
+        identical(ref.read(authSessionKeyProvider), ownerSession);
 
     return Container(
       height: 64,
@@ -421,6 +475,7 @@ class _FavoriteListsChipsState extends ConsumerState<FavoriteListsChips> {
                 count: totalCount,
                 isSelected: selectedListId == null,
                 onTap: () {
+                  if (!ownsSession()) return;
                   HapticFeedback.selectionClick();
                   ref.read(selectedFavoriteListProvider.notifier).state = null;
                 },
@@ -434,6 +489,7 @@ class _FavoriteListsChipsState extends ConsumerState<FavoriteListsChips> {
                 color: Colors.grey[500]!,
                 isSelected: selectedListId == 'uncategorized',
                 onTap: () {
+                  if (!ownsSession()) return;
                   HapticFeedback.selectionClick();
                   ref.read(selectedFavoriteListProvider.notifier).state =
                       'uncategorized';
@@ -450,12 +506,21 @@ class _FavoriteListsChipsState extends ConsumerState<FavoriteListsChips> {
                       count: list.favoritesCount,
                       isSelected: selectedListId == list.id,
                       onTap: () {
+                        if (!ownsSession()) return;
                         HapticFeedback.selectionClick();
                         ref.read(selectedFavoriteListProvider.notifier).state =
                             list.id;
                       },
                       onEdit: () async {
-                        final result = await EditListDialog.show(context, list);
+                        if (!ownsSession()) return;
+                        final result = await EditListDialog.show(
+                          context,
+                          list,
+                          ownerSession: ownerSession,
+                        );
+                        if (!context.mounted || !ownsSession()) {
+                          return;
+                        }
                         if (result == null && selectedListId == list.id) {
                           ref
                               .read(selectedFavoriteListProvider.notifier)
@@ -469,7 +534,13 @@ class _FavoriteListsChipsState extends ConsumerState<FavoriteListsChips> {
               Padding(
                 padding: const EdgeInsets.only(left: 10),
                 child: _AddFolderButton(
-                  onTap: () => CreateListDialog.show(context),
+                  onTap: () {
+                    if (!ownsSession()) return;
+                    CreateListDialog.show(
+                      context,
+                      ownerSession: ownerSession,
+                    );
+                  },
                 ),
               ),
             ],

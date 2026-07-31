@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../../partners/presentation/widgets/organizer_avatar.dart';
 import '../../data/models/membership_dto.dart';
 import 'organizer_join_button.dart';
@@ -15,11 +16,13 @@ import 'organizer_join_button.dart';
 /// without an extra fetch.
 class MembersOnlyGate extends ConsumerWidget {
   final OrganizationSummaryDto organization;
+  final AuthSessionKey ownerSession;
   final VoidCallback? onBack;
 
   const MembersOnlyGate({
     super.key,
     required this.organization,
+    required this.ownerSession,
     this.onBack,
   });
 
@@ -124,7 +127,15 @@ class MembersOnlyGate extends ConsumerWidget {
                     ),
                     if (orgUuid != null && orgUuid.isNotEmpty)
                       TextButton(
-                        onPressed: () => context.push('/organizers/$orgUuid'),
+                        onPressed: () {
+                          if (!identical(
+                            ref.read(authSessionKeyProvider),
+                            ownerSession,
+                          )) {
+                            return;
+                          }
+                          context.push('/organizers/$orgUuid');
+                        },
                         child: Text(l10n.membershipViewOrganizer),
                       ),
                   ],
@@ -136,7 +147,13 @@ class MembersOnlyGate extends ConsumerWidget {
                 child: ElevatedButton.icon(
                   onPressed: orgUuid == null || orgUuid.isEmpty
                       ? null
-                      : () => confirmAndJoin(context, ref, orgUuid, orgName),
+                      : () => confirmAndJoin(
+                            context,
+                            ref,
+                            orgUuid,
+                            orgName,
+                            ownerSession: ownerSession,
+                          ),
                   icon: const Icon(Icons.group_add_outlined, size: 18),
                   label: Text(l10n.membersOnlyGateJoin(orgName)),
                   style: ElevatedButton.styleFrom(

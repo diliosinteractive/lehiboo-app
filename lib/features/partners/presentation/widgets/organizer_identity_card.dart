@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../memberships/presentation/widgets/organizer_join_button.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../data/models/organizer_profile_dto.dart';
 import 'organizer_follow_button.dart';
 
@@ -14,11 +15,13 @@ import 'organizer_follow_button.dart';
 class OrganizerIdentityCard extends StatelessWidget {
   final OrganizerProfileDto organizer;
   final int liveFollowersCount;
+  final AuthSessionKey ownerSession;
 
   const OrganizerIdentityCard({
     super.key,
     required this.organizer,
     required this.liveFollowersCount,
+    required this.ownerSession,
   });
 
   @override
@@ -62,11 +65,15 @@ class OrganizerIdentityCard extends StatelessWidget {
                     height: 22,
                   ),
                 ),
-              OrganizerFollowButton(organizerUuid: organizer.uuid),
+              OrganizerFollowButton(
+                organizerUuid: organizer.uuid,
+                ownerSession: ownerSession,
+              ),
               if (showJoin)
                 OrganizerJoinButton(
                   organizerUuid: organizer.uuid,
                   organizerName: displayName,
+                  ownerSession: ownerSession,
                 ),
             ],
           ),

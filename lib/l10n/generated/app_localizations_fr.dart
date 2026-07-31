@@ -63,6 +63,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get guestFeatureReportReview => 'signaler un avis';
 
   @override
+  String get guestFeatureVoteReview => 'voter sur un avis';
+
+  @override
   String get guestFeatureSaveSearch => 'sauvegarder une recherche';
 
   @override

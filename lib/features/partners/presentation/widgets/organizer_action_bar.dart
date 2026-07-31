@@ -6,6 +6,7 @@ import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../../auth/presentation/widgets/guest_restriction_dialog.dart';
 import '../../../memberships/presentation/widgets/organizer_join_button.dart'
     show confirmAndJoin;
@@ -18,22 +19,21 @@ import '../providers/organizer_profile_providers.dart';
 /// - **Coordinates** is a UI toggle owned by the parent screen.
 ///
 /// The Follow and Join buttons live next to the organizer name (see
-/// [OrganizerFollowButton] / [OrganizerJoinButton]); this widget still
-/// owns the auth-replay listener so any pending intent — captured before
-/// the user logged in — fires through the appropriate provider regardless
-/// of where the visible button sits.
+/// [OrganizerFollowButton] / [OrganizerJoinButton]).
 ///
-/// Auth gating: tapping any button while unauthenticated stores the intent
-/// in [pendingOrganizerActionProvider] and opens [GuestRestrictionDialog].
-/// After successful login, the screen replays the pending action.
+/// Auth gating is awaited by the widget that initiated it. This keeps the
+/// intent bound to this organizer even when multiple profiles remain mounted
+/// in the navigator during login.
 class OrganizerActionBar extends ConsumerStatefulWidget {
   final OrganizerProfileDto organizer;
+  final AuthSessionKey ownerSession;
   final bool coordinatesOpen;
   final ValueChanged<bool> onCoordinatesToggle;
 
   const OrganizerActionBar({
     super.key,
     required this.organizer,
+    required this.ownerSession,
     required this.coordinatesOpen,
     required this.onCoordinatesToggle,
   });
@@ -43,42 +43,27 @@ class OrganizerActionBar extends ConsumerStatefulWidget {
 }
 
 class _OrganizerActionBarState extends ConsumerState<OrganizerActionBar> {
+  late AuthSessionKey _lastSession;
+  int _authIdentityGeneration = 0;
+  late final ProviderSubscription<AuthSessionKey> _authSubscription;
+
   @override
   void initState() {
     super.initState();
-    // Replay a pending gated action when auth flips to authenticated.
-    //
-    // Listener is registered manually (not in `build`) because the auth
-    // status can change while the user is off the screen on the login
-    // flow. The widget stays mounted underneath because `/login` is pushed,
-    // not pushed-as-replacement, so when the user pops back the listener
-    // catches the transition.
-    ref.listenManual<AuthState>(authProvider, (previous, next) {
-      if (!mounted) return;
-
-      final wasUnauthenticated =
-          previous == null || previous.status != AuthStatus.authenticated;
-      final isNowAuthenticated = next.status == AuthStatus.authenticated;
-      if (!wasUnauthenticated || !isNowAuthenticated) return;
-
-      final pending = ref.read(pendingOrganizerActionProvider);
-      if (pending == null) return;
-      ref.read(pendingOrganizerActionProvider.notifier).state = null;
-      _runAction(pending);
-    });
+    _lastSession = ref.read(authSessionKeyProvider);
+    _authSubscription = ref.listenManual<AuthSessionKey>(
+      authSessionKeyProvider,
+      (_, next) {
+        if (identical(next, _lastSession)) return;
+        _lastSession = next;
+        _authIdentityGeneration++;
+      },
+    );
   }
 
   @override
   void dispose() {
-    // Scope pending intent to this screen's lifecycle. If the user tapped
-    // Follow then navigated to a different organizer profile without
-    // authenticating, the stale intent shouldn't replay against the new
-    // organizer (its toggle would target the wrong UUID anyway because
-    // `_runAction` reads `widget.organizer.uuid` — but clearing here makes
-    // the contract explicit).
-    if (mounted) {
-      ref.read(pendingOrganizerActionProvider.notifier).state = null;
-    }
+    _authSubscription.close();
     super.dispose();
   }
 
@@ -114,11 +99,20 @@ class _OrganizerActionBarState extends ConsumerState<OrganizerActionBar> {
     );
   }
 
-  void _handle(PendingOrganizerAction action) {
+  Future<void> _handle(PendingOrganizerAction action) async {
+    final renderedOwner = widget.ownerSession;
+    if (!identical(
+      ref.read(authSessionKeyProvider),
+      renderedOwner,
+    )) {
+      return;
+    }
+    final initiatingOrganizerUuid = widget.organizer.uuid;
+    var actionOwner = renderedOwner;
     final isAuthenticated = ref.read(authProvider).isAuthenticated;
     if (!isAuthenticated) {
-      ref.read(pendingOrganizerActionProvider.notifier).state = action;
-      GuestRestrictionDialog.show(
+      final expectedAuthenticatedGeneration = _authIdentityGeneration + 1;
+      final allowed = await GuestRestrictionDialog.show(
         context,
         featureName: switch (action) {
           PendingOrganizerAction.follow =>
@@ -130,18 +124,38 @@ class _OrganizerActionBarState extends ConsumerState<OrganizerActionBar> {
           PendingOrganizerAction.join => context.l10n.guestFeatureJoinOrganizer,
         },
       );
+      if (!allowed ||
+          !mounted ||
+          _authIdentityGeneration != expectedAuthenticatedGeneration ||
+          widget.organizer.uuid != initiatingOrganizerUuid) {
+        return;
+      }
+      final authenticatedOwner = ref.read(authSessionKeyProvider);
+      if (authenticatedOwner.accountId == null) return;
+      actionOwner = authenticatedOwner;
+    }
+    if (actionOwner.accountId == null ||
+        !identical(
+          ref.read(authSessionKeyProvider),
+          actionOwner,
+        ) ||
+        widget.organizer.uuid != initiatingOrganizerUuid) {
       return;
     }
-    _runAction(action);
+    _runAction(action, ownerSession: actionOwner);
   }
 
-  void _runAction(PendingOrganizerAction action) {
+  void _runAction(
+    PendingOrganizerAction action, {
+    required AuthSessionKey ownerSession,
+  }) {
+    if (!identical(ref.read(authSessionKeyProvider), ownerSession)) return;
     final orgName = widget.organizer.displayName?.isNotEmpty ?? false
         ? widget.organizer.displayName!
         : widget.organizer.name;
     switch (action) {
       case PendingOrganizerAction.follow:
-        _toggleFollow();
+        _toggleFollow(ownerSession);
       case PendingOrganizerAction.contact:
         context.push(
           '/messages/new/from-organizer/${widget.organizer.uuid}'
@@ -158,17 +172,30 @@ class _OrganizerActionBarState extends ConsumerState<OrganizerActionBar> {
           ref,
           widget.organizer.uuid,
           orgName,
+          ownerSession: ownerSession,
         );
     }
   }
 
-  Future<void> _toggleFollow() async {
+  Future<void> _toggleFollow(AuthSessionKey ownerSession) async {
+    if (!identical(ref.read(authSessionKeyProvider), ownerSession)) return;
     final provider = followStateControllerProvider(widget.organizer.uuid);
+    if (ownerSession.accountId == null) return;
+    final ownerNotifier = ref.read(provider.notifier);
     final wasFollowing = ref.read(provider).valueOrNull?.isFollowed ?? false;
     try {
-      await ref.read(provider.notifier).toggle();
+      await ownerNotifier.toggle();
+      if (!mounted ||
+          !identical(ref.read(authSessionKeyProvider), ownerSession) ||
+          !identical(ref.read(provider.notifier), ownerNotifier)) {
+        return;
+      }
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted ||
+          !identical(ref.read(authSessionKeyProvider), ownerSession) ||
+          !identical(ref.read(provider.notifier), ownerNotifier)) {
+        return;
+      }
       final fallback = wasFollowing
           ? context.l10n.organizerUnfollowError
           : context.l10n.organizerFollowError;

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -32,15 +34,35 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   File? _selectedImage;
   String? _errorMessage;
 
+  late final String? _ownerAccountId;
+  int _sessionGeneration = 0;
+  bool _sessionInvalidated = false;
+  bool _exitScheduled = false;
+
+  CancelToken? _profileMutationCancelToken;
+  CancelToken? _avatarMutationCancelToken;
+  CancelToken? _passwordMutationCancelToken;
+  TextEditingController? _currentPasswordController;
+  TextEditingController? _newPasswordController;
+  TextEditingController? _confirmPasswordController;
+
   @override
   void initState() {
     super.initState();
+    _ownerAccountId = ref.read(authSessionUserIdProvider);
     _initializeFields();
+    ref.listenManual<String?>(authSessionUserIdProvider, (previous, next) {
+      if (next != _ownerAccountId) {
+        _invalidateSession();
+      }
+    });
   }
 
   void _initializeFields() {
     final user = ref.read(authProvider).user;
-    if (user != null) {
+    if (user != null &&
+        _ownerAccountId != null &&
+        user.id.trim() == _ownerAccountId) {
       // Try to get firstName/lastName from user fields first
       String firstName = user.firstName ?? '';
       String lastName = user.lastName ?? '';
@@ -68,6 +90,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
   @override
   void dispose() {
+    _sessionGeneration++;
+    _cancelOutstandingMutations();
     _firstNameController.dispose();
     _lastNameController.dispose();
     _phoneController.dispose();
@@ -75,12 +99,102 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     super.dispose();
   }
 
+  bool _ownsSession(String? ownerAccountId, int generation) {
+    return mounted &&
+        !_sessionInvalidated &&
+        ownerAccountId != null &&
+        ownerAccountId == _ownerAccountId &&
+        generation == _sessionGeneration &&
+        ref.read(authSessionUserIdProvider) == ownerAccountId;
+  }
+
+  bool _isCancellation(Object error) {
+    return error is DioException && CancelToken.isCancel(error);
+  }
+
+  void _invalidateSession({bool rebuild = true}) {
+    if (_sessionInvalidated) return;
+    _sessionInvalidated = true;
+    _sessionGeneration++;
+    _cancelOutstandingMutations();
+    _clearSensitiveDraft();
+    if (rebuild && mounted) setState(() {});
+    _scheduleFailClosedExit();
+  }
+
+  void _clearSensitiveDraft() {
+    _firstNameController.clear();
+    _lastNameController.clear();
+    _phoneController.clear();
+    _membershipCityController.clear();
+    _currentPasswordController?.clear();
+    _newPasswordController?.clear();
+    _confirmPasswordController?.clear();
+    _birthDate = null;
+    _selectedImage = null;
+    _errorMessage = null;
+    _isLoading = false;
+    _isUploadingAvatar = false;
+  }
+
+  void _cancelOutstandingMutations() {
+    _profileMutationCancelToken?.cancel('Authentication session changed');
+    _avatarMutationCancelToken?.cancel('Authentication session changed');
+    _passwordMutationCancelToken?.cancel('Authentication session changed');
+    _profileMutationCancelToken = null;
+    _avatarMutationCancelToken = null;
+    _passwordMutationCancelToken = null;
+  }
+
+  void _scheduleFailClosedExit() {
+    if (_exitScheduled || !mounted) return;
+    _exitScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      if (_currentPasswordController != null) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final navigator = Navigator.of(context);
+        if (navigator.canPop()) {
+          navigator.pop();
+          return;
+        }
+        try {
+          GoRouter.of(context).go('/');
+        } catch (_) {
+          // A standalone widget host may not provide GoRouter. The screen is
+          // still fail-closed below and contains no previous-account data.
+        }
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_ownerAccountId == null ||
+        currentAccountId != _ownerAccountId ||
+        _sessionInvalidated) {
+      if (!_sessionInvalidated) {
+        _invalidateSession(rebuild: false);
+      }
+      return Scaffold(
+        appBar: AppBar(title: Text(context.l10n.profileAccountTitle)),
+        body: Center(child: Text(context.l10n.profileLoginRequired)),
+      );
+    }
+
     final authState = ref.watch(authProvider);
     final user = authState.user;
 
-    if (user == null) {
+    if (user == null || user.id.trim() != _ownerAccountId) {
+      if (!_sessionInvalidated) {
+        _invalidateSession(rebuild: false);
+      }
       return Scaffold(
         appBar: AppBar(title: Text(context.l10n.profileAccountTitle)),
         body: Center(child: Text(context.l10n.profileLoginRequired)),
@@ -166,6 +280,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                       ),
                       const SizedBox(height: 20),
                       _buildTextField(
+                        fieldKey: const ValueKey('profile-edit-first-name'),
                         controller: _firstNameController,
                         label: context.l10n.profileFirstNameLabel,
                         icon: Icons.person_outline,
@@ -178,6 +293,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                       ),
                       const SizedBox(height: 16),
                       _buildTextField(
+                        fieldKey: const ValueKey('profile-edit-last-name'),
                         controller: _lastNameController,
                         label: context.l10n.profileLastNameLabel,
                         icon: Icons.person_outline,
@@ -190,6 +306,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                       ),
                       const SizedBox(height: 16),
                       _buildTextField(
+                        fieldKey: const ValueKey('profile-edit-phone'),
                         controller: _phoneController,
                         label: context.l10n.profilePhoneLabel,
                         icon: Icons.phone_outlined,
@@ -199,6 +316,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                       // Birth date
                       GestureDetector(
                         onTap: () async {
+                          final ownerAccountId = _ownerAccountId;
+                          final generation = _sessionGeneration;
+                          if (!_ownsSession(ownerAccountId, generation)) return;
                           final maxDate = DateTime.now()
                               .subtract(const Duration(days: 15 * 365));
                           final picked = await showDatePicker(
@@ -209,6 +329,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                             helpText: context.l10n.profileBirthDateLabel,
                             // locale: const Locale('fr'),
                           );
+                          if (!_ownsSession(ownerAccountId, generation)) return;
                           if (picked != null) {
                             setState(() => _birthDate = picked);
                           }
@@ -260,6 +381,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                       const SizedBox(height: 16),
                       // Membership city
                       _buildTextField(
+                        fieldKey:
+                            const ValueKey('profile-edit-membership-city'),
                         controller: _membershipCityController,
                         label: context.l10n.profileCityLabel,
                         icon: Icons.location_city_outlined,
@@ -282,6 +405,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                 SizedBox(
                   height: 56,
                   child: ElevatedButton(
+                    key: const ValueKey('profile-edit-save'),
                     onPressed: _isLoading ? null : _handleSave,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: HbColors.brandPrimary,
@@ -314,6 +438,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
                 // Change Password Link
                 TextButton.icon(
+                  key: const ValueKey('profile-change-password'),
                   onPressed: () => _showChangePasswordDialog(),
                   icon: const Icon(Icons.lock_outline, size: 20),
                   label: Text(context.l10n.profileChangePasswordCta),
@@ -425,6 +550,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   }
 
   Widget _buildTextField({
+    Key? fieldKey,
     TextEditingController? controller,
     String? initialValue,
     required String label,
@@ -435,6 +561,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     String? Function(String?)? validator,
   }) {
     return TextFormField(
+      key: fieldKey,
       controller: controller,
       initialValue: initialValue,
       keyboardType: keyboardType,
@@ -467,6 +594,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   }
 
   Future<void> _pickImage() async {
+    final ownerAccountId = _ownerAccountId;
+    final generation = _sessionGeneration;
+    if (!_ownsSession(ownerAccountId, generation)) return;
     final picker = ImagePicker();
     try {
       final pickedFile = await picker.pickImage(
@@ -476,16 +606,21 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         imageQuality: 85,
       );
 
-      if (!mounted || pickedFile == null) return;
+      if (!_ownsSession(ownerAccountId, generation) || pickedFile == null) {
+        return;
+      }
       setState(() {
         _selectedImage = File(pickedFile.path);
       });
-      await _uploadAvatar();
+      await _uploadAvatar(
+        ownerAccountId: ownerAccountId!,
+        generation: generation,
+      );
     } on PlatformException catch (error) {
-      if (!mounted) return;
+      if (!_ownsSession(ownerAccountId, generation)) return;
       _setImagePickerError(classifyProfileImagePickerFailure(error));
     } catch (_) {
-      if (!mounted) return;
+      if (!_ownsSession(ownerAccountId, generation)) return;
       _setImagePickerError(ProfileImagePickerFailure.pickerUnavailable);
     }
   }
@@ -501,8 +636,20 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     });
   }
 
-  Future<void> _uploadAvatar() async {
-    if (_selectedImage == null) return;
+  Future<void> _uploadAvatar({
+    required String ownerAccountId,
+    required int generation,
+  }) async {
+    final selectedImage = _selectedImage;
+    if (selectedImage == null || !_ownsSession(ownerAccountId, generation)) {
+      return;
+    }
+
+    final cancelToken = CancelToken();
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    _avatarMutationCancelToken?.cancel('Superseded avatar upload');
+    _avatarMutationCancelToken = cancelToken;
 
     setState(() {
       _isUploadingAvatar = true;
@@ -512,40 +659,53 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     try {
       final previousAvatarUrl = ref.read(authProvider).user?.avatarUrl;
       final profileDataSource = ref.read(profileApiDataSourceProvider);
-      final updatedUser = await profileDataSource.uploadAvatar(_selectedImage!);
+      final updatedUser = await profileDataSource.uploadAvatar(
+        selectedImage,
+        cancelToken: cancelToken,
+      );
+      if (!_ownsSession(ownerAccountId, generation) ||
+          !identical(_avatarMutationCancelToken, cancelToken)) {
+        return;
+      }
 
       // Evict the old avatar from CachedNetworkImage's disk + memory caches
       // so we don't keep showing the previous picture if the backend reuses
       // the same URL for the new upload.
       if (previousAvatarUrl != null && previousAvatarUrl.isNotEmpty) {
         await CachedNetworkImage.evictFromCache(previousAvatarUrl);
+        if (!_ownsSession(ownerAccountId, generation)) return;
       }
       if (updatedUser.avatarUrl != null && updatedUser.avatarUrl!.isNotEmpty) {
         await CachedNetworkImage.evictFromCache(updatedUser.avatarUrl!);
+        if (!_ownsSession(ownerAccountId, generation)) return;
       }
 
       // Update auth state and persist to secure storage
       ref.read(authProvider.notifier).updateUser(updatedUser);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (!mounted) return;
+      if (_ownsSession(ownerAccountId, generation)) {
+        messenger.showSnackBar(
           SnackBar(
-            content: Text(context.l10n.profileAvatarUpdated),
+            content: Text(l10n.profileAvatarUpdated),
             backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
-      if (mounted) {
+      if (_ownsSession(ownerAccountId, generation) && !_isCancellation(e)) {
         setState(() {
           _errorMessage = ApiResponseHandler.extractError(
             e,
-            fallback: context.l10n.profileAvatarUploadFailed,
+            fallback: l10n.profileAvatarUploadFailed,
           );
         });
       }
     } finally {
-      if (mounted) {
+      if (identical(_avatarMutationCancelToken, cancelToken)) {
+        _avatarMutationCancelToken = null;
+      }
+      if (_ownsSession(ownerAccountId, generation)) {
         setState(() {
           _isUploadingAvatar = false;
         });
@@ -554,7 +714,16 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   }
 
   Future<void> _handleSave() async {
+    final ownerAccountId = _ownerAccountId;
+    final generation = _sessionGeneration;
+    if (!_ownsSession(ownerAccountId, generation)) return;
     if (!_formKey.currentState!.validate()) return;
+
+    final cancelToken = CancelToken();
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    _profileMutationCancelToken?.cancel('Superseded profile update');
+    _profileMutationCancelToken = cancelToken;
 
     setState(() {
       _isLoading = true;
@@ -579,31 +748,40 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             : null,
         clearMembershipCity: _membershipCityController.text.trim().isEmpty &&
             (user?.membershipCity ?? '').isNotEmpty,
+        cancelToken: cancelToken,
       );
+      if (!_ownsSession(ownerAccountId, generation) ||
+          !identical(_profileMutationCancelToken, cancelToken)) {
+        return;
+      }
 
       // Update auth state with new user data
       ref.read(authProvider.notifier).updateUser(updatedUser);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (!mounted) return;
+      if (_ownsSession(ownerAccountId, generation)) {
+        messenger.showSnackBar(
           SnackBar(
-            content: Text(context.l10n.profileUpdateSuccess),
+            content: Text(l10n.profileUpdateSuccess),
             backgroundColor: Colors.green,
           ),
         );
         context.pop();
       }
     } catch (e) {
-      if (mounted) {
+      if (_ownsSession(ownerAccountId, generation) && !_isCancellation(e)) {
         setState(() {
           _errorMessage = ApiResponseHandler.extractError(
             e,
-            fallback: context.l10n.profileUpdateFailed,
+            fallback: l10n.profileUpdateFailed,
           );
         });
       }
     } finally {
-      if (mounted) {
+      if (identical(_profileMutationCancelToken, cancelToken)) {
+        _profileMutationCancelToken = null;
+      }
+      if (_ownsSession(ownerAccountId, generation)) {
         setState(() {
           _isLoading = false;
         });
@@ -612,130 +790,217 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   }
 
   void _showChangePasswordDialog() {
+    final ownerAccountId = _ownerAccountId;
+    final generation = _sessionGeneration;
+    if (!_ownsSession(ownerAccountId, generation) ||
+        _currentPasswordController != null) {
+      return;
+    }
+
     final l10n = context.l10n;
     final currentPasswordController = TextEditingController();
     final newPasswordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
+    _currentPasswordController = currentPasswordController;
+    _newPasswordController = newPasswordController;
+    _confirmPasswordController = confirmPasswordController;
     bool isLoading = false;
 
-    showDialog(
+    unawaited(showDialog<void>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(l10n.profileChangePasswordTitle),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: currentPasswordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: l10n.profileCurrentPasswordLabel,
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8)),
+      builder: (context) => _DisposeTextControllers(
+        controllers: [
+          currentPasswordController,
+          newPasswordController,
+          confirmPasswordController,
+        ],
+        child: StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: Text(l10n.profileChangePasswordTitle),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    key: const ValueKey('profile-current-password'),
+                    controller: currentPasswordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: l10n.profileCurrentPasswordLabel,
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: newPasswordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: l10n.profileNewPasswordLabel,
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                  const SizedBox(height: 16),
+                  TextField(
+                    key: const ValueKey('profile-new-password'),
+                    controller: newPasswordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: l10n.profileNewPasswordLabel,
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: confirmPasswordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: l10n.authConfirmPasswordLabel,
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                  const SizedBox(height: 16),
+                  TextField(
+                    key: const ValueKey('profile-confirm-password'),
+                    controller: confirmPasswordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: l10n.authConfirmPasswordLabel,
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(l10n.commonCancel,
-                  style: TextStyle(color: Colors.grey[600])),
-            ),
-            ElevatedButton(
-              onPressed: isLoading
-                  ? null
-                  : () async {
-                      if (newPasswordController.text !=
-                          confirmPasswordController.text) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(l10n.authPasswordsDoNotMatch),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                        return;
-                      }
-
-                      setDialogState(() => isLoading = true);
-
-                      try {
-                        final profileDataSource =
-                            ref.read(profileApiDataSourceProvider);
-                        await profileDataSource.updatePassword(
-                          currentPassword: currentPasswordController.text,
-                          newPassword: newPasswordController.text,
-                          confirmPassword: confirmPasswordController.text,
-                        );
-
-                        if (context.mounted) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(l10n.profilePasswordChangeSuccess),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(l10n.commonCancel,
+                    style: TextStyle(color: Colors.grey[600])),
+              ),
+              ElevatedButton(
+                key: const ValueKey('profile-change-password-submit'),
+                onPressed: isLoading
+                    ? null
+                    : () async {
+                        if (!_ownsSession(ownerAccountId, generation)) {
+                          if (context.mounted) Navigator.pop(context);
+                          return;
                         }
-                      } catch (e) {
-                        if (context.mounted) {
+                        if (newPasswordController.text !=
+                            confirmPasswordController.text) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(ApiResponseHandler.extractError(
-                                e,
-                                fallback: l10n.profilePasswordChangeFailed,
-                              )),
+                              content: Text(l10n.authPasswordsDoNotMatch),
                               backgroundColor: Colors.red,
                             ),
                           );
+                          return;
                         }
-                      } finally {
-                        if (context.mounted) {
-                          setDialogState(() => isLoading = false);
+
+                        final currentPassword = currentPasswordController.text;
+                        final newPassword = newPasswordController.text;
+                        final confirmPassword = confirmPasswordController.text;
+                        final cancelToken = CancelToken();
+                        _passwordMutationCancelToken?.cancel(
+                          'Superseded password update',
+                        );
+                        _passwordMutationCancelToken = cancelToken;
+                        setDialogState(() => isLoading = true);
+
+                        try {
+                          final profileDataSource =
+                              ref.read(profileApiDataSourceProvider);
+                          await profileDataSource.updatePassword(
+                            currentPassword: currentPassword,
+                            newPassword: newPassword,
+                            confirmPassword: confirmPassword,
+                            cancelToken: cancelToken,
+                          );
+
+                          if (!mounted) return;
+                          if (_ownsSession(ownerAccountId, generation) &&
+                              identical(
+                                _passwordMutationCancelToken,
+                                cancelToken,
+                              ) &&
+                              context.mounted) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              SnackBar(
+                                content:
+                                    Text(l10n.profilePasswordChangeSuccess),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (_ownsSession(ownerAccountId, generation) &&
+                              !_isCancellation(e) &&
+                              context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(ApiResponseHandler.extractError(
+                                  e,
+                                  fallback: l10n.profilePasswordChangeFailed,
+                                )),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        } finally {
+                          if (identical(
+                            _passwordMutationCancelToken,
+                            cancelToken,
+                          )) {
+                            _passwordMutationCancelToken = null;
+                          }
+                          if (_ownsSession(ownerAccountId, generation) &&
+                              context.mounted) {
+                            setDialogState(() => isLoading = false);
+                          }
                         }
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: HbColors.brandPrimary,
-                foregroundColor: Colors.white,
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: HbColors.brandPrimary,
+                  foregroundColor: Colors.white,
+                ),
+                child: isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2),
+                      )
+                    : Text(l10n.profileChangePasswordSubmit),
               ),
-              child: isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2),
-                    )
-                  : Text(l10n.profileChangePasswordSubmit),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    );
+    ).whenComplete(() {
+      if (identical(_currentPasswordController, currentPasswordController)) {
+        _currentPasswordController = null;
+      }
+      if (identical(_newPasswordController, newPasswordController)) {
+        _newPasswordController = null;
+      }
+      if (identical(_confirmPasswordController, confirmPasswordController)) {
+        _confirmPasswordController = null;
+      }
+    }));
   }
+}
+
+class _DisposeTextControllers extends StatefulWidget {
+  const _DisposeTextControllers({
+    required this.controllers,
+    required this.child,
+  });
+
+  final List<TextEditingController> controllers;
+  final Widget child;
+
+  @override
+  State<_DisposeTextControllers> createState() =>
+      _DisposeTextControllersState();
+}
+
+class _DisposeTextControllersState extends State<_DisposeTextControllers> {
+  @override
+  void dispose() {
+    for (final controller in widget.controllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
