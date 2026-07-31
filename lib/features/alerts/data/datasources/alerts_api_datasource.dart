@@ -26,16 +26,22 @@ class AlertsApiDataSource {
 
         // Try nested key 'alerts' first, then fall back to flat list
         try {
-          final list = ApiResponseHandler.extractList(response.data, key: 'alerts');
-          return list.map((e) => AlertDto.fromJson(e as Map<String, dynamic>)).toList();
+          final list =
+              ApiResponseHandler.extractList(response.data, key: 'alerts');
+          return list
+              .map((e) => AlertDto.fromJson(e as Map<String, dynamic>))
+              .toList();
         } on ApiFormatException {
           final list = ApiResponseHandler.extractList(response.data);
-          return list.map((e) => AlertDto.fromJson(e as Map<String, dynamic>)).toList();
+          return list
+              .map((e) => AlertDto.fromJson(e as Map<String, dynamic>))
+              .toList();
         }
       } on DioException catch (e) {
         if (e.response?.statusCode != null && e.response!.statusCode! >= 500) {
           if (attempt < maxRetries) {
-            debugPrint('⚠️ 5xx Error fetching alerts. Retrying... ($attempt/$maxRetries)');
+            debugPrint(
+                '⚠️ 5xx Error fetching alerts. Retrying... ($attempt/$maxRetries)');
             await Future.delayed(retryDelay * attempt);
             continue;
           }
@@ -43,7 +49,7 @@ class AlertsApiDataSource {
         rethrow;
       }
     }
-    throw Exception('Failed to fetch alerts after $maxRetries attempts');
+    throw const ApiFormatException('Failed to fetch alerts after retries');
   }
 
   Future<AlertDto> createAlert({
@@ -81,16 +87,16 @@ class AlertsApiDataSource {
       payload.remove('thematique');
     }
     if (payload.containsKey('family_friendly')) {
-       payload['is_family_friendly'] = payload['family_friendly'] == 'true';
-       payload.remove('family_friendly');
+      payload['is_family_friendly'] = payload['family_friendly'] == 'true';
+      payload.remove('family_friendly');
     }
     if (payload.containsKey('accessible_pmr')) {
-       payload['is_accessible_pmr'] = payload['accessible_pmr'] == 'true';
-       payload.remove('accessible_pmr');
+      payload['is_accessible_pmr'] = payload['accessible_pmr'] == 'true';
+      payload.remove('accessible_pmr');
     }
     if (payload.containsKey('online')) {
-       payload['is_online'] = payload['online'] == 'true';
-       payload.remove('online');
+      payload['is_online'] = payload['online'] == 'true';
+      payload.remove('online');
     }
 
     final response = await _dio.post('/me/alerts', data: payload);

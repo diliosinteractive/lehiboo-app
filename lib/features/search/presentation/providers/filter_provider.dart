@@ -717,17 +717,21 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
 }
 
 /// State class for paginated results
+const _paginatedActivitiesNotProvided = Object();
+
 class PaginatedActivities {
   final List<Activity> activities;
   final bool hasMore;
   final bool isLoadingMore;
   final int totalItems;
+  final Object? loadMoreError;
 
   const PaginatedActivities({
     required this.activities,
     required this.hasMore,
     this.isLoadingMore = false,
     this.totalItems = 0,
+    this.loadMoreError,
   });
 
   PaginatedActivities copyWith({
@@ -735,12 +739,19 @@ class PaginatedActivities {
     bool? hasMore,
     bool? isLoadingMore,
     int? totalItems,
+    Object? loadMoreError = _paginatedActivitiesNotProvided,
   }) {
     return PaginatedActivities(
       activities: activities ?? this.activities,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       totalItems: totalItems ?? this.totalItems,
+      loadMoreError: identical(
+        loadMoreError,
+        _paginatedActivitiesNotProvided,
+      )
+          ? this.loadMoreError
+          : loadMoreError,
     );
   }
 }
@@ -868,13 +879,14 @@ class FilteredEventsNotifier extends AsyncNotifier<PaginatedActivities> {
       }
     } catch (e) {
       if (filter.page > 1) {
-        // If error during load more, keep existing list but maybe show error?
-        // For now return existing valid state but stop loading
+        final previous = state.valueOrNull;
+        // Keep the existing page visible and expose a retryable footer. Do not
+        // claim that there are no more results or advance to the next page.
         return PaginatedActivities(
           activities: previousActivities,
-          hasMore: false, // Prevent infinite error loops
-          totalItems:
-              state.valueOrNull?.totalItems ?? previousActivities.length,
+          hasMore: previous?.hasMore ?? true,
+          totalItems: previous?.totalItems ?? previousActivities.length,
+          loadMoreError: e,
         );
       }
       rethrow;

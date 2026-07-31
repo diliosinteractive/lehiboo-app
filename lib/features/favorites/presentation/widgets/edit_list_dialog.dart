@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import '../../domain/entities/favorite_list.dart';
 import '../providers/favorite_lists_provider.dart';
 import '../../../petit_boo/presentation/widgets/animated_toast.dart';
@@ -75,26 +76,34 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
     final colorKey = FavoriteListColors.toColorKey(_selectedColor);
     final iconKey = FavoriteListIcons.toIconKey(_selectedIcon);
 
-    final updatedList =
-        await ref.read(favoriteListsProvider.notifier).updateList(
-              widget.list.id,
-              name: _nameController.text.trim(),
-              description: _descriptionController.text.trim().isEmpty
-                  ? null
-                  : _descriptionController.text.trim(),
-              color: colorKey,
-              icon: iconKey,
-            );
+    try {
+      final updatedList =
+          await ref.read(favoriteListsProvider.notifier).updateList(
+                widget.list.id,
+                name: _nameController.text.trim(),
+                description: _descriptionController.text.trim().isEmpty
+                    ? null
+                    : _descriptionController.text.trim(),
+                color: colorKey,
+                icon: iconKey,
+              );
 
-    if (mounted) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
-
       if (updatedList != null) {
         HapticFeedback.mediumImpact();
         Navigator.of(context).pop(updatedList);
-      } else {
-        PetitBooToast.error(context, context.l10n.favoriteListUpdateError);
       }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      PetitBooToast.error(
+        context,
+        ApiResponseHandler.extractError(
+          error,
+          fallback: context.l10n.favoriteListUpdateError,
+        ),
+      );
     }
   }
 
@@ -143,32 +152,41 @@ class _EditListDialogState extends ConsumerState<EditListDialog> {
 
     setState(() => _isDeleting = true);
 
-    final success = await ref
-        .read(favoriteListsProvider.notifier)
-        .deleteList(widget.list.id);
+    try {
+      final success = await ref
+          .read(favoriteListsProvider.notifier)
+          .deleteList(widget.list.id);
 
-    if (mounted) {
+      if (!mounted) return;
       setState(() => _isDeleting = false);
-
       if (success) {
         HapticFeedback.mediumImpact();
+        final messenger = ScaffoldMessenger.of(context);
+        final deletedMessage =
+            context.l10n.favoriteListDeleted(widget.list.name);
         // Pop avec null pour indiquer suppression
         Navigator.of(context).pop();
-
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
-            content: Text(context.l10n.favoriteListDeleted(widget.list.name)),
+            content: Text(deletedMessage),
             behavior: SnackBarBehavior.floating,
           ),
         );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.favoriteListDeleteError),
-            backgroundColor: Colors.red,
-          ),
-        );
       }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isDeleting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ApiResponseHandler.extractError(
+              error,
+              fallback: context.l10n.favoriteListDeleteError,
+            ),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../../features/petit_boo/presentation/widgets/animated_toast.dart';
 import '../../domain/entities/reminder.dart';
 import '../providers/reminders_provider.dart';
@@ -315,18 +316,30 @@ class _RemindersListScreenState extends ConsumerState<RemindersListScreen> {
     );
 
     if (confirmed == true) {
-      await ref.read(remindersListProvider.notifier).deleteReminder(
-            eventUuid: reminder.eventUuid,
-            slotUuid: reminder.id,
+      try {
+        await ref.read(remindersListProvider.notifier).deleteReminder(
+              eventUuid: reminder.eventUuid,
+              slotUuid: reminder.id,
+            );
+        if (mounted) {
+          PetitBooToast.show(
+            context,
+            message: context.l10n.remindersDeleted,
+            icon: Icons.delete_outline,
           );
-      if (mounted) {
-        PetitBooToast.show(
-          context,
-          message: context.l10n.remindersDeleted,
-          icon: Icons.delete_outline,
-        );
+        }
+        return true;
+      } catch (error) {
+        if (mounted) {
+          PetitBooToast.error(
+            context,
+            ApiResponseHandler.extractError(
+              error,
+              fallback: context.l10n.remindersDeleteFailed,
+            ),
+          );
+        }
       }
-      return true;
     }
     return false;
   }

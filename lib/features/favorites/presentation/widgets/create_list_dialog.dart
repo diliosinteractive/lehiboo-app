@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import '../../domain/entities/favorite_list.dart';
 import '../providers/favorite_lists_provider.dart';
 import 'list_color_picker.dart';
@@ -46,29 +47,36 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
     final colorKey = FavoriteListColors.toColorKey(_selectedColor);
     final iconKey = FavoriteListIcons.toIconKey(_selectedIcon);
 
-    final newList = await ref.read(favoriteListsProvider.notifier).createList(
-          name: _nameController.text.trim(),
-          description: _descriptionController.text.trim().isEmpty
-              ? null
-              : _descriptionController.text.trim(),
-          color: colorKey,
-          icon: iconKey,
-        );
+    try {
+      final newList = await ref.read(favoriteListsProvider.notifier).createList(
+            name: _nameController.text.trim(),
+            description: _descriptionController.text.trim().isEmpty
+                ? null
+                : _descriptionController.text.trim(),
+            color: colorKey,
+            icon: iconKey,
+          );
 
-    if (mounted) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
-
       if (newList != null) {
         HapticFeedback.mediumImpact();
         Navigator.of(context).pop(newList);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.favoriteListCreateError),
-            backgroundColor: Colors.red,
-          ),
-        );
       }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ApiResponseHandler.extractError(
+              error,
+              fallback: context.l10n.favoriteListCreateError,
+            ),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

@@ -3,15 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import '../../../../core/analytics/analytics_event.dart';
 import '../../../../core/analytics/analytics_provider.dart';
-import '../../../../core/l10n/l10n.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
 import '../../data/models/toggle_favorite_result.dart';
 import '../../domain/repositories/favorites_repository.dart';
 import 'favorite_lists_provider.dart';
-
-/// Callback type for toggle error handling
-typedef FavoriteErrorCallback = void Function(String message, bool wasAdding);
 
 // StateNotifier to manage list of favorite events
 class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
@@ -23,9 +19,6 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
 
   /// Current list ID filter (null = all)
   String? _currentListId;
-
-  /// Callback for error notifications (can be set by UI)
-  FavoriteErrorCallback? onFavoriteError;
 
   FavoritesNotifier(this._repository, this._ref)
       : super(const AsyncValue.loading()) {
@@ -88,18 +81,16 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
   /// [internalId] - DEPRECATED: UUID is now extracted from event.id
   /// [listId] - Optional list ID to add the favorite to
   ///
-  /// Retourne `null` en cas d'échec, sinon un [ToggleFavoriteResult] qui
-  /// peut contenir la récompense hibons créditée par le backend.
-  Future<ToggleFavoriteResult?> toggleFavorite(Event event,
+  /// Returns the authoritative backend result. Failures are rethrown after
+  /// rolling back the optimistic state so the initiating UI can explain them.
+  Future<ToggleFavoriteResult> toggleFavorite(Event event,
       {int? internalId, String? listId}) async {
     // event.id contient l'UUID (voir FavoritesRepositoryImpl qui utilise stringId)
     final eventUuid = event.id;
 
     if (eventUuid.isEmpty) {
       debugPrint('Cannot toggle favorite: no valid UUID found for event');
-      onFavoriteError?.call(
-          cachedAppLocalizations().favoriteUpdateError, false);
-      return null;
+      throw ArgumentError.value(eventUuid, 'event.id', 'Missing event UUID');
     }
 
     // Optimistic update
@@ -160,7 +151,7 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
       _ref.invalidate(personalizedFeedProvider);
 
       return result;
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error toggling favorite: $e');
 
       // Revert optimistic update
@@ -171,32 +162,22 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
       }
       state = AsyncValue.data(currentList);
 
-      // Notify error
-      onFavoriteError?.call(
-        wasAdding
-            ? cachedAppLocalizations().favoriteAddError
-            : cachedAppLocalizations().favoriteRemoveError,
-        wasAdding,
-      );
-
-      return null;
+      Error.throwWithStackTrace(e, stackTrace);
     }
   }
 
   /// Ajouter à une liste spécifique (pour les événements déjà favoris).
   ///
-  /// Retourne `null` en cas d'échec, sinon un [ToggleFavoriteResult] dont
-  /// `hasReward` indique si une récompense hibons a été créditée (seulement
-  /// possible sur la branche "ajout aux favoris", jamais sur un simple
-  /// déplacement entre listes).
-  Future<ToggleFavoriteResult?> addToList(Event event, String listId,
+  /// Returns the backend result; failures are rethrown for user-facing
+  /// handling by the initiating control.
+  Future<ToggleFavoriteResult> addToList(Event event, String listId,
       {int? internalId}) async {
     // event.id contient l'UUID
     final eventUuid = event.id;
 
     if (eventUuid.isEmpty) {
       debugPrint('Cannot add to list: no valid UUID found for event');
-      return null;
+      throw ArgumentError.value(eventUuid, 'event.id', 'Missing event UUID');
     }
 
     final isFav = isFavorite(event.id);
@@ -229,9 +210,9 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
       }
 
       return result;
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error adding to list: $e');
-      return null;
+      Error.throwWithStackTrace(e, stackTrace);
     }
   }
 
@@ -243,7 +224,7 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
 
     if (eventUuid.isEmpty) {
       debugPrint('Cannot move: no valid UUID found for event');
-      return false;
+      throw ArgumentError.value(eventUuid, 'event.id', 'Missing event UUID');
     }
 
     final oldListId = event.additionalInfo?['list_id'] as String?;
@@ -263,9 +244,9 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Event>>> {
       await loadFavorites(listId: _currentListId);
 
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error moving to list: $e');
-      return false;
+      Error.throwWithStackTrace(e, stackTrace);
     }
   }
 

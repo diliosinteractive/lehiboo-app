@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 import 'package:lehiboo/features/favorites/presentation/providers/favorites_provider.dart';
 import 'package:lehiboo/features/favorites/presentation/providers/favorite_lists_provider.dart';
@@ -141,6 +142,18 @@ class _FavoritesContent extends ConsumerWidget {
             Text(
               context.l10n.favoritesLoadError,
               style: TextStyle(color: Colors.grey[500]),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                ApiResponseHandler.extractError(
+                  error,
+                  fallback: context.l10n.favoritesLoadError,
+                ),
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey[500], fontSize: 13),
+              ),
             ),
             const SizedBox(height: 16),
             ElevatedButton(

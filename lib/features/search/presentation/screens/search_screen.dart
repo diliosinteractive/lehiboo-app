@@ -146,7 +146,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         _scrollController.position.maxScrollExtent - 200) {
       final filteredEventsState = ref.read(filteredEventsProvider);
       filteredEventsState.whenData((data) {
-        if (data.hasMore) {
+        if (data.hasMore && data.loadMoreError == null) {
           // Debounce/Throttle could be added here if needed, but repository can handle concurrent calls
           // or we can check a local loading flag. For now, rely on repo/provider stability.
           // Better: Check if we are already fetching? The provider is AsyncNotifier,
@@ -192,13 +192,26 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     if (result == null) return; // User cancelled
 
-    // Call API via provider with explicit push/email params
-    await alertsNotifier.createAlert(
-      name: result.name,
-      filter: filter,
-      enablePush: result.enablePush,
-      enableEmail: result.enableEmail,
-    );
+    // Call API via provider with explicit push/email params. The notifier
+    // rethrows failures so success feedback is only shown after persistence.
+    try {
+      await alertsNotifier.createAlert(
+        name: result.name,
+        filter: filter,
+        enablePush: result.enablePush,
+        enableEmail: result.enableEmail,
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      PetitBooToast.error(
+        context,
+        ApiResponseHandler.extractError(
+          error,
+          fallback: context.l10n.searchSaveFailed,
+        ),
+      );
+      return;
+    }
 
     if (!context.mounted) return;
 
@@ -408,6 +421,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     activities: activities,
                     hasMore: paginatedData.hasMore,
                     totalItems: paginatedData.totalItems,
+                    loadMoreError: paginatedData.loadMoreError,
                     filter: filter,
                     context: context,
                     ref: ref,
@@ -481,6 +495,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     required List<dynamic> activities,
     required bool hasMore,
     bool isLoadingMore = false,
+    Object? loadMoreError,
     required int totalItems,
     required EventFilter filter,
     required BuildContext context,
@@ -557,7 +572,30 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       ),
 
       // Loading indicator or "Alert Me" button
-      if (hasMore || isLoadingMore)
+      if (loadMoreError != null)
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+            child: Column(
+              children: [
+                Text(
+                  ApiResponseHandler.extractError(
+                    loadMoreError,
+                    fallback: context.l10n.searchLoadMoreError,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: () => ref.invalidate(filteredEventsProvider),
+                  icon: const Icon(Icons.refresh),
+                  label: Text(context.l10n.commonRetry),
+                ),
+              ],
+            ),
+          ),
+        )
+      else if (hasMore || isLoadingMore)
         const SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: 32),

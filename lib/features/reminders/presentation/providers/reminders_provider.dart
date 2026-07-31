@@ -82,10 +82,10 @@ class RemindersListNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
       );
       // Reminder signal changed — drop the personalized feed (spec §7).
       _ref.invalidate(personalizedFeedProvider);
-    } catch (e, st) {
+    } catch (_) {
       // Rollback
       state = AsyncValue.data(previous);
-      state = AsyncValue.error(e, st);
+      rethrow;
     }
   }
 
@@ -99,9 +99,9 @@ class RemindersListNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
       await _repository.deleteAllReminders(eventUuid);
       // Reminder signal changed — drop the personalized feed (spec §7).
       _ref.invalidate(personalizedFeedProvider);
-    } catch (e, st) {
+    } catch (_) {
       state = AsyncValue.data(previous);
-      state = AsyncValue.error(e, st);
+      rethrow;
     }
   }
 }

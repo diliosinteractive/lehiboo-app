@@ -129,7 +129,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(authSessionExpiredMessage),
             behavior: SnackBarBehavior.floating,
           ),
@@ -265,11 +265,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Certaines données n’ont pas pu être actualisées. '
-              'Veuillez réessayer.',
-            ),
+          SnackBar(
+            content: Text(context.l10n.homeRefreshPartialFailure),
             behavior: SnackBarBehavior.floating,
           ),
         );

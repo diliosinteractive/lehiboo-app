@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../providers/alerts_provider.dart';
 import '../../domain/entities/alert.dart';
 import '../../../../features/search/presentation/providers/filter_provider.dart';
@@ -280,7 +281,7 @@ class _AlertItemCard extends ConsumerWidget {
         child: const Icon(Icons.delete_outline, color: Colors.red),
       ),
       confirmDismiss: (direction) async {
-        return await showDialog(
+        final confirmed = await showDialog<bool>(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
@@ -300,10 +301,31 @@ class _AlertItemCard extends ConsumerWidget {
             );
           },
         );
+        if (confirmed != true || !context.mounted) return false;
+
+        try {
+          await ref.read(alertsProvider.notifier).deleteAlert(alert.id);
+          if (!context.mounted) return false;
+          PetitBooToast.success(
+            context,
+            context.l10n.alertsDeleted(alert.name),
+          );
+          return true;
+        } catch (error) {
+          if (context.mounted) {
+            PetitBooToast.error(
+              context,
+              ApiResponseHandler.extractError(
+                error,
+                fallback: context.l10n.alertsDeleteFailed,
+              ),
+            );
+          }
+          return false;
+        }
       },
       onDismissed: (direction) {
-        ref.read(alertsProvider.notifier).deleteAlert(alert.id);
-        PetitBooToast.success(context, context.l10n.alertsDeleted(alert.name));
+        ref.read(alertsProvider.notifier).removeDeletedAlert(alert.id);
       },
       child: GestureDetector(
         onTap: () {

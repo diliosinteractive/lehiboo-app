@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 
 /// Compact empty/error feedback used by asynchronous home sections.
 ///
@@ -39,6 +40,7 @@ class _HomeSectionFeedbackState extends State<HomeSectionFeedback> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final foreground =
         widget.isError ? Colors.red.shade700 : Colors.grey.shade700;
     final background =
@@ -81,7 +83,9 @@ class _HomeSectionFeedbackState extends State<HomeSectionFeedback> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.refresh, size: 18),
-                  label: Text(_isRetrying ? 'Chargement…' : 'Réessayer'),
+                  label: Text(
+                    _isRetrying ? l10n.commonLoading : l10n.commonRetry,
+                  ),
                 ),
               ],
             ],

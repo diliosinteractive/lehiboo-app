@@ -351,7 +351,37 @@ class _FavoriteListsChipsState extends ConsumerState<FavoriteListsChips> {
           ),
         ),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, __) => Container(
+        height: 64,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        color: HbColors.surfaceLight,
+        child: Row(
+          children: [
+            const Icon(
+              Icons.error_outline,
+              size: 20,
+              color: HbColors.error,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                context.l10n.favoriteListsLoadError,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: HbColors.textSecondary,
+                ),
+              ),
+            ),
+            IconButton(
+              tooltip: context.l10n.commonRetry,
+              onPressed: () => ref.invalidate(favoriteListsProvider),
+              icon: const Icon(Icons.refresh, size: 20),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

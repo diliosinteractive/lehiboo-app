@@ -83,9 +83,9 @@ class FavoriteListsNotifier
       state = AsyncValue.data([...currentLists, newList]);
 
       return newList;
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('Error creating favorite list: $e');
-      return null;
+      Error.throwWithStackTrace(e, stack);
     }
   }
 
@@ -116,9 +116,9 @@ class FavoriteListsNotifier
       state = AsyncValue.data(updatedLists);
 
       return updatedList;
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('Error updating favorite list: $e');
-      return null;
+      Error.throwWithStackTrace(e, stack);
     }
   }
 
@@ -133,9 +133,9 @@ class FavoriteListsNotifier
       state = AsyncValue.data(updatedLists);
 
       return true;
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('Error deleting favorite list: $e');
-      return false;
+      Error.throwWithStackTrace(e, stack);
     }
   }
 

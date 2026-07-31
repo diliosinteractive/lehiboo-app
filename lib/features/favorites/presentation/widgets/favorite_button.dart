@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/favorites/data/models/toggle_favorite_result.dart';
 import 'package:lehiboo/features/favorites/presentation/providers/favorites_provider.dart';
@@ -44,6 +45,10 @@ class FavoriteButton extends ConsumerStatefulWidget {
   /// Whether to enable long-press to select a list
   final bool enableLongPress;
 
+  /// Whether a normal add tap opens the list picker. Compact surfaces such as
+  /// map cards can keep their historical one-tap add behavior by disabling it.
+  final bool chooseListOnAdd;
+
   /// Force the heart to render filled regardless of the favourites
   /// provider state. Used by section-attribution-driven surfaces (e.g.
   /// the "Pour vous" carousel) where membership in the `favorites`
@@ -63,6 +68,7 @@ class FavoriteButton extends ConsumerStatefulWidget {
     this.backgroundColor,
     this.onChanged,
     this.enableLongPress = true,
+    this.chooseListOnAdd = true,
     this.forceFilled = false,
   });
 
@@ -107,9 +113,51 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
     if (_isFavorite) {
       // Already favorite: remove directly
       await _removeFavorite();
+    } else if (!widget.chooseListOnAdd) {
+      await _addFavoriteDirectly();
     } else {
       // Not favorite: open picker to choose folder
       await _showListPicker();
+    }
+  }
+
+  Future<void> _addFavoriteDirectly() async {
+    final canProceed = await GuestGuard.check(
+      context: context,
+      ref: ref,
+      featureName: context.l10n.guestFeatureManageFavorites,
+    );
+
+    if (!canProceed || !mounted || _isLoading) return;
+
+    setState(() => _isLoading = true);
+    HapticFeedback.lightImpact();
+    try {
+      final result = await ref.read(favoritesProvider.notifier).toggleFavorite(
+            widget.event,
+            internalId: widget.internalId,
+          );
+      if (!mounted) return;
+      widget.onChanged?.call(result.isFavorite);
+      if (result.isFavorite) {
+        _controller.forward(from: 0);
+        PetitBooToast.favoriteAdded(context, eventTitle: widget.event.title);
+      } else {
+        PetitBooToast.favoriteRemoved(context);
+      }
+      _showRewardToastIfAny(result);
+    } catch (error) {
+      if (!mounted) return;
+      HapticFeedback.heavyImpact();
+      PetitBooToast.error(
+        context,
+        ApiResponseHandler.extractError(
+          error,
+          fallback: context.l10n.favoriteAddError,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -134,16 +182,27 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
             internalId: widget.internalId,
           );
 
-      if (result != null && mounted) {
-        widget.onChanged?.call(false);
-        PetitBooToast.favoriteRemoved(context);
+      if (mounted) {
+        widget.onChanged?.call(result.isFavorite);
+        if (result.isFavorite) {
+          PetitBooToast.favoriteAdded(context, eventTitle: widget.event.title);
+        } else {
+          PetitBooToast.favoriteRemoved(context);
+        }
         // Un retrait ne déclenche jamais de reward côté backend, mais on
         // reste défensif au cas où le contrat évoluerait.
         _showRewardToastIfAny(result);
-      } else if (result == null && mounted) {
-        HapticFeedback.heavyImpact();
-        PetitBooToast.error(context, context.l10n.favoriteRemoveError);
       }
+    } catch (error) {
+      if (!mounted) return;
+      HapticFeedback.heavyImpact();
+      PetitBooToast.error(
+        context,
+        ApiResponseHandler.extractError(
+          error,
+          fallback: context.l10n.favoriteRemoveError,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -185,24 +244,34 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
 
     setState(() => _isLoading = true);
 
+    var failureMessage = context.l10n.favoriteUpdateError;
     try {
       bool success;
       ToggleFavoriteResult? rewardSource;
 
       if (result.removeFromFavorites) {
+        failureMessage = context.l10n.favoriteRemoveError;
         // Retirer des favoris
         final toggleResult =
             await ref.read(favoritesProvider.notifier).toggleFavorite(
                   widget.event,
                   internalId: widget.internalId,
                 );
-        success = toggleResult != null;
+        success = true;
 
         if (success && mounted) {
-          widget.onChanged?.call(false);
-          PetitBooToast.favoriteRemoved(context);
+          widget.onChanged?.call(toggleResult.isFavorite);
+          if (toggleResult.isFavorite) {
+            PetitBooToast.favoriteAdded(
+              context,
+              eventTitle: widget.event.title,
+            );
+          } else {
+            PetitBooToast.favoriteRemoved(context);
+          }
         }
       } else if (_isFavorite) {
+        failureMessage = context.l10n.favoriteUpdateError;
         // Déjà favori: déplacer vers une autre liste (jamais de reward)
         success = await ref.read(favoritesProvider.notifier).moveToList(
               widget.event,
@@ -219,13 +288,14 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
           );
         }
       } else {
+        failureMessage = context.l10n.favoriteAddError;
         // Pas encore favori: ajouter avec la liste sélectionnée (reward possible)
         final addResult = await ref.read(favoritesProvider.notifier).addToList(
               widget.event,
               result.listId ?? '',
               internalId: widget.internalId,
             );
-        success = addResult != null;
+        success = true;
         rewardSource = addResult;
 
         if (success && mounted) {
@@ -242,12 +312,16 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
         }
       }
 
-      if (!success && mounted) {
-        HapticFeedback.heavyImpact();
-        PetitBooToast.error(context, context.l10n.favoriteGenericError);
-      } else if (success && rewardSource != null) {
+      if (success && rewardSource != null) {
         _showRewardToastIfAny(rewardSource);
       }
+    } catch (error) {
+      if (!mounted) return;
+      HapticFeedback.heavyImpact();
+      PetitBooToast.error(
+        context,
+        ApiResponseHandler.extractError(error, fallback: failureMessage),
+      );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -293,7 +367,7 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),

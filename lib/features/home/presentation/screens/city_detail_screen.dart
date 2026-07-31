@@ -14,19 +14,16 @@ import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 final cityDetailProvider =
     FutureProvider.family<City?, String>((ref, slug) async {
   final eventRepository = ref.watch(eventRepositoryProvider);
+  final cities = await eventRepository.getCities();
+  final matches = cities.where((city) => city.slug == slug);
 
-  try {
-    final cities = await eventRepository.getCities();
-    // Find city by slug
-    return cities.firstWhere(
-      (c) => c.slug == slug,
-      orElse: () => throw Exception('City not found'),
-    );
-  } catch (e) {
-    debugPrint('Error getting city by slug: $e');
-    return null;
-  }
+  // `null` is reserved for a successful response that does not contain the
+  // requested city. Transport/server failures must remain AsyncError so the
+  // UI never mislabels an outage as "City not found".
+  return matches.isEmpty ? null : matches.first;
 });
+
+const Object _cityLoadMoreErrorUnset = Object();
 
 /// Paginated activities for a city.
 ///
@@ -40,6 +37,7 @@ class CityActivitiesResult {
   final int page;
   final int lastPage;
   final bool isLoadingMore;
+  final Object? loadMoreError;
 
   const CityActivitiesResult({
     required this.activities,
@@ -47,6 +45,7 @@ class CityActivitiesResult {
     required this.page,
     required this.lastPage,
     this.isLoadingMore = false,
+    this.loadMoreError,
   });
 
   bool get hasMore => page < lastPage;
@@ -57,6 +56,7 @@ class CityActivitiesResult {
     int? page,
     int? lastPage,
     bool? isLoadingMore,
+    Object? loadMoreError = _cityLoadMoreErrorUnset,
   }) =>
       CityActivitiesResult(
         activities: activities ?? this.activities,
@@ -64,6 +64,9 @@ class CityActivitiesResult {
         page: page ?? this.page,
         lastPage: lastPage ?? this.lastPage,
         isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+        loadMoreError: identical(loadMoreError, _cityLoadMoreErrorUnset)
+            ? this.loadMoreError
+            : loadMoreError,
       );
 }
 
@@ -91,9 +94,16 @@ class CityActivitiesController
 
   Future<void> loadMore() async {
     final current = state.valueOrNull;
-    if (current == null || !current.hasMore || current.isLoadingMore) return;
+    if (current == null ||
+        !current.hasMore ||
+        current.isLoadingMore ||
+        current.loadMoreError != null) {
+      return;
+    }
 
-    state = AsyncData(current.copyWith(isLoadingMore: true));
+    state = AsyncData(
+      current.copyWith(isLoadingMore: true, loadMoreError: null),
+    );
 
     try {
       final next = await ref.read(eventRepositoryProvider).getEvents(
@@ -108,14 +118,24 @@ class CityActivitiesController
           page: next.currentPage,
           lastPage: next.totalPages,
           isLoadingMore: false,
+          loadMoreError: null,
         ),
       );
     } catch (e, st) {
-      state = AsyncData(current.copyWith(isLoadingMore: false));
+      state = AsyncData(
+        current.copyWith(isLoadingMore: false, loadMoreError: e),
+      );
       if (kDebugMode) {
         debugPrint('CityActivitiesController.loadMore failed: $e\n$st');
       }
     }
+  }
+
+  Future<void> retryLoadMore() async {
+    final current = state.valueOrNull;
+    if (current == null || current.isLoadingMore) return;
+    state = AsyncData(current.copyWith(loadMoreError: null));
+    await loadMore();
   }
 }
 
@@ -331,10 +351,12 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen> {
         loading: () => const Center(
           child: CircularProgressIndicator(color: Color(0xFFFF601F)),
         ),
-        error: (err, stack) => Center(
-          child: Text(
-            l10n.homeErrorWithMessage(ApiResponseHandler.extractError(err)),
+        error: (err, stack) => _CityLoadError(
+          message: ApiResponseHandler.extractError(
+            err,
+            fallback: l10n.homeCityLoadError,
           ),
+          onRetry: () => ref.invalidate(cityDetailProvider(widget.citySlug)),
         ),
       ),
     );
@@ -392,6 +414,20 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen> {
                 ),
               ),
             ),
+          if (result.loadMoreError != null)
+            SliverToBoxAdapter(
+              child: _CityActivitiesLoadMoreError(
+                message: ApiResponseHandler.extractError(
+                  result.loadMoreError,
+                  fallback: l10n.homeCityActivitiesLoadMoreError,
+                ),
+                onRetry: () => ref
+                    .read(
+                      cityActivitiesProvider(widget.citySlug).notifier,
+                    )
+                    .retryLoadMore(),
+              ),
+            ),
         ];
       },
       loading: () => const [
@@ -406,16 +442,115 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen> {
       ],
       error: (err, _) => [
         SliverToBoxAdapter(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32.0),
-              child: Text(
-                l10n.homeErrorWithMessage(ApiResponseHandler.extractError(err)),
-              ),
+          child: _CityActivitiesLoadError(
+            message: ApiResponseHandler.extractError(
+              err,
+              fallback: l10n.homeCityActivitiesLoadError,
             ),
+            onRetry: () =>
+                ref.invalidate(cityActivitiesProvider(widget.citySlug)),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CityLoadError extends StatelessWidget {
+  const _CityLoadError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.location_off_outlined,
+                size: 56, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              context.l10n.homeCityLoadError,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: onRetry,
+              child: Text(context.l10n.commonRetry),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CityActivitiesLoadError extends StatelessWidget {
+  const _CityActivitiesLoadError({
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          const Icon(Icons.event_busy_outlined, size: 42, color: Colors.grey),
+          const SizedBox(height: 12),
+          Text(
+            context.l10n.homeCityActivitiesLoadError,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Text(message, textAlign: TextAlign.center),
+          const SizedBox(height: 16),
+          OutlinedButton(
+            onPressed: onRetry,
+            child: Text(context.l10n.commonRetry),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CityActivitiesLoadMoreError extends StatelessWidget {
+  const _CityActivitiesLoadMoreError({
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      child: Column(
+        children: [
+          Text(message, textAlign: TextAlign.center),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh, size: 18),
+            label: Text(context.l10n.commonRetry),
+          ),
+        ],
+      ),
     );
   }
 }

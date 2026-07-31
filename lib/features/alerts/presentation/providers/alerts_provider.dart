@@ -81,6 +81,7 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
     bool enablePush = true,
     bool enableEmail = false,
   }) async {
+    final previous = state;
     try {
       final newAlert = await _repository.createAlert(
         name,
@@ -102,23 +103,27 @@ class AlertsNotifier extends StateNotifier<AsyncValue<List<Alert>>> {
         },
       );
     } catch (e, stack) {
-      if (!mounted) return;
-      // Error handling delegated to UI (snackbar etc.)
-      state = AsyncValue.error(e, stack);
+      if (mounted) {
+        state = AsyncError<List<Alert>>(e, stack).copyWithPrevious(previous);
+      }
+      // Callers own the action-specific feedback. Preserve the original
+      // exception so they cannot accidentally report a successful save.
+      rethrow;
     }
   }
 
   Future<void> deleteAlert(String id) async {
-    try {
-      await _repository.deleteAlert(id);
+    // Let the dismiss animation complete before mutating the list. More
+    // importantly, propagate failures so the UI cannot announce a deletion
+    // that the backend rejected.
+    await _repository.deleteAlert(id);
+  }
 
-      if (!mounted) return;
-      final currentList = state.valueOrNull ?? [];
-      state = AsyncValue.data(currentList.where((a) => a.id != id).toList());
-    } catch (e, stack) {
-      if (!mounted) return;
-      state = AsyncValue.error(e, stack);
-    }
+  void removeDeletedAlert(String id) {
+    if (!mounted) return;
+    final currentList = state.valueOrNull ?? [];
+    state =
+        AsyncValue.data(currentList.where((alert) => alert.id != id).toList());
   }
 
   /// Helper to check if a filter combination is already saved

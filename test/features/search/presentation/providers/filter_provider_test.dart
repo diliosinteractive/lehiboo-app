@@ -67,6 +67,18 @@ class _RecordingEventRepository implements EventRepository {
 }
 
 void main() {
+  test('paginated results retain and clear a load-more error', () {
+    final failure = Exception('page failed');
+    final failed = const PaginatedActivities(
+      activities: [],
+      hasMore: true,
+    ).copyWith(loadMoreError: failure);
+
+    expect(failed.loadMoreError, same(failure));
+    expect(failed.copyWith().loadMoreError, same(failure));
+    expect(failed.copyWith(loadMoreError: null).loadMoreError, isNull);
+  });
+
   test('passes the free-only filter to event search', () async {
     SharedPreferences.setMockInitialValues({});
     final repository = _RecordingEventRepository();
