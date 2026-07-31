@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lehiboo/domain/entities/user.dart';
 import 'package:lehiboo/features/auth/domain/repositories/auth_repository.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/reminders/data/repositories/reminders_repository_impl.dart';
 import 'package:lehiboo/features/reminders/domain/entities/reminder.dart';
 import 'package:lehiboo/features/reminders/domain/repositories/reminders_repository.dart';
@@ -71,7 +75,7 @@ void main() {
 ProviderContainer _container(Override repositoryOverride) {
   return ProviderContainer(
     overrides: [
-      authRepositoryProvider.overrideWithValue(_LoggedOutAuthRepository()),
+      authProvider.overrideWith(_AuthenticatedAuthNotifier.new),
       repositoryOverride,
     ],
   );
@@ -145,10 +149,26 @@ class _RemindersRepository implements RemindersRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class _LoggedOutAuthRepository implements AuthRepository {
+class _NeverCompletingAuthRepository implements AuthRepository {
+  final Completer<bool> _result = Completer<bool>();
+
   @override
-  Future<bool> isAuthenticated() async => false;
+  Future<bool> isAuthenticated() => _result.future;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _AuthenticatedAuthNotifier extends AuthNotifier {
+  _AuthenticatedAuthNotifier(Ref ref)
+      : super(_NeverCompletingAuthRepository(), ref) {
+    state = const AuthState(
+      status: AuthStatus.authenticated,
+      user: HbUser(
+        id: 'user-1',
+        email: 'user-1@example.test',
+        displayName: 'User 1',
+      ),
+    );
+  }
 }

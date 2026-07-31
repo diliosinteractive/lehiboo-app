@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/features/alerts/domain/entities/alert.dart';
 import 'package:lehiboo/features/alerts/domain/repositories/alerts_repository.dart';
 import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
+import 'package:lehiboo/features/auth/domain/repositories/auth_repository.dart';
 import 'package:lehiboo/features/events/domain/entities/event_question.dart';
 import 'package:lehiboo/features/events/domain/repositories/event_questions_repository.dart';
 import 'package:lehiboo/features/events/domain/repositories/event_repository.dart';
@@ -17,9 +22,13 @@ void main() {
     final repository = _FailingAlertsRepository(failure);
     final testProvider =
         StateNotifierProvider<AlertsNotifier, AsyncValue<List<Alert>>>(
-      (ref) => AlertsNotifier(repository, ref, isAuthenticated: false),
+      (ref) => AlertsNotifier(repository, ref, ownerAccountId: 'test-user'),
     );
-    final container = ProviderContainer();
+    final container = ProviderContainer(
+      overrides: [
+        authSessionUserIdProvider.overrideWithValue('test-user'),
+      ],
+    );
     addTearDown(container.dispose);
 
     final notifier = container.read(testProvider.notifier);
@@ -41,9 +50,13 @@ void main() {
     final repository = _FailingAlertsRepository(failure);
     final testProvider =
         StateNotifierProvider<AlertsNotifier, AsyncValue<List<Alert>>>(
-      (ref) => AlertsNotifier(repository, ref, isAuthenticated: true),
+      (ref) => AlertsNotifier(repository, ref, ownerAccountId: 'test-user'),
     );
-    final container = ProviderContainer();
+    final container = ProviderContainer(
+      overrides: [
+        authSessionUserIdProvider.overrideWithValue('test-user'),
+      ],
+    );
     addTearDown(container.dispose);
 
     final notifier = container.read(testProvider.notifier);
@@ -62,6 +75,7 @@ void main() {
     final failure = Exception('events failed');
     final container = ProviderContainer(
       overrides: [
+        authRepositoryProvider.overrideWithValue(_PendingAuthRepository()),
         eventRepositoryProvider.overrideWithValue(
           _FailingEventRepository(failure),
         ),
@@ -69,21 +83,27 @@ void main() {
     );
     addTearDown(container.dispose);
 
-    await expectLater(
-      container.read(
-        eventsListProvider(const EventsListParams()).future,
-      ),
-      throwsA(same(failure)),
-    );
+    final provider = eventsListProvider(const EventsListParams());
+    await container.read(provider.notifier).waitForInitialLoad();
+
+    expect(container.read(provider).error, same(failure));
   });
 
   test('question creation uses its action-specific fallback', () async {
     final repository = _FailingQuestionsRepository(StateError('broken'));
     final testProvider = StateNotifierProvider<EventQuestionsActionsController,
         AsyncValue<void>>(
-      (ref) => EventQuestionsActionsController(repository, ref),
+      (ref) => EventQuestionsActionsController(
+        repository,
+        ref,
+        ownerSession: ref.watch(authSessionKeyProvider),
+      ),
     );
-    final container = ProviderContainer();
+    final container = ProviderContainer(
+      overrides: [
+        authSessionUserIdProvider.overrideWithValue('user-1'),
+      ],
+    );
     addTearDown(container.dispose);
 
     final result = await container
@@ -96,6 +116,16 @@ void main() {
       cachedAppLocalizations().eventQuestionSubmitFailed,
     );
   });
+}
+
+class _PendingAuthRepository implements AuthRepository {
+  final Completer<bool> _result = Completer<bool>();
+
+  @override
+  Future<bool> isAuthenticated() => _result.future;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FailingAlertsRepository implements AlertsRepository {

@@ -5,6 +5,7 @@ import '../core/analytics/analytics_provider.dart';
 import '../core/constants/app_constants.dart';
 import '../core/l10n/l10n.dart';
 import '../core/providers/shared_preferences_provider.dart';
+import '../domain/entities/user.dart';
 import '../features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 
@@ -33,6 +34,8 @@ import '../features/auth/presentation/screens/otp_verification_screen.dart';
 import '../features/auth/presentation/screens/permission_audio_screen.dart';
 import '../features/auth/presentation/screens/permission_location_screen.dart';
 import '../features/auth/presentation/screens/permission_notifications_screen.dart';
+import '../features/auth/presentation/providers/auth_session_key_provider.dart';
+import '../features/auth/presentation/widgets/account_bound_route_guard.dart';
 import '../features/reminders/presentation/screens/reminders_list_screen.dart';
 import '../features/user_questions/presentation/screens/user_questions_screen.dart';
 import '../features/booking/presentation/screens/booking_slot_selection_screen.dart';
@@ -101,9 +104,20 @@ class _AuthRouterRefresh extends ChangeNotifier {
       (previous, next) {
         // Only refresh when meaningful routing state changes. Ignore pure
         // errorMessage toggles — those must not reset the navigation stack.
-        if (previous?.status != next.status) {
+        final previousIdentity = _AuthRoutingIdentity.from(previous);
+        final nextIdentity = _AuthRoutingIdentity.from(next);
+        if (didAuthenticatedRoutingIdentityChange(previous, next)) {
+          // A private screen must never stay mounted through logout, an
+          // exact-account replacement, or a role replacement. The redirect
+          // consumes this flag once and takes the user back to a clean root.
+          _failClosePending = true;
+        }
+        if (previous?.status != next.status ||
+            previousIdentity != nextIdentity) {
           debugPrint(
-              '🔀 AuthRouterRefresh: ${previous?.status} → ${next.status}');
+            '🔀 AuthRouterRefresh: ${previous?.status}/$previousIdentity '
+            '→ ${next.status}/$nextIdentity',
+          );
           notifyListeners();
         }
       },
@@ -112,12 +126,59 @@ class _AuthRouterRefresh extends ChangeNotifier {
   }
 
   late final ProviderSubscription<AuthState> _sub;
+  bool _failClosePending = false;
+
+  bool takeFailCloseRequest() {
+    if (!_failClosePending) return false;
+    _failClosePending = false;
+    return true;
+  }
 
   @override
   void dispose() {
     _sub.close();
     super.dispose();
   }
+}
+
+@visibleForTesting
+bool didAuthenticatedRoutingIdentityChange(
+  AuthState? previous,
+  AuthState next,
+) {
+  final previousIdentity = _AuthRoutingIdentity.from(previous);
+  return previousIdentity.accountId != null &&
+      previousIdentity != _AuthRoutingIdentity.from(next);
+}
+
+class _AuthRoutingIdentity {
+  const _AuthRoutingIdentity(this.accountId, this.role);
+
+  factory _AuthRoutingIdentity.from(AuthState? auth) {
+    if (auth == null || !auth.isAuthenticated) {
+      return const _AuthRoutingIdentity(null, null);
+    }
+    final accountId = auth.user?.id.trim();
+    return _AuthRoutingIdentity(
+      accountId == null || accountId.isEmpty ? null : accountId,
+      auth.user?.role,
+    );
+  }
+
+  final String? accountId;
+  final UserRole? role;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _AuthRoutingIdentity &&
+      other.accountId == accountId &&
+      other.role == role;
+
+  @override
+  int get hashCode => Object.hash(accountId, role);
+
+  @override
+  String toString() => '$accountId/${role?.name}';
 }
 
 /// Clé globale du navigateur racine — utilisée par `HibonsAnimationCoordinator`
@@ -131,12 +192,36 @@ final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 const List<String> protectedRoutePrefixes = [
   '/messages',
+  '/me',
+  '/favorites',
   '/notifications',
   '/alerts',
   '/trip-plans',
+  '/vendor/scan',
+  '/participants',
+  '/account',
+  '/profile/edit',
+  '/settings',
+  '/post-signup/notifications',
+  '/my-bookings',
+  '/booking',
+  '/booking-detail',
+  '/booking-confirmation',
+  '/order-confirmation',
+  '/ticket',
+  '/checkout',
+  '/cart',
   '/my-reminders',
   '/my-questions',
   '/my-reviews',
+  '/petit-boo/brain',
+  '/petit-boo/history',
+  '/hibons-shop',
+  '/hibons/transactions',
+  '/hibons-dashboard',
+  '/hibons/how-to-earn',
+  '/lucky-wheel',
+  '/achievements',
 ];
 
 bool isProtectedRoute(String matchedLocation) {
@@ -160,8 +245,8 @@ String? protectedRouteRedirect({
   required String matchedLocation,
   required Uri attemptedUri,
 }) {
-  if (authStatus != AuthStatus.unauthenticated) return null;
   if (!isProtectedRoute(matchedLocation)) return null;
+  if (authStatus == AuthStatus.authenticated) return null;
   return loginRedirectLocation(attemptedUri);
 }
 
@@ -186,6 +271,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       debugPrint('🔀 Router redirect: ${state.matchedLocation}');
       debugPrint('🔀 AuthStatus: ${authState.status}');
       debugPrint('🔀 isPendingOtp: $isPendingOtp');
+
+      // An authenticated identity/role just ended or was replaced. GoRouter's
+      // refresh alone would leave the old stateful page mounted at the same
+      // location; fail-close the whole stack before evaluating normal route
+      // redirects. Consuming the flag avoids a redirect loop at `/`.
+      if (refresh.takeFailCloseRequest() && state.matchedLocation != '/') {
+        debugPrint('🔀 Auth identity changed - closing the previous route');
+        return '/';
+      }
 
       // Auth-related routes
       final isLoggingIn = state.matchedLocation == '/login';
@@ -585,13 +679,25 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final eventId = state.pathParameters['id']!;
           final extra = state.extra;
-          final title = extra is Map<String, dynamic>
+          final ownerSession = extra is Map<String, dynamic> &&
+                  extra['ownerSession'] is AuthSessionKey
+              ? extra['ownerSession'] as AuthSessionKey
+              : null;
+          final title = ownerSession != null && extra is Map<String, dynamic>
               ? (extra['title']?.toString() ??
                   context.l10n.routeEventFallbackTitle)
               : context.l10n.routeEventFallbackTitle;
-          return EventQuestionsScreen(
+          final screen = EventQuestionsScreen(
             eventSlug: eventId,
             eventTitle: title,
+            ownerSession: ownerSession,
+          );
+          if (ownerSession?.accountId == null) return screen;
+          final authenticatedOwner = ownerSession!;
+          return AccountBoundRouteGuard<void>(
+            ownerAccountId: authenticatedOwner.accountId,
+            ownerSession: authenticatedOwner,
+            builder: (_) => screen,
           );
         },
       ),
@@ -742,10 +848,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'booking-detail',
         builder: (context, state) {
           final bookingId = state.pathParameters['id']!;
-          final booking = state.extra as booking_entity.Booking?;
+          final extra = state.extra;
+          final extraMap = extra is Map<String, dynamic> ? extra : null;
+          final booking = extraMap?['booking'] as booking_entity.Booking?;
           return BookingDetailScreen(
             bookingId: bookingId,
             initialBooking: booking,
+            initialBookingOwnerAccountId:
+                extraMap?['ownerAccountId'] as String?,
           );
         },
       ),
@@ -762,6 +872,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             tickets: extra?['tickets'] as List<booking_entity.Ticket>?,
             initialIndex: extra?['initialIndex'] as int? ?? 0,
             booking: extra?['booking'] as booking_entity.Booking?,
+            initialDataOwnerAccountId: extra?['ownerAccountId'] as String?,
           );
         },
       ),
@@ -804,6 +915,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           return OrderSuccessScreen(
             orderId: orderId,
             order: extra?['order'] as CreateOrderResponseDto?,
+            initialDataOwnerAccountId: extra?['ownerAccountId'] as String?,
           );
         },
       ),
@@ -820,6 +932,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             bookingResponse: extra?['booking'],
             event: extra?['event'],
             selectedSlot: extra?['selectedSlot'],
+            initialDataOwnerAccountId: extra?['ownerAccountId'] as String?,
           );
         },
       ),
@@ -986,9 +1099,28 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final slug = state.pathParameters['slug']!;
           final extra = state.extra;
-          final title =
-              extra is Map<String, dynamic> ? extra['title']?.toString() : null;
-          return EventReviewsFullScreen(eventSlug: slug, eventTitle: title);
+          final ownerSession = extra is Map<String, dynamic> &&
+                  extra['ownerSession'] is AuthSessionKey
+              ? extra['ownerSession'] as AuthSessionKey
+              : null;
+          // A title supplied by the event-detail response may describe a
+          // private event. Never render it without the exact session that
+          // produced that route payload.
+          final title = ownerSession != null && extra is Map<String, dynamic>
+              ? extra['title']?.toString()
+              : null;
+          final screen = EventReviewsFullScreen(
+            eventSlug: slug,
+            eventTitle: title,
+            ownerSession: ownerSession,
+          );
+          if (ownerSession?.accountId == null) return screen;
+          final authenticatedOwner = ownerSession!;
+          return AccountBoundRouteGuard<void>(
+            ownerAccountId: authenticatedOwner.accountId,
+            ownerSession: authenticatedOwner,
+            builder: (_) => screen,
+          );
         },
       ),
     ],
