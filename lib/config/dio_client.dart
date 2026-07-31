@@ -6,6 +6,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import '../core/constants/app_constants.dart';
 import '../core/l10n/app_locale.dart';
+import '../core/network/auth_credential_mutation_coordinator.dart';
+import '../core/network/auth_session_ownership.dart';
 import '../core/network/json_resilience.dart';
 import '../features/checkin/presentation/providers/active_organization_provider.dart';
 import '../features/gamification/data/interceptors/hibons_update_interceptor.dart';
@@ -17,6 +19,11 @@ final dioProvider = Provider<Dio>((ref) {
 
 /// Callback type for force logout triggered by 401 interceptor.
 typedef ForceLogoutCallback = Future<void> Function();
+
+@visibleForTesting
+typedef RefreshTokenRequest = Future<Map<String, dynamic>?> Function(
+  String refreshToken,
+);
 
 @visibleForTesting
 String maskAuthTokenForDebugLog(String token) {
@@ -37,11 +44,13 @@ class SharedSecureStorage {
 class DioClient {
   static late Dio _dio;
   static ForceLogoutCallback? onForceLogout;
+  static AuthSessionInvocationStampBinding? _authInvocationStampBinding;
 
   static Dio get instance => _dio;
   static FlutterSecureStorage get storage => SharedSecureStorage.instance;
 
   static void initialize() {
+    _authInvocationStampBinding?.close();
     _dio = Dio(
       BaseOptions(
         baseUrl: AppConstants.baseUrl,
@@ -54,6 +63,7 @@ class DioClient {
         },
       ),
     );
+    _authInvocationStampBinding = bindAuthSessionInvocationStamp(_dio);
 
     // Décodeur JSON instrumenté : capture le contexte autour de l'offset
     // fautif pour diagnostiquer les payloads malformés (ex: bug intermittent
@@ -71,10 +81,17 @@ class DioClient {
 
     // Add interceptors
     _dio.interceptors.addAll([
+      // BaseOptions.extra holds the true synchronous invocation stamp. This
+      // first interceptor materializes that copied stamp as request ownership
+      // before the request reaches the queued secure-storage token lookup.
+      AuthSessionOwnershipInterceptor(),
+      // Must run before the async JWT interceptor so the response remains
+      // bound to the account that initiated the request, even if auth changes
+      // while the token is being read or while Dio retries the request.
+      HibonsUpdateInterceptor(),
       LocaleHeaderInterceptor(),
       JwtAuthInterceptor(SharedSecureStorage.instance),
       OrganizationHeaderInterceptor(),
-      HibonsUpdateInterceptor(),
       // Retente une fois les GET qui échouent avec FormatException — absorbe
       // l'intermittence du payload corrompu en attendant le fix backend.
       JsonRetryInterceptor(_dio),
@@ -138,11 +155,58 @@ class OrganizationHeaderInterceptor extends Interceptor {
   }
 }
 
+abstract interface class AuthTokenStorage {
+  Future<String?> read(String key);
+
+  Future<void> write(String key, String value);
+
+  Future<void> delete(String key);
+}
+
+class _FlutterSecureAuthTokenStorage implements AuthTokenStorage {
+  const _FlutterSecureAuthTokenStorage(this.storage);
+
+  final FlutterSecureStorage storage;
+
+  @override
+  Future<String?> read(String key) => storage.read(key: key);
+
+  @override
+  Future<void> write(String key, String value) {
+    return storage.write(key: key, value: value);
+  }
+
+  @override
+  Future<void> delete(String key) => storage.delete(key: key);
+}
+
 class JwtAuthInterceptor extends QueuedInterceptor {
-  final FlutterSecureStorage _storage;
+  final AuthTokenStorage _tokenStorage;
+  final AuthSessionOwnership _authSessions;
+  final AuthCredentialMutationCoordinator _credentialMutations;
+  final RefreshTokenRequest? _refreshTokenRequest;
   bool _isRefreshing = false;
 
-  JwtAuthInterceptor(this._storage);
+  JwtAuthInterceptor(
+    FlutterSecureStorage storage, {
+    AuthSessionOwnership? authSessions,
+    AuthCredentialMutationCoordinator? credentialMutations,
+  })  : _tokenStorage = _FlutterSecureAuthTokenStorage(storage),
+        _authSessions = authSessions ?? AuthSessionOwnershipRegistry.instance,
+        _credentialMutations =
+            credentialMutations ?? AuthCredentialMutationCoordinator.instance,
+        _refreshTokenRequest = null;
+
+  @visibleForTesting
+  JwtAuthInterceptor.withTokenStorage(
+    this._tokenStorage, {
+    required AuthSessionOwnership authSessions,
+    AuthCredentialMutationCoordinator? credentialMutations,
+    RefreshTokenRequest? refreshTokenRequest,
+  })  : _authSessions = authSessions,
+        _credentialMutations =
+            credentialMutations ?? AuthCredentialMutationCoordinator.instance,
+        _refreshTokenRequest = refreshTokenRequest;
 
   static const _refreshPath = '/auth/refresh';
 
@@ -186,6 +250,8 @@ class JwtAuthInterceptor extends QueuedInterceptor {
     _refreshPath,
     '/auth/otp',
     '/auth/check-email',
+    '/auth/logout',
+    '/auth/device-tokens/all',
   ];
 
   @visibleForTesting
@@ -203,18 +269,59 @@ class JwtAuthInterceptor extends QueuedInterceptor {
     return token.isEmpty ? null : token;
   }
 
+  AuthRequestSession _requestSession(RequestOptions options) {
+    return ensureAuthRequestSession(_authSessions, options);
+  }
+
+  bool _isAuthorized(AuthRequestSession session, String path) {
+    return isAuthSessionAuthorizedForPath(_authSessions, session, path);
+  }
+
+  void _rejectStaleRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) {
+    handler.reject(staleAuthSessionException(options));
+  }
+
   @override
   Future<void> onRequest(
-      RequestOptions options, RequestInterceptorHandler handler) async {
-    final token = await _storage.read(key: AppConstants.keyAuthToken);
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
+    // Read the invocation-time stamp before the first await. BaseOptions.extra
+    // was copied synchronously by Dio.request(), before interceptor scheduling.
+    final requestSession = _requestSession(options);
+    if (!_isAuthorized(requestSession, options.path)) {
+      _rejectStaleRequest(options, handler);
+      return;
+    }
+
+    final token = await _tokenStorage.read(AppConstants.keyAuthToken);
+    if (!_isAuthorized(requestSession, options.path)) {
+      _rejectStaleRequest(options, handler);
+      return;
+    }
+
     final isRefreshRequest = options.path.startsWith(_refreshPath);
 
     // Toujours attacher le token si disponible. Le serveur l'ignore sur les
     // routes vraiment publiques, et en a besoin sur les sous-routes
     // authentifiées ou user-aware.
-    if (!isRefreshRequest && token != null && token.isNotEmpty) {
+    if (requestSession.isAuthenticated &&
+        !isRefreshRequest &&
+        token != null &&
+        token.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $token';
-    } else if (kDebugMode) {
+    } else {
+      // Never forward a caller-supplied or disk-stale bearer for an anonymous
+      // auth epoch.
+      options.headers.remove('Authorization');
+    }
+
+    if (kDebugMode &&
+        requestSession.isAuthenticated &&
+        (token == null || token.isEmpty)) {
       final isPublic = isPublicPath(options.path);
       if (!isPublic) {
         debugPrint(
@@ -224,7 +331,10 @@ class JwtAuthInterceptor extends QueuedInterceptor {
     }
 
     if (kDebugMode) {
-      final hasToken = !isRefreshRequest && token != null && token.isNotEmpty;
+      final hasToken = requestSession.isAuthenticated &&
+          !isRefreshRequest &&
+          token != null &&
+          token.isNotEmpty;
       debugPrint(
         '🔐 JwtAuthInterceptor: path=${options.path}, hasToken=$hasToken',
       );
@@ -244,12 +354,41 @@ class JwtAuthInterceptor extends QueuedInterceptor {
   }
 
   @override
+  void onResponse(
+    Response<dynamic> response,
+    ResponseInterceptorHandler handler,
+  ) {
+    final requestSession = _requestSession(response.requestOptions);
+    if (!_isAuthorized(requestSession, response.requestOptions.path)) {
+      handler.reject(
+        staleAuthSessionException(
+          response.requestOptions,
+          response: response,
+        ),
+      );
+      return;
+    }
+    handler.next(response);
+  }
+
+  @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
+    final requestSession = _requestSession(err.requestOptions);
+    final path = err.requestOptions.path;
+    if (!_isAuthorized(requestSession, path)) {
+      handler.reject(
+        staleAuthSessionException(
+          err.requestOptions,
+          response: err.response,
+        ),
+      );
+      return;
+    }
+
     if (err.response?.statusCode != 401) {
       return super.onError(err, handler);
     }
 
-    final path = err.requestOptions.path;
     final isPublic = isPublicPath(path);
     if (isPublic) {
       if (kDebugMode) {
@@ -269,9 +408,17 @@ class JwtAuthInterceptor extends QueuedInterceptor {
 
     try {
       final failedRequestToken = _requestBearerToken(err.requestOptions);
-      final currentToken = await _storage.read(
-        key: AppConstants.keyAuthToken,
+      final currentToken = await _tokenStorage.read(
+        AppConstants.keyAuthToken,
       );
+      if (!_isAuthorized(requestSession, path)) {
+        return handler.reject(
+          staleAuthSessionException(
+            err.requestOptions,
+            response: err.response,
+          ),
+        );
+      }
       if (failedRequestToken == null || currentToken != failedRequestToken) {
         // The request may have been sent before logout/account switching.
         // Never let its late 401 expire the newer session now in storage.
@@ -286,10 +433,20 @@ class JwtAuthInterceptor extends QueuedInterceptor {
         final refreshedTokens = canRefresh
             ? await _refreshAccessToken(
                 expectedAccessToken: failedRequestToken,
+                requestSession: requestSession,
+                requestPath: path,
               )
             : null;
 
         if (refreshedTokens != null) {
+          if (!_isAuthorized(requestSession, path)) {
+            return handler.reject(
+              staleAuthSessionException(
+                err.requestOptions,
+                response: err.response,
+              ),
+            );
+          }
           try {
             final retryOptions = err.requestOptions;
             retryOptions.headers['Authorization'] =
@@ -311,6 +468,8 @@ class JwtAuthInterceptor extends QueuedInterceptor {
             if (retryError.response?.statusCode == 401) {
               await _forceLogoutIfTokenPresent(
                 expectedAccessToken: refreshedTokens.accessToken,
+                requestSession: requestSession,
+                requestPath: path,
               );
             }
             return handler.reject(retryError);
@@ -319,6 +478,8 @@ class JwtAuthInterceptor extends QueuedInterceptor {
 
         await _forceLogoutIfTokenPresent(
           expectedAccessToken: failedRequestToken,
+          requestSession: requestSession,
+          requestPath: path,
         );
       }
     } catch (error, stackTrace) {
@@ -332,6 +493,14 @@ class JwtAuthInterceptor extends QueuedInterceptor {
       _isRefreshing = false;
     }
 
+    if (!_isAuthorized(requestSession, path)) {
+      return handler.reject(
+        staleAuthSessionException(
+          err.requestOptions,
+          response: err.response,
+        ),
+      );
+    }
     return handler.reject(err);
   }
 
@@ -346,34 +515,38 @@ class JwtAuthInterceptor extends QueuedInterceptor {
   ///      écraser la session plus récente.
   Future<_RefreshTokens?> _refreshAccessToken({
     required String expectedAccessToken,
+    required AuthRequestSession requestSession,
+    required String requestPath,
   }) async {
     for (var attempt = 1; attempt <= _maxRefreshAttempts; attempt++) {
-      final accessToken = await _storage.read(
-        key: AppConstants.keyAuthToken,
+      if (!_isAuthorized(requestSession, requestPath)) return null;
+      final accessToken = await _tokenStorage.read(
+        AppConstants.keyAuthToken,
       );
+      if (!_isAuthorized(requestSession, requestPath)) return null;
       if (accessToken != expectedAccessToken) return null;
 
-      final refreshToken = await _storage.read(
-        key: AppConstants.keyRefreshToken,
+      final refreshToken = await _tokenStorage.read(
+        AppConstants.keyRefreshToken,
       );
+      if (!_isAuthorized(requestSession, requestPath)) return null;
       if (refreshToken == null || refreshToken.isEmpty) return null;
 
       try {
-        final response = await _buildRefreshDio().post<Map<String, dynamic>>(
-          _refreshPath,
-          data: {'refresh_token': refreshToken},
-        );
+        final response = await _requestRefreshTokens(refreshToken);
 
-        final tokens = _parseRefreshTokens(response.data);
+        if (!_isAuthorized(requestSession, requestPath)) return null;
+
+        final tokens = _parseRefreshTokens(response);
         if (tokens != null) {
-          final currentAccessToken = await _storage.read(
-            key: AppConstants.keyAuthToken,
+          final persisted = await _persistRefreshedTokens(
+            tokens: tokens,
+            expectedAccessToken: expectedAccessToken,
+            expectedRefreshToken: refreshToken,
+            requestSession: requestSession,
+            requestPath: requestPath,
           );
-          final currentRefreshToken = await _storage.read(
-            key: AppConstants.keyRefreshToken,
-          );
-          if (currentAccessToken != expectedAccessToken ||
-              currentRefreshToken != refreshToken) {
+          if (!persisted) {
             if (kDebugMode) {
               debugPrint(
                 '🔐 JwtAuthInterceptor: discarded refresh from a stale session',
@@ -381,15 +554,6 @@ class JwtAuthInterceptor extends QueuedInterceptor {
             }
             return null;
           }
-
-          await _storage.write(
-            key: AppConstants.keyAuthToken,
-            value: tokens.accessToken,
-          );
-          await _storage.write(
-            key: AppConstants.keyRefreshToken,
-            value: tokens.refreshToken,
-          );
           if (kDebugMode) {
             debugPrint(
               '🔐 JwtAuthInterceptor: access token refreshed '
@@ -412,13 +576,14 @@ class JwtAuthInterceptor extends QueuedInterceptor {
         // Erreur transitoire : pas de réponse (réseau/timeout) ou 5xx serveur.
         final isTransient = status == null || status >= 500;
 
-        final currentAccessToken = await _storage.read(
-          key: AppConstants.keyAuthToken,
+        final currentAccessToken = await _tokenStorage.read(
+          AppConstants.keyAuthToken,
         );
-        final currentRefreshToken = await _storage.read(
-          key: AppConstants.keyRefreshToken,
+        final currentRefreshToken = await _tokenStorage.read(
+          AppConstants.keyRefreshToken,
         );
-        final sessionChanged = currentAccessToken != expectedAccessToken ||
+        final sessionChanged = !_isAuthorized(requestSession, requestPath) ||
+            currentAccessToken != expectedAccessToken ||
             currentRefreshToken != refreshToken;
         if (sessionChanged) return null;
 
@@ -438,7 +603,9 @@ class JwtAuthInterceptor extends QueuedInterceptor {
           }
           return null;
         }
+        if (!_isAuthorized(requestSession, requestPath)) return null;
         await Future<void>.delayed(_refreshRetryBackoff * attempt);
+        if (!_isAuthorized(requestSession, requestPath)) return null;
       } catch (e) {
         if (kDebugMode) {
           debugPrint(
@@ -447,10 +614,70 @@ class JwtAuthInterceptor extends QueuedInterceptor {
           );
         }
         if (attempt >= _maxRefreshAttempts) rethrow;
+        if (!_isAuthorized(requestSession, requestPath)) return null;
         await Future<void>.delayed(_refreshRetryBackoff * attempt);
+        if (!_isAuthorized(requestSession, requestPath)) return null;
       }
     }
     return null;
+  }
+
+  Future<Map<String, dynamic>?> _requestRefreshTokens(
+    String refreshToken,
+  ) async {
+    final injected = _refreshTokenRequest;
+    if (injected != null) return injected(refreshToken);
+    final response = await _buildRefreshDio().post<Map<String, dynamic>>(
+      _refreshPath,
+      data: {'refresh_token': refreshToken},
+    );
+    return response.data;
+  }
+
+  /// Atomically replaces the credential pair relative to every login, logout,
+  /// repository refresh, and interceptor refresh writer.
+  ///
+  /// The epoch and expected pair are revalidated *inside* the shared lease,
+  /// immediately before the first write. Once writing begins, both keys are
+  /// completed before releasing the lease. If auth rotates during either
+  /// secure-storage write, the queued login/clear mutation runs next and owns
+  /// the final pair; it can never be overwritten by this stale refresh.
+  Future<bool> _persistRefreshedTokens({
+    required _RefreshTokens tokens,
+    required String expectedAccessToken,
+    required String expectedRefreshToken,
+    required AuthRequestSession requestSession,
+    required String requestPath,
+  }) {
+    return _credentialMutations.run(() async {
+      if (!_isAuthorized(requestSession, requestPath)) return false;
+
+      final currentAccessToken = await _tokenStorage.read(
+        AppConstants.keyAuthToken,
+      );
+      if (!_isAuthorized(requestSession, requestPath)) return false;
+      final currentRefreshToken = await _tokenStorage.read(
+        AppConstants.keyRefreshToken,
+      );
+      if (!_isAuthorized(requestSession, requestPath) ||
+          currentAccessToken != expectedAccessToken ||
+          currentRefreshToken != expectedRefreshToken) {
+        return false;
+      }
+
+      // Do not release a half-written pair. A session transition can happen
+      // while secure storage is awaiting either write, but its credential
+      // mutation is queued behind this lease and will deterministically win.
+      await _tokenStorage.write(
+        AppConstants.keyAuthToken,
+        tokens.accessToken,
+      );
+      await _tokenStorage.write(
+        AppConstants.keyRefreshToken,
+        tokens.refreshToken,
+      );
+      return _isAuthorized(requestSession, requestPath);
+    });
   }
 
   Dio _buildRefreshDio() {
@@ -510,19 +737,42 @@ class JwtAuthInterceptor extends QueuedInterceptor {
 
   Future<void> _forceLogoutIfTokenPresent({
     required String expectedAccessToken,
+    required AuthRequestSession requestSession,
+    required String requestPath,
   }) async {
-    final currentToken = await _storage.read(
-      key: AppConstants.keyAuthToken,
+    if (!_isAuthorized(requestSession, requestPath)) return;
+    final currentToken = await _tokenStorage.read(
+      AppConstants.keyAuthToken,
     );
+    if (!_isAuthorized(requestSession, requestPath)) return;
     if (currentToken == expectedAccessToken) {
       if (kDebugMode) {
         debugPrint(
           '🔐 JwtAuthInterceptor: Token expired on protected route → force logout',
         );
       }
-      await _storage.delete(key: AppConstants.keyAuthToken);
-      await _storage.delete(key: AppConstants.keyRefreshToken);
-      await DioClient.onForceLogout?.call();
+      final forceLogout = DioClient.onForceLogout;
+      if (forceLogout != null) {
+        // The production callback rotates AuthState synchronously before its
+        // asynchronous repository cleanup. If that happened, let the auth
+        // repository own storage deletion and never touch a newer session.
+        await forceLogout();
+        if (!_isAuthorized(requestSession, requestPath)) return;
+      }
+
+      // Fallback for isolated clients/tests whose callback does not own local
+      // auth cleanup. Delete both keys under the same writer lease, with the
+      // exact epoch and expected token revalidated inside it.
+      await _credentialMutations.run(() async {
+        if (!_isAuthorized(requestSession, requestPath)) return;
+        final token = await _tokenStorage.read(AppConstants.keyAuthToken);
+        if (!_isAuthorized(requestSession, requestPath) ||
+            token != expectedAccessToken) {
+          return;
+        }
+        await _tokenStorage.delete(AppConstants.keyAuthToken);
+        await _tokenStorage.delete(AppConstants.keyRefreshToken);
+      });
     } else if (kDebugMode) {
       debugPrint(
         '🔐 JwtAuthInterceptor: Session changed, stale 401 ignored',

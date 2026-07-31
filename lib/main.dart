@@ -25,6 +25,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'routes/app_router.dart';
 import 'config/dio_client.dart';
 import 'config/env_config.dart';
+import 'features/auth/application/auth_session_transport_binding.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 
 // API Repositories
@@ -83,7 +84,7 @@ import 'features/gamification/application/hibons_service.dart';
 import 'features/gamification/application/hibons_auth_sync.dart';
 import 'features/gamification/presentation/widgets/hibons_animation_coordinator.dart';
 
-// Vendor check-in (rehydrate active org + clear on logout)
+// Vendor check-in (account-bound active organization + header cache)
 import 'features/checkin/presentation/providers/active_organization_provider.dart';
 
 // Configuration flag - set to false to use fake data
@@ -205,8 +206,8 @@ void main() async {
     bootConsent.name,
   );
 
-  // Container Riverpod explicite pour permettre à HibonsService (singleton)
-  // de lire l'état depuis l'intercepteur Dio (qui n'a pas de Ref).
+  // Explicit Riverpod container for singleton services that must read the
+  // exact auth epoch from Dio/OneSignal callbacks, which do not own a Ref.
   final container = ProviderContainer(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
@@ -215,6 +216,7 @@ void main() async {
     ],
   );
 
+  AuthSessionTransportBinding.instance.attach(container);
   HibonsService.instance.attach(container);
 
   runApp(
@@ -386,9 +388,9 @@ class LeHibooApp extends ConsumerWidget {
     ref.watch(hibonsAuthSyncProvider);
 
     // Vendor check-in: keep the active-org notifier alive for the whole app
-    // session so it can rehydrate from secure storage on launch and clear
-    // itself when the user logs out (its ref.listen on authProvider only
-    // fires while the provider is observed).
+    // session. Its exact account-id dependency clears the request-header
+    // cache synchronously on logout/account switch and only rehydrates the
+    // current account's owner-tagged secure-storage record.
     ref.watch(activeOrganizationProvider);
 
     return MaterialApp.router(

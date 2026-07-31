@@ -52,6 +52,7 @@ class _GuestRestrictionDialogState
   // race to dismiss the dialog (e.g. inline login completes and the
   // listener also fires for the same status flip).
   bool _didPop = false;
+  late final StateController<bool> _guestGuardController;
   // Captured in didChangeDependencies so the listener can pop everything
   // above the dialog (e.g. register / OTP screens the user pushed) and
   // then pop the dialog itself, leaving the original screen on top.
@@ -60,12 +61,13 @@ class _GuestRestrictionDialogState
   @override
   void initState() {
     super.initState();
+    _guestGuardController = ref.read(guestGuardActiveProvider.notifier);
     // Mark that a guest-guard dialog is active. Authentication screens
     // check this flag in their success handlers to skip context.go('/')
     // so they don't blow away the navigation stack the dialog sits on.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ref.read(guestGuardActiveProvider.notifier).state = true;
+      _guestGuardController.state = true;
     });
 
     // Listen for ANY transition to authenticated — covers both the inline
@@ -90,8 +92,13 @@ class _GuestRestrictionDialogState
   @override
   void dispose() {
     // Always clear the flag — even if we navigated away mid-flow.
+    // Provider mutation is not allowed while Flutter finalizes the widget
+    // tree. Defer the captured controller (never the disposed WidgetRef) and
+    // tolerate the whole ProviderContainer being torn down first.
     Future.microtask(() {
-      ref.read(guestGuardActiveProvider.notifier).state = false;
+      if (_guestGuardController.mounted) {
+        _guestGuardController.state = false;
+      }
     });
     _emailController.dispose();
     _passwordController.dispose();

@@ -51,8 +51,11 @@ class _FakeAuthRepository implements AuthRepository {
 
 class _FakeAlertsRepository implements AlertsRepository {
   int getCalls = 0;
+  int createCalls = 0;
+  int deleteCalls = 0;
   List<Alert> nextAlerts = const [];
   Completer<List<Alert>>? nextResponse;
+  Completer<Alert>? nextCreateResponse;
 
   @override
   Future<List<Alert>> getAlerts() {
@@ -63,6 +66,27 @@ class _FakeAlertsRepository implements AlertsRepository {
       return pendingResponse.future;
     }
     return Future.value(nextAlerts);
+  }
+
+  @override
+  Future<Alert> createAlert(
+    String name,
+    EventFilter filter, {
+    bool enablePush = true,
+    bool enableEmail = false,
+  }) {
+    createCalls++;
+    final pendingResponse = nextCreateResponse;
+    if (pendingResponse != null) {
+      nextCreateResponse = null;
+      return pendingResponse.future;
+    }
+    return Future.value(_alert('created'));
+  }
+
+  @override
+  Future<void> deleteAlert(String id) async {
+    deleteCalls++;
   }
 
   @override
@@ -212,16 +236,44 @@ Future<void> _flush() async {
 }
 
 Future<void> _awaitGamificationReads(ProviderContainer container) async {
-  await Future.wait<Object?>([
-    container.read(gamificationNotifierProvider.future),
-    container.read(hibonsBalanceProvider.future),
-    container.read(dailyRewardProvider.future),
-    container.read(hibonTransactionsProvider(null).future),
-    container.read(hibonBadgesProvider.future),
-    container.read(personalizedFeedProvider.future),
-  ]);
+  final session = container.read(gamificationSessionProvider);
+  await container.read(gamificationNotifierProvider(session).future);
+  await container.read(hibonsBalanceProvider(session).future);
+  await container.read(dailyRewardProvider(session).future);
+  await container.read(
+    hibonTransactionsProvider((session: session, pillar: null)).future,
+  );
+  await container.read(hibonBadgesProvider(session).future);
+  await container.read(personalizedFeedProvider.notifier).waitForInitialLoad();
   await _flush();
 }
+
+GamificationSessionKey? _session(ProviderContainer container) =>
+    container.read(gamificationSessionProvider);
+
+AsyncValue<HibonsWallet> _walletState(ProviderContainer container) =>
+    container.read(gamificationNotifierProvider(_session(container)));
+
+GamificationNotifier _walletNotifier(ProviderContainer container) =>
+    container.read(gamificationNotifierProvider(_session(container)).notifier);
+
+AsyncValue<HibonsBalance> _balanceState(ProviderContainer container) =>
+    container.read(hibonsBalanceProvider(_session(container)));
+
+AsyncValue<DailyRewardState> _dailyState(ProviderContainer container) =>
+    container.read(dailyRewardProvider(_session(container)));
+
+AsyncValue<TransactionsListResult> _transactionState(
+  ProviderContainer container,
+) =>
+    container.read(
+      hibonTransactionsProvider(
+        (session: _session(container), pillar: null),
+      ),
+    );
+
+AsyncValue<HibonBadgesResult> _badgeState(ProviderContainer container) =>
+    container.read(hibonBadgesProvider(_session(container)));
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -267,6 +319,63 @@ void main() {
     );
   });
 
+  test('stale alert actions cannot resume after an account replacement',
+      () async {
+    final authRepository = _FakeAuthRepository();
+    final alertsRepository = _FakeAlertsRepository();
+    final container = ProviderContainer(
+      overrides: [
+        analyticsServiceProvider.overrideWithValue(
+          const NoopAnalyticsService(),
+        ),
+        authRepositoryProvider.overrideWithValue(authRepository),
+        alertsRepositoryProvider.overrideWithValue(alertsRepository),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    container.read(authProvider);
+    await _flush();
+    container.read(authProvider.notifier).setAuthenticatedUser(_userOne);
+    final subscription = container.listen(
+      alertsProvider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+    await _flush();
+
+    final accountOneNotifier = container.read(alertsProvider.notifier);
+    final pendingCreate = Completer<Alert>();
+    alertsRepository.nextCreateResponse = pendingCreate;
+    final create = accountOneNotifier.createAlert(
+      name: 'Private A search',
+      filter: const EventFilter(),
+    );
+    expect(alertsRepository.createCalls, 1);
+
+    container.read(authProvider.notifier).setAuthenticatedUser(_userTwo);
+    await _flush();
+    container.read(authProvider.notifier).setAuthenticatedUser(_userOne);
+    await _flush();
+
+    pendingCreate.complete(_alert('private-a'));
+    await expectLater(
+      create,
+      throwsA(isA<AlertSessionChangedException>()),
+    );
+    expect(
+      container.read(alertsProvider).valueOrNull?.map((alert) => alert.id),
+      isNot(contains('private-a')),
+    );
+
+    await expectLater(
+      accountOneNotifier.deleteAlert('private-a'),
+      throwsA(isA<AlertSessionChangedException>()),
+    );
+    expect(alertsRepository.deleteCalls, 0);
+  });
+
   test('wallet refresh cannot be overwritten by a late cold load', () async {
     final authRepository = _FakeAuthRepository();
     final gamificationRepository = _FakeGamificationRepository()
@@ -289,8 +398,9 @@ void main() {
     container.read(authProvider);
     await _flush();
     container.read(authProvider.notifier).setAuthenticatedUser(_userOne);
+    final ownerSession = container.read(gamificationSessionProvider)!;
     final subscription = container.listen(
-      gamificationNotifierProvider,
+      gamificationNotifierProvider(ownerSession),
       (_, __) {},
       fireImmediately: true,
     );
@@ -298,17 +408,25 @@ void main() {
     await _flush();
 
     expect(gamificationRepository.walletCalls, 1);
-    await container.read(gamificationNotifierProvider.notifier).refresh();
+    await container
+        .read(gamificationNotifierProvider(ownerSession).notifier)
+        .refresh();
     expect(gamificationRepository.walletCalls, 2);
     expect(
-      container.read(gamificationNotifierProvider).valueOrNull?.balance,
+      container
+          .read(gamificationNotifierProvider(ownerSession))
+          .valueOrNull
+          ?.balance,
       20,
     );
 
     coldLoad.complete(const HibonsWallet(balance: 999));
     await _flush();
     expect(
-      container.read(gamificationNotifierProvider).valueOrNull?.balance,
+      container
+          .read(gamificationNotifierProvider(ownerSession))
+          .valueOrNull
+          ?.balance,
       20,
     );
   });
@@ -343,27 +461,27 @@ void main() {
       final subscriptions = [
         container.listen(alertsProvider, (_, __) {}, fireImmediately: true),
         container.listen(
-          gamificationNotifierProvider,
+          gamificationNotifierProvider(null),
           (_, __) {},
           fireImmediately: true,
         ),
         container.listen(
-          hibonsBalanceProvider,
+          hibonsBalanceProvider(null),
           (_, __) {},
           fireImmediately: true,
         ),
         container.listen(
-          dailyRewardProvider,
+          dailyRewardProvider(null),
           (_, __) {},
           fireImmediately: true,
         ),
         container.listen(
-          hibonTransactionsProvider(null),
+          hibonTransactionsProvider((session: null, pillar: null)),
           (_, __) {},
           fireImmediately: true,
         ),
         container.listen(
-          hibonBadgesProvider,
+          hibonBadgesProvider(null),
           (_, __) {},
           fireImmediately: true,
         ),
@@ -400,20 +518,17 @@ void main() {
 
       expect(container.read(alertsProvider).valueOrNull?.single.id, 'one');
       expect(
-        container.read(gamificationNotifierProvider).valueOrNull?.balance,
+        _walletState(container).valueOrNull?.balance,
         11,
       );
-      expect(container.read(hibonsBalanceProvider).valueOrNull?.balance, 11);
-      expect(container.read(dailyRewardProvider).valueOrNull?.currentDay, 11);
+      expect(_balanceState(container).valueOrNull?.balance, 11);
+      expect(_dailyState(container).valueOrNull?.currentDay, 11);
       expect(
-        container
-            .read(hibonTransactionsProvider(null))
-            .valueOrNull
-            ?.currentBalance,
+        _transactionState(container).valueOrNull?.currentBalance,
         11,
       );
       expect(
-        container.read(hibonBadgesProvider).valueOrNull?.meta.lifetimeEarned,
+        _badgeState(container).valueOrNull?.meta.lifetimeEarned,
         11,
       );
 
@@ -449,10 +564,10 @@ void main() {
       expect(authRepository.clearLocalCalls, 1);
       expect(container.read(alertsProvider).valueOrNull, isEmpty);
       expect(
-        container.read(gamificationNotifierProvider).valueOrNull?.balance,
+        _walletState(container).valueOrNull?.balance,
         0,
       );
-      expect(container.read(hibonsBalanceProvider).valueOrNull?.balance, 0);
+      expect(_balanceState(container).valueOrNull?.balance, 0);
       expect(container.read(wheelSpinProvider).valueOrNull, isNull);
       expect(container.read(purchaseNotifierProvider).valueOrNull, isNull);
       expect(container.read(chatUnlockProvider).valueOrNull, isFalse);
@@ -478,10 +593,10 @@ void main() {
       expect(container.read(authProvider).errorMessage, isNull);
       expect(container.read(alertsProvider).valueOrNull?.single.id, 'two');
       expect(
-        container.read(gamificationNotifierProvider).valueOrNull?.balance,
+        _walletState(container).valueOrNull?.balance,
         22,
       );
-      expect(container.read(hibonsBalanceProvider).valueOrNull?.balance, 22);
+      expect(_balanceState(container).valueOrNull?.balance, 22);
       expect(
         gamificationRepository.walletCalls,
         greaterThan(callsBeforeLogout.wallet),
@@ -497,38 +612,38 @@ void main() {
 
       gamificationRepository.walletError = StateError('wallet unavailable');
       await expectLater(
-        container.read(gamificationNotifierProvider.notifier).refresh(),
+        _walletNotifier(container).refresh(),
         throwsA(isA<StateError>()),
       );
-      final failedRefresh = container.read(gamificationNotifierProvider);
+      final failedRefresh = _walletState(container);
       expect(failedRefresh.hasError, isTrue);
       expect(failedRefresh.valueOrNull?.balance, 22);
       gamificationRepository.walletError = null;
 
       final staleSuccess = Completer<HibonsWallet>();
       gamificationRepository.nextWalletResponse = staleSuccess;
-      final staleSuccessRefresh =
-          container.read(gamificationNotifierProvider.notifier).refresh();
+      final staleSuccessRefresh = _walletNotifier(container).refresh();
       gamificationRepository.accountValue = 33;
       container.read(authProvider.notifier).setAuthenticatedUser(_userOne);
-      await container.read(gamificationNotifierProvider.future);
+      await container
+          .read(gamificationNotifierProvider(_session(container)).future);
       staleSuccess.complete(const HibonsWallet(balance: 999));
       await staleSuccessRefresh;
       expect(
-        container.read(gamificationNotifierProvider).valueOrNull?.balance,
+        _walletState(container).valueOrNull?.balance,
         33,
       );
 
       final staleError = Completer<HibonsWallet>();
       gamificationRepository.nextWalletResponse = staleError;
-      final staleErrorRefresh =
-          container.read(gamificationNotifierProvider.notifier).refresh();
+      final staleErrorRefresh = _walletNotifier(container).refresh();
       gamificationRepository.accountValue = 44;
       container.read(authProvider.notifier).setAuthenticatedUser(_userTwo);
-      await container.read(gamificationNotifierProvider.future);
+      await container
+          .read(gamificationNotifierProvider(_session(container)).future);
       staleError.completeError(StateError('stale user failure'));
       await expectLater(staleErrorRefresh, throwsA(isA<StateError>()));
-      final stateAfterStaleError = container.read(gamificationNotifierProvider);
+      final stateAfterStaleError = _walletState(container);
       expect(stateAfterStaleError.hasError, isFalse);
       expect(stateAfterStaleError.valueOrNull?.balance, 44);
 

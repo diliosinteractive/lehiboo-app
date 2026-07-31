@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lehiboo/config/dio_client.dart';
 import 'package:lehiboo/core/constants/app_constants.dart';
+import 'package:lehiboo/core/network/auth_session_ownership.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -127,10 +128,27 @@ Dio _unauthorizedDio(
   FlutterSecureStorage storage, {
   Future<void> Function(RequestOptions)? beforeResponse,
 }) {
+  final sessions = _TestAuthSessions('account-a');
   final dio = Dio(BaseOptions(baseUrl: 'https://example.test'));
   dio.httpClientAdapter = _UnauthorizedAdapter(beforeResponse);
-  dio.interceptors.add(JwtAuthInterceptor(storage));
+  dio.interceptors.addAll([
+    AuthSessionOwnershipInterceptor(sessions: sessions),
+    JwtAuthInterceptor(storage, authSessions: sessions),
+  ]);
   return dio;
+}
+
+class _TestAuthSessions implements AuthSessionOwnership {
+  _TestAuthSessions(String accountId)
+      : _current = AuthRequestSession(accountId: accountId);
+
+  final AuthRequestSession _current;
+
+  @override
+  AuthRequestSession capture() => _current;
+
+  @override
+  bool isCurrent(AuthRequestSession session) => identical(session, _current);
 }
 
 class _UnauthorizedAdapter implements HttpClientAdapter {

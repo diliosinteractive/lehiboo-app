@@ -9,20 +9,15 @@ import '../../../../core/analytics/analytics_provider.dart';
 import '../../../../core/analytics/analytics_service.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/l10n/l10n.dart';
+import '../../../../core/network/auth_session_ownership.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../../domain/entities/user.dart';
 import '../../data/mappers/auth_mapper.dart';
 import '../../data/models/auth_response_dto.dart';
 import '../../domain/repositories/auth_repository.dart';
-import '../../../booking/presentation/providers/order_cart_provider.dart';
 import '../../../favorites/data/datasources/favorites_local_datasource.dart';
-import '../../../memberships/presentation/providers/private_events_provider.dart';
 import '../../../notifications/data/datasources/device_token_datasource.dart';
-import '../../../partners/presentation/providers/followed_organizers_providers.dart';
-import '../../../petit_boo/presentation/providers/conversation_list_provider.dart';
 import '../../../petit_boo/presentation/providers/petit_boo_chat_provider.dart';
-import '../../../profile/presentation/providers/profile_provider.dart';
-import '../../../profile/presentation/providers/saved_participants_provider.dart';
 
 enum AuthStatus {
   initial,
@@ -98,15 +93,55 @@ bool didTransitionToUnauthenticated(
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthRepository _authRepository;
   final Ref _ref;
+  int _operationGeneration = 0;
+  Future<void> _repositoryMutationTail = Future<void>.value();
+  bool _repositoryMutationActive = false;
 
   AuthNotifier(this._authRepository, this._ref) : super(const AuthState()) {
-    _checkAuthStatus();
+    unawaited(_checkAuthStatus(_beginOperation()));
   }
 
-  Future<void> _checkAuthStatus() async {
-    final isAuth = await _authRepository.isAuthenticated();
+  int _beginOperation() => ++_operationGeneration;
+
+  bool _ownsOperation(int generation) {
+    return mounted && generation == _operationGeneration;
+  }
+
+  /// Runs session repository calls in invocation order.
+  ///
+  /// Login and OTP repository methods persist their tokens before returning.
+  /// Serializing them with logout prevents an older response from writing its
+  /// credentials after a newer account action has already completed.
+  Future<T> _serializeRepositoryMutation<T>(
+    Future<T> Function() operation,
+  ) {
+    final result = _repositoryMutationTail.then((_) async {
+      _repositoryMutationActive = true;
+      try {
+        return await operation();
+      } finally {
+        _repositoryMutationActive = false;
+      }
+    });
+    _repositoryMutationTail = result.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace __) {},
+    );
+    return result;
+  }
+
+  Future<void> _checkAuthStatus(int generation) async {
+    final isAuth = await _serializeRepositoryMutation(
+      _authRepository.isAuthenticated,
+    );
+    if (!_ownsOperation(generation)) return;
+
     if (isAuth) {
-      final user = await _authRepository.getCurrentUser();
+      final user = await _serializeRepositoryMutation(
+        _authRepository.getCurrentUser,
+      );
+      if (!_ownsOperation(generation)) return;
+
       state = state.copyWith(
         status: user != null
             ? AuthStatus.authenticated
@@ -115,23 +150,37 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       _syncAuthUser(user);
     } else {
-      state = state.copyWith(status: AuthStatus.unauthenticated);
+      state = state.copyWith(
+        status: AuthStatus.unauthenticated,
+        user: null,
+      );
+      _syncAuthUser(null);
     }
   }
 
   /// Login - may require OTP verification (2FA) or direct auth (Laravel v2)
   Future<LoginOtpResult?> login(
       {required String email, required String password}) async {
-    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+    final generation = _beginOperation();
+    state = state.copyWith(
+      status: AuthStatus.loading,
+      user: null,
+      errorMessage: null,
+      pendingUserId: null,
+      pendingEmail: null,
+    );
 
     try {
-      final result =
-          await _authRepository.login(email: email, password: password);
+      final result = await _serializeRepositoryMutation(
+        () => _authRepository.login(email: email, password: password),
+      );
+      if (!_ownsOperation(generation)) return null;
 
       if (result.requiresOtp) {
         // OTP required - store pending info
         state = state.copyWith(
           status: AuthStatus.pendingLoginOtp,
+          user: null,
           pendingUserId: result.userId,
           pendingEmail: result.email,
         );
@@ -149,6 +198,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         state = state.copyWith(
           status: AuthStatus.authenticated,
           user: user,
+          pendingUserId: null,
+          pendingEmail: null,
         );
         _syncAuthUser(user);
         _analytics.logEvent(
@@ -160,12 +211,22 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       // Fallback: No OTP required but no auth result (shouldn't happen)
       debugPrint('⚠️ Login succeeded without OTP but no auth result');
-      state = state.copyWith(status: AuthStatus.unauthenticated);
-      return result;
-    } catch (e) {
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
+        user: null,
+        pendingUserId: null,
+        pendingEmail: null,
+      );
+      return result;
+    } catch (e) {
+      if (!_ownsOperation(generation)) return null;
+
+      state = state.copyWith(
+        status: AuthStatus.unauthenticated,
+        user: null,
         errorMessage: _parseError(e),
+        pendingUserId: null,
+        pendingEmail: null,
       );
       _analytics.logEvent(
         AnalyticsEvent.loginFailed,
@@ -183,7 +244,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String lastName,
     required String birthDate,
   }) async {
-    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+    final generation = _beginOperation();
+    state = state.copyWith(
+      status: AuthStatus.loading,
+      user: null,
+      errorMessage: null,
+    );
 
     // signup_started — entrée dans le funnel d'inscription (form soumis).
     // Loggué avant l'appel API pour capter aussi les tentatives qui échouent.
@@ -200,10 +266,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
         lastName: lastName,
         birthDate: birthDate,
       );
+      if (!_ownsOperation(generation)) return null;
 
       // Store pending verification info in state
       state = state.copyWith(
         status: AuthStatus.pendingVerification,
+        user: null,
         pendingUserId: result.userId,
         pendingEmail: result.email,
       );
@@ -216,8 +284,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       return result;
     } catch (e) {
+      if (!_ownsOperation(generation)) return null;
+
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
+        user: null,
         errorMessage: _parseError(e),
       );
       _analytics.logEvent(
@@ -234,14 +305,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String email,
     required String otp,
   }) async {
-    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+    final generation = _beginOperation();
+    state = state.copyWith(
+      status: AuthStatus.loading,
+      user: null,
+      errorMessage: null,
+    );
 
     try {
-      final result = await _authRepository.verifyOtp(
-        userId: userId,
-        email: email,
-        otp: otp,
+      final result = await _serializeRepositoryMutation(
+        () => _authRepository.verifyOtp(
+          userId: userId,
+          email: email,
+          otp: otp,
+        ),
       );
+      if (!_ownsOperation(generation)) return false;
+
       state = state.copyWith(
         status: AuthStatus.authenticated,
         user: result.user,
@@ -259,6 +339,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       return true;
     } catch (e) {
+      if (!_ownsOperation(generation)) return false;
+
       final rawError = e.toString();
       final errorMessage = ApiResponseHandler.extractError(e);
       debugPrint('🚨 Verify OTP Error: $errorMessage');
@@ -269,6 +351,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         state = state.copyWith(
           status: AuthStatus
               .unauthenticated, // Will redirect to login (since we don't have token)
+          user: null,
           pendingUserId: null,
           pendingEmail: null,
           errorMessage: cachedAppLocalizations().authAccountAlreadyVerified,
@@ -278,6 +361,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       state = state.copyWith(
         status: AuthStatus.pendingVerification,
+        user: null,
         errorMessage: _parseOtpError(e),
       );
       return false;
@@ -290,12 +374,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String email,
     String type = 'register',
   }) async {
+    final generation = _operationGeneration;
     try {
       await _authRepository.resendOtp(
         userId: userId,
         email: email,
         type: type,
       );
+      if (!_ownsOperation(generation)) return false;
+
       // otp_sent — renvoi manuel du code (`type` = register | login).
       _analytics.logEvent(
         AnalyticsEvent.otpSent,
@@ -303,6 +390,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       return true;
     } catch (e) {
+      if (!_ownsOperation(generation)) return false;
+
       state = state.copyWith(
         errorMessage: _parseError(e),
       );
@@ -316,14 +405,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String email,
     required String otp,
   }) async {
-    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+    final generation = _beginOperation();
+    state = state.copyWith(
+      status: AuthStatus.loading,
+      user: null,
+      errorMessage: null,
+    );
 
     try {
-      final result = await _authRepository.verifyLoginOtp(
-        userId: userId,
-        email: email,
-        otp: otp,
+      final result = await _serializeRepositoryMutation(
+        () => _authRepository.verifyLoginOtp(
+          userId: userId,
+          email: email,
+          otp: otp,
+        ),
       );
+      if (!_ownsOperation(generation)) return false;
+
       state = state.copyWith(
         status: AuthStatus.authenticated,
         user: result.user,
@@ -341,8 +439,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       return true;
     } catch (e) {
+      if (!_ownsOperation(generation)) return false;
+
       state = state.copyWith(
         status: AuthStatus.pendingLoginOtp,
+        user: null,
         errorMessage: _parseOtpError(e),
       );
       return false;
@@ -350,16 +451,29 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<bool> forgotPassword(String email) async {
-    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+    final generation = _beginOperation();
+    state = state.copyWith(
+      status: AuthStatus.loading,
+      user: null,
+      errorMessage: null,
+    );
 
     try {
       await _authRepository.forgotPassword(email);
-      state = state.copyWith(status: AuthStatus.unauthenticated);
+      if (!_ownsOperation(generation)) return false;
+
+      state = state.copyWith(
+        status: AuthStatus.unauthenticated,
+        user: null,
+      );
       _analytics.logEvent(AnalyticsEvent.passwordResetRequested);
       return true;
     } catch (e) {
+      if (!_ownsOperation(generation)) return false;
+
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
+        user: null,
         errorMessage: _parseError(e),
       );
       return false;
@@ -367,49 +481,70 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
-    state = state.copyWith(status: AuthStatus.loading);
-    // Deregister this device's push tokens BEFORE revoking the bearer
-    // (spec PUSH_NOTIFICATIONS_MOBILE_SPEC.md §7.4). Failure here must not
-    // block logout — branch #2 of §2.1 will eventually deactivate the row
-    // when another user signs in on the same device.
-    try {
-      await _ref.read(deviceTokenDataSourceProvider).unregisterAllTokens();
-    } catch (_) {}
-    await _authRepository.logout();
-    await _clearPersistedUserData();
-    state = const AuthState(status: AuthStatus.unauthenticated);
+    final retirement = AuthSessionOwnershipRegistry.instance.beginRetirement();
+    final generation = _beginOperation();
+    state = state.copyWith(
+      status: AuthStatus.loading,
+      user: null,
+      errorMessage: null,
+    );
     _syncAuthUser(null);
-    _invalidateUserScopedProviders();
+    try {
+      await _serializeRepositoryMutation(() async {
+        // Deregister this device's push tokens BEFORE revoking the bearer
+        // (spec PUSH_NOTIFICATIONS_MOBILE_SPEC.md §7.4). Failure here must not
+        // block logout — branch #2 of §2.1 will eventually deactivate the row
+        // when another user signs in on the same device.
+        try {
+          await _ref.read(deviceTokenDataSourceProvider).unregisterAllTokens();
+        } catch (_) {}
+        await _authRepository.logout();
+        await _clearPersistedUserData();
+      });
+    } finally {
+      retirement?.close();
+    }
+    if (!_ownsOperation(generation)) return;
+
+    state = const AuthState(status: AuthStatus.unauthenticated);
   }
 
   /// Force logout without calling the API (used by 401 interceptor).
   /// Skips the API call to avoid triggering another 401 loop.
   Future<void> forceLogout() async {
-    await _authRepository.clearLocalAuthData();
-    await _clearPersistedUserData();
+    _beginOperation();
     state = AuthState(
       status: AuthStatus.unauthenticated,
       errorMessage: authSessionExpiredMessage,
     );
     _syncAuthUser(null);
-    _invalidateUserScopedProviders();
+
+    // This can be called by the Dio interceptor while a serialized logout is
+    // itself awaiting that interceptor. Queue cleanup behind the active
+    // mutation, but don't await it in that re-entrant case (which would
+    // deadlock). State is already synchronously signed out, and the queued
+    // cleanup still runs before any later login mutation.
+    final wasMutationActive = _repositoryMutationActive;
+    final cleanup = _serializeRepositoryMutation(() async {
+      await _authRepository.clearLocalAuthData();
+      await _clearPersistedUserData();
+    });
+    if (wasMutationActive) {
+      unawaited(cleanup.catchError((Object _) {}));
+      return;
+    }
+    await cleanup;
   }
 
-  /// Flush every disk-backed cache that holds the current user's identity.
+  /// Flush unscoped disk-backed caches that hold the current user's identity.
   ///
   /// In-memory provider state is handled by per-notifier `ref.listen` hooks
   /// on `authProvider` (see `BookingListController`, `FavoritesProvider`,
-  /// `PetitBooChatNotifier`, …). Disk caches can't self-listen, so they get
-  /// flushed here and we `await` them before flipping to `unauthenticated`
-  /// to guarantee the next user can't observe the previous tenant's bytes.
+  /// `PetitBooChatNotifier`, …). The cart is deliberately not cleared here:
+  /// its persisted values carry an exact owner and use separate account keys,
+  /// so they are hidden synchronously on logout/account change and can safely
+  /// be restored only when that same account returns.
   Future<void> _clearPersistedUserData() async {
-    // Cart (SharedPreferences `order_cart_items_v1` + hold expiry).
-    // OrderCartNotifier.clear() is fire-and-forget on _prefs.remove(), so we
-    // don't await it — calling it synchronously is enough to wipe in-memory
-    // state and queue the disk removal.
-    try {
-      _ref.read(orderCartProvider.notifier).clear();
-    } catch (_) {}
     // Favorites cache (SharedPreferences `favorite_ids` + `favorites_last_sync`).
     try {
       await _ref.read(favoritesLocalDatasourceProvider).clear();
@@ -426,41 +561,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (_) {}
   }
 
-  /// Invalidate read-only / FutureProvider state that no notifier owns.
-  ///
-  /// Providers in this list either don't expose a notifier we can hook
-  /// `ref.listen(authProvider)` onto (FutureProvider, AsyncNotifier without
-  /// an auth-aware build, StateProvider), or do expose one but pre-date the
-  /// auth-listener convention used elsewhere in the codebase. Anything that
-  /// already self-listens (hibons, inAppNotifications, activeOrganization,
-  /// messages, conversationDetail, messagesRealtime, pushNotification, bookings,
-  /// favorites, favorite_lists, alerts, reminders, userReviews, tripPlans,
-  /// petitBooChat) MUST NOT appear here — double-reset would mask bugs in
-  /// those listeners.
-  void _invalidateUserScopedProviders() {
-    // Profile / stats / saved participants (FutureProvider.autoDispose, but a
-    // mounted screen at logout time would keep the previous user's data
-    // visible until next navigation — invalidate to force a rebuild).
-    _ref.invalidate(userStatsProvider);
-    _ref.invalidate(savedParticipantsProvider);
-    // Partners — followed organizers list.
-    _ref.invalidate(followedOrganizersControllerProvider);
-    // Memberships derived screens (myMembershipsListProvider self-clears via
-    // its build()'s ref.watch on authProvider).
-    _ref.invalidate(privateEventsControllerProvider);
-    _ref.invalidate(privateEventsSearchProvider);
-    _ref.invalidate(privateEventsOrgFilterProvider);
-    // Petit Boo conversation history list (autoDispose; covers the case
-    // where the user is on the history screen at logout time).
-    _ref.invalidate(conversationListProvider);
-  }
-
   void clearError() {
     state = state.copyWith(errorMessage: null);
   }
 
   /// Set authenticated user directly (used after business registration)
   void setAuthenticatedUser(HbUser user) {
+    _beginOperation();
     state = state.copyWith(
       status: AuthStatus.authenticated,
       user: user,
@@ -473,22 +580,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
       AnalyticsEvent.signUp,
       params: {AnalyticsParam.method: AnalyticsMethod.email},
     );
+    unawaited(
+      _serializeRepositoryMutation(() => _authRepository.persistUser(user)),
+    );
   }
 
   /// Refresh auth status from repository (used after external auth changes)
   Future<void> refreshAuthStatus() async {
-    await _checkAuthStatus();
+    await _checkAuthStatus(_beginOperation());
   }
 
   /// Update user data in state and persist editable fields to secure storage
   /// (used after profile edits, avatar upload, settings toggles).
   void updateUser(dynamic updatedUser) {
-    if (state.user == null) return;
+    final currentUser = state.user;
+    if (!state.isAuthenticated || currentUser == null) return;
 
     HbUser? next;
     if (updatedUser is UserDto) {
       final mapped = AuthMapper.toUser(updatedUser);
-      final currentUser = state.user!;
       // AuthMapper may default role to subscriber if the profile endpoint
       // doesn't return it — preserve the current role in that case.
       next = mapped.copyWith(
@@ -500,6 +610,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
 
     if (next == null) return;
+    if (next.id.trim() != currentUser.id.trim()) return;
 
     state = state.copyWith(user: next);
     _syncAuthUser(next);
@@ -507,7 +618,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     // Fire-and-forget: keep the in-memory update synchronous so the UI rebuilds
     // immediately. Disk I/O failures are non-fatal — the next login or
     // /auth/me refresh will reconcile the state.
-    unawaited(_authRepository.persistUser(next));
+    unawaited(
+      _serializeRepositoryMutation(() => _authRepository.persistUser(next!)),
+    );
   }
 
   String _parseError(dynamic e) {
@@ -638,6 +751,20 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
 
 final isAuthenticatedProvider = Provider<bool>((ref) {
   return ref.watch(authProvider).isAuthenticated;
+});
+
+/// Stable identity key for account-scoped providers.
+///
+/// Watching this provider makes a user-scoped notifier get disposed and
+/// recreated whenever authentication ends or a different account becomes
+/// active. Async work owned by the old notifier must still check `mounted`
+/// before publishing, but it can no longer write into the new account's
+/// provider instance.
+final authSessionUserIdProvider = Provider<String?>((ref) {
+  final auth = ref.watch(authProvider);
+  if (!auth.isAuthenticated) return null;
+  final userId = auth.user?.id.trim();
+  return userId == null || userId.isEmpty ? null : userId;
 });
 
 final currentUserProvider = Provider<HbUser?>((ref) {

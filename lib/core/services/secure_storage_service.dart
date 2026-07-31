@@ -3,38 +3,97 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../config/dio_client.dart';
 import '../constants/app_constants.dart';
+import '../network/auth_credential_mutation_coordinator.dart';
 
 final secureStorageProvider = Provider<SecureStorageService>((ref) {
   return SecureStorageService();
 });
 
 class SecureStorageService {
+  SecureStorageService({
+    AuthCredentialMutationCoordinator? credentialMutations,
+  }) : _credentialMutations =
+            credentialMutations ?? AuthCredentialMutationCoordinator.instance;
+
   // Use the shared singleton instance to ensure consistency with JwtAuthInterceptor
   final FlutterSecureStorage _storage = SharedSecureStorage.instance;
+  final AuthCredentialMutationCoordinator _credentialMutations;
 
   // Auth Tokens
   Future<void> saveAccessToken(String token) async {
-    if (kDebugMode) {
-      debugPrint('🔐 SecureStorageService: Saving access token (length=${token.length})');
-    }
-    await _storage.write(key: AppConstants.keyAuthToken, value: token);
-    // Verify the token was saved correctly
-    if (kDebugMode) {
-      final saved = await _storage.read(key: AppConstants.keyAuthToken);
-      debugPrint('🔐 SecureStorageService: Token saved and verified: ${saved != null && saved.isNotEmpty}');
-    }
+    await _credentialMutations.run(() async {
+      if (kDebugMode) {
+        debugPrint(
+          '🔐 SecureStorageService: Saving access token '
+          '(length=${token.length})',
+        );
+      }
+      await _storage.write(key: AppConstants.keyAuthToken, value: token);
+      // Verify the token was saved correctly
+      if (kDebugMode) {
+        final saved = await _storage.read(key: AppConstants.keyAuthToken);
+        debugPrint(
+          '🔐 SecureStorageService: Token saved and verified: '
+          '${saved != null && saved.isNotEmpty}',
+        );
+      }
+    });
   }
 
   Future<String?> getAccessToken() async {
     final token = await _storage.read(key: AppConstants.keyAuthToken);
     if (kDebugMode) {
-      debugPrint('🔐 SecureStorageService: Reading access token: hasToken=${token != null && token.isNotEmpty}');
+      debugPrint(
+          '🔐 SecureStorageService: Reading access token: hasToken=${token != null && token.isNotEmpty}');
     }
     return token;
   }
 
   Future<void> saveRefreshToken(String token) async {
-    await _storage.write(key: AppConstants.keyRefreshToken, value: token);
+    await _credentialMutations.run(
+      () => _storage.write(key: AppConstants.keyRefreshToken, value: token),
+    );
+  }
+
+  /// Persists an access/refresh pair under one shared credential lease.
+  Future<void> saveAuthTokens({
+    required String accessToken,
+    required String refreshToken,
+  }) {
+    return _credentialMutations.run(() async {
+      await _storage.write(
+        key: AppConstants.keyAuthToken,
+        value: accessToken,
+      );
+      await _storage.write(
+        key: AppConstants.keyRefreshToken,
+        value: refreshToken,
+      );
+    });
+  }
+
+  /// Replaces a refreshed pair only if no login/logout changed the refresh
+  /// credential while the network request was in flight.
+  Future<bool> replaceAuthTokensIfRefreshMatches({
+    required String expectedRefreshToken,
+    required String accessToken,
+    required String refreshToken,
+  }) {
+    return _credentialMutations.run(() async {
+      final currentRefreshToken = await _storage.read(
+        key: AppConstants.keyRefreshToken,
+      );
+      if (currentRefreshToken != expectedRefreshToken) return false;
+      await _storage.write(
+        key: AppConstants.keyAuthToken,
+        value: accessToken,
+      );
+      await _storage.write(
+        key: AppConstants.keyRefreshToken,
+        value: refreshToken,
+      );
+      return true;
+    });
   }
 
   Future<String?> getRefreshToken() async {
@@ -154,6 +213,26 @@ class SecureStorageService {
 
   // Clear all auth data
   Future<void> clearAuthData() async {
+    await _credentialMutations.run(_clearAuthDataUnlocked);
+  }
+
+  /// Clears a failed refresh's session only while the refresh credential that
+  /// initiated it still owns storage. A late account-A 401 therefore cannot
+  /// erase credentials already persisted by account B.
+  Future<bool> clearAuthDataIfRefreshMatches(
+    String expectedRefreshToken,
+  ) {
+    return _credentialMutations.run(() async {
+      final currentRefreshToken = await _storage.read(
+        key: AppConstants.keyRefreshToken,
+      );
+      if (currentRefreshToken != expectedRefreshToken) return false;
+      await _clearAuthDataUnlocked();
+      return true;
+    });
+  }
+
+  Future<void> _clearAuthDataUnlocked() async {
     await _storage.delete(key: AppConstants.keyAuthToken);
     await _storage.delete(key: AppConstants.keyRefreshToken);
     await _storage.delete(key: AppConstants.keyUserId);

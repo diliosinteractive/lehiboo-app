@@ -151,20 +151,25 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<bool> refreshTokenIfNeeded() async {
+    String? attemptedRefreshToken;
     try {
       final refreshToken = await _secureStorage.getRefreshToken();
       if (refreshToken == null) return false;
+      attemptedRefreshToken = refreshToken;
 
       final tokens = await _apiDataSource.refreshToken(refreshToken);
 
-      await _secureStorage.saveAccessToken(tokens.accessToken);
-      await _secureStorage.saveRefreshToken(tokens.refreshToken);
-
-      return true;
+      return _secureStorage.replaceAuthTokensIfRefreshMatches(
+        expectedRefreshToken: refreshToken,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      );
     } on DioException catch (e) {
-      if (e.response?.statusCode == 401) {
-        await _secureStorage.clearAuthData();
-        _cachedUser = null;
+      if (e.response?.statusCode == 401 && attemptedRefreshToken != null) {
+        final cleared = await _secureStorage.clearAuthDataIfRefreshMatches(
+          attemptedRefreshToken,
+        );
+        if (cleared) _cachedUser = null;
       }
       return false;
     } catch (e) {
@@ -272,8 +277,10 @@ class AuthRepositoryImpl implements AuthRepository {
     final user = AuthMapper.toUser(response.user);
 
     // Save tokens securely
-    await _secureStorage.saveAccessToken(response.tokens.accessToken);
-    await _secureStorage.saveRefreshToken(response.tokens.refreshToken);
+    await _secureStorage.saveAuthTokens(
+      accessToken: response.tokens.accessToken,
+      refreshToken: response.tokens.refreshToken,
+    );
     await persistUser(user);
 
     return AuthResult(
@@ -342,8 +349,10 @@ class AuthRepositoryImpl implements AuthRepository {
     if (tokens != null && response.user != null) {
       final user = AuthMapper.toUser(response.user!);
 
-      await _secureStorage.saveAccessToken(tokens.accessToken);
-      await _secureStorage.saveRefreshToken(tokens.refreshToken);
+      await _secureStorage.saveAuthTokens(
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      );
       await persistUser(user);
 
       authResult = AuthResult(
@@ -379,8 +388,10 @@ class AuthRepositoryImpl implements AuthRepository {
         );
 
     // Save auth data
-    await _secureStorage.saveAccessToken(tokens.accessToken);
-    await _secureStorage.saveRefreshToken(tokens.refreshToken);
+    await _secureStorage.saveAuthTokens(
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    );
     await persistUser(user);
 
     final authResult = AuthResult(
