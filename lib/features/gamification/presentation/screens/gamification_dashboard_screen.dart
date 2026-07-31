@@ -6,6 +6,7 @@ import '../../../../core/utils/api_response_handler.dart';
 import '../../data/models/daily_reward.dart';
 import '../../data/models/hibons_wallet.dart';
 import '../providers/gamification_provider.dart';
+import '../utils/gamification_action_error.dart';
 import '../widgets/daily_reward_widget.dart';
 import '../widgets/earnings_by_pillar_donut.dart';
 import '../widgets/hibon_counter_widget.dart';
@@ -390,13 +391,18 @@ class GamificationDashboardScreen extends ConsumerWidget {
           try {
             final result = await ref.read(dailyRewardProvider.notifier).claim();
             if (context.mounted && result != null) {
+              final message = dailyRewardSuccessMessage(
+                result.message,
+                context.l10n
+                    .gamificationDailyRewardClaimed(result.hibonsEarned),
+              );
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Row(
                     children: [
                       const Icon(Icons.celebration, color: Colors.white),
                       const SizedBox(width: 12),
-                      Expanded(child: Text(result.message)),
+                      Expanded(child: Text(message)),
                     ],
                   ),
                   backgroundColor: Colors.green,
@@ -408,15 +414,13 @@ class GamificationDashboardScreen extends ConsumerWidget {
             }
           } catch (e) {
             if (context.mounted) {
-              // Extraire le message d'erreur de l'API si disponible
-              String errorMessage = context.l10n.gamificationDailyClaimError;
-              final errorStr = ApiResponseHandler.extractError(e);
-              if (errorStr.contains('déjà réclamé')) {
-                errorMessage =
-                    context.l10n.gamificationDailyRewardAlreadyClaimed;
-              } else {
-                errorMessage = errorStr;
-              }
+              final errorMessage = classifyDailyRewardFailure(e) ==
+                      GamificationActionFailure.dailyRewardAlreadyClaimed
+                  ? context.l10n.gamificationDailyRewardAlreadyClaimed
+                  : ApiResponseHandler.extractError(
+                      e,
+                      fallback: context.l10n.gamificationDailyClaimError,
+                    );
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Row(

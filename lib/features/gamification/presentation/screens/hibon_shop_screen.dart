@@ -94,57 +94,31 @@ class _HibonShopScreenState extends ConsumerState<HibonShopScreen> {
                   const SizedBox(height: 12),
                   _buildShopItem(
                     context,
-                    ref,
                     title: context.l10n.gamificationStreakShieldTitle,
                     description:
                         context.l10n.gamificationStreakShieldDescription,
                     price: 150,
                     icon: Icons.shield,
                     color: Colors.blue,
-                    onTap: () => _buyItem(
-                      context,
-                      ref,
-                      apiItemName: 'Streak Shield',
-                      displayItemName:
-                          context.l10n.gamificationStreakShieldTitle,
-                      price: 150,
-                    ),
                   ),
                   const SizedBox(height: 8),
                   _buildShopItem(
                     context,
-                    ref,
                     title: context.l10n.gamificationHibouExpressTitle,
                     description:
                         context.l10n.gamificationHibouExpressDescription,
                     price: 300,
                     icon: Icons.chat_bubble,
                     color: Colors.purple,
-                    onTap: () => _buyItem(
-                      context,
-                      ref,
-                      apiItemName: 'Hibou Express',
-                      displayItemName:
-                          context.l10n.gamificationHibouExpressTitle,
-                      price: 300,
-                    ),
                   ),
                   const SizedBox(height: 8),
                   _buildShopItem(
                     context,
-                    ref,
                     title: context.l10n.gamificationMultiplierTitle,
                     description: context.l10n.gamificationMultiplierDescription,
                     price: 100,
                     icon: Icons.bolt,
                     color: Colors.amber,
-                    onTap: () => _buyItem(
-                      context,
-                      ref,
-                      apiItemName: 'Multiplicateur Hibons',
-                      displayItemName: context.l10n.gamificationMultiplierTitle,
-                      price: 100,
-                    ),
                   ),
 
                   const SizedBox(height: 24),
@@ -278,13 +252,12 @@ class _HibonShopScreenState extends ConsumerState<HibonShopScreen> {
     );
   }
 
-  Widget _buildShopItem(BuildContext context, WidgetRef ref,
+  Widget _buildShopItem(BuildContext context,
       {required String title,
       required String description,
       required int price,
       required IconData icon,
-      required Color color,
-      required VoidCallback onTap}) {
+      required Color color}) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -296,16 +269,16 @@ class _HibonShopScreenState extends ConsumerState<HibonShopScreen> {
           child: Icon(icon, color: color),
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(description),
+        subtitle: Text('$description • $price H'),
         trailing: ElevatedButton(
-          onPressed: onTap,
+          onPressed: null,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFFF601F),
             foregroundColor: Colors.white,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           ),
-          child: Text('$price H'),
+          child: Text(context.l10n.gamificationComingSoonCta),
         ),
       ),
     );
@@ -334,54 +307,6 @@ class _HibonShopScreenState extends ConsumerState<HibonShopScreen> {
         return context.l10n.gamificationPillarCommunity;
       default:
         return pillar;
-    }
-  }
-
-  void _buyItem(
-    BuildContext context,
-    WidgetRef ref, {
-    required String apiItemName,
-    required String displayItemName,
-    required int price,
-  }) async {
-    // Check balance first (Optimistic check)
-    final wallet = ref.read(gamificationNotifierProvider).value;
-    if (wallet != null && wallet.balance < price) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.gamificationInsufficientHibons)));
-      return;
-    }
-
-    try {
-      final repo = ref.read(gamificationRepositoryProvider);
-
-      // Special logic for shield
-      if (apiItemName == 'Streak Shield') {
-        await repo.buyStreakShield();
-      } else {
-        await repo.buyShopItem(apiItemName, price);
-      }
-
-      ref.invalidate(gamificationNotifierProvider);
-      ref.invalidate(hibonTransactionsProvider); // Refresh all family combos
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(
-                context.l10n.gamificationPurchaseCompleted(displayItemName))));
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.l10n.gamificationErrorWithMessage(
-                ApiResponseHandler.extractError(e),
-              ),
-            ),
-          ),
-        );
-      }
     }
   }
 }

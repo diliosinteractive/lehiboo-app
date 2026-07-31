@@ -6,6 +6,7 @@ import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../data/models/wheel_models.dart';
 import '../providers/gamification_provider.dart';
+import '../utils/gamification_action_error.dart';
 
 class LuckyWheelScreen extends ConsumerStatefulWidget {
   const LuckyWheelScreen({super.key});
@@ -116,19 +117,22 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
         _showResultDialog(result);
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isSpinning = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.l10n.gamificationErrorWithMessage(
-                ApiResponseHandler.extractError(e),
-              ),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+
+      final message = classifyWheelSpinFailure(e) ==
+              GamificationActionFailure.wheelAlreadyUsed
+          ? context.l10n.gamificationWheelAlreadyUsedToday
+          : ApiResponseHandler.extractError(
+              e,
+              fallback: context.l10n.gamificationWheelSpinError,
+            );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

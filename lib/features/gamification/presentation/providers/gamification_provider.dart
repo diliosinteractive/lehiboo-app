@@ -268,10 +268,11 @@ class WheelSpinNotifier extends StateNotifier<AsyncValue<WheelSpinResult?>> {
       state = AsyncValue.data(result);
       return result;
     } catch (e, st) {
-      if (!mounted) return null;
       debugPrint('🎮 WheelSpinNotifier.spin error: $e');
-      state = AsyncValue.error(e, st);
-      return null;
+      if (mounted) {
+        state = AsyncValue.error(e, st);
+      }
+      Error.throwWithStackTrace(e, st);
     }
   }
 
@@ -314,10 +315,13 @@ const _transactionsPerPage = 20;
 
 /// State de la liste paginée des transactions Hibons.
 class HibonsTransactionsState {
+  static const Object _loadMoreErrorUnset = Object();
+
   final AsyncValue<List<HibonTransaction>> transactions;
   final int currentPage;
   final bool hasMore;
   final bool isLoadingMore;
+  final Object? loadMoreError;
   final int currentBalance;
   final int lifetimeEarned;
 
@@ -326,6 +330,7 @@ class HibonsTransactionsState {
     this.currentPage = 1,
     this.hasMore = false,
     this.isLoadingMore = false,
+    this.loadMoreError,
     this.currentBalance = 0,
     this.lifetimeEarned = 0,
   });
@@ -335,6 +340,7 @@ class HibonsTransactionsState {
     int? currentPage,
     bool? hasMore,
     bool? isLoadingMore,
+    Object? loadMoreError = _loadMoreErrorUnset,
     int? currentBalance,
     int? lifetimeEarned,
   }) {
@@ -343,13 +349,17 @@ class HibonsTransactionsState {
       currentPage: currentPage ?? this.currentPage,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      loadMoreError: identical(loadMoreError, _loadMoreErrorUnset)
+          ? this.loadMoreError
+          : loadMoreError,
       currentBalance: currentBalance ?? this.currentBalance,
       lifetimeEarned: lifetimeEarned ?? this.lifetimeEarned,
     );
   }
 }
 
-class HibonsTransactionsNotifier extends StateNotifier<HibonsTransactionsState> {
+class HibonsTransactionsNotifier
+    extends StateNotifier<HibonsTransactionsState> {
   final GamificationRepository _repository;
   final TransactionsFilter _filter;
 
@@ -364,6 +374,7 @@ class HibonsTransactionsNotifier extends StateNotifier<HibonsTransactionsState> 
       transactions: const AsyncValue.loading(),
       currentPage: 1,
       hasMore: false,
+      loadMoreError: null,
     );
     try {
       final result = await _repository.getTransactions(
@@ -390,11 +401,13 @@ class HibonsTransactionsNotifier extends StateNotifier<HibonsTransactionsState> 
 
   /// Charge la page suivante et l'ajoute à la liste existante.
   Future<void> loadMore() async {
-    if (state.isLoadingMore || !state.hasMore) return;
+    if (state.isLoadingMore || !state.hasMore || state.loadMoreError != null) {
+      return;
+    }
     final current = state.transactions.valueOrNull;
     if (current == null) return;
 
-    state = state.copyWith(isLoadingMore: true);
+    state = state.copyWith(isLoadingMore: true, loadMoreError: null);
     try {
       final nextPage = state.currentPage + 1;
       final result = await _repository.getTransactions(
@@ -408,20 +421,30 @@ class HibonsTransactionsNotifier extends StateNotifier<HibonsTransactionsState> 
         currentPage: nextPage,
         hasMore: result.hasMore,
         isLoadingMore: false,
+        loadMoreError: null,
         currentBalance: result.currentBalance,
         lifetimeEarned: result.lifetimeEarned,
       );
-    } catch (_) {
-      // Conserver la liste existante en cas d'échec d'une page suivante.
-      state = state.copyWith(isLoadingMore: false);
+    } catch (error) {
+      state = state.copyWith(
+        isLoadingMore: false,
+        loadMoreError: error,
+      );
     }
+  }
+
+  Future<void> retryLoadMore() async {
+    if (state.loadMoreError == null) return;
+    state = state.copyWith(loadMoreError: null);
+    await loadMore();
   }
 }
 
 /// Liste paginée des transactions, filtrée par `type` + `pillar`.
-final hibonsTransactionsListProvider = StateNotifierProvider.autoDispose
-    .family<HibonsTransactionsNotifier, HibonsTransactionsState,
-        TransactionsFilter>((ref, filter) {
+final hibonsTransactionsListProvider = StateNotifierProvider.autoDispose.family<
+    HibonsTransactionsNotifier,
+    HibonsTransactionsState,
+    TransactionsFilter>((ref, filter) {
   final repository = ref.watch(gamificationRepositoryProvider);
   return HibonsTransactionsNotifier(repository, filter);
 });

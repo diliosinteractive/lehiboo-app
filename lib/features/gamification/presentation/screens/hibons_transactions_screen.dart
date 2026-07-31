@@ -77,8 +77,9 @@ class _HibonsTransactionsScreenState
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () =>
-            ref.read(hibonsTransactionsListProvider(_filter).notifier).refresh(),
+        onRefresh: () => ref
+            .read(hibonsTransactionsListProvider(_filter).notifier)
+            .refresh(),
         child: SingleChildScrollView(
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
@@ -172,9 +173,7 @@ class _HibonsTransactionsScreenState
           Text(
             '${txState.currentBalance}',
             style: const TextStyle(
-                fontSize: 44,
-                fontWeight: FontWeight.bold,
-                color: Colors.white),
+                fontSize: 44, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           Text(context.l10n.gamificationHibonsAvailable,
               style: const TextStyle(color: Colors.white70, fontSize: 14)),
@@ -195,8 +194,7 @@ class _HibonsTransactionsScreenState
         if (txs.isEmpty) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
-            child:
-                Center(child: Text(context.l10n.gamificationNoTransactions)),
+            child: Center(child: Text(context.l10n.gamificationNoTransactions)),
           );
         }
         return Column(
@@ -217,6 +215,31 @@ class _HibonsTransactionsScreenState
                     height: 24,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
+                ),
+              ),
+            if (txState.loadMoreError != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Column(
+                  children: [
+                    Text(
+                      ApiResponseHandler.extractError(
+                        txState.loadMoreError,
+                        fallback:
+                            context.l10n.gamificationTransactionsLoadMoreError,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    TextButton.icon(
+                      onPressed: () => ref
+                          .read(
+                            hibonsTransactionsListProvider(_filter).notifier,
+                          )
+                          .retryLoadMore(),
+                      icon: const Icon(Icons.refresh),
+                      label: Text(context.l10n.commonRetry),
+                    ),
+                  ],
                 ),
               ),
           ],
