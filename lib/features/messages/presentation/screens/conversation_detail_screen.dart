@@ -267,8 +267,10 @@ class _ConversationDetailScreenState
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                   content: Text(
-                                    context.l10n.messagesLoadError(
-                                      ApiResponseHandler.extractError(e),
+                                    ApiResponseHandler.extractError(
+                                      e,
+                                      fallback: context.l10n
+                                          .messagesReopenConversationFailed,
                                     ),
                                   ),
                                   backgroundColor: Colors.red),
@@ -418,9 +420,12 @@ class _ConversationDetailScreenState
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                  content: Text(context.l10n.messagesLoadError(
-                    ApiResponseHandler.extractError(e),
-                  )),
+                  content: Text(
+                    ApiResponseHandler.extractError(
+                      e,
+                      fallback: context.l10n.messagesCloseConversationFailed,
+                    ),
+                  ),
                   backgroundColor: Colors.red),
             );
           }

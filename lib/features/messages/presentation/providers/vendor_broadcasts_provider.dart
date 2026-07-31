@@ -14,6 +14,8 @@ class VendorBroadcastsState {
   final AsyncValue<List<Broadcast>> broadcasts;
   final int currentPage;
   final bool hasMore;
+  final bool isLoadingMore;
+  final Object? loadMoreError;
   final String? searchQuery;
   final String? period;
 
@@ -21,6 +23,8 @@ class VendorBroadcastsState {
     this.broadcasts = const AsyncValue.loading(),
     this.currentPage = 1,
     this.hasMore = false,
+    this.isLoadingMore = false,
+    this.loadMoreError,
     this.searchQuery,
     this.period,
   });
@@ -29,6 +33,9 @@ class VendorBroadcastsState {
     AsyncValue<List<Broadcast>>? broadcasts,
     int? currentPage,
     bool? hasMore,
+    bool? isLoadingMore,
+    Object? loadMoreError,
+    bool clearLoadMoreError = false,
     String? searchQuery,
     bool clearSearchQuery = false,
     String? period,
@@ -38,6 +45,9 @@ class VendorBroadcastsState {
       broadcasts: broadcasts ?? this.broadcasts,
       currentPage: currentPage ?? this.currentPage,
       hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      loadMoreError:
+          clearLoadMoreError ? null : (loadMoreError ?? this.loadMoreError),
       searchQuery: clearSearchQuery ? null : (searchQuery ?? this.searchQuery),
       period: clearPeriod ? null : (period ?? this.period),
     );
@@ -60,10 +70,8 @@ class VendorBroadcastsNotifier extends StateNotifier<VendorBroadcastsState> {
   }
 
   void _subscribeToRealtime() {
-    _realtimeSub = _ref
-        .read(messagesRealtimeProvider.notifier)
-        .events
-        .listen((event) {
+    _realtimeSub =
+        _ref.read(messagesRealtimeProvider.notifier).events.listen((event) {
       if (!mounted) return;
       if (event.type != RealtimeEventType.broadcastSent) return;
 
@@ -99,6 +107,8 @@ class VendorBroadcastsNotifier extends StateNotifier<VendorBroadcastsState> {
       broadcasts: const AsyncValue.loading(),
       currentPage: 1,
       hasMore: false,
+      isLoadingMore: false,
+      clearLoadMoreError: true,
     );
     try {
       final result = await _repo.getBroadcasts(
@@ -111,6 +121,8 @@ class VendorBroadcastsNotifier extends StateNotifier<VendorBroadcastsState> {
         broadcasts: AsyncValue.data(result.broadcasts),
         currentPage: 1,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
     } catch (e, st) {
       if (!mounted) return;
@@ -119,9 +131,12 @@ class VendorBroadcastsNotifier extends StateNotifier<VendorBroadcastsState> {
   }
 
   Future<void> loadMore() async {
-    if (!state.hasMore) return;
+    if (!state.hasMore || state.isLoadingMore || state.loadMoreError != null) {
+      return;
+    }
     final current = state.broadcasts.valueOrNull;
     if (current == null) return;
+    state = state.copyWith(isLoadingMore: true, clearLoadMoreError: true);
     try {
       final nextPage = state.currentPage + 1;
       final result = await _repo.getBroadcasts(
@@ -134,8 +149,22 @@ class VendorBroadcastsNotifier extends StateNotifier<VendorBroadcastsState> {
         broadcasts: AsyncValue.data([...current, ...result.broadcasts]),
         currentPage: nextPage,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
-    } catch (_) {}
+    } catch (error) {
+      if (!mounted) return;
+      state = state.copyWith(
+        isLoadingMore: false,
+        loadMoreError: error,
+      );
+    }
+  }
+
+  Future<void> retryLoadMore() async {
+    if (state.isLoadingMore) return;
+    state = state.copyWith(clearLoadMoreError: true);
+    await loadMore();
   }
 
   Future<void> refresh() async => load();
@@ -152,6 +181,8 @@ class VendorBroadcastsNotifier extends StateNotifier<VendorBroadcastsState> {
         broadcasts: AsyncValue.data(result.broadcasts),
         currentPage: 1,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
     } catch (_) {}
   }
@@ -186,8 +217,9 @@ class VendorBroadcastsNotifier extends StateNotifier<VendorBroadcastsState> {
 // Provider
 // ─────────────────────────────────────────────────────────────────────────────
 
-final vendorBroadcastsProvider = StateNotifierProvider<VendorBroadcastsNotifier,
-    VendorBroadcastsState>((ref) {
+final vendorBroadcastsProvider =
+    StateNotifierProvider<VendorBroadcastsNotifier, VendorBroadcastsState>(
+        (ref) {
   return VendorBroadcastsNotifier(
     ref.read(messagesRepositoryProvider),
     ref,

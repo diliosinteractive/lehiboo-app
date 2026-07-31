@@ -11,6 +11,8 @@ class ConversationsState {
   final AsyncValue<List<Conversation>> conversations;
   final int currentPage;
   final bool hasMore;
+  final bool isLoadingMore;
+  final Object? loadMoreError;
   final String? statusFilter; // null = all, 'open', 'closed'
   final bool unreadOnly;
   final String? searchQuery;
@@ -20,6 +22,8 @@ class ConversationsState {
     this.conversations = const AsyncValue.loading(),
     this.currentPage = 1,
     this.hasMore = false,
+    this.isLoadingMore = false,
+    this.loadMoreError,
     this.statusFilter,
     this.unreadOnly = false,
     this.searchQuery,
@@ -30,6 +34,9 @@ class ConversationsState {
     AsyncValue<List<Conversation>>? conversations,
     int? currentPage,
     bool? hasMore,
+    bool? isLoadingMore,
+    Object? loadMoreError,
+    bool clearLoadMoreError = false,
     String? statusFilter,
     bool clearStatusFilter = false,
     bool? unreadOnly,
@@ -42,6 +49,9 @@ class ConversationsState {
       conversations: conversations ?? this.conversations,
       currentPage: currentPage ?? this.currentPage,
       hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      loadMoreError:
+          clearLoadMoreError ? null : (loadMoreError ?? this.loadMoreError),
       statusFilter:
           clearStatusFilter ? null : (statusFilter ?? this.statusFilter),
       unreadOnly: unreadOnly ?? this.unreadOnly,
@@ -168,6 +178,8 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
       conversations: const AsyncValue.loading(),
       currentPage: 1,
       hasMore: false,
+      isLoadingMore: false,
+      clearLoadMoreError: true,
     );
     try {
       final result = await _repo.getConversations(
@@ -183,6 +195,8 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
         conversations: AsyncValue.data(conversations),
         currentPage: 1,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
       // Refresh global unread count
       _refreshUnreadCount();
@@ -193,9 +207,12 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
   }
 
   Future<void> loadMore() async {
-    if (!state.hasMore) return;
+    if (!state.hasMore || state.isLoadingMore || state.loadMoreError != null) {
+      return;
+    }
     final current = state.conversations.valueOrNull;
     if (current == null) return;
+    state = state.copyWith(isLoadingMore: true, clearLoadMoreError: true);
     try {
       final nextPage = state.currentPage + 1;
       final result = await _repo.getConversations(
@@ -210,10 +227,22 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
         conversations: AsyncValue.data([...current, ...result.conversations]),
         currentPage: nextPage,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
-    } catch (_) {
-      // Keep existing list on loadMore failure
+    } catch (error) {
+      if (!mounted) return;
+      state = state.copyWith(
+        isLoadingMore: false,
+        loadMoreError: error,
+      );
     }
+  }
+
+  Future<void> retryLoadMore() async {
+    if (state.isLoadingMore) return;
+    state = state.copyWith(clearLoadMoreError: true);
+    await loadMore();
   }
 
   Future<void> refresh() async {
@@ -235,6 +264,8 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
         conversations: AsyncValue.data(conversations),
         currentPage: 1,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
       _refreshUnreadCount();
     } catch (_) {}

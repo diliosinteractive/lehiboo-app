@@ -2,13 +2,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/l10n/l10n.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../domain/entities/message.dart';
 
 class MessageBubble extends StatefulWidget {
   final Message message;
   final bool isLastOwn;
-  final void Function(String messageUuid, String content)? onEdit;
-  final void Function(String messageUuid)? onDelete;
+  final Future<void> Function(String messageUuid, String content)? onEdit;
+  final Future<void> Function(String messageUuid)? onDelete;
 
   /// Logo URL of the organisation involved in the conversation.
   /// Used instead of the sender's personal avatar when senderType == 'organization'.
@@ -29,6 +30,7 @@ class MessageBubble extends StatefulWidget {
 
 class _MessageBubbleState extends State<MessageBubble> {
   bool _isEditing = false;
+  bool _isMutating = false;
   late TextEditingController _editController;
 
   static const _primaryColor = Color(0xFFFF601F);
@@ -293,21 +295,23 @@ class _MessageBubbleState extends State<MessageBubble> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               TextButton(
-                onPressed: () => setState(() => _isEditing = false),
+                onPressed: _isMutating
+                    ? null
+                    : () => setState(() => _isEditing = false),
                 child: Text(context.l10n.commonCancel),
               ),
               TextButton(
-                onPressed: () {
-                  final content = _editController.text.trim();
-                  if (content.isNotEmpty) {
-                    widget.onEdit?.call(widget.message.uuid, content);
-                  }
-                  setState(() => _isEditing = false);
-                },
-                child: Text(
-                  context.l10n.commonValidate,
-                  style: const TextStyle(color: _primaryColor),
-                ),
+                onPressed: _isMutating ? null : _submitEdit,
+                child: _isMutating
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(
+                        context.l10n.commonValidate,
+                        style: const TextStyle(color: _primaryColor),
+                      ),
               ),
             ],
           ),
@@ -354,14 +358,15 @@ class _MessageBubbleState extends State<MessageBubble> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: Text(context.l10n.messagesEditAction),
-              onTap: () {
-                Navigator.pop(ctx);
-                setState(() => _isEditing = true);
-              },
-            ),
+            if (widget.onEdit != null)
+              ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: Text(context.l10n.messagesEditAction),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  setState(() => _isEditing = true);
+                },
+              ),
             if (widget.message.content?.isNotEmpty == true)
               ListTile(
                 leading: const Icon(Icons.copy_outlined),
@@ -372,19 +377,74 @@ class _MessageBubbleState extends State<MessageBubble> {
                       ClipboardData(text: widget.message.content ?? ''));
                 },
               ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: Text(
-                context.l10n.messagesDeleteAction,
-                style: const TextStyle(color: Colors.red),
+            if (widget.onDelete != null)
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: Text(
+                  context.l10n.messagesDeleteAction,
+                  style: const TextStyle(color: Colors.red),
+                ),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await _deleteMessage();
+                },
               ),
-              onTap: () {
-                Navigator.pop(ctx);
-                widget.onDelete?.call(widget.message.uuid);
-              },
-            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _submitEdit() async {
+    final content = _editController.text.trim();
+    final onEdit = widget.onEdit;
+    if (content.isEmpty || onEdit == null) return;
+
+    setState(() => _isMutating = true);
+    try {
+      await onEdit(widget.message.uuid, content);
+      if (!mounted) return;
+      setState(() {
+        _isMutating = false;
+        _isEditing = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isMutating = false);
+      _showActionError(
+        ApiResponseHandler.extractError(
+          error,
+          fallback: context.l10n.messagesEditFailed,
+        ),
+      );
+    }
+  }
+
+  Future<void> _deleteMessage() async {
+    final onDelete = widget.onDelete;
+    if (onDelete == null || _isMutating) return;
+
+    setState(() => _isMutating = true);
+    try {
+      await onDelete(widget.message.uuid);
+    } catch (error) {
+      if (!mounted) return;
+      _showActionError(
+        ApiResponseHandler.extractError(
+          error,
+          fallback: context.l10n.messagesDeleteFailed,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isMutating = false);
+    }
+  }
+
+  void _showActionError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
       ),
     );
   }

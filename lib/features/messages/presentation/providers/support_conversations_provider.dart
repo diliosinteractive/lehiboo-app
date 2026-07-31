@@ -10,6 +10,8 @@ class SupportConversationsState {
   final AsyncValue<List<Conversation>> conversations;
   final int currentPage;
   final bool hasMore;
+  final bool isLoadingMore;
+  final Object? loadMoreError;
   final String? statusFilter;
   final bool unreadOnly;
   final String? searchQuery;
@@ -19,6 +21,8 @@ class SupportConversationsState {
     this.conversations = const AsyncValue.loading(),
     this.currentPage = 1,
     this.hasMore = false,
+    this.isLoadingMore = false,
+    this.loadMoreError,
     this.statusFilter,
     this.unreadOnly = false,
     this.searchQuery,
@@ -29,6 +33,9 @@ class SupportConversationsState {
     AsyncValue<List<Conversation>>? conversations,
     int? currentPage,
     bool? hasMore,
+    bool? isLoadingMore,
+    Object? loadMoreError,
+    bool clearLoadMoreError = false,
     String? statusFilter,
     bool clearStatusFilter = false,
     bool? unreadOnly,
@@ -41,7 +48,11 @@ class SupportConversationsState {
       conversations: conversations ?? this.conversations,
       currentPage: currentPage ?? this.currentPage,
       hasMore: hasMore ?? this.hasMore,
-      statusFilter: clearStatusFilter ? null : (statusFilter ?? this.statusFilter),
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      loadMoreError:
+          clearLoadMoreError ? null : (loadMoreError ?? this.loadMoreError),
+      statusFilter:
+          clearStatusFilter ? null : (statusFilter ?? this.statusFilter),
       unreadOnly: unreadOnly ?? this.unreadOnly,
       searchQuery: clearSearchQuery ? null : (searchQuery ?? this.searchQuery),
       period: clearPeriod ? null : (period ?? this.period),
@@ -75,10 +86,8 @@ class SupportConversationsNotifier
 
   void _subscribeToRealtime() {
     dev.log('[SupportConv] Subscribed to realtime events');
-    _realtimeSub = _ref
-        .read(messagesRealtimeProvider.notifier)
-        .events
-        .listen((event) {
+    _realtimeSub =
+        _ref.read(messagesRealtimeProvider.notifier).events.listen((event) {
       if (!mounted) return;
       final type = event.conversationType;
       dev.log(
@@ -86,7 +95,8 @@ class SupportConversationsNotifier
       );
       if (event.type == RealtimeEventType.messageReceived) {
         if (type != null && type != 'user_support') {
-          dev.log('[SupportConv] skipping messageReceived: convType=$type is not user_support');
+          dev.log(
+              '[SupportConv] skipping messageReceived: convType=$type is not user_support');
           return;
         }
         _applyNewMessage(event);
@@ -128,7 +138,8 @@ class SupportConversationsNotifier
       _silentRefresh();
       return;
     }
-    dev.log('[SupportConv] applyNewMessage: conv=$uuid unread ${current[idx].unreadCount}→${current[idx].unreadCount + 1}');
+    dev.log(
+        '[SupportConv] applyNewMessage: conv=$uuid unread ${current[idx].unreadCount}→${current[idx].unreadCount + 1}');
     final updated = current[idx].copyWith(
       unreadCount: current[idx].unreadCount + 1,
     );
@@ -144,7 +155,9 @@ class SupportConversationsNotifier
     if (current == null) return;
     state = state.copyWith(
       conversations: AsyncValue.data(
-        current.map((c) => c.uuid == convUuid ? c.copyWith(status: status) : c).toList(),
+        current
+            .map((c) => c.uuid == convUuid ? c.copyWith(status: status) : c)
+            .toList(),
       ),
     );
   }
@@ -154,6 +167,8 @@ class SupportConversationsNotifier
       conversations: const AsyncValue.loading(),
       currentPage: 1,
       hasMore: false,
+      isLoadingMore: false,
+      clearLoadMoreError: true,
     );
     try {
       final result = await _repo.getSupportConversations(
@@ -168,6 +183,8 @@ class SupportConversationsNotifier
         conversations: AsyncValue.data(_mergeUnreadState(result.conversations)),
         currentPage: 1,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
     } catch (e, st) {
       if (!mounted) return;
@@ -176,9 +193,12 @@ class SupportConversationsNotifier
   }
 
   Future<void> loadMore() async {
-    if (!state.hasMore) return;
+    if (!state.hasMore || state.isLoadingMore || state.loadMoreError != null) {
+      return;
+    }
     final current = state.conversations.valueOrNull;
     if (current == null) return;
+    state = state.copyWith(isLoadingMore: true, clearLoadMoreError: true);
     try {
       final nextPage = state.currentPage + 1;
       final result = await _repo.getSupportConversations(
@@ -193,8 +213,22 @@ class SupportConversationsNotifier
         conversations: AsyncValue.data([...current, ...result.conversations]),
         currentPage: nextPage,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
-    } catch (_) {}
+    } catch (error) {
+      if (!mounted) return;
+      state = state.copyWith(
+        isLoadingMore: false,
+        loadMoreError: error,
+      );
+    }
+  }
+
+  Future<void> retryLoadMore() async {
+    if (state.isLoadingMore) return;
+    state = state.copyWith(clearLoadMoreError: true);
+    await loadMore();
   }
 
   Future<void> refresh() async {
@@ -215,6 +249,8 @@ class SupportConversationsNotifier
         conversations: AsyncValue.data(_mergeUnreadState(result.conversations)),
         currentPage: 1,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
     } catch (_) {}
   }

@@ -79,7 +79,10 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = ApiResponseHandler.extractError(e);
+        _errorMessage = ApiResponseHandler.extractError(
+          e,
+          fallback: context.l10n.messagesBookingConversationCreateFailed,
+        );
       });
     }
   }

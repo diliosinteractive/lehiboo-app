@@ -100,8 +100,9 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                context.l10n.messagesLoadError(
-                  ApiResponseHandler.extractError(e),
+                ApiResponseHandler.extractError(
+                  e,
+                  fallback: context.l10n.messagesCloseSupportTicketFailed,
                 ),
               ),
               backgroundColor: Colors.red,

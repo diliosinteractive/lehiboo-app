@@ -90,8 +90,12 @@ Widget _buildConversationList<N extends StateNotifier<S>, S>({
   required BuildContext context,
   required AsyncValue<List> asyncConversations,
   required bool hasMore,
+  required bool isLoadingMore,
+  required Object? loadMoreError,
   required VoidCallback onLoadMore,
+  required VoidCallback onRetryLoadMore,
   required VoidCallback onRefresh,
+  required String loadMoreFailureFallback,
   required String Function(dynamic conv) routeFor,
   required Widget emptyWidget,
   bool showLehibooAvatar = false,
@@ -124,19 +128,25 @@ Widget _buildConversationList<N extends StateNotifier<S>, S>({
       return NotificationListener<ScrollNotification>(
         onNotification: (n) {
           if (n is ScrollUpdateNotification &&
+              hasMore &&
+              !isLoadingMore &&
+              loadMoreError == null &&
               n.metrics.pixels >= n.metrics.maxScrollExtent * 0.8) {
             onLoadMore();
           }
           return false;
         },
         child: ListView.separated(
-          itemCount: conversations.length + (hasMore ? 1 : 0),
+          itemCount: conversations.length +
+              (isLoadingMore || loadMoreError != null ? 1 : 0),
           separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
           itemBuilder: (ctx, i) {
             if (i == conversations.length) {
-              return const Padding(
-                padding: EdgeInsets.all(16),
-                child: Center(child: CircularProgressIndicator()),
+              return _PaginationFooter(
+                isLoading: isLoadingMore,
+                error: loadMoreError,
+                fallbackMessage: loadMoreFailureFallback,
+                onRetry: onRetryLoadMore,
               );
             }
             final conv = conversations[i];
@@ -151,6 +161,61 @@ Widget _buildConversationList<N extends StateNotifier<S>, S>({
       );
     },
   );
+}
+
+class _PaginationFooter extends StatelessWidget {
+  const _PaginationFooter({
+    required this.isLoading,
+    required this.error,
+    required this.fallbackMessage,
+    required this.onRetry,
+  });
+
+  final bool isLoading;
+  final Object? error;
+  final String fallbackMessage;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    if (error != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              ApiResponseHandler.extractError(
+                error,
+                fallback: fallbackMessage,
+              ),
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Colors.red.shade700),
+            ),
+            const SizedBox(height: 6),
+            TextButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: Text(context.l10n.commonRetry),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (!isLoading) return const SizedBox.shrink();
+
+    return const Padding(
+      padding: EdgeInsets.all(16),
+      child: Center(
+        child: SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+    );
+  }
 }
 
 Future<void> _showVendorReportSheet(
@@ -322,8 +387,13 @@ class _SubscriberOrgTab extends ConsumerWidget {
               context: context,
               asyncConversations: state.conversations,
               hasMore: state.hasMore,
+              isLoadingMore: state.isLoadingMore,
+              loadMoreError: state.loadMoreError,
               onLoadMore: notifier.loadMore,
+              onRetryLoadMore: notifier.retryLoadMore,
               onRefresh: notifier.refresh,
+              loadMoreFailureFallback:
+                  context.l10n.messagesConversationsLoadMoreFailed,
               routeFor: (conv) => '/messages/${conv.uuid}',
               emptyWidget: _emptyConversations(context),
             ),
@@ -368,8 +438,13 @@ class _SupportTab extends ConsumerWidget {
               context: context,
               asyncConversations: state.conversations,
               hasMore: state.hasMore,
+              isLoadingMore: state.isLoadingMore,
+              loadMoreError: state.loadMoreError,
               onLoadMore: notifier.loadMore,
+              onRetryLoadMore: notifier.retryLoadMore,
               onRefresh: notifier.refresh,
+              loadMoreFailureFallback:
+                  context.l10n.messagesConversationsLoadMoreFailed,
               routeFor: (conv) => '/messages/support/${conv.uuid}',
               showLehibooAvatar: true,
               emptyWidget: Center(
@@ -558,8 +633,13 @@ class _VendorClientsTab extends ConsumerWidget {
               context: context,
               asyncConversations: state.conversations,
               hasMore: state.hasMore,
+              isLoadingMore: state.isLoadingMore,
+              loadMoreError: state.loadMoreError,
               onLoadMore: notifier.loadMore,
+              onRetryLoadMore: notifier.retryLoadMore,
               onRefresh: notifier.refresh,
+              loadMoreFailureFallback:
+                  context.l10n.messagesConversationsLoadMoreFailed,
               routeFor: (conv) => '/messages/vendor/${conv.uuid}',
               emptyWidget:
                   _emptyConversations(context, context.l10n.messagesNoClients),
@@ -648,20 +728,29 @@ class _VendorBroadcastsTab extends ConsumerWidget {
                 return NotificationListener<ScrollNotification>(
                   onNotification: (n) {
                     if (n is ScrollUpdateNotification &&
+                        state.hasMore &&
+                        !state.isLoadingMore &&
+                        state.loadMoreError == null &&
                         n.metrics.pixels >= n.metrics.maxScrollExtent * 0.8) {
                       notifier.loadMore();
                     }
                     return false;
                   },
                   child: ListView.separated(
-                    itemCount: broadcasts.length + (state.hasMore ? 1 : 0),
+                    itemCount: broadcasts.length +
+                        (state.isLoadingMore || state.loadMoreError != null
+                            ? 1
+                            : 0),
                     separatorBuilder: (_, __) =>
                         const Divider(height: 1, indent: 72),
                     itemBuilder: (ctx, i) {
                       if (i == broadcasts.length) {
-                        return const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Center(child: CircularProgressIndicator()),
+                        return _PaginationFooter(
+                          isLoading: state.isLoadingMore,
+                          error: state.loadMoreError,
+                          fallbackMessage:
+                              context.l10n.messagesBroadcastsLoadMoreFailed,
+                          onRetry: notifier.retryLoadMore,
                         );
                       }
                       final broadcast = broadcasts[i];
@@ -717,8 +806,13 @@ class _VendorPartnersTab extends ConsumerWidget {
               context: context,
               asyncConversations: state.conversations,
               hasMore: state.hasMore,
+              isLoadingMore: state.isLoadingMore,
+              loadMoreError: state.loadMoreError,
               onLoadMore: notifier.loadMore,
+              onRetryLoadMore: notifier.retryLoadMore,
               onRefresh: notifier.refresh,
+              loadMoreFailureFallback:
+                  context.l10n.messagesConversationsLoadMoreFailed,
               routeFor: (conv) => '/messages/vendor-org/${conv.uuid}',
               emptyWidget:
                   _emptyConversations(context, context.l10n.messagesNoPartners),
@@ -751,8 +845,13 @@ class _VendorSupportTab extends ConsumerWidget {
         context: context,
         asyncConversations: state.conversations,
         hasMore: state.hasMore,
+        isLoadingMore: state.isLoadingMore,
+        loadMoreError: state.loadMoreError,
         onLoadMore: notifier.loadMore,
+        onRetryLoadMore: notifier.retryLoadMore,
         onRefresh: notifier.refresh,
+        loadMoreFailureFallback:
+            context.l10n.messagesConversationsLoadMoreFailed,
         routeFor: (conv) => '/messages/vendor/${conv.uuid}',
         emptyWidget:
             _emptyConversations(context, context.l10n.messagesNoSupportTickets),
@@ -928,8 +1027,13 @@ class _AdminConvTab extends ConsumerWidget {
               context: context,
               asyncConversations: state.conversations,
               hasMore: state.hasMore,
+              isLoadingMore: state.isLoadingMore,
+              loadMoreError: state.loadMoreError,
               onLoadMore: notifier.loadMore,
+              onRetryLoadMore: notifier.retryLoadMore,
               onRefresh: notifier.refresh,
+              loadMoreFailureFallback:
+                  context.l10n.messagesConversationsLoadMoreFailed,
               routeFor: (conv) => '/messages/admin/${conv.uuid}',
               emptyWidget: _emptyConversations(context),
             ),
@@ -1012,20 +1116,29 @@ class _AdminReportsTab extends ConsumerWidget {
                 return NotificationListener<ScrollNotification>(
                   onNotification: (n) {
                     if (n is ScrollUpdateNotification &&
+                        state.hasMore &&
+                        !state.isLoadingMore &&
+                        state.loadMoreError == null &&
                         n.metrics.pixels >= n.metrics.maxScrollExtent * 0.8) {
                       notifier.loadMore();
                     }
                     return false;
                   },
                   child: ListView.separated(
-                    itemCount: reports.length + (state.hasMore ? 1 : 0),
+                    itemCount: reports.length +
+                        (state.isLoadingMore || state.loadMoreError != null
+                            ? 1
+                            : 0),
                     separatorBuilder: (_, __) =>
                         const Divider(height: 1, indent: 16),
                     itemBuilder: (ctx, i) {
                       if (i == reports.length) {
-                        return const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Center(child: CircularProgressIndicator()),
+                        return _PaginationFooter(
+                          isLoading: state.isLoadingMore,
+                          error: state.loadMoreError,
+                          fallbackMessage:
+                              context.l10n.messagesReportsLoadMoreFailed,
+                          onRetry: notifier.retryLoadMore,
                         );
                       }
                       final report = reports[i];

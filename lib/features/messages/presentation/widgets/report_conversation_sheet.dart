@@ -297,9 +297,10 @@ Future<void> showConversationReportSheet(
                                             ScaffoldMessenger.of(context)
                                                 .showSnackBar(SnackBar(
                                               content: Text(
-                                                ctx.l10n.messagesLoadError(
-                                                  ApiResponseHandler
-                                                      .extractError(e),
+                                                ApiResponseHandler.extractError(
+                                                  e,
+                                                  fallback: ctx.l10n
+                                                      .messagesReportSubmitFailed,
                                                 ),
                                               ),
                                               backgroundColor: Colors.red,
@@ -312,9 +313,10 @@ Future<void> showConversationReportSheet(
                                             ScaffoldMessenger.of(context)
                                                 .showSnackBar(SnackBar(
                                               content: Text(
-                                                ctx.l10n.messagesLoadError(
-                                                  ApiResponseHandler
-                                                      .extractError(e),
+                                                ApiResponseHandler.extractError(
+                                                  e,
+                                                  fallback: ctx.l10n
+                                                      .messagesReportSubmitFailed,
                                                 ),
                                               ),
                                               backgroundColor: Colors.red,

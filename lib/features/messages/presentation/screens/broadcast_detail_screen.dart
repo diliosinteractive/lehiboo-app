@@ -76,8 +76,9 @@ class _BroadcastDetailScreenState extends ConsumerState<BroadcastDetailScreen> {
               const Icon(Icons.error_outline, color: Colors.red, size: 40),
               const SizedBox(height: 8),
               Text(
-                  context.l10n.messagesLoadError(
-                    ApiResponseHandler.extractError(e),
+                  ApiResponseHandler.extractError(
+                    e,
+                    fallback: context.l10n.messagesBroadcastDetailLoadFailed,
                   ),
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.red)),

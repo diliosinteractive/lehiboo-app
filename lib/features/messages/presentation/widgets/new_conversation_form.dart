@@ -166,12 +166,15 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   ConversationParticipant? _selectedVendorParticipant;
   AcceptedPartner? _selectedPartner;
   List<AcceptedPartner> _allPartners = [];
+  bool _partnersLoading = false;
+  String? _partnersLoadError;
   // Shared error flag for new contexts
   bool _recipientError = false;
 
   // Contactable orgs for DashboardContext (loaded eagerly)
   List<ConversationOrganization>? _contactableOrgs;
   bool _orgsLoading = false;
+  String? _orgsLoadError;
 
   // Existing getters
   bool get _isSupport =>
@@ -206,11 +209,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
 
     if (widget.conversationContext is VendorToPartnerConversationContext) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        try {
-          final partners =
-              await ref.read(messagesRepositoryProvider).getAcceptedPartners();
-          if (mounted) setState(() => _allPartners = partners);
-        } catch (_) {}
+        await _loadAcceptedPartners();
       });
     }
     if (widget.conversationContext is DashboardConversationContext) {
@@ -219,8 +218,39 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     }
   }
 
+  Future<void> _loadAcceptedPartners() async {
+    if (!mounted || _partnersLoading) return;
+    setState(() {
+      _partnersLoading = true;
+      _partnersLoadError = null;
+    });
+    try {
+      final partners =
+          await ref.read(messagesRepositoryProvider).getAcceptedPartners();
+      if (!mounted) return;
+      setState(() {
+        _allPartners = partners;
+        _partnersLoading = false;
+        _partnersLoadError = null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _partnersLoading = false;
+        _partnersLoadError = ApiResponseHandler.extractError(
+          error,
+          fallback: context.l10n.messagesPartnersLoadFailed,
+        );
+      });
+    }
+  }
+
   Future<void> _loadContactableOrgs() async {
-    setState(() => _orgsLoading = true);
+    if (!mounted) return;
+    setState(() {
+      _orgsLoading = true;
+      _orgsLoadError = null;
+    });
     try {
       final orgs = await ref
           .read(messagesRepositoryProvider)
@@ -229,13 +259,17 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
         setState(() {
           _contactableOrgs = orgs;
           _orgsLoading = false;
+          _orgsLoadError = null;
         });
       }
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
         setState(() {
-          _contactableOrgs = [];
           _orgsLoading = false;
+          _orgsLoadError = ApiResponseHandler.extractError(
+            error,
+            fallback: context.l10n.messagesOrganizationsLoadFailed,
+          );
         });
       }
     }
@@ -319,6 +353,10 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   // ── Org picker (DashboardContext only) ─────────────────────────────────────
 
   Future<void> _openOrgPicker() async {
+    if (_orgsLoadError != null) {
+      await _loadContactableOrgs();
+      if (!mounted || _orgsLoadError != null) return;
+    }
     final orgs = _contactableOrgs;
     if (orgs == null || orgs.isEmpty) return;
     final picked = await showModalBottomSheet<ConversationOrganization>(
@@ -395,6 +433,27 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   }
 
   Future<void> _openVendorPartnerSearch() async {
+    if (_partnersLoading) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.commonLoading)),
+      );
+      return;
+    }
+    if (_partnersLoadError != null) {
+      final message = _partnersLoadError!;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(message),
+            action: SnackBarAction(
+              label: context.l10n.commonRetry,
+              onPressed: _loadAcceptedPartners,
+            ),
+          ),
+        );
+      return;
+    }
     final selected = await showModalBottomSheet<AcceptedPartner>(
       context: context,
       isScrollControlled: true,
@@ -415,6 +474,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
 
   Future<void> _submit() async {
     if (!_validate()) return;
+    final conversationContext = widget.conversationContext;
     setState(() {
       _isLoading = true;
       _submitError = null;
@@ -423,7 +483,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
       final repo = ref.read(messagesRepositoryProvider);
       final subject = _subjectCtrl.text.trim();
       final message = _messageCtrl.text.trim();
-      final ctx = widget.conversationContext;
+      final ctx = conversationContext;
 
       String uuid;
       String route;
@@ -536,10 +596,21 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _submitError = ApiResponseHandler.extractError(e);
+          _submitError = ApiResponseHandler.extractError(
+            e,
+            fallback: _creationFailureMessage(conversationContext),
+          );
         });
       }
     }
+  }
+
+  String _creationFailureMessage(NewConversationContext contextType) {
+    if (contextType is SupportConversationContext ||
+        contextType is VendorSupportConversationContext) {
+      return context.l10n.messagesSupportTicketCreateFailed;
+    }
+    return context.l10n.messagesConversationCreateFailed;
   }
 
   // ── build ───────────────────────────────────────────────────────────────────
@@ -743,10 +814,13 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     }
 
     // DashboardContext — tappable picker row (greyed out when no orgs available)
-    final orgsEmpty =
-        !_orgsLoading && _contactableOrgs != null && _contactableOrgs!.isEmpty;
-    final pickerEnabled =
-        !_orgsLoading && (_contactableOrgs?.isNotEmpty ?? false);
+    final orgsFailed = _orgsLoadError != null;
+    final orgsEmpty = !orgsFailed &&
+        !_orgsLoading &&
+        _contactableOrgs != null &&
+        _contactableOrgs!.isEmpty;
+    final pickerEnabled = !_orgsLoading &&
+        (orgsFailed || (_contactableOrgs?.isNotEmpty ?? false));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -805,9 +879,12 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
                 Expanded(
                   child: Text(
                     _selectedOrg?.companyName ??
-                        (orgsEmpty
-                            ? context.l10n.messagesNoOrganizerAvailable
-                            : context.l10n.messagesSelectOrganizerPlaceholder),
+                        (orgsFailed
+                            ? context.l10n.messagesOrganizationsLoadFailed
+                            : orgsEmpty
+                                ? context.l10n.messagesNoOrganizerAvailable
+                                : context
+                                    .l10n.messagesSelectOrganizerPlaceholder),
                     style: TextStyle(
                       color: _selectedOrg != null
                           ? Colors.black87
@@ -834,7 +911,25 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
             ),
           ),
         ),
-        if (orgsEmpty)
+        if (orgsFailed)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _orgsLoadError!,
+                    style: TextStyle(fontSize: 11, color: Colors.red.shade700),
+                  ),
+                ),
+                TextButton(
+                  onPressed: _loadContactableOrgs,
+                  child: Text(context.l10n.commonRetry),
+                ),
+              ],
+            ),
+          )
+        else if (orgsEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 6, left: 4),
             child: Text(
@@ -1473,7 +1568,10 @@ class _AdminUserSearchSheetState extends State<_AdminUserSearchSheet> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = ApiResponseHandler.extractError(e);
+          _error = ApiResponseHandler.extractError(
+            e,
+            fallback: context.l10n.messagesRecipientSearchFailed,
+          );
         });
       }
     }
@@ -1650,7 +1748,10 @@ class _AdminOrgSearchSheetState extends State<_AdminOrgSearchSheet> {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = ApiResponseHandler.extractError(e);
+          _error = ApiResponseHandler.extractError(
+            e,
+            fallback: context.l10n.messagesRecipientSearchFailed,
+          );
         });
       }
     }
@@ -1836,7 +1937,10 @@ class _VendorParticipantSearchSheetState
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = ApiResponseHandler.extractError(e);
+          _error = ApiResponseHandler.extractError(
+            e,
+            fallback: context.l10n.messagesRecipientSearchFailed,
+          );
         });
       }
     }

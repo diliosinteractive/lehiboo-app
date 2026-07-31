@@ -38,6 +38,7 @@ class _VendorNewConversationScreenState
   // Partners pre-loaded for the search sheet
   List<AcceptedPartner> _partners = [];
   bool _loadingPartners = false;
+  String? _partnersLoadError;
 
   bool _submitting = false;
   String? _error;
@@ -58,16 +59,28 @@ class _VendorNewConversationScreenState
   }
 
   Future<void> _loadPartners() async {
-    setState(() => _loadingPartners = true);
+    setState(() {
+      _loadingPartners = true;
+      _partnersLoadError = null;
+    });
     try {
       final partners =
           await ref.read(messagesRepositoryProvider).getAcceptedPartners();
+      if (!mounted) return;
       setState(() {
         _partners = partners;
         _loadingPartners = false;
+        _partnersLoadError = null;
       });
-    } catch (_) {
-      setState(() => _loadingPartners = false);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadingPartners = false;
+        _partnersLoadError = ApiResponseHandler.extractError(
+          error,
+          fallback: context.l10n.messagesPartnersLoadFailed,
+        );
+      });
     }
   }
 
@@ -85,6 +98,10 @@ class _VendorNewConversationScreenState
   }
 
   Future<void> _openPartnerSearch() async {
+    if (_partnersLoadError != null) {
+      await _loadPartners();
+      if (!mounted || _partnersLoadError != null) return;
+    }
     final selected = await showModalBottomSheet<AcceptedPartner>(
       context: context,
       isScrollControlled: true,
@@ -177,8 +194,11 @@ class _VendorNewConversationScreenState
           _submitting = false;
           _error = isForbidden
               ? _forbiddenMessage(context)
-              : context.l10n.messagesLoadError(
-                  ApiResponseHandler.extractError(e),
+              : ApiResponseHandler.extractError(
+                  e,
+                  fallback: widget.mode == VendorConversationMode.supportThread
+                      ? context.l10n.messagesSupportTicketCreateFailed
+                      : context.l10n.messagesConversationCreateFailed,
                 );
         });
       }
@@ -323,11 +343,16 @@ class _VendorNewConversationScreenState
                     child: CircularProgressIndicator(),
                   ),
                 )
-              : _SearchTapField(
-                  hint: context.l10n.messagesSearchPartnerPlaceholder,
-                  icon: Icons.handshake_outlined,
-                  onTap: _openPartnerSearch,
-                ),
+              : _partnersLoadError != null
+                  ? _InlineLoadFailure(
+                      message: _partnersLoadError!,
+                      onRetry: _loadPartners,
+                    )
+                  : _SearchTapField(
+                      hint: context.l10n.messagesSearchPartnerPlaceholder,
+                      icon: Icons.handshake_outlined,
+                      onTap: _openPartnerSearch,
+                    ),
       ],
     );
   }
@@ -470,6 +495,9 @@ class _ParticipantSearchSheetState extends State<_ParticipantSearchSheet> {
   List<ConversationParticipant> _results = [];
   bool _loading = false;
   bool _searched = false;
+  String? _searchError;
+  String _lastQuery = '';
+  int _requestId = 0;
 
   @override
   void initState() {
@@ -485,18 +513,32 @@ class _ParticipantSearchSheetState extends State<_ParticipantSearchSheet> {
   }
 
   Future<void> _loadInitial() async {
-    setState(() => _loading = true);
+    final requestId = ++_requestId;
+    _lastQuery = '';
+    setState(() {
+      _loading = true;
+      _searchError = null;
+    });
     try {
       final results = await widget.repo.getInteractedParticipants(search: '');
-      if (!mounted) return;
+      if (!mounted || requestId != _requestId) return;
       setState(() {
         _results = results;
         _loading = false;
         _searched = true;
+        _searchError = null;
       });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _loading = false);
+    } catch (error) {
+      if (!mounted || requestId != _requestId) return;
+      final message = ApiResponseHandler.extractError(
+        error,
+        fallback: context.l10n.messagesRecipientSearchFailed,
+      );
+      setState(() {
+        _loading = false;
+        _searchError = message;
+      });
+      if (_results.isNotEmpty) _showSearchError(context, message, _loadInitial);
     }
   }
 
@@ -506,7 +548,6 @@ class _ParticipantSearchSheetState extends State<_ParticipantSearchSheet> {
       _loadInitial();
       return;
     }
-    setState(() => _loading = true);
     _debounce = Timer(
       const Duration(milliseconds: 300),
       () => _search(value.trim()),
@@ -514,21 +555,35 @@ class _ParticipantSearchSheetState extends State<_ParticipantSearchSheet> {
   }
 
   Future<void> _search(String query) async {
+    final requestId = ++_requestId;
+    _lastQuery = query;
+    setState(() {
+      _loading = true;
+      _searchError = null;
+    });
     try {
       final results =
           await widget.repo.getInteractedParticipants(search: query);
-      if (!mounted) return;
+      if (!mounted || requestId != _requestId) return;
       setState(() {
         _results = results;
         _loading = false;
         _searched = true;
+        _searchError = null;
       });
-    } catch (_) {
-      if (!mounted) return;
+    } catch (error) {
+      if (!mounted || requestId != _requestId) return;
+      final message = ApiResponseHandler.extractError(
+        error,
+        fallback: context.l10n.messagesRecipientSearchFailed,
+      );
       setState(() {
         _loading = false;
-        _searched = true;
+        _searchError = message;
       });
+      if (_results.isNotEmpty) {
+        _showSearchError(context, message, () => _search(_lastQuery));
+      }
     }
   }
 
@@ -563,46 +618,55 @@ class _ParticipantSearchSheetState extends State<_ParticipantSearchSheet> {
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
-                : _results.isEmpty
+                : _searchError != null && _results.isEmpty
                     ? _emptyState(
-                        icon: Icons.person_search,
-                        label: !_searched
-                            ? context.l10n.commonLoading
-                            : context.l10n.messagesNoResults,
+                        icon: Icons.cloud_off_outlined,
+                        label: _searchError!,
+                        onRetry: () => _search(_lastQuery),
+                        retryLabel: context.l10n.commonRetry,
                       )
-                    : ListView.builder(
-                        controller: scrollCtrl,
-                        itemCount: _results.length,
-                        itemBuilder: (ctx, i) {
-                          final p = _results[i];
-                          final hasUrl =
-                              p.avatarUrl != null && p.avatarUrl!.isNotEmpty;
-                          final initial =
-                              p.name.isNotEmpty ? p.name[0].toUpperCase() : '?';
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor:
-                                  _primaryColor.withValues(alpha: 0.1),
-                              backgroundImage: hasUrl
-                                  ? CachedNetworkImageProvider(p.avatarUrl!)
-                                  : null,
-                              child: hasUrl
-                                  ? null
-                                  : Text(initial,
-                                      style: const TextStyle(
-                                          color: _primaryColor,
-                                          fontWeight: FontWeight.bold)),
-                            ),
-                            title: Text(p.name,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w500)),
-                            subtitle: Text(p.email,
-                                style: TextStyle(
-                                    fontSize: 12, color: Colors.grey.shade600)),
-                            onTap: () => Navigator.pop(ctx, p),
-                          );
-                        },
-                      ),
+                    : _results.isEmpty
+                        ? _emptyState(
+                            icon: Icons.person_search,
+                            label: !_searched
+                                ? context.l10n.commonLoading
+                                : context.l10n.messagesNoResults,
+                          )
+                        : ListView.builder(
+                            controller: scrollCtrl,
+                            itemCount: _results.length,
+                            itemBuilder: (ctx, i) {
+                              final p = _results[i];
+                              final hasUrl = p.avatarUrl != null &&
+                                  p.avatarUrl!.isNotEmpty;
+                              final initial = p.name.isNotEmpty
+                                  ? p.name[0].toUpperCase()
+                                  : '?';
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor:
+                                      _primaryColor.withValues(alpha: 0.1),
+                                  backgroundImage: hasUrl
+                                      ? CachedNetworkImageProvider(p.avatarUrl!)
+                                      : null,
+                                  child: hasUrl
+                                      ? null
+                                      : Text(initial,
+                                          style: const TextStyle(
+                                              color: _primaryColor,
+                                              fontWeight: FontWeight.bold)),
+                                ),
+                                title: Text(p.name,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w500)),
+                                subtitle: Text(p.email,
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600)),
+                                onTap: () => Navigator.pop(ctx, p),
+                              );
+                            },
+                          ),
           ),
         ],
       ),
@@ -753,14 +817,77 @@ Widget _searchField(
   );
 }
 
-Widget _emptyState({required IconData icon, required String label}) => Center(
+void _showSearchError(
+  BuildContext context,
+  String message,
+  VoidCallback onRetry,
+) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(message),
+        action: SnackBarAction(
+          label: context.l10n.commonRetry,
+          onPressed: onRetry,
+        ),
+      ),
+    );
+}
+
+class _InlineLoadFailure extends StatelessWidget {
+  final String message;
+  final Future<void> Function() onRetry;
+
+  const _InlineLoadFailure({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.red.shade200),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.cloud_off_outlined, color: Colors.red.shade700),
+          const SizedBox(width: 8),
+          Expanded(child: Text(message)),
+          TextButton(
+            onPressed: onRetry,
+            child: Text(context.l10n.commonRetry),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Widget _emptyState({
+  required IconData icon,
+  required String label,
+  VoidCallback? onRetry,
+  String? retryLabel,
+}) =>
+    Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 52, color: Colors.grey.shade300),
           const SizedBox(height: 12),
           Text(label,
+              textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey.shade500, fontSize: 14)),
+          if (onRetry != null) ...[
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: Text(retryLabel!),
+            ),
+          ],
         ],
       ),
     );

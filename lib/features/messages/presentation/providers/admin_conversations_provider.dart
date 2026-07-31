@@ -17,6 +17,8 @@ class AdminConversationsState {
   final AsyncValue<List<Conversation>> conversations;
   final int currentPage;
   final bool hasMore;
+  final bool isLoadingMore;
+  final Object? loadMoreError;
   final String? statusFilter;
   final bool unreadOnly;
   final String? searchQuery;
@@ -26,6 +28,8 @@ class AdminConversationsState {
     this.conversations = const AsyncValue.loading(),
     this.currentPage = 1,
     this.hasMore = false,
+    this.isLoadingMore = false,
+    this.loadMoreError,
     this.statusFilter,
     this.unreadOnly = false,
     this.searchQuery,
@@ -36,6 +40,9 @@ class AdminConversationsState {
     AsyncValue<List<Conversation>>? conversations,
     int? currentPage,
     bool? hasMore,
+    bool? isLoadingMore,
+    Object? loadMoreError,
+    bool clearLoadMoreError = false,
     String? statusFilter,
     bool clearStatusFilter = false,
     bool? unreadOnly,
@@ -48,6 +55,9 @@ class AdminConversationsState {
       conversations: conversations ?? this.conversations,
       currentPage: currentPage ?? this.currentPage,
       hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      loadMoreError:
+          clearLoadMoreError ? null : (loadMoreError ?? this.loadMoreError),
       statusFilter:
           clearStatusFilter ? null : (statusFilter ?? this.statusFilter),
       unreadOnly: unreadOnly ?? this.unreadOnly,
@@ -180,6 +190,8 @@ class AdminConversationsNotifier
         conversations: AsyncValue.data(conversations),
         currentPage: 1,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
     } catch (_) {}
   }
@@ -189,6 +201,8 @@ class AdminConversationsNotifier
       conversations: const AsyncValue.loading(),
       currentPage: 1,
       hasMore: false,
+      isLoadingMore: false,
+      clearLoadMoreError: true,
     );
     try {
       final result = await _repo.getAdminConversations(
@@ -205,6 +219,8 @@ class AdminConversationsNotifier
         conversations: AsyncValue.data(conversations),
         currentPage: 1,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
       if (_conversationType == 'user_support') _refreshUnreadCount();
     } catch (e, st) {
@@ -214,9 +230,12 @@ class AdminConversationsNotifier
   }
 
   Future<void> loadMore() async {
-    if (!state.hasMore) return;
+    if (!state.hasMore || state.isLoadingMore || state.loadMoreError != null) {
+      return;
+    }
     final current = state.conversations.valueOrNull;
     if (current == null) return;
+    state = state.copyWith(isLoadingMore: true, clearLoadMoreError: true);
     try {
       final nextPage = state.currentPage + 1;
       final result = await _repo.getAdminConversations(
@@ -232,8 +251,22 @@ class AdminConversationsNotifier
         conversations: AsyncValue.data([...current, ...result.conversations]),
         currentPage: nextPage,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
-    } catch (_) {}
+    } catch (error) {
+      if (!mounted) return;
+      state = state.copyWith(
+        isLoadingMore: false,
+        loadMoreError: error,
+      );
+    }
+  }
+
+  Future<void> retryLoadMore() async {
+    if (state.isLoadingMore) return;
+    state = state.copyWith(clearLoadMoreError: true);
+    await loadMore();
   }
 
   Future<void> refresh() async => load();
@@ -343,6 +376,8 @@ class AdminReportsState {
   final AsyncValue<List<ConversationReport>> reports;
   final int currentPage;
   final bool hasMore;
+  final bool isLoadingMore;
+  final Object? loadMoreError;
   final String? searchQuery;
   final String?
       reasonFilter; // null=all, 'inappropriate','harassment','spam','other'
@@ -351,6 +386,8 @@ class AdminReportsState {
     this.reports = const AsyncValue.loading(),
     this.currentPage = 1,
     this.hasMore = false,
+    this.isLoadingMore = false,
+    this.loadMoreError,
     this.searchQuery,
     this.reasonFilter,
   });
@@ -359,6 +396,9 @@ class AdminReportsState {
     AsyncValue<List<ConversationReport>>? reports,
     int? currentPage,
     bool? hasMore,
+    bool? isLoadingMore,
+    Object? loadMoreError,
+    bool clearLoadMoreError = false,
     String? searchQuery,
     bool clearSearchQuery = false,
     String? reasonFilter,
@@ -368,6 +408,9 @@ class AdminReportsState {
       reports: reports ?? this.reports,
       currentPage: currentPage ?? this.currentPage,
       hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      loadMoreError:
+          clearLoadMoreError ? null : (loadMoreError ?? this.loadMoreError),
       searchQuery: clearSearchQuery ? null : (searchQuery ?? this.searchQuery),
       reasonFilter:
           clearReasonFilter ? null : (reasonFilter ?? this.reasonFilter),
@@ -387,6 +430,8 @@ class AdminReportsNotifier extends StateNotifier<AdminReportsState> {
       reports: const AsyncValue.loading(),
       currentPage: 1,
       hasMore: false,
+      isLoadingMore: false,
+      clearLoadMoreError: true,
     );
     try {
       final result = await _repo.getAdminConversationReports(
@@ -399,6 +444,8 @@ class AdminReportsNotifier extends StateNotifier<AdminReportsState> {
         reports: AsyncValue.data(result.reports),
         currentPage: 1,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
     } catch (e, st) {
       if (!mounted) return;
@@ -407,9 +454,12 @@ class AdminReportsNotifier extends StateNotifier<AdminReportsState> {
   }
 
   Future<void> loadMore() async {
-    if (!state.hasMore) return;
+    if (!state.hasMore || state.isLoadingMore || state.loadMoreError != null) {
+      return;
+    }
     final current = state.reports.valueOrNull;
     if (current == null) return;
+    state = state.copyWith(isLoadingMore: true, clearLoadMoreError: true);
     try {
       final nextPage = state.currentPage + 1;
       final result = await _repo.getAdminConversationReports(
@@ -422,8 +472,22 @@ class AdminReportsNotifier extends StateNotifier<AdminReportsState> {
         reports: AsyncValue.data([...current, ...result.reports]),
         currentPage: nextPage,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
-    } catch (_) {}
+    } catch (error) {
+      if (!mounted) return;
+      state = state.copyWith(
+        isLoadingMore: false,
+        loadMoreError: error,
+      );
+    }
+  }
+
+  Future<void> retryLoadMore() async {
+    if (state.isLoadingMore) return;
+    state = state.copyWith(clearLoadMoreError: true);
+    await loadMore();
   }
 
   Future<void> refresh() async => load();

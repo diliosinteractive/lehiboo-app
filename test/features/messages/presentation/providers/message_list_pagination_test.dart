@@ -1,0 +1,431 @@
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lehiboo/features/auth/domain/repositories/auth_repository.dart';
+import 'package:lehiboo/features/messages/data/repositories/messages_repository_impl.dart';
+import 'package:lehiboo/features/messages/domain/entities/broadcast.dart';
+import 'package:lehiboo/features/messages/domain/entities/conversation.dart';
+import 'package:lehiboo/features/messages/domain/entities/conversation_report.dart';
+import 'package:lehiboo/features/messages/domain/repositories/messages_repository.dart';
+import 'package:lehiboo/features/messages/presentation/providers/admin_conversations_provider.dart';
+import 'package:lehiboo/features/messages/presentation/providers/conversations_provider.dart';
+import 'package:lehiboo/features/messages/presentation/providers/support_conversations_provider.dart';
+import 'package:lehiboo/features/messages/presentation/providers/vendor_broadcasts_provider.dart';
+import 'package:lehiboo/features/messages/presentation/providers/vendor_conversations_provider.dart';
+import 'package:lehiboo/features/messages/presentation/providers/vendor_org_conversations_provider.dart';
+
+typedef _PaginationSnapshot = ({
+  int rows,
+  int page,
+  bool isLoading,
+  Object? error,
+});
+
+void main() {
+  late _FakeMessagesRepository repository;
+  late ProviderContainer container;
+
+  setUp(() {
+    repository = _FakeMessagesRepository();
+    container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(
+          _NeverCompletingAuthRepository(),
+        ),
+        messagesRepositoryProvider.overrideWithValue(repository),
+      ],
+    );
+  });
+
+  tearDown(() => container.dispose());
+
+  test('participant pagination preserves rows and requires explicit retry',
+      () async {
+    container.read(conversationsProvider);
+    await pumpEventQueue();
+    final notifier = container.read(conversationsProvider.notifier);
+
+    await _verifyFailureAndRetry(
+      repository: repository,
+      requestKey: 'participant',
+      loadMore: notifier.loadMore,
+      retry: notifier.retryLoadMore,
+      refresh: notifier.refresh,
+      snapshot: () {
+        final state = container.read(conversationsProvider);
+        return (
+          rows: state.conversations.valueOrNull?.length ?? 0,
+          page: state.currentPage,
+          isLoading: state.isLoadingMore,
+          error: state.loadMoreError,
+        );
+      },
+    );
+  });
+
+  test('support pagination preserves rows and requires explicit retry',
+      () async {
+    container.read(supportConversationsProvider);
+    await pumpEventQueue();
+    final notifier = container.read(supportConversationsProvider.notifier);
+
+    await _verifyFailureAndRetry(
+      repository: repository,
+      requestKey: 'support',
+      loadMore: notifier.loadMore,
+      retry: notifier.retryLoadMore,
+      refresh: notifier.refresh,
+      snapshot: () {
+        final state = container.read(supportConversationsProvider);
+        return (
+          rows: state.conversations.valueOrNull?.length ?? 0,
+          page: state.currentPage,
+          isLoading: state.isLoadingMore,
+          error: state.loadMoreError,
+        );
+      },
+    );
+  });
+
+  test('vendor client pagination preserves rows and requires explicit retry',
+      () async {
+    container.read(vendorConversationsProvider);
+    await pumpEventQueue();
+    final notifier = container.read(vendorConversationsProvider.notifier);
+
+    await _verifyFailureAndRetry(
+      repository: repository,
+      requestKey: 'vendor:participant_vendor',
+      loadMore: notifier.loadMore,
+      retry: notifier.retryLoadMore,
+      refresh: notifier.refresh,
+      snapshot: () {
+        final state = container.read(vendorConversationsProvider);
+        return (
+          rows: state.conversations.valueOrNull?.length ?? 0,
+          page: state.currentPage,
+          isLoading: state.isLoadingMore,
+          error: state.loadMoreError,
+        );
+      },
+    );
+  });
+
+  test('vendor support pagination preserves rows and requires explicit retry',
+      () async {
+    container.read(vendorSupportProvider);
+    await pumpEventQueue();
+    final notifier = container.read(vendorSupportProvider.notifier);
+
+    await _verifyFailureAndRetry(
+      repository: repository,
+      requestKey: 'vendor:vendor_admin',
+      loadMore: notifier.loadMore,
+      retry: notifier.retryLoadMore,
+      refresh: notifier.refresh,
+      snapshot: () {
+        final state = container.read(vendorSupportProvider);
+        return (
+          rows: state.conversations.valueOrNull?.length ?? 0,
+          page: state.currentPage,
+          isLoading: state.isLoadingMore,
+          error: state.loadMoreError,
+        );
+      },
+    );
+  });
+
+  test('vendor partner pagination preserves rows and requires explicit retry',
+      () async {
+    container.read(vendorOrgConversationsProvider);
+    await pumpEventQueue();
+    final notifier = container.read(vendorOrgConversationsProvider.notifier);
+
+    await _verifyFailureAndRetry(
+      repository: repository,
+      requestKey: 'vendor:organization',
+      loadMore: notifier.loadMore,
+      retry: notifier.retryLoadMore,
+      refresh: notifier.refresh,
+      snapshot: () {
+        final state = container.read(vendorOrgConversationsProvider);
+        return (
+          rows: state.conversations.valueOrNull?.length ?? 0,
+          page: state.currentPage,
+          isLoading: state.isLoadingMore,
+          error: state.loadMoreError,
+        );
+      },
+    );
+  });
+
+  test('admin pagination preserves rows and requires explicit retry', () async {
+    final provider = adminConversationsProvider('user_support');
+    container.read(provider);
+    await pumpEventQueue();
+    final notifier = container.read(provider.notifier);
+
+    await _verifyFailureAndRetry(
+      repository: repository,
+      requestKey: 'admin:user_support',
+      loadMore: notifier.loadMore,
+      retry: notifier.retryLoadMore,
+      refresh: notifier.refresh,
+      snapshot: () {
+        final state = container.read(provider);
+        return (
+          rows: state.conversations.valueOrNull?.length ?? 0,
+          page: state.currentPage,
+          isLoading: state.isLoadingMore,
+          error: state.loadMoreError,
+        );
+      },
+    );
+  });
+
+  test('broadcast pagination preserves rows and requires explicit retry',
+      () async {
+    container.read(vendorBroadcastsProvider);
+    await pumpEventQueue();
+    final notifier = container.read(vendorBroadcastsProvider.notifier);
+
+    await _verifyFailureAndRetry(
+      repository: repository,
+      requestKey: 'broadcasts',
+      loadMore: notifier.loadMore,
+      retry: notifier.retryLoadMore,
+      refresh: notifier.refresh,
+      snapshot: () {
+        final state = container.read(vendorBroadcastsProvider);
+        return (
+          rows: state.broadcasts.valueOrNull?.length ?? 0,
+          page: state.currentPage,
+          isLoading: state.isLoadingMore,
+          error: state.loadMoreError,
+        );
+      },
+    );
+  });
+
+  test('report pagination preserves rows and requires explicit retry',
+      () async {
+    container.read(adminReportsProvider);
+    await pumpEventQueue();
+    final notifier = container.read(adminReportsProvider.notifier);
+
+    await _verifyFailureAndRetry(
+      repository: repository,
+      requestKey: 'reports',
+      loadMore: notifier.loadMore,
+      retry: notifier.retryLoadMore,
+      refresh: notifier.refresh,
+      snapshot: () {
+        final state = container.read(adminReportsProvider);
+        return (
+          rows: state.reports.valueOrNull?.length ?? 0,
+          page: state.currentPage,
+          isLoading: state.isLoadingMore,
+          error: state.loadMoreError,
+        );
+      },
+    );
+  });
+}
+
+Future<void> _verifyFailureAndRetry({
+  required _FakeMessagesRepository repository,
+  required String requestKey,
+  required Future<void> Function() loadMore,
+  required Future<void> Function() retry,
+  required Future<void> Function() refresh,
+  required _PaginationSnapshot Function() snapshot,
+}) async {
+  expect(snapshot(), (rows: 1, page: 1, isLoading: false, error: null));
+
+  await loadMore();
+  final failed = snapshot();
+  expect(failed.rows, 1);
+  expect(failed.page, 1);
+  expect(failed.isLoading, isFalse);
+  expect(failed.error, isA<StateError>());
+  expect(repository.pageTwoCalls(requestKey), 1);
+
+  await loadMore();
+  expect(repository.pageTwoCalls(requestKey), 1,
+      reason: 'scroll-triggered loadMore must remain blocked after failure');
+
+  await refresh();
+  expect(snapshot(), (rows: 1, page: 1, isLoading: false, error: null),
+      reason: 'a successful first-page refresh must clear the stale footer');
+
+  await loadMore();
+  expect(snapshot().error, isA<StateError>());
+  expect(repository.pageTwoCalls(requestKey), 2);
+
+  repository.allowPageTwo(requestKey);
+  await retry();
+  expect(snapshot(), (rows: 2, page: 2, isLoading: false, error: null));
+  expect(repository.pageTwoCalls(requestKey), 3);
+}
+
+class _NeverCompletingAuthRepository implements AuthRepository {
+  final Completer<bool> _authenticated = Completer<bool>();
+
+  @override
+  Future<bool> isAuthenticated() => _authenticated.future;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeMessagesRepository implements MessagesRepository {
+  final Map<String, int> _pageTwoCalls = {};
+  final Set<String> _allowedPageTwo = {};
+
+  int pageTwoCalls(String key) => _pageTwoCalls[key] ?? 0;
+
+  void allowPageTwo(String key) => _allowedPageTwo.add(key);
+
+  void _failPageTwoWhenRequired(String key, int page) {
+    if (page != 2) return;
+    _pageTwoCalls[key] = (_pageTwoCalls[key] ?? 0) + 1;
+    if (!_allowedPageTwo.contains(key)) {
+      throw StateError('technical pagination failure for $key');
+    }
+  }
+
+  ConversationsListResult _conversations(String key, int page) {
+    _failPageTwoWhenRequired(key, page);
+    return ConversationsListResult(
+      conversations: [_conversation('$key-$page')],
+      hasMore: page == 1,
+      currentPage: page,
+      totalCount: 2,
+    );
+  }
+
+  @override
+  Future<ConversationsListResult> getConversations({
+    String? status,
+    bool? unreadOnly,
+    String? search,
+    String? period,
+    int page = 1,
+    int perPage = 15,
+  }) async =>
+      _conversations('participant', page);
+
+  @override
+  Future<ConversationsListResult> getSupportConversations({
+    int page = 1,
+    int perPage = 15,
+    String? status,
+    bool? unreadOnly,
+    String? search,
+    String? period,
+  }) async =>
+      _conversations('support', page);
+
+  @override
+  Future<ConversationsListResult> getVendorConversations({
+    String? conversationType,
+    String? status,
+    bool? unreadOnly,
+    String? search,
+    String? period,
+    int page = 1,
+    int perPage = 15,
+  }) async =>
+      _conversations('vendor:$conversationType', page);
+
+  @override
+  Future<ConversationsListResult> getOrgConversations({
+    String? status,
+    bool? unreadOnly,
+    String? search,
+    String? period,
+    int page = 1,
+    int perPage = 15,
+  }) async =>
+      _conversations('vendor:organization', page);
+
+  @override
+  Future<ConversationsListResult> getAdminConversations({
+    String? conversationType,
+    String? status,
+    bool? unreadOnly,
+    String? search,
+    String? period,
+    int page = 1,
+    int perPage = 15,
+  }) async =>
+      _conversations('admin:$conversationType', page);
+
+  @override
+  Future<BroadcastsListResult> getBroadcasts({
+    String? search,
+    String? period,
+    int page = 1,
+    int perPage = 15,
+  }) async {
+    _failPageTwoWhenRequired('broadcasts', page);
+    return BroadcastsListResult(
+      broadcasts: [_broadcast('broadcast-$page')],
+      hasMore: page == 1,
+      currentPage: page,
+      totalCount: 2,
+    );
+  }
+
+  @override
+  Future<ConversationReportsListResult> getAdminConversationReports({
+    String? search,
+    String? reason,
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    _failPageTwoWhenRequired('reports', page);
+    return ConversationReportsListResult(
+      reports: [_report('report-$page')],
+      hasMore: page == 1,
+      currentPage: page,
+      totalCount: 2,
+    );
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+Conversation _conversation(String uuid) => Conversation(
+      uuid: uuid,
+      subject: uuid,
+      status: 'open',
+      conversationType: 'participant_vendor',
+      unreadCount: 0,
+      isSignalement: false,
+      userHasReported: false,
+      messages: const [],
+      createdAt: DateTime(2026, 7, 31),
+      updatedAt: DateTime(2026, 7, 31),
+    );
+
+Broadcast _broadcast(String uuid) => Broadcast(
+      uuid: uuid,
+      subject: uuid,
+      body: 'Body',
+      recipientsCount: 1,
+      readCount: 0,
+      conversationsCreated: 0,
+      isSent: true,
+      events: const [],
+      createdAt: DateTime(2026, 7, 31),
+    );
+
+ConversationReport _report(String uuid) => ConversationReport(
+      uuid: uuid,
+      reason: 'spam',
+      status: 'pending',
+      createdAt: DateTime(2026, 7, 31),
+    );

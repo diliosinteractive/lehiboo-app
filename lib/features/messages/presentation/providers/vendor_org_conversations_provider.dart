@@ -10,6 +10,8 @@ class VendorOrgConversationsState {
   final AsyncValue<List<Conversation>> conversations;
   final int currentPage;
   final bool hasMore;
+  final bool isLoadingMore;
+  final Object? loadMoreError;
   final String? statusFilter;
   final bool unreadOnly;
   final String? searchQuery;
@@ -19,6 +21,8 @@ class VendorOrgConversationsState {
     this.conversations = const AsyncValue.loading(),
     this.currentPage = 1,
     this.hasMore = false,
+    this.isLoadingMore = false,
+    this.loadMoreError,
     this.statusFilter,
     this.unreadOnly = false,
     this.searchQuery,
@@ -29,6 +33,9 @@ class VendorOrgConversationsState {
     AsyncValue<List<Conversation>>? conversations,
     int? currentPage,
     bool? hasMore,
+    bool? isLoadingMore,
+    Object? loadMoreError,
+    bool clearLoadMoreError = false,
     String? statusFilter,
     bool clearStatusFilter = false,
     bool? unreadOnly,
@@ -41,11 +48,13 @@ class VendorOrgConversationsState {
       conversations: conversations ?? this.conversations,
       currentPage: currentPage ?? this.currentPage,
       hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      loadMoreError:
+          clearLoadMoreError ? null : (loadMoreError ?? this.loadMoreError),
       statusFilter:
           clearStatusFilter ? null : (statusFilter ?? this.statusFilter),
       unreadOnly: unreadOnly ?? this.unreadOnly,
-      searchQuery:
-          clearSearchQuery ? null : (searchQuery ?? this.searchQuery),
+      searchQuery: clearSearchQuery ? null : (searchQuery ?? this.searchQuery),
       period: clearPeriod ? null : (period ?? this.period),
     );
   }
@@ -64,10 +73,8 @@ class VendorOrgConversationsNotifier
   }
 
   void _subscribeToRealtime() {
-    _realtimeSub = _ref
-        .read(messagesRealtimeProvider.notifier)
-        .events
-        .listen((event) {
+    _realtimeSub =
+        _ref.read(messagesRealtimeProvider.notifier).events.listen((event) {
       if (!mounted) return;
       final type = event.conversationType;
       // messageReceived: validate by UUID in _applyNewMessage — not by type.
@@ -112,8 +119,10 @@ class VendorOrgConversationsNotifier
     }
     final idx = current.indexWhere((c) => c.uuid == uuid);
     if (idx == -1) return; // not in this list — skip silently
-    dev.log('[VendorOrg] applyNewMessage: conv=$uuid unread ${current[idx].unreadCount}→${current[idx].unreadCount + 1}');
-    final updated = current[idx].copyWith(unreadCount: current[idx].unreadCount + 1);
+    dev.log(
+        '[VendorOrg] applyNewMessage: conv=$uuid unread ${current[idx].unreadCount}→${current[idx].unreadCount + 1}');
+    final updated =
+        current[idx].copyWith(unreadCount: current[idx].unreadCount + 1);
     final list = [...current];
     list.removeAt(idx);
     list.insert(0, updated);
@@ -135,6 +144,8 @@ class VendorOrgConversationsNotifier
         conversations: AsyncValue.data(result.conversations),
         currentPage: 1,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
     } catch (_) {}
   }
@@ -156,6 +167,8 @@ class VendorOrgConversationsNotifier
       conversations: const AsyncValue.loading(),
       currentPage: 1,
       hasMore: false,
+      isLoadingMore: false,
+      clearLoadMoreError: true,
     );
     try {
       final result = await _repo.getOrgConversations(
@@ -171,6 +184,8 @@ class VendorOrgConversationsNotifier
         conversations: AsyncValue.data(conversations),
         currentPage: 1,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
       // Ensure org channel subscription even if vendorConversationsProvider
       // hasn't loaded yet (e.g. vendor opens org tab first).
@@ -178,7 +193,9 @@ class VendorOrgConversationsNotifier
           .map((c) => c.organization?.id)
           .firstWhere((id) => id != null && id > 0, orElse: () => null);
       if (orgId != null) {
-        _ref.read(messagesRealtimeProvider.notifier).subscribeToOrganization(orgId);
+        _ref
+            .read(messagesRealtimeProvider.notifier)
+            .subscribeToOrganization(orgId);
       }
     } catch (e, st) {
       if (!mounted) return;
@@ -187,9 +204,12 @@ class VendorOrgConversationsNotifier
   }
 
   Future<void> loadMore() async {
-    if (!state.hasMore) return;
+    if (!state.hasMore || state.isLoadingMore || state.loadMoreError != null) {
+      return;
+    }
     final current = state.conversations.valueOrNull;
     if (current == null) return;
+    state = state.copyWith(isLoadingMore: true, clearLoadMoreError: true);
     try {
       final nextPage = state.currentPage + 1;
       final result = await _repo.getOrgConversations(
@@ -204,8 +224,22 @@ class VendorOrgConversationsNotifier
         conversations: AsyncValue.data([...current, ...result.conversations]),
         currentPage: nextPage,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
-    } catch (_) {}
+    } catch (error) {
+      if (!mounted) return;
+      state = state.copyWith(
+        isLoadingMore: false,
+        loadMoreError: error,
+      );
+    }
+  }
+
+  Future<void> retryLoadMore() async {
+    if (state.isLoadingMore) return;
+    state = state.copyWith(clearLoadMoreError: true);
+    await loadMore();
   }
 
   Future<void> refresh() async => load();

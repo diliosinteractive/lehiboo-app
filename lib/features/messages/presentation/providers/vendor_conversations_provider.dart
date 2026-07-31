@@ -16,6 +16,8 @@ class VendorConversationsState {
   final AsyncValue<List<Conversation>> conversations;
   final int currentPage;
   final bool hasMore;
+  final bool isLoadingMore;
+  final Object? loadMoreError;
   final String? statusFilter;
   final bool unreadOnly;
   final String? searchQuery;
@@ -25,6 +27,8 @@ class VendorConversationsState {
     this.conversations = const AsyncValue.loading(),
     this.currentPage = 1,
     this.hasMore = false,
+    this.isLoadingMore = false,
+    this.loadMoreError,
     this.statusFilter,
     this.unreadOnly = false,
     this.searchQuery,
@@ -35,6 +39,9 @@ class VendorConversationsState {
     AsyncValue<List<Conversation>>? conversations,
     int? currentPage,
     bool? hasMore,
+    bool? isLoadingMore,
+    Object? loadMoreError,
+    bool clearLoadMoreError = false,
     String? statusFilter,
     bool clearStatusFilter = false,
     bool? unreadOnly,
@@ -47,6 +54,9 @@ class VendorConversationsState {
       conversations: conversations ?? this.conversations,
       currentPage: currentPage ?? this.currentPage,
       hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      loadMoreError:
+          clearLoadMoreError ? null : (loadMoreError ?? this.loadMoreError),
       statusFilter:
           clearStatusFilter ? null : (statusFilter ?? this.statusFilter),
       unreadOnly: unreadOnly ?? this.unreadOnly,
@@ -60,22 +70,32 @@ class VendorSupportState {
   final AsyncValue<List<Conversation>> conversations;
   final int currentPage;
   final bool hasMore;
+  final bool isLoadingMore;
+  final Object? loadMoreError;
 
   const VendorSupportState({
     this.conversations = const AsyncValue.loading(),
     this.currentPage = 1,
     this.hasMore = false,
+    this.isLoadingMore = false,
+    this.loadMoreError,
   });
 
   VendorSupportState copyWith({
     AsyncValue<List<Conversation>>? conversations,
     int? currentPage,
     bool? hasMore,
+    bool? isLoadingMore,
+    Object? loadMoreError,
+    bool clearLoadMoreError = false,
   }) {
     return VendorSupportState(
       conversations: conversations ?? this.conversations,
       currentPage: currentPage ?? this.currentPage,
       hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      loadMoreError:
+          clearLoadMoreError ? null : (loadMoreError ?? this.loadMoreError),
     );
   }
 }
@@ -201,6 +221,8 @@ class VendorConversationsNotifier
       conversations: const AsyncValue.loading(),
       currentPage: 1,
       hasMore: false,
+      isLoadingMore: false,
+      clearLoadMoreError: true,
     );
     try {
       final result = await _repo.getVendorConversations(
@@ -217,6 +239,8 @@ class VendorConversationsNotifier
         conversations: AsyncValue.data(conversations),
         currentPage: 1,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
       _refreshUnreadCount();
       // Subscribe to the vendor's org channel for real-time updates.
@@ -236,9 +260,12 @@ class VendorConversationsNotifier
   }
 
   Future<void> loadMore() async {
-    if (!state.hasMore) return;
+    if (!state.hasMore || state.isLoadingMore || state.loadMoreError != null) {
+      return;
+    }
     final current = state.conversations.valueOrNull;
     if (current == null) return;
+    state = state.copyWith(isLoadingMore: true, clearLoadMoreError: true);
     try {
       final nextPage = state.currentPage + 1;
       final result = await _repo.getVendorConversations(
@@ -254,8 +281,22 @@ class VendorConversationsNotifier
         conversations: AsyncValue.data([...current, ...result.conversations]),
         currentPage: nextPage,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
-    } catch (_) {}
+    } catch (error) {
+      if (!mounted) return;
+      state = state.copyWith(
+        isLoadingMore: false,
+        loadMoreError: error,
+      );
+    }
+  }
+
+  Future<void> retryLoadMore() async {
+    if (state.isLoadingMore) return;
+    state = state.copyWith(clearLoadMoreError: true);
+    await loadMore();
   }
 
   Future<void> refresh() async => load();
@@ -276,6 +317,8 @@ class VendorConversationsNotifier
         conversations: AsyncValue.data(conversations),
         currentPage: 1,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
       _refreshUnreadCount();
     } catch (_) {}
@@ -476,6 +519,8 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
         conversations: AsyncValue.data(conversations),
         currentPage: 1,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
     } catch (_) {}
   }
@@ -497,6 +542,8 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
       conversations: const AsyncValue.loading(),
       currentPage: 1,
       hasMore: false,
+      isLoadingMore: false,
+      clearLoadMoreError: true,
     );
     try {
       final result = await _repo.getVendorConversations(
@@ -509,6 +556,8 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
         conversations: AsyncValue.data(conversations),
         currentPage: 1,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
     } catch (e, st) {
       if (!mounted) return;
@@ -517,9 +566,12 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
   }
 
   Future<void> loadMore() async {
-    if (!state.hasMore) return;
+    if (!state.hasMore || state.isLoadingMore || state.loadMoreError != null) {
+      return;
+    }
     final current = state.conversations.valueOrNull;
     if (current == null) return;
+    state = state.copyWith(isLoadingMore: true, clearLoadMoreError: true);
     try {
       final nextPage = state.currentPage + 1;
       final result = await _repo.getVendorConversations(
@@ -531,8 +583,22 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
         conversations: AsyncValue.data([...current, ...result.conversations]),
         currentPage: nextPage,
         hasMore: result.hasMore,
+        isLoadingMore: false,
+        clearLoadMoreError: true,
       );
-    } catch (_) {}
+    } catch (error) {
+      if (!mounted) return;
+      state = state.copyWith(
+        isLoadingMore: false,
+        loadMoreError: error,
+      );
+    }
+  }
+
+  Future<void> retryLoadMore() async {
+    if (state.isLoadingMore) return;
+    state = state.copyWith(clearLoadMoreError: true);
+    await loadMore();
   }
 
   Future<void> refresh() async => load();

@@ -178,8 +178,10 @@ class _AdminNewConversationScreenState
       if (mounted) {
         setState(() {
           _submitting = false;
-          _error = context.l10n
-              .messagesLoadError(ApiResponseHandler.extractError(e));
+          _error = ApiResponseHandler.extractError(
+            e,
+            fallback: context.l10n.messagesConversationCreateFailed,
+          );
         });
       }
     }
@@ -443,6 +445,9 @@ class _UserSearchSheetState extends State<_UserSearchSheet> {
   List<_AdminUser> _results = [];
   bool _loading = false;
   bool _searched = false;
+  String? _searchError;
+  String _lastQuery = '';
+  int _requestId = 0;
 
   @override
   void initState() {
@@ -458,18 +463,32 @@ class _UserSearchSheetState extends State<_UserSearchSheet> {
   }
 
   Future<void> _loadInitial() async {
-    setState(() => _loading = true);
+    final requestId = ++_requestId;
+    _lastQuery = '';
+    setState(() {
+      _loading = true;
+      _searchError = null;
+    });
     try {
       final raw = await widget.datasource.searchAdminUsers(search: '');
-      if (!mounted) return;
+      if (!mounted || requestId != _requestId) return;
       setState(() {
         _results = raw.map(_AdminUser.fromJson).toList();
         _loading = false;
         _searched = true;
+        _searchError = null;
       });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _loading = false);
+    } catch (error) {
+      if (!mounted || requestId != _requestId) return;
+      final message = ApiResponseHandler.extractError(
+        error,
+        fallback: context.l10n.messagesRecipientSearchFailed,
+      );
+      setState(() {
+        _loading = false;
+        _searchError = message;
+      });
+      if (_results.isNotEmpty) _showSearchError(context, message, _loadInitial);
     }
   }
 
@@ -479,7 +498,6 @@ class _UserSearchSheetState extends State<_UserSearchSheet> {
       _loadInitial();
       return;
     }
-    setState(() => _loading = true);
     _debounce = Timer(
       const Duration(milliseconds: 300),
       () => _search(value.trim()),
@@ -487,20 +505,34 @@ class _UserSearchSheetState extends State<_UserSearchSheet> {
   }
 
   Future<void> _search(String query) async {
+    final requestId = ++_requestId;
+    _lastQuery = query;
+    setState(() {
+      _loading = true;
+      _searchError = null;
+    });
     try {
       final raw = await widget.datasource.searchAdminUsers(search: query);
-      if (!mounted) return;
+      if (!mounted || requestId != _requestId) return;
       setState(() {
         _results = raw.map(_AdminUser.fromJson).toList();
         _loading = false;
         _searched = true;
+        _searchError = null;
       });
-    } catch (_) {
-      if (!mounted) return;
+    } catch (error) {
+      if (!mounted || requestId != _requestId) return;
+      final message = ApiResponseHandler.extractError(
+        error,
+        fallback: context.l10n.messagesRecipientSearchFailed,
+      );
       setState(() {
         _loading = false;
-        _searched = true;
+        _searchError = message;
       });
+      if (_results.isNotEmpty) {
+        _showSearchError(context, message, () => _search(_lastQuery));
+      }
     }
   }
 
@@ -528,50 +560,60 @@ class _UserSearchSheetState extends State<_UserSearchSheet> {
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
-                : _results.isEmpty
+                : _searchError != null && _results.isEmpty
                     ? _emptyState(
-                        icon: Icons.person_search,
-                        label: !_searched
-                            ? context.l10n.commonLoading
-                            : context.l10n.messagesNoResults,
+                        icon: Icons.cloud_off_outlined,
+                        label: _searchError!,
+                        onRetry: () => _search(_lastQuery),
+                        retryLabel: context.l10n.commonRetry,
                       )
-                    : ListView.builder(
-                        controller: scrollCtrl,
-                        itemCount: _results.length,
-                        itemBuilder: (ctx, i) {
-                          final user = _results[i];
-                          final hasUrl = user.avatarUrl != null &&
-                              user.avatarUrl!.isNotEmpty;
-                          final initial = user.name.isNotEmpty
-                              ? user.name[0].toUpperCase()
-                              : '?';
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor:
-                                  _primaryColor.withValues(alpha: 0.1),
-                              backgroundImage: hasUrl
-                                  ? CachedNetworkImageProvider(user.avatarUrl!)
-                                  : null,
-                              child: hasUrl
-                                  ? null
-                                  : Text(initial,
-                                      style: const TextStyle(
-                                          color: _primaryColor,
-                                          fontWeight: FontWeight.bold)),
-                            ),
-                            title: Text(user.name,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w500)),
-                            subtitle: Text(user.email,
-                                style: TextStyle(
-                                    fontSize: 12, color: Colors.grey.shade600)),
-                            trailing: Text('#${user.id}',
-                                style: TextStyle(
-                                    fontSize: 11, color: Colors.grey.shade400)),
-                            onTap: () => Navigator.pop(ctx, user),
-                          );
-                        },
-                      ),
+                    : _results.isEmpty
+                        ? _emptyState(
+                            icon: Icons.person_search,
+                            label: !_searched
+                                ? context.l10n.commonLoading
+                                : context.l10n.messagesNoResults,
+                          )
+                        : ListView.builder(
+                            controller: scrollCtrl,
+                            itemCount: _results.length,
+                            itemBuilder: (ctx, i) {
+                              final user = _results[i];
+                              final hasUrl = user.avatarUrl != null &&
+                                  user.avatarUrl!.isNotEmpty;
+                              final initial = user.name.isNotEmpty
+                                  ? user.name[0].toUpperCase()
+                                  : '?';
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor:
+                                      _primaryColor.withValues(alpha: 0.1),
+                                  backgroundImage: hasUrl
+                                      ? CachedNetworkImageProvider(
+                                          user.avatarUrl!)
+                                      : null,
+                                  child: hasUrl
+                                      ? null
+                                      : Text(initial,
+                                          style: const TextStyle(
+                                              color: _primaryColor,
+                                              fontWeight: FontWeight.bold)),
+                                ),
+                                title: Text(user.name,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w500)),
+                                subtitle: Text(user.email,
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600)),
+                                trailing: Text('#${user.id}',
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey.shade400)),
+                                onTap: () => Navigator.pop(ctx, user),
+                              );
+                            },
+                          ),
           ),
         ],
       ),
@@ -600,6 +642,9 @@ class _OrgSearchSheetState extends State<_OrgSearchSheet> {
   List<_AdminOrg> _results = [];
   bool _loading = false;
   bool _searched = false;
+  String? _searchError;
+  String _lastQuery = '';
+  int _requestId = 0;
 
   @override
   void initState() {
@@ -615,18 +660,32 @@ class _OrgSearchSheetState extends State<_OrgSearchSheet> {
   }
 
   Future<void> _loadInitial() async {
-    setState(() => _loading = true);
+    final requestId = ++_requestId;
+    _lastQuery = '';
+    setState(() {
+      _loading = true;
+      _searchError = null;
+    });
     try {
       final raw = await widget.datasource.searchAdminOrganizations(search: '');
-      if (!mounted) return;
+      if (!mounted || requestId != _requestId) return;
       setState(() {
         _results = raw.map(_AdminOrg.fromJson).toList();
         _loading = false;
         _searched = true;
+        _searchError = null;
       });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _loading = false);
+    } catch (error) {
+      if (!mounted || requestId != _requestId) return;
+      final message = ApiResponseHandler.extractError(
+        error,
+        fallback: context.l10n.messagesRecipientSearchFailed,
+      );
+      setState(() {
+        _loading = false;
+        _searchError = message;
+      });
+      if (_results.isNotEmpty) _showSearchError(context, message, _loadInitial);
     }
   }
 
@@ -636,7 +695,6 @@ class _OrgSearchSheetState extends State<_OrgSearchSheet> {
       _loadInitial();
       return;
     }
-    setState(() => _loading = true);
     _debounce = Timer(
       const Duration(milliseconds: 300),
       () => _search(value.trim()),
@@ -644,21 +702,35 @@ class _OrgSearchSheetState extends State<_OrgSearchSheet> {
   }
 
   Future<void> _search(String query) async {
+    final requestId = ++_requestId;
+    _lastQuery = query;
+    setState(() {
+      _loading = true;
+      _searchError = null;
+    });
     try {
       final raw =
           await widget.datasource.searchAdminOrganizations(search: query);
-      if (!mounted) return;
+      if (!mounted || requestId != _requestId) return;
       setState(() {
         _results = raw.map(_AdminOrg.fromJson).toList();
         _loading = false;
         _searched = true;
+        _searchError = null;
       });
-    } catch (_) {
-      if (!mounted) return;
+    } catch (error) {
+      if (!mounted || requestId != _requestId) return;
+      final message = ApiResponseHandler.extractError(
+        error,
+        fallback: context.l10n.messagesRecipientSearchFailed,
+      );
       setState(() {
         _loading = false;
-        _searched = true;
+        _searchError = message;
       });
+      if (_results.isNotEmpty) {
+        _showSearchError(context, message, () => _search(_lastQuery));
+      }
     }
   }
 
@@ -686,47 +758,55 @@ class _OrgSearchSheetState extends State<_OrgSearchSheet> {
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
-                : _results.isEmpty
+                : _searchError != null && _results.isEmpty
                     ? _emptyState(
-                        icon: Icons.business_outlined,
-                        label: !_searched
-                            ? context.l10n.commonLoading
-                            : context.l10n.messagesNoResults,
+                        icon: Icons.cloud_off_outlined,
+                        label: _searchError!,
+                        onRetry: () => _search(_lastQuery),
+                        retryLabel: context.l10n.commonRetry,
                       )
-                    : ListView.builder(
-                        controller: scrollCtrl,
-                        itemCount: _results.length,
-                        itemBuilder: (ctx, i) {
-                          final org = _results[i];
-                          final url = org.logoUrl;
-                          final hasUrl = url != null && url.isNotEmpty;
-                          final initial = org.name.isNotEmpty
-                              ? org.name[0].toUpperCase()
-                              : '?';
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor:
-                                  _primaryColor.withValues(alpha: 0.1),
-                              backgroundImage: hasUrl
-                                  ? CachedNetworkImageProvider(url)
-                                  : null,
-                              child: hasUrl
-                                  ? null
-                                  : Text(initial,
-                                      style: const TextStyle(
-                                          color: _primaryColor,
-                                          fontWeight: FontWeight.bold)),
-                            ),
-                            title: Text(org.name,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w500)),
-                            trailing: Text('#${org.id}',
-                                style: TextStyle(
-                                    fontSize: 11, color: Colors.grey.shade400)),
-                            onTap: () => Navigator.pop(ctx, org),
-                          );
-                        },
-                      ),
+                    : _results.isEmpty
+                        ? _emptyState(
+                            icon: Icons.business_outlined,
+                            label: !_searched
+                                ? context.l10n.commonLoading
+                                : context.l10n.messagesNoResults,
+                          )
+                        : ListView.builder(
+                            controller: scrollCtrl,
+                            itemCount: _results.length,
+                            itemBuilder: (ctx, i) {
+                              final org = _results[i];
+                              final url = org.logoUrl;
+                              final hasUrl = url != null && url.isNotEmpty;
+                              final initial = org.name.isNotEmpty
+                                  ? org.name[0].toUpperCase()
+                                  : '?';
+                              return ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor:
+                                      _primaryColor.withValues(alpha: 0.1),
+                                  backgroundImage: hasUrl
+                                      ? CachedNetworkImageProvider(url)
+                                      : null,
+                                  child: hasUrl
+                                      ? null
+                                      : Text(initial,
+                                          style: const TextStyle(
+                                              color: _primaryColor,
+                                              fontWeight: FontWeight.bold)),
+                                ),
+                                title: Text(org.name,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w500)),
+                                trailing: Text('#${org.id}',
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey.shade400)),
+                                onTap: () => Navigator.pop(ctx, org),
+                              );
+                            },
+                          ),
           ),
         ],
       ),
@@ -777,14 +857,47 @@ Widget _searchField(
   );
 }
 
-Widget _emptyState({required IconData icon, required String label}) => Center(
+void _showSearchError(
+  BuildContext context,
+  String message,
+  VoidCallback onRetry,
+) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(message),
+        action: SnackBarAction(
+          label: context.l10n.commonRetry,
+          onPressed: onRetry,
+        ),
+      ),
+    );
+}
+
+Widget _emptyState({
+  required IconData icon,
+  required String label,
+  VoidCallback? onRetry,
+  String? retryLabel,
+}) =>
+    Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 52, color: Colors.grey.shade300),
           const SizedBox(height: 12),
           Text(label,
+              textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey.shade500, fontSize: 14)),
+          if (onRetry != null) ...[
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: Text(retryLabel!),
+            ),
+          ],
         ],
       ),
     );

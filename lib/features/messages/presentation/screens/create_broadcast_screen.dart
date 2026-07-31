@@ -111,7 +111,10 @@ class _CreateBroadcastScreenState extends ConsumerState<CreateBroadcastScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _previewError = ApiResponseHandler.extractError(e);
+        _previewError = ApiResponseHandler.extractError(
+          e,
+          fallback: context.l10n.messagesBroadcastRecipientsPreviewError,
+        );
         _loadingPreview = false;
       });
     }
@@ -141,7 +144,10 @@ class _CreateBroadcastScreenState extends ConsumerState<CreateBroadcastScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            context.l10n.messagesLoadError(ApiResponseHandler.extractError(e)),
+            ApiResponseHandler.extractError(
+              e,
+              fallback: context.l10n.messagesBroadcastSendFailed,
+            ),
           ),
           backgroundColor: Colors.red,
         ),
@@ -384,8 +390,9 @@ class _RecipientsStep extends ConsumerWidget {
               onTap: null,
             ),
             error: (e, _) => Text(
-                context.l10n.messagesLoadError(
-                  ApiResponseHandler.extractError(e),
+                ApiResponseHandler.extractError(
+                  e,
+                  fallback: context.l10n.messagesBroadcastEventsLoadFailed,
                 ),
                 style: const TextStyle(color: Colors.red)),
             data: (events) => _SelectorField(
@@ -416,8 +423,9 @@ class _RecipientsStep extends ConsumerWidget {
                     onTap: null,
                   ),
                   error: (e, _) => Text(
-                      context.l10n.messagesLoadError(
-                        ApiResponseHandler.extractError(e),
+                      ApiResponseHandler.extractError(
+                        e,
+                        fallback: context.l10n.messagesBroadcastSlotsLoadFailed,
                       ),
                       style: const TextStyle(color: Colors.red)),
                   data: (slots) => _SlotSelector(
@@ -451,7 +459,7 @@ class _RecipientsStep extends ConsumerWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      context.l10n.messagesBroadcastRecipientsPreviewError,
+                      previewError!,
                       style: TextStyle(
                           fontSize: 13, color: Colors.orange.shade700),
                     ),
