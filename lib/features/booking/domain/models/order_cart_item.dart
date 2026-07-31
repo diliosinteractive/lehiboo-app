@@ -75,6 +75,11 @@ class OrderCartItem extends Equatable {
           'all_inclusive_price': ticket.allInclusivePrice,
           'platform_fee': ticket.platformFee,
           'description': ticket.description,
+          'min_per_order': ticket.minPerBooking,
+          'max_per_order': ticket.maxPerBooking,
+          'remaining_places': ticket.remainingPlaces,
+          'is_available': ticket.isAvailable,
+          'is_sold_out': ticket.isSoldOut,
         },
         'quantity': quantity,
       };
@@ -112,16 +117,11 @@ class OrderCartItem extends Equatable {
                 spotsRemaining: slotJson['spots_remaining'] as int?,
                 totalCapacity: slotJson['total_capacity'] as int?,
               ),
-        ticket: Ticket(
-          id: ticketJson['id']?.toString() ?? '',
-          name: ticketJson['name']?.toString() ??
+        ticket: Ticket.fromJson({
+          ...ticketJson,
+          'name': ticketJson['name']?.toString() ??
               cachedAppLocalizations().bookingTicketFallback,
-          price: (ticketJson['price'] as num?)?.toDouble() ?? 0,
-          allInclusivePrice:
-              (ticketJson['all_inclusive_price'] as num?)?.toDouble(),
-          platformFee: (ticketJson['platform_fee'] as num?)?.toDouble(),
-          description: ticketJson['description']?.toString(),
-        ),
+        }),
         quantity: (json['quantity'] as num?)?.toInt() ?? 0,
       );
     } catch (_) {

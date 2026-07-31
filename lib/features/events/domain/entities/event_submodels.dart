@@ -14,6 +14,8 @@ class Ticket extends Equatable {
   final int? minPerBooking;
   final int? maxPerBooking;
   final int? remainingPlaces;
+  final bool isAvailable;
+  final bool isSoldOut;
 
   const Ticket({
     required this.id,
@@ -26,6 +28,8 @@ class Ticket extends Equatable {
     this.minPerBooking,
     this.maxPerBooking,
     this.remainingPlaces,
+    this.isAvailable = true,
+    this.isSoldOut = false,
   });
 
   factory Ticket.fromJson(Map<String, dynamic> json) {
@@ -33,24 +37,92 @@ class Ticket extends Equatable {
     final buyerPricing = buyerPricingRaw is Map
         ? Map<String, dynamic>.from(buyerPricingRaw)
         : const <String, dynamic>{};
+    final remainingPlaces = _parseOptionalInt(
+      json['places'] ??
+          json['remaining_places'] ??
+          json['remainingPlaces'] ??
+          json['quantity_remaining'] ??
+          json['quantityRemaining'] ??
+          json['quota_remaining'] ??
+          json['quotaRemaining'] ??
+          json['available_quantity'] ??
+          json['availableQuantity'],
+    );
+    final explicitSoldOut = _parseOptionalBool(
+      json['is_sold_out'] ?? json['isSoldOut'],
+    );
+    final isSoldOut =
+        explicitSoldOut ?? (remainingPlaces != null && remainingPlaces <= 0);
+    final isAvailable = _parseOptionalBool(
+          json['is_available'] ?? json['isAvailable'],
+        ) ??
+        !isSoldOut;
 
     return Ticket(
       id: json['uuid']?.toString() ?? json['id']?.toString() ?? '',
-      name: json['name'] ?? '',
-      price: (json['price'] as num?)?.toDouble() ?? 0.0,
-      allInclusivePrice: (json['all_inclusive_price'] as num?)?.toDouble() ??
-          (buyerPricing['all_inclusive_price'] as num?)?.toDouble(),
-      platformFee: (json['platform_fee'] as num?)?.toDouble() ??
-          (buyerPricing['platform_fee'] as num?)?.toDouble(),
-      description: json['description'],
-      quantity: json['quantity'],
-      minPerBooking: json['min_per_order'] ?? json['min_per_booking'],
-      maxPerBooking: json['max_per_order'] ?? json['max_per_booking'],
-      remainingPlaces: json['places'],
+      name: json['name']?.toString() ?? '',
+      price: _parseOptionalDouble(json['price']) ?? 0,
+      allInclusivePrice: _parseOptionalDouble(json['all_inclusive_price']) ??
+          _parseOptionalDouble(json['allInclusivePrice']) ??
+          _parseOptionalDouble(buyerPricing['all_inclusive_price']),
+      platformFee: _parseOptionalDouble(json['platform_fee']) ??
+          _parseOptionalDouble(json['platformFee']) ??
+          _parseOptionalDouble(buyerPricing['platform_fee']),
+      description: json['description']?.toString(),
+      quantity: _parseOptionalInt(json['quantity']),
+      minPerBooking: _parseOptionalInt(
+        json['min_per_order'] ??
+            json['minPerOrder'] ??
+            json['min_per_booking'] ??
+            json['minPerBooking'],
+      ),
+      maxPerBooking: _parseOptionalInt(
+        json['max_per_order'] ??
+            json['maxPerOrder'] ??
+            json['max_per_booking'] ??
+            json['maxPerBooking'],
+      ),
+      remainingPlaces: remainingPlaces,
+      isAvailable: isAvailable,
+      isSoldOut: isSoldOut,
     );
   }
 
   double get buyerPrice => allInclusivePrice ?? price;
+
+  /// The smallest valid non-zero selection.
+  ///
+  /// API values below one are invalid for a ticket purchase and are normalized
+  /// to one so the UI never emits a non-positive booking quantity.
+  int get effectiveMinPerBooking {
+    final minimum = minPerBooking ?? 1;
+    return minimum < 1 ? 1 : minimum;
+  }
+
+  /// The largest quantity the customer can currently select.
+  ///
+  /// The per-order limit and remaining stock are both authoritative caps.
+  /// Negative values are treated as zero rather than being allowed through.
+  int get effectiveMaxPerBooking {
+    final orderMaximum = maxPerBooking ?? 10;
+    final normalizedOrderMaximum = orderMaximum < 0 ? 0 : orderMaximum;
+    final remaining = remainingPlaces;
+    if (remaining == null) return normalizedOrderMaximum;
+
+    final normalizedRemaining = remaining < 0 ? 0 : remaining;
+    return normalizedRemaining < normalizedOrderMaximum
+        ? normalizedRemaining
+        : normalizedOrderMaximum;
+  }
+
+  bool get hasValidBookingLimits =>
+      effectiveMinPerBooking <= effectiveMaxPerBooking;
+
+  bool get isBookable =>
+      isAvailable &&
+      !isSoldOut &&
+      (remainingPlaces == null || remainingPlaces! > 0) &&
+      hasValidBookingLimits;
 
   @override
   List<Object?> get props => [
@@ -64,7 +136,34 @@ class Ticket extends Equatable {
         minPerBooking,
         maxPerBooking,
         remainingPlaces,
+        isAvailable,
+        isSoldOut,
       ];
+
+  static int? _parseOptionalInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString().trim());
+  }
+
+  static double? _parseOptionalDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString().trim().replaceAll(',', '.'));
+  }
+
+  static bool? _parseOptionalBool(dynamic value) {
+    if (value == null) return null;
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+
+    return switch (value.toString().trim().toLowerCase()) {
+      '1' || 'true' || 'yes' || 'on' => true,
+      '0' || 'false' || 'no' || 'off' || '' => false,
+      _ => null,
+    };
+  }
 }
 
 class TimeSlotConfig extends Equatable {

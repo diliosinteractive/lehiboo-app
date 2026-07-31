@@ -55,6 +55,31 @@ void main() {
   });
 
   group('OrderCartItem buyer totals', () {
+    test('cache round-trip preserves ticket booking constraints', () {
+      final item = _cartItem(
+        const Ticket(
+          id: 'ticket-1',
+          name: 'Group',
+          price: 19.99,
+          minPerBooking: 5,
+          maxPerBooking: 8,
+          remainingPlaces: 6,
+          isAvailable: false,
+        ),
+        quantity: 5,
+      );
+
+      final decoded = OrderCartItem.decodeList(
+        OrderCartItem.encodeList([item]),
+      ).single;
+
+      expect(decoded.ticket.minPerBooking, 5);
+      expect(decoded.ticket.maxPerBooking, 8);
+      expect(decoded.ticket.remainingPlaces, 6);
+      expect(decoded.ticket.isAvailable, isFalse);
+      expect(decoded.ticket.isBookable, isFalse);
+    });
+
     test('computes organizer, fee, and buyer line totals', () {
       final item = _cartItem(
         const Ticket(

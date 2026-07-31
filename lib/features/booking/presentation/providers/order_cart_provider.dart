@@ -79,7 +79,12 @@ class OrderCartNotifier extends StateNotifier<List<OrderCartItem>> {
   double get totalAmount =>
       state.fold<double>(0, (sum, item) => sum + item.lineTotal);
 
-  void addSelection({
+  /// Adds only quantities that are valid for the current ticket constraints.
+  ///
+  /// Returns whether at least one cart line was added or increased. The event
+  /// screen uses this to avoid confirming a selection that became unavailable
+  /// between rendering and tapping the action.
+  bool addSelection({
     required Event event,
     required String slotId,
     required CalendarDateSlot? selectedSlot,
@@ -89,6 +94,7 @@ class OrderCartNotifier extends StateNotifier<List<OrderCartItem>> {
     final holdExpired =
         holdExpiresAt != null && !holdExpiresAt.isAfter(DateTime.now());
     final next = holdExpired ? <OrderCartItem>[] : [...state];
+    var changed = false;
 
     for (final entry in ticketQuantities.entries) {
       if (entry.value <= 0) continue;
@@ -101,7 +107,11 @@ class OrderCartNotifier extends StateNotifier<List<OrderCartItem>> {
           price: 0,
         ),
       );
-      if (ticket.id.isEmpty) continue;
+      if (ticket.id.isEmpty || !ticket.isBookable) continue;
+
+      final minimum = ticket.effectiveMinPerBooking;
+      final maximum = ticket.effectiveMaxPerBooking;
+      if (entry.value < minimum || entry.value > maximum) continue;
 
       final item = OrderCartItem(
         event: event,
@@ -111,13 +121,36 @@ class OrderCartNotifier extends StateNotifier<List<OrderCartItem>> {
         quantity: entry.value,
       );
       final index = next.indexWhere((candidate) => candidate.id == item.id);
+      final selectedCapacity = selectedSlot?.spotsRemaining;
+      final alreadySelectedForSlot = next
+          .where(
+            (candidate) =>
+                candidate.event.id == event.id && candidate.slotId == slotId,
+          )
+          .fold<int>(0, (sum, candidate) => sum + candidate.quantity);
+      final capacityLeft = selectedCapacity == null
+          ? null
+          : selectedCapacity - alreadySelectedForSlot;
+      final allowedIncrement = capacityLeft == null
+          ? entry.value
+          : capacityLeft >= entry.value
+              ? entry.value
+              : 0;
+
+      if (allowedIncrement <= 0) continue;
 
       if (index >= 0) {
-        next[index] = next[index].copyWith(
-          quantity: next[index].quantity + item.quantity,
-        );
+        final current = next[index].quantity;
+        final merged = (current + allowedIncrement).clamp(minimum, maximum);
+        if (merged != current) {
+          next[index] = next[index].copyWith(quantity: merged);
+          changed = true;
+        }
       } else {
-        next.add(item);
+        final quantity = allowedIncrement.clamp(0, maximum);
+        if (quantity < minimum) continue;
+        next.add(item.copyWith(quantity: quantity));
+        changed = true;
       }
     }
 
@@ -125,6 +158,7 @@ class OrderCartNotifier extends StateNotifier<List<OrderCartItem>> {
     if (next.isNotEmpty) {
       _ref.read(orderCartHoldProvider.notifier).ensureActive();
     }
+    return changed;
   }
 
   void updateQuantity(String itemId, int quantity) {
@@ -134,10 +168,35 @@ class OrderCartNotifier extends StateNotifier<List<OrderCartItem>> {
       return;
     }
 
-    final normalized = quantity < 0 ? 0 : quantity;
     final next = state
-        .map((item) =>
-            item.id == itemId ? item.copyWith(quantity: normalized) : item)
+        .map((item) {
+          if (item.id != itemId) return item;
+          if (quantity <= 0 || !item.ticket.isBookable) {
+            return item.copyWith(quantity: 0);
+          }
+
+          final minimum = item.ticket.effectiveMinPerBooking;
+          final ticketMaximum = item.ticket.effectiveMaxPerBooking;
+          final otherSlotQuantity = state
+              .where(
+                (candidate) =>
+                    candidate.id != item.id &&
+                    candidate.event.id == item.event.id &&
+                    candidate.slotId == item.slotId,
+              )
+              .fold<int>(0, (sum, candidate) => sum + candidate.quantity);
+          final slotRemaining = item.selectedSlot?.spotsRemaining;
+          final slotMaximum = slotRemaining == null
+              ? ticketMaximum
+              : (slotRemaining - otherSlotQuantity).clamp(0, ticketMaximum);
+          final maximum =
+              slotMaximum < ticketMaximum ? slotMaximum : ticketMaximum;
+
+          if (maximum < minimum || quantity < minimum) {
+            return item.copyWith(quantity: 0);
+          }
+          return item.copyWith(quantity: quantity.clamp(minimum, maximum));
+        })
         .where((item) => item.quantity > 0)
         .toList();
 
