@@ -146,11 +146,37 @@ class _NotificationsInboxScreenState
                   controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.all(16),
-                  itemCount:
-                      notifications.length + (state.isLoadingMore ? 1 : 0),
+                  itemCount: notifications.length +
+                      (state.isLoadingMore || state.loadMoreError != null
+                          ? 1
+                          : 0),
                   separatorBuilder: (_, index) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     if (index >= notifications.length) {
+                      if (state.loadMoreError != null) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Column(
+                            children: [
+                              Text(
+                                ApiResponseHandler.extractError(
+                                  state.loadMoreError,
+                                  fallback:
+                                      context.l10n.notificationsLoadMoreError,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              TextButton.icon(
+                                onPressed: () => ref
+                                    .read(inAppNotificationsProvider.notifier)
+                                    .retryLoadMore(),
+                                icon: const Icon(Icons.refresh),
+                                label: Text(context.l10n.commonRetry),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
                       return const Padding(
                         padding: EdgeInsets.symmetric(vertical: 20),
                         child: Center(
@@ -253,10 +279,17 @@ class _NotificationsInboxScreenState
             .read(inAppNotificationsProvider.notifier)
             .markAsRead(notification.id);
       }
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.notificationsReadSyncError)),
+          SnackBar(
+            content: Text(
+              ApiResponseHandler.extractError(
+                error,
+                fallback: context.l10n.notificationsReadSyncError,
+              ),
+            ),
+          ),
         );
       }
     }
@@ -274,10 +307,17 @@ class _NotificationsInboxScreenState
       await ref
           .read(inAppNotificationsProvider.notifier)
           .markAsRead(notification.id);
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.notificationsMarkReadError)),
+        SnackBar(
+          content: Text(
+            ApiResponseHandler.extractError(
+              error,
+              fallback: context.l10n.notificationsMarkReadError,
+            ),
+          ),
+        ),
       );
     }
   }
@@ -289,10 +329,17 @@ class _NotificationsInboxScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.notificationsMarkedAllRead)),
       );
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.notificationsActionError)),
+        SnackBar(
+          content: Text(
+            ApiResponseHandler.extractError(
+              error,
+              fallback: context.l10n.notificationsMarkAllReadError,
+            ),
+          ),
+        ),
       );
     }
   }
@@ -306,10 +353,17 @@ class _NotificationsInboxScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.notificationsDeleted)),
       );
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.notificationsDeleteError)),
+        SnackBar(
+          content: Text(
+            ApiResponseHandler.extractError(
+              error,
+              fallback: context.l10n.notificationsDeleteError,
+            ),
+          ),
+        ),
       );
     }
   }

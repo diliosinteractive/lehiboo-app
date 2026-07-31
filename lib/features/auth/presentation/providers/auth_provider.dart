@@ -40,8 +40,8 @@ const Object _notProvided = Object();
 ///
 /// Normal, user-initiated logout deliberately leaves [AuthState.errorMessage]
 /// empty.
-const authSessionExpiredMessage =
-    'Votre session a expiré. Veuillez vous reconnecter.';
+String get authSessionExpiredMessage =>
+    cachedAppLocalizations().commonSessionExpiredError;
 
 class AuthState {
   final AuthStatus status;
@@ -387,7 +387,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> forceLogout() async {
     await _authRepository.clearLocalAuthData();
     await _clearPersistedUserData();
-    state = const AuthState(
+    state = AuthState(
       status: AuthStatus.unauthenticated,
       errorMessage: authSessionExpiredMessage,
     );
@@ -512,58 +512,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   String _parseError(dynamic e) {
     final l10n = cachedAppLocalizations();
-
-    if (e is DioException) {
-      if (e.type == DioExceptionType.badResponse) {
-        final data = e.response?.data;
-        if (data != null && data is Map<String, dynamic>) {
-          // Check for detailed validation error
-          if (data['error'] != null && data['error']['details'] != null) {
-            final details = data['error']['details'];
-            if (details is Map<String, dynamic>) {
-              // Return the first validation error message found
-              final firstError = details.values.first;
-              if (firstError is List && firstError.isNotEmpty) {
-                return ApiResponseHandler.safeUserMessage(firstError.first) ??
-                    l10n.commonGenericRetryError;
-              }
-              return ApiResponseHandler.safeUserMessage(firstError) ??
-                  l10n.commonGenericRetryError;
-            }
-          }
-          // Fallback to general message if available
-          if (data['message'] != null) {
-            return ApiResponseHandler.safeUserMessage(data['message']) ??
-                l10n.commonGenericRetryError;
-          }
-          if (data['data'] != null && data['data']['message'] != null) {
-            return ApiResponseHandler.safeUserMessage(
-                  data['data']['message'],
-                ) ??
-                l10n.commonGenericRetryError;
-          }
-        }
-      } else if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.connectionError) {
-        return l10n.commonConnectionError;
-      }
-    }
-
-    final message = e.toString();
-    if (message.contains('invalid_credentials')) {
-      return l10n.authEmailOrPasswordIncorrect;
-    } else if (message.contains('user_exists')) {
-      return l10n.authAccountAlreadyExists;
-    } else if (message.contains('weak_password')) {
-      return l10n.authWeakPasswordDetailed;
-    } else if (message.contains('invalid_email')) {
-      return l10n.authEmailAddressInvalid;
-    } else if (message.contains('network') ||
-        message.contains('SocketException')) {
-      return l10n.commonConnectionError;
-    }
+    final code = _authErrorCode(e);
+    final mapped = switch (code) {
+      'invalid_credentials' => l10n.authEmailOrPasswordIncorrect,
+      'user_exists' => l10n.authAccountAlreadyExists,
+      'weak_password' => l10n.authWeakPasswordDetailed,
+      'invalid_email' => l10n.authEmailAddressInvalid,
+      _ => null,
+    };
+    if (mapped != null) return mapped;
 
     return ApiResponseHandler.extractError(
       e,
@@ -573,15 +530,37 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   String _parseOtpError(dynamic e) {
     final l10n = cachedAppLocalizations();
-    final message = e.toString();
-    if (message.contains('invalid_otp')) {
-      return l10n.authVerificationCodeInvalid;
-    } else if (message.contains('otp_expired')) {
-      return l10n.authVerificationCodeExpired;
-    } else if (message.contains('too_many_attempts')) {
-      return l10n.authTooManyAttempts;
+    return switch (_authErrorCode(e)) {
+      'otp_expired' => l10n.authVerificationCodeExpired,
+      'too_many_attempts' || 'rate_limited' => l10n.authTooManyAttempts,
+      'invalid_otp' => l10n.authVerificationCodeInvalid,
+      _ => ApiResponseHandler.extractError(
+          e,
+          fallback: l10n.authVerificationCodeInvalid,
+        ),
+    };
+  }
+
+  String? _authErrorCode(dynamic error) {
+    final structured = ApiResponseHandler.extractErrorCode(error);
+    if (structured != null) return structured;
+
+    final normalized = error.toString().toLowerCase();
+    const knownCodes = <String>[
+      'invalid_credentials',
+      'user_exists',
+      'weak_password',
+      'invalid_email',
+      'invalid_otp',
+      'otp_expired',
+      'too_many_attempts',
+      'rate_limited',
+      'user_already_verified',
+    ];
+    for (final code in knownCodes) {
+      if (normalized.contains(code)) return code;
     }
-    return l10n.authVerificationCodeInvalid;
+    return null;
   }
 
   // ─── Analytics helpers ─────────────────────────────────────────────

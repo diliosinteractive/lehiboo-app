@@ -10,6 +10,17 @@ import '../../../../helpers/fake_in_app_notifications_repository.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  test('notification state can retain and clear a pagination error', () {
+    final failure = Exception('next page failed');
+    final failed = const InAppNotificationsState().copyWith(
+      loadMoreError: failure,
+    );
+
+    expect(failed.loadMoreError, same(failure));
+    expect(failed.copyWith().loadMoreError, same(failure));
+    expect(failed.copyWith(loadMoreError: null).loadMoreError, isNull);
+  });
+
   test('load does not call protected API while unauthenticated', () async {
     final notificationsRepository = FakeInAppNotificationsRepository();
     final container = ProviderContainer(

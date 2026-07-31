@@ -103,6 +103,8 @@ class _SavedParticipantsScreenState
     final messenger = ScaffoldMessenger.of(context);
     final addedMessage = context.l10n.profileParticipantAdded;
     final updatedMessage = context.l10n.profileParticipantUpdated;
+    final addFailedMessage = context.l10n.profileParticipantAddFailed;
+    final updateFailedMessage = context.l10n.profileParticipantUpdateFailed;
     final result = await showModalBottomSheet<SavedParticipant>(
       context: context,
       isScrollControlled: true,
@@ -131,7 +133,11 @@ class _SavedParticipantsScreenState
       if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(
-          content: Text(ApiResponseHandler.extractError(e)),
+          content: Text(ApiResponseHandler.extractError(
+            e,
+            fallback:
+                participant == null ? addFailedMessage : updateFailedMessage,
+          )),
           backgroundColor: Colors.red.shade600,
           duration: const Duration(seconds: 4),
         ),
@@ -150,7 +156,10 @@ class _SavedParticipantsScreenState
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(ApiResponseHandler.extractError(e)),
+          content: Text(ApiResponseHandler.extractError(
+            e,
+            fallback: context.l10n.profileParticipantDeleteFailed,
+          )),
           backgroundColor: Colors.red.shade600,
         ),
       );

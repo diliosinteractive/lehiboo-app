@@ -17,6 +17,7 @@ class PermissionAudioScreen extends ConsumerStatefulWidget {
 class _PermissionAudioScreenState extends ConsumerState<PermissionAudioScreen> {
   bool _busy = false;
   bool _alreadyGranted = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -25,26 +26,57 @@ class _PermissionAudioScreenState extends ConsumerState<PermissionAudioScreen> {
   }
 
   Future<void> _checkPermission() async {
-    final status = await Permission.microphone.status;
-    if (!mounted) return;
-    setState(() => _alreadyGranted = status.isGranted);
+    try {
+      final status = await Permission.microphone.status;
+      if (!mounted) return;
+      setState(() {
+        _alreadyGranted = status.isGranted;
+        _errorMessage = null;
+      });
+    } catch (e) {
+      debugPrint('PermissionAudio: permission check failed - $e');
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = context.l10n.authPermissionAudioSetupFailed;
+      });
+    }
   }
 
   Future<void> _onContinue() async {
     if (_busy) return;
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _errorMessage = null;
+    });
 
-    if (!_alreadyGranted) {
-      final mic = await Permission.microphone.request();
-      // On iOS, speech_to_text also needs the speech recognition permission.
-      // On Android it's a no-op, so calling it unconditionally is safe.
-      if (mic.isGranted) {
-        await Permission.speech.request();
+    try {
+      if (!_alreadyGranted) {
+        final mic = await Permission.microphone.request();
+        // On iOS, speech_to_text also needs the speech recognition permission.
+        // On Android it's a no-op, so calling it unconditionally is safe.
+        if (mic.isGranted) {
+          await Permission.speech.request();
+        }
+      }
+
+      if (!mounted) return;
+      // Final step of first-launch onboarding — land on the login page next.
+      context.go('/login');
+    } catch (e) {
+      debugPrint('PermissionAudio: setup failed - $e');
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = context.l10n.authPermissionAudioSetupFailed;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
       }
     }
+  }
 
-    if (!mounted) return;
-    // Final step of first-launch onboarding — land on the login page next.
+  void _continueWithoutAudio() {
+    if (_busy) return;
     context.go('/login');
   }
 
@@ -62,9 +94,14 @@ class _PermissionAudioScreenState extends ConsumerState<PermissionAudioScreen> {
         l10n.authPermissionAudioBulletHandsFree,
       ],
       reassurance: l10n.authPermissionReassurance,
-      ctaLabel: l10n.commonContinue,
+      ctaLabel: _errorMessage == null ? l10n.commonContinue : l10n.commonRetry,
       busy: _busy,
       onContinue: _onContinue,
+      errorMessage: _errorMessage,
+      secondaryCtaLabel: _errorMessage == null
+          ? null
+          : l10n.authPermissionAudioContinueWithout,
+      onSecondaryCta: _errorMessage == null ? null : _continueWithoutAudio,
       grantedLabel: _alreadyGranted ? l10n.authPermissionAudioGranted : null,
     );
   }

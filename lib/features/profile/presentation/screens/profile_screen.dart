@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
@@ -18,6 +19,7 @@ import '../../../reviews/presentation/providers/pending_count_provider.dart';
 import '../../../gamification/presentation/providers/gamification_provider.dart';
 import '../../data/datasources/profile_api_datasource.dart';
 import '../providers/profile_provider.dart';
+import '../utils/profile_image_picker_error.dart';
 
 class _ProfileField {
   final String label;
@@ -945,19 +947,39 @@ class _EditableAvatarState extends ConsumerState<_EditableAvatar> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 85,
-    );
+    try {
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
 
-    if (pickedFile != null) {
+      if (!mounted || pickedFile == null) return;
       setState(() {
         _selectedImage = File(pickedFile.path);
       });
       await _uploadAvatar();
+    } on PlatformException catch (error) {
+      if (!mounted) return;
+      final failure = classifyProfileImagePickerFailure(error);
+      _showImagePickerError(failure);
+    } catch (_) {
+      if (!mounted) return;
+      _showImagePickerError(ProfileImagePickerFailure.pickerUnavailable);
     }
+  }
+
+  void _showImagePickerError(ProfileImagePickerFailure failure) {
+    final message = switch (failure) {
+      ProfileImagePickerFailure.permissionDenied =>
+        context.l10n.profilePhotoPermissionDenied,
+      ProfileImagePickerFailure.pickerUnavailable =>
+        context.l10n.profilePhotoPickerFailed,
+    };
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
   }
 
   Future<void> _uploadAvatar() async {
@@ -993,8 +1015,9 @@ class _EditableAvatarState extends ConsumerState<_EditableAvatar> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              context.l10n.profileAvatarUploadError(
-                ApiResponseHandler.extractError(e),
+              ApiResponseHandler.extractError(
+                e,
+                fallback: context.l10n.profileAvatarUploadFailed,
               ),
             ),
             backgroundColor: Colors.red,

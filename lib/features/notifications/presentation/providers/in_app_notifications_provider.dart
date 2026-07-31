@@ -7,6 +7,8 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/in_app_notification.dart';
 import '../../domain/repositories/in_app_notifications_repository.dart';
 
+const _notificationStateNotProvided = Object();
+
 final inAppNotificationsProvider =
     StateNotifierProvider<InAppNotificationsNotifier, InAppNotificationsState>(
         (ref) {
@@ -21,6 +23,7 @@ class InAppNotificationsState {
   final int currentPage;
   final bool hasMore;
   final bool isLoadingMore;
+  final Object? loadMoreError;
   final bool unreadOnly;
   final int unreadCount;
   final bool hasLoadedInbox;
@@ -32,6 +35,7 @@ class InAppNotificationsState {
     this.currentPage = AppConstants.initialPage,
     this.hasMore = false,
     this.isLoadingMore = false,
+    this.loadMoreError,
     this.unreadOnly = false,
     this.unreadCount = 0,
     this.hasLoadedInbox = false,
@@ -44,6 +48,7 @@ class InAppNotificationsState {
     int? currentPage,
     bool? hasMore,
     bool? isLoadingMore,
+    Object? loadMoreError = _notificationStateNotProvided,
     bool? unreadOnly,
     int? unreadCount,
     bool? hasLoadedInbox,
@@ -56,6 +61,12 @@ class InAppNotificationsState {
       currentPage: currentPage ?? this.currentPage,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      loadMoreError: identical(
+        loadMoreError,
+        _notificationStateNotProvided,
+      )
+          ? this.loadMoreError
+          : loadMoreError,
       unreadOnly: unreadOnly ?? this.unreadOnly,
       unreadCount: unreadCount ?? this.unreadCount,
       hasLoadedInbox: hasLoadedInbox ?? this.hasLoadedInbox,
@@ -160,6 +171,7 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
         currentPage: AppConstants.initialPage,
         hasMore: false,
         isLoadingMore: false,
+        loadMoreError: null,
         unreadOnly: nextUnreadOnly,
         unreadCount: 0,
         hasLoadedInbox: false,
@@ -182,6 +194,7 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
         currentPage: AppConstants.initialPage,
         hasMore: false,
         isLoadingMore: false,
+        loadMoreError: null,
       );
     }
 
@@ -218,11 +231,13 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
 
   Future<void> loadMore() async {
     if (!_ref.read(authProvider).isAuthenticated) return;
-    if (state.isLoadingMore || !state.hasMore) return;
+    if (state.isLoadingMore || !state.hasMore || state.loadMoreError != null) {
+      return;
+    }
     final current = state.notifications.valueOrNull;
     if (current == null) return;
 
-    state = state.copyWith(isLoadingMore: true);
+    state = state.copyWith(isLoadingMore: true, loadMoreError: null);
     try {
       final page = await _repository.getNotifications(
         page: state.currentPage + 1,
@@ -238,11 +253,21 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
         currentPage: page.currentPage,
         hasMore: page.hasMore,
         isLoadingMore: false,
+        loadMoreError: null,
       );
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
-      state = state.copyWith(isLoadingMore: false);
+      state = state.copyWith(
+        isLoadingMore: false,
+        loadMoreError: error,
+      );
     }
+  }
+
+  Future<void> retryLoadMore() async {
+    if (state.loadMoreError == null) return;
+    state = state.copyWith(loadMoreError: null);
+    await loadMore();
   }
 
   Future<void> setUnreadOnly(bool value) async {

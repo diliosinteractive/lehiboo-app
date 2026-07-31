@@ -10,9 +10,11 @@ import '../../../../config/env_config.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/l10n/app_locale.dart';
 import '../../../../core/l10n/l10n.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../../shared/legal/legal_links.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../notifications/presentation/providers/push_notification_provider.dart';
+import '../../../notifications/presentation/utils/push_notification_error_message.dart';
 import '../../../petit_boo/presentation/widgets/animated_toast.dart';
 import '../../data/datasources/profile_api_datasource.dart';
 
@@ -33,6 +35,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     required bool isPush,
   }) async {
     final newValue = !current;
+    final l10n = context.l10n;
     setState(() {
       if (isPush) {
         _busyPush = true;
@@ -42,6 +45,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     });
 
     try {
+      if (isPush && newValue) {
+        // Do not persist an enabled preference until device permission and
+        // token registration have both succeeded. Otherwise the switch would
+        // claim notifications are active after a denied/failed setup.
+        final registered = await ref
+            .read(pushNotificationProvider.notifier)
+            .requestPermission();
+        if (!registered) {
+          if (mounted) {
+            final failure = ref.read(pushNotificationProvider).failureReason;
+            PetitBooToast.error(
+              context,
+              pushNotificationErrorMessage(l10n, failure),
+            );
+          }
+          return;
+        }
+      }
+
       final api = ref.read(profileApiDataSourceProvider);
 
       final updatedDto = await api.updateProfile(
@@ -52,26 +74,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       // Synchroniser l'auth state local
       ref.read(authProvider.notifier).updateUser(updatedDto);
 
-      if (isPush && newValue) {
-        // requestPermission() triggers the OS prompt when needed and registers
-        // the subscription with the backend on grant. The OS prompt is the
-        // canonical path now that initialize() no longer prompts.
-        final registered = await ref
-            .read(pushNotificationProvider.notifier)
-            .requestPermission();
-        if (!registered && mounted) {
-          PetitBooToast.error(
-            context,
-            context.l10n.settingsPushPermissionRequired,
-          );
-        }
-      }
-
       // Plan 05 : la mise à jour wallet et le toast `+30 H NotificationsOptIn`
       // sont gérés globalement par HibonsUpdateInterceptor.
     } catch (e) {
       if (mounted) {
-        PetitBooToast.error(context, context.l10n.settingsUpdateFailed);
+        final fallback = isPush
+            ? l10n.settingsPushPreferenceUpdateFailed
+            : l10n.settingsNewsletterUpdateFailed;
+        PetitBooToast.error(
+          context,
+          ApiResponseHandler.extractError(e, fallback: fallback),
+        );
       }
     } finally {
       if (mounted) {
@@ -191,8 +204,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 subtitle: Text(l10n.settingsAnalyticsConsentSubtitle),
                 value: consent.isGranted,
                 onChanged: (value) async {
-                  final notifier =
-                      ref.read(analyticsConsentProvider.notifier);
+                  final notifier = ref.read(analyticsConsentProvider.notifier);
                   if (value) {
                     await notifier.grant();
                   } else {
@@ -284,8 +296,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     const storage = SharedSecureStorage.instance;
 
     final accessBefore = await storage.read(key: AppConstants.keyAuthToken);
-    final refreshBefore =
-        await storage.read(key: AppConstants.keyRefreshToken);
+    final refreshBefore = await storage.read(key: AppConstants.keyRefreshToken);
 
     if (accessBefore == null || accessBefore.isEmpty) {
       messenger.showSnackBar(

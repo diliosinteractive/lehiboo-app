@@ -21,6 +21,7 @@ class _PermissionLocationScreenState
     extends ConsumerState<PermissionLocationScreen> {
   bool _busy = false;
   bool _alreadyGranted = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -29,36 +30,75 @@ class _PermissionLocationScreenState
   }
 
   Future<void> _checkPermission() async {
-    final permission = await Geolocator.checkPermission();
-    final granted = permission == LocationPermission.whileInUse ||
-        permission == LocationPermission.always;
-    if (!mounted) return;
-    setState(() => _alreadyGranted = granted);
+    try {
+      final permission = await Geolocator.checkPermission();
+      final granted = permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always;
+      if (!mounted) return;
+      setState(() {
+        _alreadyGranted = granted;
+        _errorMessage = null;
+      });
+    } catch (e) {
+      debugPrint('PermissionLocation: permission check failed - $e');
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = context.l10n.authPermissionLocationSetupFailed;
+      });
+    }
   }
 
   Future<void> _onContinue() async {
     if (_busy) return;
-    setState(() => _busy = true);
+    setState(() {
+      _busy = true;
+      _errorMessage = null;
+    });
 
-    // If permission is already granted (e.g. previously installed app or
-    // re-entering this screen), don't re-prompt — just navigate.
-    if (!_alreadyGranted) {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
+    try {
+      // If permission is already granted (e.g. previously installed app or
+      // re-entering this screen), don't re-prompt — just navigate.
+      if (!_alreadyGranted) {
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+        }
+        final granted = permission == LocationPermission.whileInUse ||
+            permission == LocationPermission.always;
+        if (granted) {
+          _refreshLocationInBackground();
+        }
+      } else {
+        // Already granted earlier — make sure the cached position is fresh.
+        _refreshLocationInBackground();
       }
-      final granted = permission == LocationPermission.whileInUse ||
-          permission == LocationPermission.always;
-      if (granted) {
-        unawaited(ref.read(userLocationProvider.notifier).refresh());
+
+      if (!mounted) return;
+      // Next step of first-launch onboarding: the audio permission screen.
+      context.go('/post-signup/audio');
+    } catch (e) {
+      debugPrint('PermissionLocation: setup failed - $e');
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = context.l10n.authPermissionLocationSetupFailed;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
       }
-    } else {
-      // Already granted earlier — make sure the cached position is fresh.
-      unawaited(ref.read(userLocationProvider.notifier).refresh());
     }
+  }
 
-    if (!mounted) return;
-    // Next step of first-launch onboarding: the audio permission screen.
+  void _refreshLocationInBackground() {
+    unawaited(
+      ref.read(userLocationProvider.notifier).refresh().catchError((Object e) {
+        debugPrint('PermissionLocation: location refresh failed - $e');
+      }),
+    );
+  }
+
+  void _continueWithoutLocation() {
+    if (_busy) return;
     context.go('/post-signup/audio');
   }
 
@@ -76,9 +116,14 @@ class _PermissionLocationScreenState
         l10n.authPermissionLocationBulletSuggestions,
       ],
       reassurance: l10n.authPermissionReassurance,
-      ctaLabel: l10n.commonContinue,
+      ctaLabel: _errorMessage == null ? l10n.commonContinue : l10n.commonRetry,
       busy: _busy,
       onContinue: _onContinue,
+      errorMessage: _errorMessage,
+      secondaryCtaLabel: _errorMessage == null
+          ? null
+          : l10n.authPermissionLocationContinueWithout,
+      onSecondaryCta: _errorMessage == null ? null : _continueWithoutLocation,
       grantedLabel: _alreadyGranted ? l10n.authPermissionLocationGranted : null,
     );
   }

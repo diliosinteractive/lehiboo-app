@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '../../../../core/utils/api_response_handler.dart';
 import '../../../../core/services/push_notification_service.dart';
 import '../../../../domain/entities/user.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -18,26 +17,39 @@ enum PushNotificationStatus {
   error,
 }
 
+/// Stable, presentation-safe reason for a failed push-notification setup.
+///
+/// Provider/SDK diagnostics stay in debug logs. Screens use this enum to show
+/// localized guidance without exposing OneSignal or backend implementation
+/// details to users.
+enum PushNotificationFailureReason {
+  serviceUnavailable,
+  permissionDenied,
+  subscriptionUnavailable,
+  backendSyncFailed,
+  unexpected,
+}
+
 class PushNotificationState {
   final PushNotificationStatus status;
   final String? subscriptionId;
-  final String? errorMessage;
+  final PushNotificationFailureReason? failureReason;
 
   const PushNotificationState({
     this.status = PushNotificationStatus.uninitialized,
     this.subscriptionId,
-    this.errorMessage,
+    this.failureReason,
   });
 
   PushNotificationState copyWith({
     PushNotificationStatus? status,
     String? subscriptionId,
-    String? errorMessage,
+    PushNotificationFailureReason? failureReason,
   }) {
     return PushNotificationState(
       status: status ?? this.status,
       subscriptionId: subscriptionId ?? this.subscriptionId,
-      errorMessage: errorMessage,
+      failureReason: failureReason,
     );
   }
 }
@@ -116,7 +128,7 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
       debugPrint('PushNotification: SDK not configured — staying disabled');
       state = state.copyWith(
         status: PushNotificationStatus.disabled,
-        errorMessage: 'OneSignal SDK not configured (ONESIGNAL_APP_ID missing)',
+        failureReason: PushNotificationFailureReason.serviceUnavailable,
       );
       return;
     }
@@ -143,9 +155,9 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
         // means "push isn't active yet" — not an error.
         state = state.copyWith(
           status: PushNotificationStatus.disabled,
-          errorMessage: pushService.permissionDenied
-              ? 'Notification permission denied'
-              : 'Notification permission not yet requested',
+          failureReason: pushService.permissionDenied
+              ? PushNotificationFailureReason.permissionDenied
+              : null,
         );
         return;
       }
@@ -158,7 +170,7 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
       if (!registered) {
         state = state.copyWith(
           status: PushNotificationStatus.error,
-          errorMessage: 'Backend token registration failed',
+          failureReason: PushNotificationFailureReason.backendSyncFailed,
         );
         return;
       }
@@ -173,7 +185,7 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
       debugPrint('PushNotification: Failed to initialize - $e');
       state = state.copyWith(
         status: PushNotificationStatus.error,
-        errorMessage: ApiResponseHandler.extractError(e),
+        failureReason: PushNotificationFailureReason.unexpected,
       );
     }
   }
@@ -206,9 +218,9 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
           status: pushService.permissionDenied
               ? PushNotificationStatus.disabled
               : PushNotificationStatus.error,
-          errorMessage: pushService.permissionDenied
-              ? 'Notification permission denied'
-              : 'OneSignal subscription id unavailable',
+          failureReason: pushService.permissionDenied
+              ? PushNotificationFailureReason.permissionDenied
+              : PushNotificationFailureReason.subscriptionUnavailable,
         );
         return false;
       }
@@ -221,7 +233,7 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
       if (!registered) {
         state = state.copyWith(
           status: PushNotificationStatus.error,
-          errorMessage: 'Backend token registration failed',
+          failureReason: PushNotificationFailureReason.backendSyncFailed,
         );
         return false;
       }
@@ -235,7 +247,7 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
       debugPrint('PushNotification: Failed to sync subscription - $e');
       state = state.copyWith(
         status: PushNotificationStatus.error,
-        errorMessage: ApiResponseHandler.extractError(e),
+        failureReason: PushNotificationFailureReason.unexpected,
       );
       return false;
     }
@@ -359,51 +371,70 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
       return false;
     }
 
-    final pushService = _ref.read(pushNotificationServiceProvider);
-    final tokenDataSource = _ref.read(deviceTokenDataSourceProvider);
-    _configureCallbacks(pushService, tokenDataSource);
-
-    if (!pushService.isInitialized) {
-      await pushService.initialize();
+    if (!isOneSignalConfigured) {
+      state = state.copyWith(
+        status: PushNotificationStatus.disabled,
+        failureReason: PushNotificationFailureReason.serviceUnavailable,
+      );
+      return false;
     }
 
     state = state.copyWith(status: PushNotificationStatus.initializing);
 
-    final granted = await pushService.promptUserForPermission();
-    if (!granted) {
-      state = state.copyWith(
-        status: PushNotificationStatus.disabled,
-        errorMessage: 'Notification permission denied',
-      );
-      return false;
-    }
+    try {
+      final pushService = _ref.read(pushNotificationServiceProvider);
+      final tokenDataSource = _ref.read(deviceTokenDataSourceProvider);
+      _configureCallbacks(pushService, tokenDataSource);
 
-    if (pushService.subscriptionId == null) {
-      state = state.copyWith(
-        status: PushNotificationStatus.disabled,
-        errorMessage: 'OneSignal subscription id unavailable',
-      );
-      return false;
-    }
+      if (!pushService.isInitialized) {
+        await pushService.initialize();
+      }
 
-    final registered = await _registerTokenWithBackend(
-      pushService.subscriptionId!,
-      pushService,
-      tokenDataSource,
-    );
-    if (!registered) {
+      final granted = await pushService.promptUserForPermission();
+      if (!granted) {
+        state = state.copyWith(
+          status: PushNotificationStatus.disabled,
+          failureReason: pushService.permissionDenied
+              ? PushNotificationFailureReason.permissionDenied
+              : PushNotificationFailureReason.unexpected,
+        );
+        return false;
+      }
+
+      if (pushService.subscriptionId == null) {
+        state = state.copyWith(
+          status: PushNotificationStatus.disabled,
+          failureReason: PushNotificationFailureReason.subscriptionUnavailable,
+        );
+        return false;
+      }
+
+      final registered = await _registerTokenWithBackend(
+        pushService.subscriptionId!,
+        pushService,
+        tokenDataSource,
+      );
+      if (!registered) {
+        state = state.copyWith(
+          status: PushNotificationStatus.error,
+          failureReason: PushNotificationFailureReason.backendSyncFailed,
+        );
+        return false;
+      }
+
+      state = state.copyWith(
+        status: PushNotificationStatus.initialized,
+        subscriptionId: pushService.subscriptionId,
+      );
+      return true;
+    } catch (e) {
+      debugPrint('PushNotification: Failed to request permission - $e');
       state = state.copyWith(
         status: PushNotificationStatus.error,
-        errorMessage: 'Backend token registration failed',
+        failureReason: PushNotificationFailureReason.unexpected,
       );
       return false;
     }
-
-    state = state.copyWith(
-      status: PushNotificationStatus.initialized,
-      subscriptionId: pushService.subscriptionId,
-    );
-    return true;
   }
 }
 

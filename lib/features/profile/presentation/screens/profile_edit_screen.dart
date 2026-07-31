@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
@@ -9,6 +10,7 @@ import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/datasources/profile_api_datasource.dart';
+import '../utils/profile_image_picker_error.dart';
 
 class ProfileEditScreen extends ConsumerStatefulWidget {
   const ProfileEditScreen({super.key});
@@ -466,19 +468,37 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 85,
-    );
+    try {
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
 
-    if (pickedFile != null) {
+      if (!mounted || pickedFile == null) return;
       setState(() {
         _selectedImage = File(pickedFile.path);
       });
       await _uploadAvatar();
+    } on PlatformException catch (error) {
+      if (!mounted) return;
+      _setImagePickerError(classifyProfileImagePickerFailure(error));
+    } catch (_) {
+      if (!mounted) return;
+      _setImagePickerError(ProfileImagePickerFailure.pickerUnavailable);
     }
+  }
+
+  void _setImagePickerError(ProfileImagePickerFailure failure) {
+    setState(() {
+      _errorMessage = switch (failure) {
+        ProfileImagePickerFailure.permissionDenied =>
+          context.l10n.profilePhotoPermissionDenied,
+        ProfileImagePickerFailure.pickerUnavailable =>
+          context.l10n.profilePhotoPickerFailed,
+      };
+    });
   }
 
   Future<void> _uploadAvatar() async {
@@ -518,8 +538,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = context.l10n.profileUploadImageError(
-            ApiResponseHandler.extractError(e),
+          _errorMessage = ApiResponseHandler.extractError(
+            e,
+            fallback: context.l10n.profileAvatarUploadFailed,
           );
         });
       }
@@ -575,8 +596,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = context.l10n.profileGenericError(
-            ApiResponseHandler.extractError(e),
+          _errorMessage = ApiResponseHandler.extractError(
+            e,
+            fallback: context.l10n.profileUpdateFailed,
           );
         });
       }
@@ -684,8 +706,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(l10n.profileGenericError(
-                                ApiResponseHandler.extractError(e),
+                              content: Text(ApiResponseHandler.extractError(
+                                e,
+                                fallback: l10n.profilePasswordChangeFailed,
                               )),
                               backgroundColor: Colors.red,
                             ),

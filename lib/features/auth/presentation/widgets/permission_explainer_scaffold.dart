@@ -19,6 +19,9 @@ class PermissionExplainerScaffold extends StatelessWidget {
     required this.busy,
     required this.onContinue,
     this.grantedLabel,
+    this.errorMessage,
+    this.secondaryCtaLabel,
+    this.onSecondaryCta,
   });
 
   final IconData icon;
@@ -33,6 +36,13 @@ class PermissionExplainerScaffold extends StatelessWidget {
   /// When set, render a green check + this label above the CTA to signal
   /// that the permission has already been granted on this device.
   final String? grantedLabel;
+
+  /// Optional recoverable error rendered above the actions.
+  final String? errorMessage;
+
+  /// Optional secondary action, used when a permission step can be skipped.
+  final String? secondaryCtaLabel;
+  final VoidCallback? onSecondaryCta;
 
   @override
   Widget build(BuildContext context) {
@@ -144,6 +154,43 @@ class PermissionExplainerScaffold extends StatelessWidget {
                           ),
                           const SizedBox(height: 16),
                         ],
+                        if (errorMessage != null) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: HbColors.error.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: HbColors.error.withValues(alpha: 0.24),
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(
+                                  Icons.info_outline,
+                                  color: HbColors.error,
+                                  size: 21,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    errorMessage!,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: HbColors.textPrimary,
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
                         Text(
                           reassurance,
                           textAlign: TextAlign.center,
@@ -185,6 +232,11 @@ class PermissionExplainerScaffold extends StatelessWidget {
                                 : Text(ctaLabel),
                           ),
                         ),
+                        if (secondaryCtaLabel != null && onSecondaryCta != null)
+                          TextButton(
+                            onPressed: busy ? null : onSecondaryCta,
+                            child: Text(secondaryCtaLabel!),
+                          ),
                         const SizedBox(height: 8),
                       ],
                     ),

@@ -1,5 +1,7 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
+
 import '../../../../core/l10n/l10n.dart';
 import '../../data/services/company_search_service.dart';
 
@@ -20,11 +22,15 @@ class CompanyAutocomplete extends StatefulWidget {
   /// Dynamic possessive wording (e.g., "votre entreprise", "votre association")
   final String organizationPossessive;
 
+  /// Optional injection point used by tests and alternate directory clients.
+  final CompanySearchService? searchService;
+
   const CompanyAutocomplete({
     super.key,
     required this.onSelect,
     required this.organizationName,
     required this.organizationPossessive,
+    this.searchService,
   });
 
   @override
@@ -34,16 +40,21 @@ class CompanyAutocomplete extends StatefulWidget {
 class _CompanyAutocompleteState extends State<CompanyAutocomplete> {
   final _searchController = TextEditingController();
   final _focusNode = FocusNode();
-  final _service = CompanySearchService();
+  late final CompanySearchService _service;
+  late final bool _ownsService;
 
   Timer? _debounceTimer;
   List<CompanySearchResult> _results = [];
+  CompanyLookupException? _lookupError;
   bool _isLoading = false;
   bool _showResults = false;
+  bool _hasSearched = false;
 
   @override
   void initState() {
     super.initState();
+    _ownsService = widget.searchService == null;
+    _service = widget.searchService ?? CompanySearchService();
     _searchController.addListener(_onSearchChanged);
     _focusNode.addListener(_onFocusChanged);
   }
@@ -55,7 +66,7 @@ class _CompanyAutocompleteState extends State<CompanyAutocomplete> {
     _focusNode.removeListener(_onFocusChanged);
     _searchController.dispose();
     _focusNode.dispose();
-    _service.dispose();
+    if (_ownsService) _service.dispose();
     super.dispose();
   }
 
@@ -79,15 +90,29 @@ class _CompanyAutocompleteState extends State<CompanyAutocomplete> {
         _results = [];
         _showResults = false;
         _isLoading = false;
+        _hasSearched = false;
+        _lookupError = null;
       });
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _showResults = false;
+      _hasSearched = false;
+      _lookupError = null;
+    });
 
-    _debounceTimer = Timer(const Duration(milliseconds: 300), () async {
-      if (!mounted) return;
+    _debounceTimer = Timer(
+      const Duration(milliseconds: 300),
+      () => _search(query),
+    );
+  }
 
+  Future<void> _search(String query) async {
+    if (!mounted) return;
+
+    try {
       final results = await _service.search(query, limit: 8);
 
       if (mounted && _searchController.text.trim() == query) {
@@ -95,9 +120,43 @@ class _CompanyAutocompleteState extends State<CompanyAutocomplete> {
           _results = results;
           _showResults = results.isNotEmpty;
           _isLoading = false;
+          _hasSearched = true;
+          _lookupError = null;
         });
       }
+    } on CompanyLookupException catch (e) {
+      _setLookupFailure(query, e);
+    } catch (e) {
+      debugPrint('CompanyAutocomplete: Unexpected lookup failure: $e');
+      _setLookupFailure(
+        query,
+        const CompanyLookupException(
+          CompanyLookupFailureType.serviceUnavailable,
+        ),
+      );
+    }
+  }
+
+  void _setLookupFailure(String query, CompanyLookupException error) {
+    if (!mounted || _searchController.text.trim() != query) return;
+    setState(() {
+      _results = [];
+      _showResults = false;
+      _isLoading = false;
+      _hasSearched = true;
+      _lookupError = error;
     });
+  }
+
+  void _retrySearch() {
+    final query = _searchController.text.trim();
+    if (_isLoading || query.length < 2) return;
+    setState(() {
+      _isLoading = true;
+      _hasSearched = false;
+      _lookupError = null;
+    });
+    unawaited(_search(query));
   }
 
   void _onSelectCompany(CompanySearchResult company) {
@@ -189,6 +248,67 @@ class _CompanyAutocompleteState extends State<CompanyAutocomplete> {
                   color: Colors.grey[600],
                 ),
               ),
+              if (_lookupError != null) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 6, 10),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.orange.withValues(alpha: 0.28),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.cloud_off_outlined,
+                        size: 20,
+                        color: Colors.deepOrange,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _lookupErrorMessage(l10n, _lookupError!),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF5D4037),
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _isLoading ? null : _retrySearch,
+                        child: Text(l10n.commonRetry),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else if (_hasSearched && !_isLoading && _results.isEmpty) ...[
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 18,
+                      color: Colors.grey[600],
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.authCompanySearchNoResults,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[700],
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -229,6 +349,20 @@ class _CompanyAutocompleteState extends State<CompanyAutocomplete> {
           ),
       ],
     );
+  }
+
+  String _lookupErrorMessage(
+    AppLocalizations l10n,
+    CompanyLookupException failure,
+  ) {
+    return switch (failure.type) {
+      CompanyLookupFailureType.network ||
+      CompanyLookupFailureType.timeout =>
+        l10n.authCompanySearchConnectionError,
+      CompanyLookupFailureType.serviceUnavailable ||
+      CompanyLookupFailureType.invalidResponse =>
+        l10n.authCompanySearchUnavailable,
+    };
   }
 }
 

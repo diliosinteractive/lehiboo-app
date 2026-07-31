@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../../domain/entities/user.dart';
@@ -757,57 +756,10 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
 
   String _parseError(dynamic e) {
     final l10n = cachedAppLocalizations();
-
-    if (e is DioException) {
-      if (e.type == DioExceptionType.badResponse) {
-        final data = e.response?.data;
-        if (data != null && data is Map<String, dynamic>) {
-          // Handle structured error with details
-          final error = data['error'];
-          if (error != null &&
-              error is Map<String, dynamic> &&
-              error['details'] != null) {
-            final details = error['details'];
-            if (details is Map<String, dynamic>) {
-              final firstError = details.values.first;
-              if (firstError is List && firstError.isNotEmpty) {
-                return ApiResponseHandler.safeUserMessage(firstError.first) ??
-                    l10n.commonGenericRetryError;
-              }
-              return ApiResponseHandler.safeUserMessage(firstError) ??
-                  l10n.commonGenericRetryError;
-            }
-          }
-          // Handle simple error string
-          if (error != null && error is String) {
-            return ApiResponseHandler.safeUserMessage(error) ??
-                l10n.commonGenericRetryError;
-          }
-          if (data['message'] != null) {
-            return ApiResponseHandler.safeUserMessage(data['message']) ??
-                l10n.commonGenericRetryError;
-          }
-          if (data['data'] != null && data['data']['message'] != null) {
-            return ApiResponseHandler.safeUserMessage(
-                  data['data']['message'],
-                ) ??
-                l10n.commonGenericRetryError;
-          }
-        }
-      } else if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout ||
-          e.type == DioExceptionType.connectionError) {
-        return l10n.commonConnectionError;
-      }
-    }
-
-    final message = e.toString();
-    if (message.contains('user_exists')) {
+    final code = ApiResponseHandler.extractErrorCode(e);
+    final message = e.toString().toLowerCase();
+    if (code == 'user_exists' || message.contains('user_exists')) {
       return l10n.authAccountAlreadyExists;
-    } else if (message.contains('network') ||
-        message.contains('SocketException')) {
-      return l10n.commonConnectionError;
     }
 
     return ApiResponseHandler.extractError(
@@ -818,15 +770,21 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
 
   String _parseOtpError(dynamic e) {
     final l10n = cachedAppLocalizations();
-    final message = e.toString();
-    if (message.contains('invalid_otp') || message.contains('invalid')) {
+    final code = ApiResponseHandler.extractErrorCode(e);
+    final message = e.toString().toLowerCase();
+    if (code == 'invalid_otp' || message.contains('invalid_otp')) {
       return l10n.authVerificationCodeInvalid;
-    } else if (message.contains('expired')) {
+    } else if (code == 'otp_expired' || message.contains('otp_expired')) {
       return l10n.authVerificationCodeExpired;
-    } else if (message.contains('too_many')) {
+    } else if (code == 'too_many_attempts' ||
+        code == 'rate_limited' ||
+        message.contains('too_many_attempts')) {
       return l10n.authTooManyAttempts;
     }
-    return l10n.authVerificationCodeInvalid;
+    return ApiResponseHandler.extractError(
+      e,
+      fallback: l10n.authVerificationCodeInvalid,
+    );
   }
 }
 

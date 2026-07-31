@@ -1,7 +1,30 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+
+enum CompanyLookupFailureType {
+  network,
+  timeout,
+  serviceUnavailable,
+  invalidResponse,
+}
+
+/// A stable company-directory failure that callers can safely branch on.
+///
+/// Provider response bodies and decoding diagnostics stay in debug logs and
+/// are never used as user-facing copy.
+class CompanyLookupException implements Exception {
+  final CompanyLookupFailureType type;
+  final int? statusCode;
+
+  const CompanyLookupException(this.type, {this.statusCode});
+
+  @override
+  String toString() =>
+      'CompanyLookupException(type: $type, statusCode: $statusCode)';
+}
 
 /// Represents a company search result from the French government API
 class CompanySearchResult {
@@ -52,19 +75,23 @@ class CompanySearchResult {
     }
 
     return CompanySearchResult(
-      name: json['nom_complet']?.toString() ?? json['nom_raison_sociale']?.toString() ?? '',
+      name: json['nom_complet']?.toString() ??
+          json['nom_raison_sociale']?.toString() ??
+          '',
       siret: siege['siret']?.toString() ?? '',
       siren: json['siren']?.toString() ?? '',
       address: buildAddress(),
       zipCode: siege['code_postal']?.toString() ?? '',
       city: siege['libelle_commune']?.toString() ?? '',
       legalForm: json['nature_juridique']?.toString(),
-      activity: json['libelle_activite_principale']?.toString() ?? siege['libelle_activite_principale']?.toString(),
+      activity: json['libelle_activite_principale']?.toString() ??
+          siege['libelle_activite_principale']?.toString(),
     );
   }
 
   @override
-  String toString() => 'CompanySearchResult(name: $name, siret: $siret, city: $city)';
+  String toString() =>
+      'CompanySearchResult(name: $name, siret: $siret, city: $city)';
 }
 
 /// Service for searching French companies using the government API
@@ -74,8 +101,13 @@ class CompanySearchService {
   static const _baseUrl = 'https://recherche-entreprises.api.gouv.fr';
 
   final http.Client _client;
+  final Duration _requestTimeout;
 
-  CompanySearchService({http.Client? client}) : _client = client ?? http.Client();
+  CompanySearchService({
+    http.Client? client,
+    Duration requestTimeout = const Duration(seconds: 10),
+  })  : _client = client ?? http.Client(),
+        _requestTimeout = requestTimeout;
 
   /// Search companies by name
   ///
@@ -83,7 +115,8 @@ class CompanySearchService {
   /// [limit] - Maximum number of results (default: 8)
   ///
   /// Returns a list of matching companies
-  Future<List<CompanySearchResult>> search(String query, {int limit = 8}) async {
+  Future<List<CompanySearchResult>> search(String query,
+      {int limit = 8}) async {
     final trimmedQuery = query.trim();
 
     if (trimmedQuery.length < 2) {
@@ -103,29 +136,58 @@ class CompanySearchService {
 
       final response = await _client.get(uri, headers: {
         'Accept': 'application/json',
-      }).timeout(const Duration(seconds: 10));
+      }).timeout(_requestTimeout);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
-        final results = data['results'] as List<dynamic>? ?? [];
+        final rawResults = data['results'];
+        if (rawResults is! List) {
+          debugPrint('CompanySearchService: Missing results list');
+          throw const CompanyLookupException(
+            CompanyLookupFailureType.invalidResponse,
+          );
+        }
+        final results = rawResults;
 
         final companies = results
-            .map((item) => CompanySearchResult.fromJson(item as Map<String, dynamic>))
-            .where((company) => company.name.isNotEmpty && company.siret.isNotEmpty)
+            .map((item) =>
+                CompanySearchResult.fromJson(item as Map<String, dynamic>))
+            .where((company) =>
+                company.name.isNotEmpty && company.siret.isNotEmpty)
             .toList();
 
         debugPrint('CompanySearchService: Found ${companies.length} results');
         return companies;
       } else {
         debugPrint('CompanySearchService: API error ${response.statusCode}');
-        return [];
+        throw CompanyLookupException(
+          CompanyLookupFailureType.serviceUnavailable,
+          statusCode: response.statusCode,
+        );
       }
     } on TimeoutException {
       debugPrint('CompanySearchService: Request timed out');
-      return [];
+      throw const CompanyLookupException(CompanyLookupFailureType.timeout);
+    } on http.ClientException catch (e) {
+      debugPrint('CompanySearchService: Network error: $e');
+      throw const CompanyLookupException(CompanyLookupFailureType.network);
+    } on FormatException catch (e) {
+      debugPrint('CompanySearchService: Invalid JSON response: $e');
+      throw const CompanyLookupException(
+        CompanyLookupFailureType.invalidResponse,
+      );
+    } on TypeError catch (e) {
+      debugPrint('CompanySearchService: Invalid response shape: $e');
+      throw const CompanyLookupException(
+        CompanyLookupFailureType.invalidResponse,
+      );
+    } on CompanyLookupException {
+      rethrow;
     } catch (e) {
       debugPrint('CompanySearchService: Error searching companies: $e');
-      return [];
+      throw const CompanyLookupException(
+        CompanyLookupFailureType.serviceUnavailable,
+      );
     }
   }
 
@@ -153,15 +215,23 @@ class CompanySearchService {
 
       final response = await _client.get(uri, headers: {
         'Accept': 'application/json',
-      }).timeout(const Duration(seconds: 10));
+      }).timeout(_requestTimeout);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
-        final results = data['results'] as List<dynamic>? ?? [];
+        final rawResults = data['results'];
+        if (rawResults is! List) {
+          debugPrint('CompanySearchService: Missing SIRET results list');
+          throw const CompanyLookupException(
+            CompanyLookupFailureType.invalidResponse,
+          );
+        }
+        final results = rawResults;
 
         // Find the exact match by SIRET
         for (final item in results) {
-          final company = CompanySearchResult.fromJson(item as Map<String, dynamic>);
+          final company =
+              CompanySearchResult.fromJson(item as Map<String, dynamic>);
           if (company.siret == cleanedSiret) {
             return company;
           }
@@ -169,13 +239,41 @@ class CompanySearchService {
 
         // If exact SIRET not found, return first result with matching SIREN
         if (results.isNotEmpty) {
-          return CompanySearchResult.fromJson(results.first as Map<String, dynamic>);
+          return CompanySearchResult.fromJson(
+              results.first as Map<String, dynamic>);
         }
       }
+      if (response.statusCode != 200) {
+        debugPrint('CompanySearchService: API error ${response.statusCode}');
+        throw CompanyLookupException(
+          CompanyLookupFailureType.serviceUnavailable,
+          statusCode: response.statusCode,
+        );
+      }
       return null;
+    } on TimeoutException {
+      debugPrint('CompanySearchService: SIRET request timed out');
+      throw const CompanyLookupException(CompanyLookupFailureType.timeout);
+    } on http.ClientException catch (e) {
+      debugPrint('CompanySearchService: SIRET network error: $e');
+      throw const CompanyLookupException(CompanyLookupFailureType.network);
+    } on FormatException catch (e) {
+      debugPrint('CompanySearchService: Invalid SIRET JSON response: $e');
+      throw const CompanyLookupException(
+        CompanyLookupFailureType.invalidResponse,
+      );
+    } on TypeError catch (e) {
+      debugPrint('CompanySearchService: Invalid SIRET response shape: $e');
+      throw const CompanyLookupException(
+        CompanyLookupFailureType.invalidResponse,
+      );
+    } on CompanyLookupException {
+      rethrow;
     } catch (e) {
       debugPrint('CompanySearchService: Error fetching company by SIRET: $e');
-      return null;
+      throw const CompanyLookupException(
+        CompanyLookupFailureType.serviceUnavailable,
+      );
     }
   }
 
