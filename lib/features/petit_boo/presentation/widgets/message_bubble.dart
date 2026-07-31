@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/themes/petit_boo_theme.dart';
 import '../../data/models/chat_message_dto.dart';
 import '../../data/models/tool_result_dto.dart';
+import '../utils/tool_result_visibility.dart';
 import 'streaming_text.dart';
 import 'tool_result_card.dart';
 
@@ -81,12 +82,13 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildToolResults(List<ToolResultDto> results) {
+    final visibleResults = visiblePetitBooToolResults(results);
     final cards = <Widget>[];
-    for (var i = 0; i < results.length; i++) {
+    for (var i = 0; i < visibleResults.length; i++) {
       if (i > 0) {
         cards.add(SizedBox(height: PetitBooTheme.spacing16));
       }
-      cards.add(ToolResultCard(result: results[i]));
+      cards.add(ToolResultCard(result: visibleResults[i]));
     }
     return Padding(
       padding: EdgeInsets.only(bottom: PetitBooTheme.spacing16),
