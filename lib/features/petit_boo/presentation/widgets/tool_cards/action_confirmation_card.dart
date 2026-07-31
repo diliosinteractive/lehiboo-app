@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/petit_boo_theme.dart';
 import '../../../data/models/tool_schema_dto.dart';
+import '../../utils/petit_boo_error_mapper.dart';
 import 'dynamic_tool_result_card.dart';
 import '../animated_toast.dart';
 
@@ -124,7 +125,7 @@ class _ActionConfirmationCardState extends State<ActionConfirmationCard>
   _ActionConfig _getActionConfig(BuildContext context) {
     final l10n = context.l10n;
     final actionType = widget.schema.actionType;
-    final message = widget.data['message'] as String?;
+    final message = safePetitBooServerMessage(widget.data['message']);
     final eventTitle = widget.data['event_title'] as String?;
     final listName = widget.data['list_name'] as String?;
     final eventSlug = widget.data['event_slug'] as String?;
@@ -440,9 +441,11 @@ class _ActionConfirmationCardState extends State<ActionConfirmationCard>
 
   /// Affiche une card d'erreur quand l'action a échoué
   Widget _buildErrorCard(BuildContext context) {
-    final errorMessage = widget.data['error'] as String? ??
-        widget.data['message'] as String? ??
-        context.l10n.petitBooActionGenericError;
+    final errorMessage = petitBooErrorMessageFromPayload(
+      context.l10n,
+      widget.data,
+      fallback: context.l10n.petitBooActionGenericError,
+    );
 
     return Container(
       decoration: BoxDecoration(

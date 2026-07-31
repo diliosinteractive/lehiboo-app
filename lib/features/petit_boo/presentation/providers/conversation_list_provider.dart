@@ -11,10 +11,13 @@ enum ConversationListError {
 
 /// State for the conversations list
 class ConversationListState {
+  static const Object _loadMoreErrorUnset = Object();
+
   final List<ConversationDto> conversations;
   final bool isLoading;
   final bool isLoadingMore;
   final ConversationListError? error;
+  final ConversationListError? loadMoreError;
   final int currentPage;
   final int totalPages;
   final bool hasMore;
@@ -24,6 +27,7 @@ class ConversationListState {
     this.isLoading = false,
     this.isLoadingMore = false,
     this.error,
+    this.loadMoreError,
     this.currentPage = 1,
     this.totalPages = 1,
     this.hasMore = false,
@@ -34,6 +38,7 @@ class ConversationListState {
     bool? isLoading,
     bool? isLoadingMore,
     ConversationListError? error,
+    Object? loadMoreError = _loadMoreErrorUnset,
     int? currentPage,
     int? totalPages,
     bool? hasMore,
@@ -43,6 +48,9 @@ class ConversationListState {
       isLoading: isLoading ?? this.isLoading,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       error: error,
+      loadMoreError: identical(loadMoreError, _loadMoreErrorUnset)
+          ? this.loadMoreError
+          : loadMoreError as ConversationListError?,
       currentPage: currentPage ?? this.currentPage,
       totalPages: totalPages ?? this.totalPages,
       hasMore: hasMore ?? this.hasMore,
@@ -118,9 +126,11 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
 
   /// Load more conversations (pagination)
   Future<void> loadMore() async {
-    if (state.isLoadingMore || !state.hasMore) return;
+    if (state.isLoadingMore || !state.hasMore || state.loadMoreError != null) {
+      return;
+    }
 
-    state = state.copyWith(isLoadingMore: true);
+    state = state.copyWith(isLoadingMore: true, loadMoreError: null);
 
     try {
       final result = await _repository.getConversations(
@@ -136,15 +146,22 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
         currentPage: result.currentPage,
         totalPages: result.totalPages,
         hasMore: result.hasNext,
+        loadMoreError: null,
       );
     } catch (e) {
       if (!mounted) return;
 
       state = state.copyWith(
         isLoadingMore: false,
-        error: _getError(e),
+        loadMoreError: _getError(e),
       );
     }
+  }
+
+  Future<void> retryLoadMore() async {
+    if (state.loadMoreError == null) return;
+    state = state.copyWith(loadMoreError: null);
+    await loadMore();
   }
 
   /// Refresh the conversations list
@@ -152,29 +169,25 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
     state = state.copyWith(
       currentPage: 1,
       hasMore: false,
+      loadMoreError: null,
     );
     await loadConversations();
   }
 
   /// Delete a conversation
-  Future<bool> deleteConversation(String uuid) async {
+  Future<void> deleteConversation(String uuid) async {
     try {
       await _repository.deleteConversation(uuid);
 
-      if (!mounted) return false;
+      if (!mounted) return;
 
       // Remove from local list
       state = state.copyWith(
         conversations:
             state.conversations.where((c) => c.uuid != uuid).toList(),
       );
-
-      return true;
-    } catch (e) {
-      if (!mounted) return false;
-
-      state = state.copyWith(error: _getError(e));
-      return false;
+    } catch (error, stackTrace) {
+      Error.throwWithStackTrace(error, stackTrace);
     }
   }
 

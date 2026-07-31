@@ -255,7 +255,11 @@ class PetitBooSseDataSource {
       if (kDebugMode) {
         debugPrint('🤖 PetitBoo health check failed: $e');
       }
-      return false;
+      // A completed non-200 response above means the service reported itself
+      // unavailable. A thrown request means readiness could not be checked at
+      // all (offline, timeout, DNS, etc.), which the UI must explain
+      // differently and offer to retry.
+      rethrow;
     }
   }
 }

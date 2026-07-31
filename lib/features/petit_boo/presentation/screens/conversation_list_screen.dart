@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/l10n.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../../core/themes/petit_boo_theme.dart';
 import '../../data/models/conversation_dto.dart';
 import '../providers/conversation_list_provider.dart';
@@ -87,13 +88,47 @@ class ConversationListScreen extends ConsumerWidget {
     }
 
     return RefreshIndicator(
-      onRefresh: () => ref.read(conversationListProvider.notifier).refresh(),
+      onRefresh: () async {
+        await ref.read(conversationListProvider.notifier).refresh();
+        if (!context.mounted) return;
+
+        final refreshError = ref.read(conversationListProvider).error;
+        if (refreshError != null) {
+          PetitBooToast.error(
+            context,
+            _errorMessage(context, refreshError),
+          );
+        }
+      },
       color: PetitBooTheme.primary,
       child: ListView.builder(
         padding: EdgeInsets.all(PetitBooTheme.spacing16),
         itemCount: state.conversations.length + (state.hasMore ? 1 : 0),
         itemBuilder: (context, index) {
           if (index == state.conversations.length) {
+            if (state.loadMoreError != null) {
+              return Padding(
+                padding: EdgeInsets.all(PetitBooTheme.spacing16),
+                child: Column(
+                  children: [
+                    Text(
+                      context.l10n.petitBooConversationsLoadMoreFailed,
+                      textAlign: TextAlign.center,
+                      style: PetitBooTheme.bodySm.copyWith(
+                        color: PetitBooTheme.error,
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => ref
+                          .read(conversationListProvider.notifier)
+                          .retryLoadMore(),
+                      icon: const Icon(Icons.refresh),
+                      label: Text(context.l10n.commonRetry),
+                    ),
+                  ],
+                ),
+              );
+            }
             if (state.isLoadingMore) {
               return Center(
                 child: Padding(
@@ -359,13 +394,24 @@ class ConversationListScreen extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      final success = await ref
-          .read(conversationListProvider.notifier)
-          .deleteConversation(conversation.uuid);
-
-      if (context.mounted && success) {
+      try {
+        await ref
+            .read(conversationListProvider.notifier)
+            .deleteConversation(conversation.uuid);
+        if (!context.mounted) return;
         PetitBooToast.success(
-            context, context.l10n.petitBooConversationDeleted);
+          context,
+          context.l10n.petitBooConversationDeleted,
+        );
+      } catch (error) {
+        if (!context.mounted) return;
+        PetitBooToast.error(
+          context,
+          ApiResponseHandler.extractError(
+            error,
+            fallback: context.l10n.petitBooConversationDeleteFailed,
+          ),
+        );
       }
     }
   }

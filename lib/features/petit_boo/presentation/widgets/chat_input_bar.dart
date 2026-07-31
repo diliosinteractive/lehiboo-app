@@ -5,6 +5,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/petit_boo_theme.dart';
+import '../../../../core/utils/speech_recognition_error_message.dart';
 import '../providers/petit_boo_chat_provider.dart';
 import 'animated_toast.dart';
 
@@ -51,51 +52,63 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
   }
 
   Future<void> _initSpeech() async {
-    var micStatus = await Permission.microphone.status;
-    if (!micStatus.isGranted) {
-      micStatus = await Permission.microphone.request();
-      if (micStatus.isPermanentlyDenied) {
-        openAppSettings();
-        return;
-      }
-    }
-
-    var speechStatus = await Permission.speech.status;
-    if (!speechStatus.isGranted) {
-      speechStatus = await Permission.speech.request();
-      if (speechStatus.isPermanentlyDenied) {
-        openAppSettings();
-        return;
-      }
-    }
-
     try {
-      _speechEnabled = await _speech.initialize(
+      var micStatus = await Permission.microphone.status;
+      if (!micStatus.isGranted) {
+        micStatus = await Permission.microphone.request();
+        if (!micStatus.isGranted) {
+          _showSpeechError('error_permission');
+          if (micStatus.isPermanentlyDenied) {
+            await openAppSettings();
+          }
+          return;
+        }
+      }
+
+      var speechStatus = await Permission.speech.status;
+      if (!speechStatus.isGranted) {
+        speechStatus = await Permission.speech.request();
+        if (!speechStatus.isGranted) {
+          _showSpeechError('error_permission');
+          if (speechStatus.isPermanentlyDenied) {
+            await openAppSettings();
+          }
+          return;
+        }
+      }
+
+      final enabled = await _speech.initialize(
         onStatus: (status) {
           if (status == 'notListening' || status == 'done') {
             if (mounted) setState(() => _isListening = false);
           }
         },
         onError: (errorNotification) {
-          if (mounted) {
-            setState(() => _isListening = false);
-            PetitBooToast.error(
-              context,
-              context.l10n.voiceMicrophoneError(errorNotification.errorMsg),
-            );
-          }
+          _showSpeechError(errorNotification.errorMsg);
         },
       );
-      if (mounted) setState(() {});
+      if (!mounted) return;
+      setState(() => _speechEnabled = enabled);
+      if (!enabled) _showSpeechError(null);
     } catch (e) {
-      debugPrint("Speech init error: $e");
+      debugPrint('Speech init error: $e');
+      _showSpeechError(e);
     }
+  }
+
+  void _showSpeechError(Object? code) {
+    if (!mounted) return;
+    setState(() => _isListening = false);
+    PetitBooToast.error(
+      context,
+      speechRecognitionErrorMessage(context.l10n, code),
+    );
   }
 
   Future<void> _startListening() async {
     if (!_speechEnabled) {
       await _initSpeech();
-      return;
+      if (!mounted || !_speechEnabled) return;
     }
 
     if (_isListening) {
@@ -104,27 +117,38 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
     }
 
     setState(() => _isListening = true);
-    await _speech.listen(
-      onResult: (result) {
-        if (!_isListening) return;
+    try {
+      final started = await _speech.listen(
+        onResult: (result) {
+          if (!mounted || !_isListening) return;
 
-        setState(() {
-          _controller.text = result.recognizedWords;
-          _controller.selection = TextSelection.fromPosition(
-            TextPosition(offset: _controller.text.length),
-          );
-          if (result.finalResult) {
-            _isListening = false;
-          }
-        });
-      },
-      localeId: context.appLocaleName,
-    );
+          setState(() {
+            _controller.text = result.recognizedWords;
+            _controller.selection = TextSelection.fromPosition(
+              TextPosition(offset: _controller.text.length),
+            );
+            if (result.finalResult) {
+              _isListening = false;
+            }
+          });
+        },
+        localeId: context.appLocaleName,
+      );
+      if (!started) _showSpeechError(null);
+    } catch (e) {
+      debugPrint('Speech listen error: $e');
+      _showSpeechError(e);
+    }
   }
 
   Future<void> _stopListening() async {
-    setState(() => _isListening = false);
-    await _speech.stop();
+    if (mounted) setState(() => _isListening = false);
+    try {
+      await _speech.stop();
+    } catch (e) {
+      debugPrint('Speech stop error: $e');
+      _showSpeechError(e);
+    }
   }
 
   void _onTextChanged() {
@@ -135,6 +159,8 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
   }
 
   void _sendMessage() {
+    if (!ref.read(petitBooChatProvider).canSendMessage) return;
+
     if (_isListening) {
       _stopListening();
     }
@@ -151,8 +177,8 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final chatState = ref.watch(petitBooChatProvider);
-    final canSend = chatState.canSendMessage && _hasText;
-    final isDisabled = chatState.isStreaming || chatState.isLoading;
+    final isInputDisabled = chatState.isStreaming || chatState.isLoading;
+    final isActionDisabled = !chatState.canSendMessage;
 
     return SafeArea(
       top: false,
@@ -206,7 +232,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                       maxLines: 1,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _sendMessage(),
-                      enabled: !isDisabled,
+                      enabled: !isInputDisabled,
                       style: PetitBooTheme.bodyLg.copyWith(
                         color: PetitBooTheme.textPrimary,
                       ),
@@ -234,7 +260,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                     padding: const EdgeInsets.only(
                       right: PetitBooTheme.spacing8,
                     ),
-                    child: _buildActionButton(canSend, isDisabled),
+                    child: _buildActionButton(isActionDisabled),
                   ),
                 ],
               ),
@@ -264,7 +290,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
     return l10n.petitBooChatHintIdle;
   }
 
-  Widget _buildActionButton(bool canSend, bool isDisabled) {
+  Widget _buildActionButton(bool isDisabled) {
     const size = 48.0;
 
     return AnimatedContainer(

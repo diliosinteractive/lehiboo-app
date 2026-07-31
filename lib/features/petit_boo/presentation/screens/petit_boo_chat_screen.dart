@@ -13,6 +13,7 @@ import '../widgets/chat_input_bar.dart';
 import '../widgets/limit_reached_dialog.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/quota_indicator.dart';
+import '../widgets/service_status_banner.dart';
 import '../widgets/typing_indicator.dart';
 
 /// Main chat screen for Petit Boo AI assistant
@@ -145,7 +146,15 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
       body: Column(
         children: [
           if (chatState.error != null) _buildErrorBanner(chatState.error!),
-          if (!chatState.isServiceAvailable) _buildServiceUnavailableBanner(),
+          if (chatState.serviceStatus != PetitBooServiceStatus.available)
+            PetitBooServiceStatusBanner(
+              status: chatState.serviceStatus,
+              onRetry: () {
+                ref
+                    .read(petitBooChatProvider.notifier)
+                    .checkServiceAvailability();
+              },
+            ),
           if (chatState.pendingConfirmation != null)
             _buildConfirmationBanner(chatState),
           Expanded(
@@ -282,53 +291,6 @@ class _PetitBooChatScreenState extends ConsumerState<PetitBooChatScreen> {
             },
             padding: EdgeInsets.zero,
             constraints: BoxConstraints(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildServiceUnavailableBanner() {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        horizontal: PetitBooTheme.spacing16,
-        vertical: PetitBooTheme.spacing12,
-      ),
-      decoration: BoxDecoration(
-        color: PetitBooTheme.warningLight,
-        border: Border(
-          bottom:
-              BorderSide(color: PetitBooTheme.warning.withValues(alpha: 0.2)),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.cloud_off_rounded,
-            color: PetitBooTheme.warning,
-            size: PetitBooTheme.iconMd,
-          ),
-          SizedBox(width: PetitBooTheme.spacing8),
-          Expanded(
-            child: Text(
-              context.l10n.petitBooServiceUnavailable,
-              style:
-                  PetitBooTheme.bodySm.copyWith(color: PetitBooTheme.grey700),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              ref
-                  .read(petitBooChatProvider.notifier)
-                  .checkServiceAvailability();
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: PetitBooTheme.warning,
-              padding:
-                  EdgeInsets.symmetric(horizontal: PetitBooTheme.spacing12),
-            ),
-            child: Text(context.l10n.commonRetry),
           ),
         ],
       ),

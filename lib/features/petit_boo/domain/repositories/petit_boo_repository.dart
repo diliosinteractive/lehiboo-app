@@ -45,7 +45,10 @@ abstract class PetitBooRepository {
   /// Cancel a pending Petit Boo action
   Future<void> cancelPendingAction(String actionId);
 
-  /// Check if Petit Boo service is available
+  /// Check if Petit Boo service is available.
+  ///
+  /// Returns `false` when the readiness endpoint responds as unhealthy and
+  /// throws when the readiness request itself cannot be completed.
   Future<bool> isServiceAvailable();
 
   /// Set auth token for API calls

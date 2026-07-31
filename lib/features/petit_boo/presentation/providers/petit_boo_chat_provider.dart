@@ -18,31 +18,7 @@ import '../../data/models/chat_message_dto.dart';
 import '../../data/models/quota_dto.dart';
 import '../../data/models/tool_result_dto.dart';
 import '../../domain/repositories/petit_boo_repository.dart';
-
-String _safePetitBooErrorMessage(
-  Object? error, {
-  required String fallback,
-}) {
-  final raw = (error ?? '').toString().trim();
-  if (raw.isEmpty) return fallback;
-
-  final lower = raw.toLowerCase();
-  final exposesProviderDetails = lower.contains('openai') ||
-      lower.contains('deepseek') ||
-      lower.contains('platform.') ||
-      lower.contains('api.openai') ||
-      lower.contains('insufficient_quota') ||
-      lower.contains('billing') ||
-      lower.contains('error code:') ||
-      lower.contains('model') ||
-      lower.contains('provider') ||
-      lower.contains('langchain') ||
-      lower.contains('traceback');
-
-  if (exposesProviderDetails) return fallback;
-
-  return raw;
-}
+import '../utils/petit_boo_error_mapper.dart';
 
 /// Provider for the context storage
 final petitBooContextStorageProvider = Provider<PetitBooContextStorage>((ref) {
@@ -70,6 +46,20 @@ class PetitBooPendingConfirmation {
   });
 }
 
+/// Result of the Petit Boo readiness check.
+///
+/// [unavailable] means the backend answered the readiness request with a
+/// non-success status. [checkFailed] means the app could not complete the
+/// request, for example because the device is offline or the request timed
+/// out. Keeping those outcomes separate prevents a connectivity problem from
+/// being presented as planned service downtime.
+enum PetitBooServiceStatus {
+  checking,
+  available,
+  unavailable,
+  checkFailed,
+}
+
 /// State for the Petit Boo chat
 class PetitBooChatState {
   final List<ChatMessageDto> messages;
@@ -80,7 +70,7 @@ class PetitBooChatState {
   final String? sessionUuid;
   final String? error;
   final QuotaDto? quota;
-  final bool isServiceAvailable;
+  final PetitBooServiceStatus serviceStatus;
   final Map<String, dynamic> userContext;
   final bool isMemoryEnabled;
   final bool isLimitReached;
@@ -97,7 +87,7 @@ class PetitBooChatState {
     this.sessionUuid,
     this.error,
     this.quota,
-    this.isServiceAvailable = true,
+    this.serviceStatus = PetitBooServiceStatus.checking,
     this.userContext = const {},
     this.isMemoryEnabled = true,
     this.isLimitReached = false,
@@ -118,7 +108,7 @@ class PetitBooChatState {
     String? sessionUuid,
     Object? error = _notProvided,
     QuotaDto? quota,
-    bool? isServiceAvailable,
+    PetitBooServiceStatus? serviceStatus,
     Map<String, dynamic>? userContext,
     bool? isMemoryEnabled,
     bool? isLimitReached,
@@ -135,7 +125,7 @@ class PetitBooChatState {
       sessionUuid: sessionUuid ?? this.sessionUuid,
       error: error == _notProvided ? this.error : error as String?,
       quota: quota ?? this.quota,
-      isServiceAvailable: isServiceAvailable ?? this.isServiceAvailable,
+      serviceStatus: serviceStatus ?? this.serviceStatus,
       userContext: userContext ?? this.userContext,
       isMemoryEnabled: isMemoryEnabled ?? this.isMemoryEnabled,
       isLimitReached: isLimitReached ?? this.isLimitReached,
@@ -146,6 +136,9 @@ class PetitBooChatState {
       isConfirmingAction: isConfirmingAction ?? this.isConfirmingAction,
     );
   }
+
+  bool get isServiceAvailable =>
+      serviceStatus == PetitBooServiceStatus.available;
 
   /// Check if user can send a message
   bool get canSendMessage =>
@@ -289,11 +282,24 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
   /// Check if Petit Boo service is available
   Future<void> checkServiceAvailability() async {
+    state = state.copyWith(serviceStatus: PetitBooServiceStatus.checking);
+
     try {
       final isAvailable = await _repository.isServiceAvailable();
-      state = state.copyWith(isServiceAvailable: isAvailable);
+      if (!mounted) return;
+      state = state.copyWith(
+        serviceStatus: isAvailable
+            ? PetitBooServiceStatus.available
+            : PetitBooServiceStatus.unavailable,
+      );
     } catch (e) {
-      state = state.copyWith(isServiceAvailable: false);
+      if (!mounted) return;
+      state = state.copyWith(
+        serviceStatus: PetitBooServiceStatus.checkFailed,
+      );
+      if (kDebugMode) {
+        debugPrint('🤖 PetitBoo: Availability check failed: $e');
+      }
     }
   }
 
@@ -333,9 +339,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
       waitCount++;
     }
 
-    if (state.isStreaming ||
-        state.isLoading ||
-        !state.isServiceAvailable) {
+    if (state.isStreaming || state.isLoading || !state.isServiceAvailable) {
       return;
     }
 
@@ -463,13 +467,15 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
       case 'error':
         // Error during processing
-        if (event.code == 'quota_exceeded') {
+        if (isPetitBooQuotaErrorCode(
+          event.code is String ? event.code as String : null,
+        )) {
           _saveActiveMessageAsPending();
           state = state.copyWith(
             messages: _withoutActiveOptimisticMessage(),
             currentStreamingText: '',
             currentToolResults: [],
-            error: event.error ?? _l10n.petitBooQuotaExceededError,
+            error: _l10n.petitBooQuotaExceededError,
             isStreaming: false,
             isLimitReached: true,
           );
@@ -478,7 +484,12 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
           break;
         }
         state = state.copyWith(
-          error: event.error ?? _l10n.petitBooGenericError,
+          error: petitBooErrorMessageForCode(
+            _l10n,
+            code: event.code is String ? event.code as String : null,
+            serverMessage: event.error,
+            fallback: _l10n.petitBooGenericError,
+          ),
           isStreaming: false,
         );
         break;
@@ -502,7 +513,8 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
         actionId: actionId,
         tool: event.tool as String? ?? '',
         arguments: event.arguments as Map<String, dynamic>? ?? const {},
-        message: result['message'] as String? ?? _l10n.petitBooConfirmationBody,
+        message: safePetitBooServerMessage(result['message']) ??
+            _l10n.petitBooConfirmationBody,
         expiresAt: result['expires_at'] as String?,
       ),
     );
@@ -516,40 +528,24 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
       debugPrint('🤖 PetitBoo: Stream error - $error');
     }
 
-    String errorMessage = _l10n.petitBooConnectionError;
-
-    if (error is PetitBooSseException) {
-      switch (error.code) {
-        case 'auth_required':
-        case 'auth_invalid':
-          errorMessage = _l10n.petitBooAuthRequiredError;
-          break;
-        case 'quota_exceeded':
-          errorMessage = _l10n.petitBooQuotaExceededError;
-          _saveActiveMessageAsPending();
-          break;
-        case 'timeout':
-        case 'network':
-        case 'connection_closed':
-          // Codes réseau : message localisé, jamais la string technique brute.
-          errorMessage = _l10n.petitBooConnectionError;
-          break;
-        default:
-          errorMessage = _safePetitBooErrorMessage(
-            error.message,
-            fallback: _l10n.petitBooUnavailable,
-          );
-      }
+    final sseError = error is PetitBooSseException ? error : null;
+    final isQuotaExceeded = isPetitBooQuotaErrorCode(sseError?.code);
+    if (isQuotaExceeded) {
+      _saveActiveMessageAsPending();
     }
+    final errorMessage = petitBooErrorMessageForCode(
+      _l10n,
+      code: sseError?.code,
+      serverMessage: sseError?.message,
+      fallback: _l10n.petitBooConnectionError,
+    );
 
     state = state.copyWith(
-      messages: error is PetitBooSseException && error.code == 'quota_exceeded'
-          ? _withoutActiveOptimisticMessage()
-          : state.messages,
+      messages:
+          isQuotaExceeded ? _withoutActiveOptimisticMessage() : state.messages,
       error: errorMessage,
       isStreaming: false,
-      isLimitReached:
-          error is PetitBooSseException && error.code == 'quota_exceeded',
+      isLimitReached: isQuotaExceeded,
     );
     _activeMessage = null;
 
@@ -603,8 +599,9 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
     }
 
     state = state.copyWith(
-      error: _safePetitBooErrorMessage(
-        error,
+      error: petitBooErrorMessageForCode(
+        _l10n,
+        serverMessage: error,
         fallback: _l10n.petitBooUnavailable,
       ),
       isStreaming: false,
@@ -701,8 +698,9 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
       _syncBrainMemoryFromToolResult(tool, result);
     } catch (e) {
       state = state.copyWith(
-        error: _safePetitBooErrorMessage(
-          e,
+        error: petitBooErrorMessageForCode(
+          _l10n,
+          serverMessage: e,
           fallback: _l10n.petitBooConfirmationError,
         ),
         isConfirmingAction: false,
@@ -725,8 +723,9 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
       );
     } catch (e) {
       state = state.copyWith(
-        error: _safePetitBooErrorMessage(
-          e,
+        error: petitBooErrorMessageForCode(
+          _l10n,
+          serverMessage: e,
           fallback: _l10n.petitBooConfirmationError,
         ),
         isConfirmingAction: false,
@@ -735,22 +734,26 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
   }
 
   String _confirmedActionMessage(Map<String, dynamic> result) {
+    final succeeded = result['success'] != false;
+    if (!succeeded) {
+      return petitBooErrorMessageFromPayload(
+        _l10n,
+        result,
+        fallback: _l10n.petitBooConfirmationError,
+      );
+    }
+
     final data = result['data'];
     if (data is Map<String, dynamic>) {
-      final message = data['message'];
-      if (message is String && message.trim().isNotEmpty) {
+      final message = safePetitBooServerMessage(data['message']);
+      if (message != null) {
         return message;
       }
     }
 
-    final message = result['message'];
-    if (message is String && message.trim().isNotEmpty) {
+    final message = safePetitBooServerMessage(result['message']);
+    if (message != null) {
       return message;
-    }
-
-    final error = result['error'];
-    if (error is String && error.trim().isNotEmpty) {
-      return error;
     }
 
     return _l10n.petitBooConfirmationDone;
