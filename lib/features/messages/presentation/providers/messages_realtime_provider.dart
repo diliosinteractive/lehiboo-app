@@ -16,13 +16,9 @@ import 'package:lehiboo/features/notifications/domain/entities/in_app_notificati
 import 'package:lehiboo/features/notifications/presentation/providers/in_app_notifications_provider.dart';
 import 'package:lehiboo/routes/app_router.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/domain/entities/user.dart';
-import 'conversations_provider.dart';
-import 'support_conversations_provider.dart';
-import 'vendor_broadcasts_provider.dart';
 import 'vendor_conversations_provider.dart';
-import 'vendor_org_conversations_provider.dart';
-import 'admin_conversations_provider.dart';
 import 'unread_count_provider.dart';
 
 // ── Event model ───────────────────────────────────────────────────────────────
@@ -68,8 +64,18 @@ class _StorageTokenAuthDelegate
         EndpointAuthorizableChannelAuthorizationDelegate<
             PrivateChannelAuthorizationData> {
   final FlutterSecureStorage _storage;
+  final bool Function() _isActive;
 
-  const _StorageTokenAuthDelegate(this._storage);
+  const _StorageTokenAuthDelegate(
+    this._storage, {
+    required bool Function() isActive,
+  }) : _isActive = isActive;
+
+  void _ensureActive() {
+    if (!_isActive()) {
+      throw StateError('Stale realtime authorization request');
+    }
+  }
 
   @override
   EndpointAuthFailedCallback? get onAuthFailed => null;
@@ -79,8 +85,12 @@ class _StorageTokenAuthDelegate
     String socketId,
     String channelName,
   ) async {
+    _ensureActive();
     final endpoint = EnvConfig.pusherAuthEndpoint;
     final token = await _storage.read(key: AppConstants.keyAuthToken);
+    // The secure-storage value may have changed while it was being read. Never
+    // authorize an old account's channel with the next account's token.
+    _ensureActive();
     if (token == null || token.isEmpty) {
       dev.log(
         '[Pusher][auth] ✗ No auth token in secure storage — channel=$channelName endpoint=$endpoint',
@@ -106,9 +116,13 @@ class _StorageTokenAuthDelegate
         },
       );
     } catch (e, st) {
+      _ensureActive();
       dev.log('[Pusher][auth] ✗ Network error calling $endpoint: $e\n$st');
       rethrow;
     }
+    // A response from an authorization request that outlived its connection
+    // generation must not be handed back to the stale channel.
+    _ensureActive();
     if (response.statusCode != 200) {
       dev.log(
         '[Pusher][auth] ✗ HTTP ${response.statusCode} from $endpoint — body=${response.body}',
@@ -155,6 +169,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
   final _eventsController = StreamController<RealtimeEvent>.broadcast();
   int? _orgId; // numeric org ID currently subscribed to
   String? _activeUserId;
+  int _connectionGeneration = 0;
 
   Stream<RealtimeEvent> get events => _eventsController.stream;
 
@@ -164,27 +179,12 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         authState.user != null) {
       _connect(authState.user!.id);
     }
-    _ref.listen<AuthState>(authProvider, (prev, next) {
-      if (next.status == AuthStatus.authenticated && next.user != null) {
-        if (prev?.user?.id != next.user!.id) {
-          _connect(next.user!.id);
-          _invalidateMessageProviders();
-        }
-      } else if (next.status == AuthStatus.unauthenticated) {
-        _disconnect();
-        _invalidateMessageProviders();
-      }
-    });
   }
 
   Future<void> _connect(String userId) async {
-    await _disconnect();
-    final authState = _ref.read(authProvider);
-    if (!mounted ||
-        !authState.isAuthenticated ||
-        authState.user?.id != userId) {
-      return;
-    }
+    final generation = ++_connectionGeneration;
+    await _disconnect(invalidateGeneration: false);
+    if (!_canStartConnection(userId, generation)) return;
     if (EnvConfig.pusherKey.isEmpty) {
       dev.log('[Pusher] PUSHER_APP_KEY not configured — skipping WS');
       return;
@@ -197,6 +197,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
     dev.log(
       '[Pusher] Connecting → ${EnvConfig.pusherUseTLS ? "wss" : "ws"}://${EnvConfig.pusherHost}:${EnvConfig.pusherPort} key=${EnvConfig.pusherKey} channel=private-user.$userId',
     );
+    PusherChannelsClient? connectionClient;
     try {
       final options = PusherChannelsOptions.fromHost(
         scheme: EnvConfig.pusherUseTLS ? 'wss' : 'ws',
@@ -205,92 +206,154 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         port: EnvConfig.pusherPort,
       );
 
-      _client = PusherChannelsClient.websocket(
+      connectionClient = PusherChannelsClient.websocket(
         options: options,
         connectionErrorHandler: (error, trace, refresh) {
+          final client = connectionClient;
+          if (client == null || !_ownsConnection(client, userId, generation)) {
+            return;
+          }
           dev.log('[Pusher] Connection error: $error');
           refresh();
         },
         minimumReconnectDelayDuration: const Duration(seconds: 2),
       );
+      final client = connectionClient;
+      if (!_canStartConnection(userId, generation)) {
+        client.dispose();
+        return;
+      }
+      _client = client;
 
-      _lifecycleSub = _client!.lifecycleStream.listen((lifecycleState) {
+      _lifecycleSub = client.lifecycleStream.listen((lifecycleState) {
+        if (!_ownsConnection(client, userId, generation)) return;
         dev.log('[Pusher] Lifecycle → $lifecycleState');
-        if (mounted) {
-          state = lifecycleState ==
-              PusherChannelsClientLifeCycleState.establishedConnection;
-        }
+        state = lifecycleState ==
+            PusherChannelsClientLifeCycleState.establishedConnection;
       });
 
       // Global wiretap: logs EVERY frame received from the WebSocket —
       // protocol events (pusher:*, pusher_internal:*) and channel events.
       // Useful when an event is fired by the backend but not handled by any
       // bound channel (wrong channel name, wrong event name, payload shape…).
-      _allEventsSub = _client!.eventStream.listen((event) {
+      _allEventsSub = client.eventStream.listen((event) {
+        if (!_ownsConnection(client, userId, generation)) return;
         final root = event.rootObject;
         dev.log(
           '[Pusher][wire] ← name="${root['event']}" channel="${root['channel'] ?? '-'}" data=${root['data']}',
         );
       });
 
-      final channel = _client!.privateChannel(
+      final channel = client.privateChannel(
         'private-user.$userId',
-        authorizationDelegate: _StorageTokenAuthDelegate(_storage),
+        authorizationDelegate: _StorageTokenAuthDelegate(
+          _storage,
+          isActive: () => _ownsConnection(client, userId, generation),
+        ),
       );
 
       _eventSub = channel.bindToAll().listen(
-            (event) => _handleEvent(event, subscriptionUserId: userId),
+            (event) => _handleEvent(
+              event,
+              subscriptionUserId: userId,
+              connectionGeneration: generation,
+            ),
           );
 
-      _connectedSub = _client!.onConnectionEstablished.listen((_) {
+      _connectedSub = client.onConnectionEstablished.listen((_) {
+        if (!_ownsConnection(client, userId, generation)) return;
         dev.log('[Pusher] Connected — subscribing to private-user.$userId');
         channel.subscribeIfNotUnsubscribed();
         // Re-subscribe to org channel on every (re)connect
-        if (_orgId != null) _subscribeOrgChannel(_orgId!);
+        final orgId = _orgId;
+        if (orgId != null) {
+          _subscribeOrgChannelForConnection(
+            orgId,
+            expectedClient: client,
+            expectedUserId: userId,
+            expectedGeneration: generation,
+          );
+        }
       });
 
-      await _client!.connect();
+      await client.connect();
     } catch (e, st) {
       dev.log('[Pusher] connect() failed: $e\n$st');
+      final client = connectionClient;
+      if (client != null && _ownsConnection(client, userId, generation)) {
+        state = false;
+      }
     }
   }
 
-  void _invalidateMessageProviders() {
-    _ref.invalidate(conversationsProvider);
-    _ref.invalidate(supportConversationsProvider);
-    _ref.invalidate(vendorConversationsProvider);
-    _ref.invalidate(vendorSupportProvider);
-    _ref.invalidate(vendorOrgConversationsProvider);
-    _ref.invalidate(vendorBroadcastsProvider);
-    _ref.invalidate(adminConversationsProvider);
-    _ref.invalidate(adminReportsProvider);
-    _ref.read(unreadCountProvider.notifier).reset();
+  bool _canStartConnection(String userId, int generation) {
+    if (!mounted || generation != _connectionGeneration) return false;
+    final authState = _ref.read(authProvider);
+    return authState.isAuthenticated && authState.user?.id == userId;
   }
 
-  Future<void> _disconnect() async {
+  bool _ownsConnection(
+    PusherChannelsClient client,
+    String userId,
+    int generation,
+  ) {
+    return _canStartConnection(userId, generation) &&
+        identical(_client, client) &&
+        _activeUserId == userId;
+  }
+
+  Future<void> _disconnect({bool invalidateGeneration = true}) async {
+    if (invalidateGeneration) _connectionGeneration++;
+
+    // Detach shared references before the first await. A later connection may
+    // now safely install its own client while this method tears down only the
+    // captured, older resources.
+    final client = _client;
+    final lifecycleSub = _lifecycleSub;
+    final eventSub = _eventSub;
+    final orgEventSub = _orgEventSub;
+    final allEventsSub = _allEventsSub;
+    final connectedSub = _connectedSub;
+    _client = null;
     _activeUserId = null;
-    _lifecycleSub?.cancel();
-    _eventSub?.cancel();
-    _orgEventSub?.cancel();
-    _allEventsSub?.cancel();
-    _connectedSub?.cancel();
+    _activeScaffoldMessenger?.hideCurrentSnackBar();
     _lifecycleSub = null;
     _eventSub = null;
     _orgEventSub = null;
     _allEventsSub = null;
     _connectedSub = null;
     _orgId = null;
-    try {
-      await _client?.disconnect();
-      _client?.dispose();
-    } catch (_) {}
-    _client = null;
     if (mounted) state = false;
+
+    try {
+      await Future.wait<void>([
+        if (lifecycleSub != null) lifecycleSub.cancel(),
+        if (eventSub != null) eventSub.cancel(),
+        if (orgEventSub != null) orgEventSub.cancel(),
+        if (allEventsSub != null) allEventsSub.cancel(),
+        if (connectedSub != null) connectedSub.cancel(),
+      ]);
+    } catch (_) {}
+    try {
+      await client?.disconnect();
+    } catch (_) {}
+    try {
+      client?.dispose();
+    } catch (_) {}
   }
 
   /// Subscribe to the vendor's organisation channel (`private-organization.{orgId}`).
   /// Safe to call multiple times — skips if already subscribed to the same org.
-  void subscribeToOrganization(int orgId) {
+  void subscribeToOrganization(int orgId, {String? forUserId}) {
+    final authState = _ref.read(authProvider);
+    final currentUserId = authState.user?.id;
+    if (!authState.isAuthenticated ||
+        currentUserId == null ||
+        (forUserId != null && forUserId != currentUserId) ||
+        (_activeUserId != null && _activeUserId != currentUserId)) {
+      dev.log('[Pusher] Dropped stale organization subscription request');
+      return;
+    }
     if (_orgId == orgId) return;
     _orgId = orgId;
     if (_client == null) {
@@ -304,33 +367,76 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
   }
 
   void _subscribeOrgChannel(int orgId) {
-    _orgEventSub?.cancel();
+    final client = _client;
     final subscriptionUserId = _activeUserId;
-    if (subscriptionUserId == null) return;
+    final generation = _connectionGeneration;
+    if (client == null ||
+        subscriptionUserId == null ||
+        !_ownsConnection(client, subscriptionUserId, generation)) {
+      return;
+    }
+    _subscribeOrgChannelForConnection(
+      orgId,
+      expectedClient: client,
+      expectedUserId: subscriptionUserId,
+      expectedGeneration: generation,
+    );
+  }
+
+  void _subscribeOrgChannelForConnection(
+    int orgId, {
+    required PusherChannelsClient expectedClient,
+    required String expectedUserId,
+    required int expectedGeneration,
+  }) {
+    if (!_ownsConnection(
+      expectedClient,
+      expectedUserId,
+      expectedGeneration,
+    )) {
+      return;
+    }
+    _orgEventSub?.cancel();
     final channelName = 'private-organization.$orgId';
     dev.log('[Pusher] Subscribing to $channelName');
-    final orgChannel = _client!.privateChannel(
+    final orgChannel = expectedClient.privateChannel(
       channelName,
-      authorizationDelegate: _StorageTokenAuthDelegate(_storage),
+      authorizationDelegate: _StorageTokenAuthDelegate(
+        _storage,
+        isActive: () => _ownsConnection(
+          expectedClient,
+          expectedUserId,
+          expectedGeneration,
+        ),
+      ),
     );
     _orgEventSub = orgChannel.bindToAll().listen(
           (event) => _handleEvent(
             event,
-            subscriptionUserId: subscriptionUserId,
+            subscriptionUserId: expectedUserId,
+            connectionGeneration: expectedGeneration,
           ),
         );
-    orgChannel.subscribeIfNotUnsubscribed();
+    if (_ownsConnection(
+      expectedClient,
+      expectedUserId,
+      expectedGeneration,
+    )) {
+      orgChannel.subscribeIfNotUnsubscribed();
+    }
   }
 
   void _handleEvent(
     ChannelReadEvent event, {
     required String subscriptionUserId,
+    required int connectionGeneration,
   }) {
     if (_eventsController.isClosed) return;
     final authState = _ref.read(authProvider);
     if (!authState.isAuthenticated ||
         authState.user?.id != subscriptionUserId ||
-        _activeUserId != subscriptionUserId) {
+        _activeUserId != subscriptionUserId ||
+        _connectionGeneration != connectionGeneration) {
       dev.log('[Pusher] Dropped event from a stale account subscription');
       return;
     }
@@ -486,7 +592,15 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
   }
 
   void _showForegroundNotification(InAppNotification notification) {
-    final messenger = scaffoldMessengerKey.currentState;
+    final ownerAccountId = _activeUserId;
+    final notificationGeneration = _connectionGeneration;
+    final auth = _ref.read(authProvider);
+    if (ownerAccountId == null ||
+        !auth.isAuthenticated ||
+        auth.user?.id != ownerAccountId) {
+      return;
+    }
+    final messenger = _activeScaffoldMessenger;
     if (messenger == null) return;
     final l10n = messenger.context.l10n;
 
@@ -506,6 +620,14 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         action: SnackBarAction(
           label: l10n.messagesNotificationOpenAction,
           onPressed: () {
+            final currentAuth = _ref.read(authProvider);
+            if (_activeUserId != ownerAccountId ||
+                _connectionGeneration != notificationGeneration ||
+                !currentAuth.isAuthenticated ||
+                currentAuth.user?.id != ownerAccountId) {
+              _activeScaffoldMessenger?.hideCurrentSnackBar();
+              return;
+            }
             _ref.read(deepLinkServiceProvider).navigateFromNotification(
                   actionUrl: notification.actionUrl,
                   type: notification.type,
@@ -515,6 +637,17 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
         ),
       ),
     );
+  }
+
+  /// Global keys require an initialized widget binding. Message providers are
+  /// also used in pure Riverpod tests and background teardown paths, where no
+  /// Flutter view exists, so resolving the messenger must fail harmlessly.
+  ScaffoldMessengerState? get _activeScaffoldMessenger {
+    try {
+      return scaffoldMessengerKey.currentState;
+    } catch (_) {
+      return null;
+    }
   }
 
   int? _int(dynamic value) {
@@ -593,6 +726,7 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
 
 final messagesRealtimeProvider =
     StateNotifierProvider<MessagesRealtimeNotifier, bool>((ref) {
+  ref.watch(authSessionKeyProvider);
   return MessagesRealtimeNotifier(ref);
 });
 

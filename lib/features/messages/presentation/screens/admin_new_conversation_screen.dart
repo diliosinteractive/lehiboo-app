@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../data/datasources/messages_api_datasource.dart';
 import '../../data/repositories/messages_repository_impl.dart';
 
@@ -92,6 +94,32 @@ class _AdminNewConversationScreenState
 
   bool _submitting = false;
   String? _error;
+  late final String? _ownerAccountId;
+  bool _sessionInvalid = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ownerAccountId = ref.read(authSessionUserIdProvider);
+  }
+
+  bool get _ownsCurrentAccount =>
+      !_sessionInvalid &&
+      _ownerAccountId != null &&
+      ref.read(authSessionUserIdProvider) == _ownerAccountId;
+
+  void _handleAccountChange(String? nextAccountId) {
+    if (nextAccountId == _ownerAccountId || _sessionInvalid) return;
+    _sessionInvalid = true;
+    _subjectController.clear();
+    _messageController.clear();
+    _selectedUser = null;
+    _selectedOrg = null;
+    if (mounted) setState(() => _submitting = false);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _sessionInvalid) Navigator.of(context).maybePop();
+    });
+  }
 
   @override
   void dispose() {
@@ -109,32 +137,45 @@ class _AdminNewConversationScreenState
   // ── Search modals ─────────────────────────────────────────────────────────────
 
   Future<void> _openUserSearch() async {
+    if (!_ownsCurrentAccount) return;
     final selected = await showModalBottomSheet<_AdminUser>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => _UserSearchSheet(
-        datasource: ref.read(messagesApiDataSourceProvider),
+      builder: (_) => AccountBoundRouteGuard<_AdminUser>(
+        ownerAccountId: _ownerAccountId!,
+        builder: (_) => _UserSearchSheet(
+          datasource: ref.read(messagesApiDataSourceProvider),
+        ),
       ),
     );
-    if (selected != null) setState(() => _selectedUser = selected);
+    if (selected != null && mounted && _ownsCurrentAccount) {
+      setState(() => _selectedUser = selected);
+    }
   }
 
   Future<void> _openOrgSearch() async {
+    if (!_ownsCurrentAccount) return;
     final selected = await showModalBottomSheet<_AdminOrg>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => _OrgSearchSheet(
-        datasource: ref.read(messagesApiDataSourceProvider),
+      builder: (_) => AccountBoundRouteGuard<_AdminOrg>(
+        ownerAccountId: _ownerAccountId!,
+        builder: (_) => _OrgSearchSheet(
+          datasource: ref.read(messagesApiDataSourceProvider),
+        ),
       ),
     );
-    if (selected != null) setState(() => _selectedOrg = selected);
+    if (selected != null && mounted && _ownsCurrentAccount) {
+      setState(() => _selectedOrg = selected);
+    }
   }
 
   // ── Submit ────────────────────────────────────────────────────────────────────
 
   Future<void> _submit() async {
+    if (!_ownsCurrentAccount) return;
     setState(() => _error = null);
 
     if (widget.mode == AdminConversationMode.toUser && _selectedUser == null) {
@@ -173,9 +214,11 @@ class _AdminNewConversationScreenState
           convUuid = conv.uuid;
       }
 
-      if (mounted) context.pushReplacement('/messages/admin/$convUuid');
+      if (mounted && _ownsCurrentAccount) {
+        context.pushReplacement('/messages/admin/$convUuid');
+      }
     } catch (e) {
-      if (mounted) {
+      if (mounted && _ownsCurrentAccount) {
         setState(() {
           _submitting = false;
           _error = ApiResponseHandler.extractError(
@@ -191,6 +234,19 @@ class _AdminNewConversationScreenState
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<String?>(authSessionUserIdProvider, (_, next) {
+      _handleAccountChange(next);
+    });
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_ownerAccountId == null ||
+        currentAccountId != _ownerAccountId ||
+        _sessionInvalid) {
+      return const Scaffold(
+        key: Key('admin-new-conversation-session-invalid'),
+        body: SizedBox.shrink(),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(_title(context))),
       body: SingleChildScrollView(

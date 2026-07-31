@@ -4,6 +4,9 @@ import 'dart:developer' as dev;
 import '../../domain/entities/conversation.dart';
 import '../../domain/repositories/messages_repository.dart';
 import '../../data/repositories/messages_repository_impl.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import 'account_scoped_message_request_guard.dart';
 import 'messages_realtime_provider.dart';
 
 class VendorOrgConversationsState {
@@ -61,21 +64,42 @@ class VendorOrgConversationsState {
 }
 
 class VendorOrgConversationsNotifier
-    extends StateNotifier<VendorOrgConversationsState> {
+    extends StateNotifier<VendorOrgConversationsState>
+    with AccountScopedMessageRequestGuard<VendorOrgConversationsState> {
   final MessagesRepository _repo;
   final Ref _ref;
+  final String? _accountId;
+  @override
+  final AuthSessionKey requestOwnerSession;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
 
-  VendorOrgConversationsNotifier(this._repo, this._ref)
-      : super(const VendorOrgConversationsState()) {
+  VendorOrgConversationsNotifier(
+    this._repo,
+    this._ref,
+    this._accountId,
+    this.requestOwnerSession,
+  ) : super(
+          VendorOrgConversationsState(
+            conversations: _accountId == null
+                ? const AsyncValue.data(<Conversation>[])
+                : const AsyncValue.loading(),
+          ),
+        ) {
+    if (_accountId == null) return;
     load();
     _subscribeToRealtime();
   }
 
+  @override
+  Ref get requestRef => _ref;
+
+  @override
+  String? get requestAccountId => _accountId;
+
   void _subscribeToRealtime() {
     _realtimeSub =
         _ref.read(messagesRealtimeProvider.notifier).events.listen((event) {
-      if (!mounted) return;
+      if (!hasActiveRequestAccount) return;
       final type = event.conversationType;
       // messageReceived: validate by UUID in _applyNewMessage — not by type.
       if (event.type == RealtimeEventType.messageReceived) {
@@ -131,15 +155,22 @@ class VendorOrgConversationsNotifier
   }
 
   Future<void> _silentRefresh() async {
+    if (state.conversations.isLoading || state.isLoadingMore) return;
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final statusFilter = state.statusFilter;
+    final unreadOnly = state.unreadOnly;
+    final searchQuery = state.searchQuery;
+    final period = state.period;
     try {
       final result = await _repo.getOrgConversations(
-        status: state.statusFilter,
-        unreadOnly: state.unreadOnly ? true : null,
-        search: state.searchQuery,
-        period: state.period,
+        status: statusFilter,
+        unreadOnly: unreadOnly ? true : null,
+        search: searchQuery,
+        period: period,
         page: 1,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         conversations: AsyncValue.data(result.conversations),
         currentPage: 1,
@@ -163,6 +194,12 @@ class VendorOrgConversationsNotifier
   }
 
   Future<void> load() async {
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final statusFilter = state.statusFilter;
+    final unreadOnly = state.unreadOnly;
+    final searchQuery = state.searchQuery;
+    final period = state.period;
     state = state.copyWith(
       conversations: const AsyncValue.loading(),
       currentPage: 1,
@@ -172,13 +209,13 @@ class VendorOrgConversationsNotifier
     );
     try {
       final result = await _repo.getOrgConversations(
-        status: state.statusFilter,
-        unreadOnly: state.unreadOnly ? true : null,
-        search: state.searchQuery,
-        period: state.period,
+        status: statusFilter,
+        unreadOnly: unreadOnly ? true : null,
+        search: searchQuery,
+        period: period,
         page: 1,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       final conversations = result.conversations;
       state = state.copyWith(
         conversations: AsyncValue.data(conversations),
@@ -195,10 +232,10 @@ class VendorOrgConversationsNotifier
       if (orgId != null) {
         _ref
             .read(messagesRealtimeProvider.notifier)
-            .subscribeToOrganization(orgId);
+            .subscribeToOrganization(orgId, forUserId: _accountId);
       }
     } catch (e, st) {
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(conversations: AsyncValue.error(e, st));
     }
   }
@@ -209,17 +246,23 @@ class VendorOrgConversationsNotifier
     }
     final current = state.conversations.valueOrNull;
     if (current == null) return;
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final nextPage = state.currentPage + 1;
+    final statusFilter = state.statusFilter;
+    final unreadOnly = state.unreadOnly;
+    final searchQuery = state.searchQuery;
+    final period = state.period;
     state = state.copyWith(isLoadingMore: true, clearLoadMoreError: true);
     try {
-      final nextPage = state.currentPage + 1;
       final result = await _repo.getOrgConversations(
-        status: state.statusFilter,
-        unreadOnly: state.unreadOnly ? true : null,
-        search: state.searchQuery,
-        period: state.period,
+        status: statusFilter,
+        unreadOnly: unreadOnly ? true : null,
+        search: searchQuery,
+        period: period,
         page: nextPage,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         conversations: AsyncValue.data([...current, ...result.conversations]),
         currentPage: nextPage,
@@ -228,7 +271,7 @@ class VendorOrgConversationsNotifier
         clearLoadMoreError: true,
       );
     } catch (error) {
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         isLoadingMore: false,
         loadMoreError: error,
@@ -245,6 +288,7 @@ class VendorOrgConversationsNotifier
   Future<void> refresh() async => load();
 
   void applyRead(String uuid) {
+    if (!hasActiveRequestAccount) return;
     final current = state.conversations.valueOrNull;
     if (current == null) return;
     final idx = current.indexWhere((c) => c.uuid == uuid);
@@ -255,6 +299,7 @@ class VendorOrgConversationsNotifier
   }
 
   void applyReported(String uuid) {
+    if (!hasActiveRequestAccount) return;
     final current = state.conversations.valueOrNull;
     if (current == null) return;
     final idx = current.indexWhere((c) => c.uuid == uuid);
@@ -265,6 +310,7 @@ class VendorOrgConversationsNotifier
   }
 
   void setStatusFilter(String? status) {
+    if (!hasActiveRequestAccount) return;
     state = state.copyWith(
       statusFilter: status,
       clearStatusFilter: status == null,
@@ -274,11 +320,13 @@ class VendorOrgConversationsNotifier
   }
 
   void setUnreadOnly(bool value) {
+    if (!hasActiveRequestAccount) return;
     state = state.copyWith(unreadOnly: value, currentPage: 1);
     load();
   }
 
   void setSearchQuery(String? query) {
+    if (!hasActiveRequestAccount) return;
     final trimmed = query?.trim();
     state = state.copyWith(
       searchQuery: trimmed,
@@ -289,6 +337,7 @@ class VendorOrgConversationsNotifier
   }
 
   void setPeriod(String? period) {
+    if (!hasActiveRequestAccount) return;
     state = state.copyWith(
       period: period,
       clearPeriod: period == null,
@@ -306,8 +355,12 @@ class VendorOrgConversationsNotifier
 
 final vendorOrgConversationsProvider = StateNotifierProvider<
     VendorOrgConversationsNotifier, VendorOrgConversationsState>((ref) {
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  final accountId = ref.watch(authSessionUserIdProvider);
   return VendorOrgConversationsNotifier(
     ref.read(messagesRepositoryProvider),
     ref,
+    accountId,
+    ownerSession,
   );
 });

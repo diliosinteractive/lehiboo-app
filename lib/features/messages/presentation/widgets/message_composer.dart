@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10n.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
 class MessageComposer extends ConsumerStatefulWidget {
   final String conversationUuid;
@@ -24,8 +25,25 @@ class MessageComposer extends ConsumerStatefulWidget {
 class _MessageComposerState extends ConsumerState<MessageComposer> {
   final _textController = TextEditingController();
   bool _isSending = false;
+  late final String? _ownerAccountId;
+  bool _sessionInvalid = false;
 
   static const _primaryColor = Color(0xFFFF601F);
+
+  @override
+  void initState() {
+    super.initState();
+    _ownerAccountId = ref.read(authSessionUserIdProvider);
+  }
+
+  @override
+  void didUpdateWidget(covariant MessageComposer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.conversationUuid != widget.conversationUuid) {
+      _textController.clear();
+      _isSending = false;
+    }
+  }
 
   @override
   void dispose() {
@@ -36,7 +54,21 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
   bool get _canSend {
     return _textController.text.trim().isNotEmpty &&
         !_isSending &&
-        !widget.disabled;
+        !widget.disabled &&
+        _ownsCurrentAccount;
+  }
+
+  bool get _ownsCurrentAccount =>
+      !_sessionInvalid &&
+      _ownerAccountId != null &&
+      ref.read(authSessionUserIdProvider) == _ownerAccountId;
+
+  void _handleAccountChange(String? nextAccountId) {
+    if (nextAccountId == _ownerAccountId || _sessionInvalid) return;
+    _sessionInvalid = true;
+    _textController.clear();
+    if (!mounted) return;
+    setState(() => _isSending = false);
   }
 
   Future<void> _send() async {
@@ -47,7 +79,9 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
       _textController.clear();
     });
     try {
-      widget.onSend(content.isEmpty ? null : content);
+      if (_ownsCurrentAccount) {
+        widget.onSend(content.isEmpty ? null : content);
+      }
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
@@ -55,6 +89,18 @@ class _MessageComposerState extends ConsumerState<MessageComposer> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<String?>(authSessionUserIdProvider, (_, next) {
+      _handleAccountChange(next);
+    });
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_sessionInvalid ||
+        _ownerAccountId == null ||
+        currentAccountId != _ownerAccountId) {
+      return const SizedBox.shrink(
+        key: Key('message-composer-session-invalid'),
+      );
+    }
+
     if (widget.disabled) {
       return Container(
         padding: EdgeInsets.fromLTRB(

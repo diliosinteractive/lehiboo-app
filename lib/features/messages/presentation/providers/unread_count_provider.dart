@@ -4,17 +4,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../domain/entities/user.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../data/datasources/messages_polling_datasource.dart';
 
-typedef _UnreadSession = ({String userId, UserRole role});
+typedef _UnreadSession = ({
+  AuthSessionKey ownerSession,
+  String userId,
+  UserRole role,
+});
 
 final _unreadSessionProvider = Provider<_UnreadSession?>((ref) {
-  return ref.watch(
-    authProvider.select((state) {
-      final user = state.user;
-      if (!state.isAuthenticated || user == null) return null;
-      return (userId: user.id, role: user.role);
-    }),
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  final auth = ref.watch(authProvider);
+  final user = auth.user;
+  if (!auth.isAuthenticated ||
+      user == null ||
+      ownerSession.accountId != user.id.trim()) {
+    return null;
+  }
+  return (
+    ownerSession: ownerSession,
+    userId: user.id,
+    role: user.role,
   );
 });
 

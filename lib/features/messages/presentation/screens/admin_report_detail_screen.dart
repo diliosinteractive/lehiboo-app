@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +11,8 @@ import '../../domain/entities/conversation_report.dart';
 import '../../data/repositories/messages_repository_impl.dart';
 import '../providers/admin_conversations_provider.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
+import 'package:lehiboo/features/auth/presentation/widgets/account_bound_route_guard.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Local state / notifier
@@ -40,20 +44,37 @@ class _ReportNotFoundException implements Exception {
 class _ReportDetailNotifier extends StateNotifier<_ReportDetailState> {
   final String _uuid;
   final Ref _ref;
+  final String _accountId;
+  final AuthSessionKey _ownerSession;
 
-  _ReportDetailNotifier(this._uuid, this._ref)
-      : super(const _ReportDetailState()) {
-    _load();
+  _ReportDetailNotifier(
+    this._uuid,
+    this._ref,
+    this._accountId,
+    this._ownerSession,
+  ) : super(const _ReportDetailState()) {
+    // Defer the initial request so constructing this provider never mutates
+    // adminReportsProvider while Riverpod is still building the dependency
+    // graph.
+    scheduleMicrotask(_load);
   }
 
+  bool get _ownsCurrentAccount =>
+      mounted &&
+      identical(_ref.read(authSessionKeyProvider), _ownerSession) &&
+      _ref.read(authSessionUserIdProvider) == _accountId;
+
   Future<void> _load() async {
+    if (!_ownsCurrentAccount) return;
     state = state.copyWith(report: const AsyncValue.loading());
     try {
       var list = _ref.read(adminReportsProvider).reports.valueOrNull;
       if (list == null) {
         await _ref.read(adminReportsProvider.notifier).load();
+        if (!_ownsCurrentAccount) return;
         list = _ref.read(adminReportsProvider).reports.valueOrNull;
       }
+      if (!_ownsCurrentAccount) return;
       final found = list?.where((r) => r.uuid == _uuid).firstOrNull;
       if (found != null) {
         state = state.copyWith(report: AsyncValue.data(found));
@@ -66,12 +87,14 @@ class _ReportDetailNotifier extends StateNotifier<_ReportDetailState> {
         );
       }
     } catch (e) {
+      if (!_ownsCurrentAccount) return;
       state =
           state.copyWith(report: AsyncValue.error('$e', StackTrace.current));
     }
   }
 
   Future<void> reviewReport(String action, {String? adminNote}) async {
+    if (!_ownsCurrentAccount) return;
     state = state.copyWith(saving: true);
     try {
       // Single API call through the list provider (it handles local list update)
@@ -80,6 +103,7 @@ class _ReportDetailNotifier extends StateNotifier<_ReportDetailState> {
             action,
             adminNote: adminNote,
           );
+      if (!_ownsCurrentAccount) return;
       final current = state.report.valueOrNull!;
       final fromList = _ref
           .read(adminReportsProvider)
@@ -99,12 +123,14 @@ class _ReportDetailNotifier extends StateNotifier<_ReportDetailState> {
       );
       state = state.copyWith(report: AsyncValue.data(patched), saving: false);
     } catch (e) {
+      if (!_ownsCurrentAccount) return;
       state = state.copyWith(saving: false);
       rethrow;
     }
   }
 
   Future<void> updateNote(String? note) async {
+    if (!_ownsCurrentAccount) return;
     state = state.copyWith(saving: true);
     try {
       await _ref
@@ -113,6 +139,7 @@ class _ReportDetailNotifier extends StateNotifier<_ReportDetailState> {
             reportUuid: _uuid,
             adminNote: note,
           );
+      if (!_ownsCurrentAccount) return;
       _ref.read(adminReportsProvider.notifier).updateNote(_uuid, note);
       final current = state.report.valueOrNull;
       if (current != null) {
@@ -122,15 +149,26 @@ class _ReportDetailNotifier extends StateNotifier<_ReportDetailState> {
         );
       }
     } catch (e) {
+      if (!_ownsCurrentAccount) return;
       state = state.copyWith(saving: false);
       rethrow;
     }
   }
 }
 
-final _reportDetailProvider = StateNotifierProvider.family<
-    _ReportDetailNotifier, _ReportDetailState, String>(
-  (ref, uuid) => _ReportDetailNotifier(uuid, ref),
+typedef _ReportDetailKey = ({String reportUuid, String accountId});
+
+final _reportDetailProvider = StateNotifierProvider.autoDispose
+    .family<_ReportDetailNotifier, _ReportDetailState, _ReportDetailKey>(
+  (ref, key) {
+    final ownerSession = ref.watch(authSessionKeyProvider);
+    return _ReportDetailNotifier(
+      key.reportUuid,
+      ref,
+      key.accountId,
+      ownerSession,
+    );
+  },
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -153,18 +191,68 @@ class _AdminReportDetailScreenState
 
   final _noteController = TextEditingController();
   bool _noteInitialized = false;
+  late final String? _ownerAccountId;
+  late final ProviderSubscription<String?> _sessionSubscription;
+  bool _sessionInvalid = false;
+  bool _exitScheduled = false;
+
+  bool get _ownsCurrentAccount =>
+      !_sessionInvalid &&
+      _ownerAccountId != null &&
+      ref.read(authSessionUserIdProvider) == _ownerAccountId;
+
+  @override
+  void initState() {
+    super.initState();
+    _ownerAccountId = ref.read(authSessionUserIdProvider);
+    _sessionSubscription = ref.listenManual<String?>(
+      authSessionUserIdProvider,
+      (_, next) {
+        if (next == _ownerAccountId) return;
+        _noteController.clear();
+        _noteInitialized = false;
+        if (mounted) {
+          setState(() => _sessionInvalid = true);
+        }
+        _scheduleFailClosedExit();
+      },
+    );
+  }
+
+  void _scheduleFailClosedExit() {
+    if (_exitScheduled) return;
+    _exitScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_sessionInvalid) return;
+      final navigator = Navigator.of(context);
+      if (navigator.canPop()) navigator.maybePop();
+    });
+  }
 
   @override
   void dispose() {
+    _sessionSubscription.close();
     _noteController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(_reportDetailProvider(widget.reportUuid));
-    final notifier =
-        ref.read(_reportDetailProvider(widget.reportUuid).notifier);
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_ownerAccountId == null ||
+        _sessionInvalid ||
+        currentAccountId != _ownerAccountId) {
+      return const Scaffold(
+        key: Key('admin-report-detail-session-invalid'),
+        body: SizedBox.shrink(),
+      );
+    }
+    final providerKey = (
+      reportUuid: widget.reportUuid,
+      accountId: _ownerAccountId,
+    );
+    final state = ref.watch(_reportDetailProvider(providerKey));
+    final notifier = ref.read(_reportDetailProvider(providerKey).notifier);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F9),
@@ -199,7 +287,9 @@ class _AdminReportDetailScreenState
                 ),
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
-                  onPressed: notifier._load,
+                  onPressed: () {
+                    if (_ownsCurrentAccount) notifier._load();
+                  },
                   icon: const Icon(Icons.refresh),
                   label: Text(context.l10n.commonRetry),
                 ),
@@ -524,8 +614,12 @@ class _AdminReportDetailScreenState
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () => context.push(
-                          '/messages/admin/${report.conversationUuid}?readonly=true'),
+                      onPressed: () {
+                        if (_ownsCurrentAccount) {
+                          context.push(
+                              '/messages/admin/${report.conversationUuid}?readonly=true');
+                        }
+                      },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: _primaryColor,
                         side: const BorderSide(color: _primaryColor),
@@ -553,16 +647,17 @@ class _AdminReportDetailScreenState
 
   Future<void> _saveNote(
       BuildContext context, _ReportDetailNotifier notifier) async {
+    if (!_ownsCurrentAccount) return;
     try {
       final note = _noteController.text.trim();
       await notifier.updateNote(note.isEmpty ? null : note);
-      if (context.mounted) {
+      if (context.mounted && _ownsCurrentAccount) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.l10n.messagesAdminReportNoteSaved)),
         );
       }
     } catch (e) {
-      if (context.mounted) {
+      if (context.mounted && _ownsCurrentAccount) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(context.l10n.messagesLoadError(
               ApiResponseHandler.extractError(e),
@@ -577,37 +672,47 @@ class _AdminReportDetailScreenState
     _ReportDetailNotifier notifier,
     String action,
   ) async {
+    if (!_ownsCurrentAccount) return;
+    final ownerAccountId = _ownerAccountId!;
     final isDismiss = action == 'dismiss';
     final label = isDismiss
         ? context.l10n.messagesAdminReportDismissAction
         : context.l10n.messagesAdminReportMarkReviewedAction;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(label),
-        content: Text(isDismiss
-            ? context.l10n.messagesAdminReportDismissConfirmBody
-            : context.l10n.messagesAdminReportReviewConfirmBody),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(context.l10n.commonCancel)),
-          FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              style: FilledButton.styleFrom(
-                backgroundColor:
-                    isDismiss ? Colors.grey : Colors.green.shade600,
-              ),
-              child: Text(label)),
-        ],
+      builder: (ctx) => AccountBoundRouteGuard<bool>(
+        ownerAccountId: ownerAccountId,
+        invalidResult: false,
+        builder: (_) => AlertDialog(
+          title: Text(label),
+          content: Text(isDismiss
+              ? context.l10n.messagesAdminReportDismissConfirmBody
+              : context.l10n.messagesAdminReportReviewConfirmBody),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(context.l10n.commonCancel)),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: FilledButton.styleFrom(
+                  backgroundColor:
+                      isDismiss ? Colors.grey : Colors.green.shade600,
+                ),
+                child: Text(label)),
+          ],
+        ),
       ),
     );
-    if (confirmed != true || !context.mounted) return;
+    if (confirmed != true ||
+        !context.mounted ||
+        ref.read(authSessionUserIdProvider) != ownerAccountId) {
+      return;
+    }
     try {
       final note = _noteController.text.trim();
       await notifier.reviewReport(action,
           adminNote: note.isEmpty ? null : note);
-      if (context.mounted) {
+      if (context.mounted && _ownsCurrentAccount) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text(isDismiss
@@ -617,7 +722,7 @@ class _AdminReportDetailScreenState
         );
       }
     } catch (e) {
-      if (context.mounted) {
+      if (context.mounted && _ownsCurrentAccount) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(context.l10n.messagesLoadError(
               ApiResponseHandler.extractError(e),

@@ -4,6 +4,9 @@ import 'dart:developer' as dev;
 import '../../domain/entities/conversation.dart';
 import '../../domain/repositories/messages_repository.dart';
 import '../../data/repositories/messages_repository_impl.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import 'account_scoped_message_request_guard.dart';
 import 'messages_realtime_provider.dart';
 
 class SupportConversationsState {
@@ -61,24 +64,46 @@ class SupportConversationsState {
 }
 
 class SupportConversationsNotifier
-    extends StateNotifier<SupportConversationsState> {
+    extends StateNotifier<SupportConversationsState>
+    with AccountScopedMessageRequestGuard<SupportConversationsState> {
   final MessagesRepository _repo;
   final Ref _ref;
+  final String? _accountId;
+  @override
+  final AuthSessionKey requestOwnerSession;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
   Timer? _pollTimer;
   final Set<String> _readUuids = {};
   final Map<String, int> _realtimeUnreadByUuid = {};
 
-  SupportConversationsNotifier(this._repo, this._ref)
-      : super(const SupportConversationsState()) {
+  SupportConversationsNotifier(
+    this._repo,
+    this._ref,
+    this._accountId,
+    this.requestOwnerSession,
+  ) : super(
+          SupportConversationsState(
+            conversations: _accountId == null
+                ? const AsyncValue.data(<Conversation>[])
+                : const AsyncValue.loading(),
+          ),
+        ) {
+    if (_accountId == null) return;
     load();
     _subscribeToRealtime();
     _startPolling();
   }
 
+  @override
+  Ref get requestRef => _ref;
+
+  @override
+  String? get requestAccountId => _accountId;
+
   void _startPolling() {
     _pollTimer?.cancel();
     _pollTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
+      if (!hasActiveRequestAccount) return;
       if (_ref.read(messagesRealtimeProvider)) return;
       await _silentRefresh();
     });
@@ -88,7 +113,7 @@ class SupportConversationsNotifier
     dev.log('[SupportConv] Subscribed to realtime events');
     _realtimeSub =
         _ref.read(messagesRealtimeProvider.notifier).events.listen((event) {
-      if (!mounted) return;
+      if (!hasActiveRequestAccount) return;
       final type = event.conversationType;
       dev.log(
         '[SupportConv] event received: type=${event.type.name} conv=${event.conversationUuid} convType=$type',
@@ -163,6 +188,12 @@ class SupportConversationsNotifier
   }
 
   Future<void> load() async {
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final statusFilter = state.statusFilter;
+    final unreadOnly = state.unreadOnly;
+    final searchQuery = state.searchQuery;
+    final period = state.period;
     state = state.copyWith(
       conversations: const AsyncValue.loading(),
       currentPage: 1,
@@ -173,12 +204,12 @@ class SupportConversationsNotifier
     try {
       final result = await _repo.getSupportConversations(
         page: 1,
-        status: state.statusFilter,
-        unreadOnly: state.unreadOnly ? true : null,
-        search: state.searchQuery,
-        period: state.period,
+        status: statusFilter,
+        unreadOnly: unreadOnly ? true : null,
+        search: searchQuery,
+        period: period,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         conversations: AsyncValue.data(_mergeUnreadState(result.conversations)),
         currentPage: 1,
@@ -187,7 +218,7 @@ class SupportConversationsNotifier
         clearLoadMoreError: true,
       );
     } catch (e, st) {
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(conversations: AsyncValue.error(e, st));
     }
   }
@@ -198,17 +229,23 @@ class SupportConversationsNotifier
     }
     final current = state.conversations.valueOrNull;
     if (current == null) return;
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final nextPage = state.currentPage + 1;
+    final statusFilter = state.statusFilter;
+    final unreadOnly = state.unreadOnly;
+    final searchQuery = state.searchQuery;
+    final period = state.period;
     state = state.copyWith(isLoadingMore: true, clearLoadMoreError: true);
     try {
-      final nextPage = state.currentPage + 1;
       final result = await _repo.getSupportConversations(
         page: nextPage,
-        status: state.statusFilter,
-        unreadOnly: state.unreadOnly ? true : null,
-        search: state.searchQuery,
-        period: state.period,
+        status: statusFilter,
+        unreadOnly: unreadOnly ? true : null,
+        search: searchQuery,
+        period: period,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         conversations: AsyncValue.data([...current, ...result.conversations]),
         currentPage: nextPage,
@@ -217,7 +254,7 @@ class SupportConversationsNotifier
         clearLoadMoreError: true,
       );
     } catch (error) {
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         isLoadingMore: false,
         loadMoreError: error,
@@ -236,15 +273,22 @@ class SupportConversationsNotifier
   }
 
   Future<void> _silentRefresh() async {
+    if (state.conversations.isLoading || state.isLoadingMore) return;
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final statusFilter = state.statusFilter;
+    final unreadOnly = state.unreadOnly;
+    final searchQuery = state.searchQuery;
+    final period = state.period;
     try {
       final result = await _repo.getSupportConversations(
         page: 1,
-        status: state.statusFilter,
-        unreadOnly: state.unreadOnly ? true : null,
-        search: state.searchQuery,
-        period: state.period,
+        status: statusFilter,
+        unreadOnly: unreadOnly ? true : null,
+        search: searchQuery,
+        period: period,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         conversations: AsyncValue.data(_mergeUnreadState(result.conversations)),
         currentPage: 1,
@@ -256,6 +300,7 @@ class SupportConversationsNotifier
   }
 
   void applyRead(String uuid) {
+    if (!hasActiveRequestAccount) return;
     _readUuids.add(uuid);
     _realtimeUnreadByUuid.remove(uuid);
     final current = state.conversations.valueOrNull;
@@ -268,6 +313,7 @@ class SupportConversationsNotifier
   }
 
   void applyReported(String uuid) {
+    if (!hasActiveRequestAccount) return;
     final current = state.conversations.valueOrNull;
     if (current == null) return;
     final idx = current.indexWhere((c) => c.uuid == uuid);
@@ -306,6 +352,7 @@ class SupportConversationsNotifier
   }
 
   void setStatusFilter(String? status) {
+    if (!hasActiveRequestAccount) return;
     state = state.copyWith(
       statusFilter: status,
       clearStatusFilter: status == null,
@@ -315,11 +362,13 @@ class SupportConversationsNotifier
   }
 
   void setUnreadOnly(bool value) {
+    if (!hasActiveRequestAccount) return;
     state = state.copyWith(unreadOnly: value, currentPage: 1);
     load();
   }
 
   void setSearchQuery(String? query) {
+    if (!hasActiveRequestAccount) return;
     final trimmed = query?.trim();
     state = state.copyWith(
       searchQuery: trimmed,
@@ -330,6 +379,7 @@ class SupportConversationsNotifier
   }
 
   void setPeriod(String? period) {
+    if (!hasActiveRequestAccount) return;
     state = state.copyWith(
       period: period,
       clearPeriod: period == null,
@@ -348,8 +398,12 @@ class SupportConversationsNotifier
 
 final supportConversationsProvider = StateNotifierProvider<
     SupportConversationsNotifier, SupportConversationsState>((ref) {
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  final accountId = ref.watch(authSessionUserIdProvider);
   return SupportConversationsNotifier(
     ref.read(messagesRepositoryProvider),
     ref,
+    accountId,
+    ownerSession,
   );
 });

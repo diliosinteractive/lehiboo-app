@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/repositories/messages_repository_impl.dart';
 import '../../domain/entities/conversation_route.dart';
 import '../providers/admin_conversations_provider.dart';
@@ -28,6 +29,8 @@ Future<void> showConversationReportSheet(
   required WidgetRef ref,
   ConversationRoute? route,
 }) async {
+  final ownerAccountId = ref.read(authSessionUserIdProvider);
+  if (ownerAccountId == null) return;
   String? selectedReason;
   final commentController = TextEditingController();
   bool isSubmitting = false;
@@ -35,334 +38,399 @@ Future<void> showConversationReportSheet(
   bool reasonError = false;
   String? commentError;
   String? supportUuid;
+  BuildContext? sheetContext;
+  bool sessionInvalid = false;
 
-  await showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Colors.transparent,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (ctx) => StatefulBuilder(
-      builder: (ctx, setSheetState) {
-        return AnimatedPadding(
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOut,
-          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: submitted
-                ? _buildSuccess(
-                    ctx: ctx,
-                    supportUuid: supportUuid,
-                    rootContext: context,
-                  )
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Center(
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(vertical: 12),
-                            width: 36,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade300,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ),
-                        Row(
+  bool ownsCurrentAccount() =>
+      !sessionInvalid && ref.read(authSessionUserIdProvider) == ownerAccountId;
+
+  final sessionSubscription = ref.listenManual<String?>(
+    authSessionUserIdProvider,
+    (_, next) {
+      if (next == ownerAccountId || sessionInvalid) return;
+      sessionInvalid = true;
+      selectedReason = null;
+      commentController.clear();
+      final activeSheetContext = sheetContext;
+      if (activeSheetContext != null && activeSheetContext.mounted) {
+        Navigator.of(activeSheetContext).pop();
+      }
+    },
+  );
+
+  try {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        sheetContext = ctx;
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return AnimatedPadding(
+              duration: const Duration(milliseconds: 120),
+              curve: Curves.easeOut,
+              padding:
+                  EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: submitted
+                    ? _buildSuccess(
+                        ctx: ctx,
+                        supportUuid: supportUuid,
+                        rootContext: context,
+                        ref: ref,
+                        ownerAccountId: ownerAccountId,
+                        ownsCurrentAccount: ownsCurrentAccount,
+                      )
+                    : SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.flag_outlined,
-                                color: Colors.red.shade400, size: 22),
-                            const SizedBox(width: 8),
+                            Center(
+                              child: Container(
+                                margin:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                width: 36,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade300,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Icon(Icons.flag_outlined,
+                                    color: Colors.red.shade400, size: 22),
+                                const SizedBox(width: 8),
+                                Text(
+                                  ctx.l10n.messagesReportSheetTitle,
+                                  style: const TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
                             Text(
-                              ctx.l10n.messagesReportSheetTitle,
-                              style: const TextStyle(
-                                  fontSize: 17, fontWeight: FontWeight.w600),
+                              ctx.l10n.messagesReportSheetSubtitle,
+                              style: TextStyle(
+                                  fontSize: 13, color: Colors.grey.shade600),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          ctx.l10n.messagesReportSheetSubtitle,
-                          style: TextStyle(
-                              fontSize: 13, color: Colors.grey.shade600),
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Text(ctx.l10n.messagesReportReasonLabel,
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey.shade700)),
-                            const Text(' *',
-                                style: TextStyle(
-                                    color: Colors.red,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600)),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 6,
-                          children: _reportReasons(ctx).map((r) {
-                            final selected = selectedReason == r.$1;
-                            return ChoiceChip(
-                              label: Text(
-                                r.$2,
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    color: selected
-                                        ? _primaryColor
-                                        : Colors.black87),
-                              ),
-                              selected: selected,
-                              onSelected: isSubmitting
-                                  ? null
-                                  : (_) => setSheetState(() {
-                                        selectedReason = r.$1;
-                                        reasonError = false;
-                                      }),
-                              selectedColor:
-                                  _primaryColor.withValues(alpha: 0.12),
-                              checkmarkColor: _primaryColor,
-                              side: BorderSide(
-                                  color: selected
-                                      ? _primaryColor
-                                      : reasonError
-                                          ? Colors.red.shade300
-                                          : Colors.grey.shade300),
-                              backgroundColor: Colors.white,
-                            );
-                          }).toList(),
-                        ),
-                        if (reasonError)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4, left: 4),
-                            child: Text(ctx.l10n.messagesReportReasonRequired,
-                                style: TextStyle(
-                                    fontSize: 11, color: Colors.red.shade600)),
-                          ),
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Text(ctx.l10n.messagesReportCommentLabel,
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey.shade700)),
-                            const Text(' *',
-                                style: TextStyle(
-                                    color: Colors.red,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600)),
-                            Text('  ${ctx.l10n.messagesReportMinCharsHint}',
-                                style: TextStyle(
-                                    fontSize: 12, color: Colors.grey.shade500)),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        TextField(
-                          controller: commentController,
-                          maxLines: 4,
-                          maxLength: 2000,
-                          enabled: !isSubmitting,
-                          buildCounter: (_,
-                                  {required currentLength,
-                                  required isFocused,
-                                  maxLength}) =>
-                              Text('$currentLength / $maxLength',
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.grey.shade500)),
-                          decoration: InputDecoration(
-                            hintText: ctx.l10n.messagesReportCommentHint,
-                            border: const OutlineInputBorder(),
-                            enabledBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                  color: commentError != null
-                                      ? Colors.red
-                                      : Colors.grey.shade300),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                  color: commentError != null
-                                      ? Colors.red
-                                      : _primaryColor,
-                                  width: 1.5),
-                            ),
-                            filled: true,
-                            fillColor: Colors.grey.shade50,
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 12),
-                          ),
-                          onChanged: (_) {
-                            if (commentError != null) {
-                              setSheetState(() => commentError = null);
-                            }
-                          },
-                        ),
-                        if (commentError != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4, left: 4),
-                            child: Text(commentError!,
-                                style: TextStyle(
-                                    fontSize: 11, color: Colors.red.shade600)),
-                          ),
-                        const SizedBox(height: 24),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: isSubmitting
-                                    ? null
-                                    : () => Navigator.pop(ctx),
-                                style: OutlinedButton.styleFrom(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 14),
-                                  side: BorderSide(color: Colors.grey.shade300),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10)),
-                                ),
-                                child: Text(
-                                  ctx.l10n.commonCancel,
-                                  style: const TextStyle(color: Colors.black87),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: isSubmitting
-                                    ? null
-                                    : () async {
-                                        final comment =
-                                            commentController.text.trim();
-                                        bool hasError = false;
-                                        if (selectedReason == null) {
-                                          setSheetState(
-                                              () => reasonError = true);
-                                          hasError = true;
-                                        }
-                                        if (comment.length < 10) {
-                                          setSheetState(() => commentError = ctx
-                                              .l10n
-                                              .messagesReportCommentMinError);
-                                          hasError = true;
-                                        }
-                                        if (hasError) return;
-                                        setSheetState(
-                                            () => isSubmitting = true);
-                                        try {
-                                          final result = await ref
-                                              .read(messagesRepositoryProvider)
-                                              .reportConversation(
-                                                conversationUuid:
-                                                    conversationUuid,
-                                                reason: selectedReason!,
-                                                comment: comment,
-                                              );
-                                          supportUuid =
-                                              result.supportConversationUuid;
-                                          _applyReportedAcrossProviders(
-                                              ref, conversationUuid, route);
-                                          setSheetState(() {
-                                            isSubmitting = false;
-                                            submitted = true;
-                                          });
-                                        } on DioException catch (e) {
-                                          // 422 « déjà signalé » → succès UI
-                                          if (_isAlreadyReportedError(e)) {
-                                            _applyReportedAcrossProviders(
-                                                ref, conversationUuid, route);
-                                            setSheetState(() {
-                                              isSubmitting = false;
-                                              submitted = true;
-                                            });
-                                            return;
-                                          }
-                                          setSheetState(
-                                              () => isSubmitting = false);
-                                          if (ctx.mounted) {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(SnackBar(
-                                              content: Text(
-                                                ApiResponseHandler.extractError(
-                                                  e,
-                                                  fallback: ctx.l10n
-                                                      .messagesReportSubmitFailed,
-                                                ),
-                                              ),
-                                              backgroundColor: Colors.red,
-                                            ));
-                                          }
-                                        } catch (e) {
-                                          setSheetState(
-                                              () => isSubmitting = false);
-                                          if (ctx.mounted) {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(SnackBar(
-                                              content: Text(
-                                                ApiResponseHandler.extractError(
-                                                  e,
-                                                  fallback: ctx.l10n
-                                                      .messagesReportSubmitFailed,
-                                                ),
-                                              ),
-                                              backgroundColor: Colors.red,
-                                            ));
-                                          }
-                                        }
-                                      },
-                                icon: isSubmitting
-                                    ? const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white))
-                                    : const Icon(Icons.flag,
-                                        size: 16, color: Colors.white),
-                                label: Text(ctx.l10n.messagesReportSubmit,
-                                    style: const TextStyle(
-                                        color: Colors.white,
+                            const SizedBox(height: 20),
+                            Row(
+                              children: [
+                                Text(ctx.l10n.messagesReportReasonLabel,
+                                    style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey.shade700)),
+                                const Text(' *',
+                                    style: TextStyle(
+                                        color: Colors.red,
+                                        fontSize: 13,
                                         fontWeight: FontWeight.w600)),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red.shade600,
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10)),
-                                  elevation: 0,
-                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 6,
+                              children: _reportReasons(ctx).map((r) {
+                                final selected = selectedReason == r.$1;
+                                return ChoiceChip(
+                                  label: Text(
+                                    r.$2,
+                                    style: TextStyle(
+                                        fontSize: 13,
+                                        color: selected
+                                            ? _primaryColor
+                                            : Colors.black87),
+                                  ),
+                                  selected: selected,
+                                  onSelected: isSubmitting
+                                      ? null
+                                      : (_) => setSheetState(() {
+                                            selectedReason = r.$1;
+                                            reasonError = false;
+                                          }),
+                                  selectedColor:
+                                      _primaryColor.withValues(alpha: 0.12),
+                                  checkmarkColor: _primaryColor,
+                                  side: BorderSide(
+                                      color: selected
+                                          ? _primaryColor
+                                          : reasonError
+                                              ? Colors.red.shade300
+                                              : Colors.grey.shade300),
+                                  backgroundColor: Colors.white,
+                                );
+                              }).toList(),
+                            ),
+                            if (reasonError)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4, left: 4),
+                                child: Text(
+                                    ctx.l10n.messagesReportReasonRequired,
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.red.shade600)),
                               ),
+                            const SizedBox(height: 20),
+                            Row(
+                              children: [
+                                Text(ctx.l10n.messagesReportCommentLabel,
+                                    style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey.shade700)),
+                                const Text(' *',
+                                    style: TextStyle(
+                                        color: Colors.red,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600)),
+                                Text('  ${ctx.l10n.messagesReportMinCharsHint}',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade500)),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            TextField(
+                              controller: commentController,
+                              maxLines: 4,
+                              maxLength: 2000,
+                              enabled: !isSubmitting,
+                              buildCounter: (_,
+                                      {required currentLength,
+                                      required isFocused,
+                                      maxLength}) =>
+                                  Text('$currentLength / $maxLength',
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.grey.shade500)),
+                              decoration: InputDecoration(
+                                hintText: ctx.l10n.messagesReportCommentHint,
+                                border: const OutlineInputBorder(),
+                                enabledBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(
+                                      color: commentError != null
+                                          ? Colors.red
+                                          : Colors.grey.shade300),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(
+                                      color: commentError != null
+                                          ? Colors.red
+                                          : _primaryColor,
+                                      width: 1.5),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey.shade50,
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 12),
+                              ),
+                              onChanged: (_) {
+                                if (commentError != null) {
+                                  setSheetState(() => commentError = null);
+                                }
+                              },
+                            ),
+                            if (commentError != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4, left: 4),
+                                child: Text(commentError!,
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.red.shade600)),
+                              ),
+                            const SizedBox(height: 24),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: isSubmitting
+                                        ? null
+                                        : () => Navigator.pop(ctx),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 14),
+                                      side: BorderSide(
+                                          color: Colors.grey.shade300),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10)),
+                                    ),
+                                    child: Text(
+                                      ctx.l10n.commonCancel,
+                                      style: const TextStyle(
+                                          color: Colors.black87),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: isSubmitting
+                                        ? null
+                                        : () async {
+                                            if (!ownsCurrentAccount()) {
+                                              Navigator.of(ctx).pop();
+                                              return;
+                                            }
+                                            final comment =
+                                                commentController.text.trim();
+                                            bool hasError = false;
+                                            if (selectedReason == null) {
+                                              setSheetState(
+                                                  () => reasonError = true);
+                                              hasError = true;
+                                            }
+                                            if (comment.length < 10) {
+                                              setSheetState(() => commentError = ctx
+                                                  .l10n
+                                                  .messagesReportCommentMinError);
+                                              hasError = true;
+                                            }
+                                            if (hasError) return;
+                                            setSheetState(
+                                                () => isSubmitting = true);
+                                            try {
+                                              final result = await ref
+                                                  .read(
+                                                      messagesRepositoryProvider)
+                                                  .reportConversation(
+                                                    conversationUuid:
+                                                        conversationUuid,
+                                                    reason: selectedReason!,
+                                                    comment: comment,
+                                                  );
+                                              if (!ownsCurrentAccount() ||
+                                                  !ctx.mounted) {
+                                                return;
+                                              }
+                                              supportUuid = result
+                                                  .supportConversationUuid;
+                                              _applyReportedAcrossProviders(
+                                                  ref, conversationUuid, route);
+                                              setSheetState(() {
+                                                isSubmitting = false;
+                                                submitted = true;
+                                              });
+                                            } on DioException catch (e) {
+                                              if (!ownsCurrentAccount() ||
+                                                  !ctx.mounted) {
+                                                return;
+                                              }
+                                              // 422 « déjà signalé » → succès UI
+                                              if (_isAlreadyReportedError(e)) {
+                                                _applyReportedAcrossProviders(
+                                                    ref,
+                                                    conversationUuid,
+                                                    route);
+                                                setSheetState(() {
+                                                  isSubmitting = false;
+                                                  submitted = true;
+                                                });
+                                                return;
+                                              }
+                                              setSheetState(
+                                                  () => isSubmitting = false);
+                                              if (ctx.mounted) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(SnackBar(
+                                                  content: Text(
+                                                    ApiResponseHandler
+                                                        .extractError(
+                                                      e,
+                                                      fallback: ctx.l10n
+                                                          .messagesReportSubmitFailed,
+                                                    ),
+                                                  ),
+                                                  backgroundColor: Colors.red,
+                                                ));
+                                              }
+                                            } catch (e) {
+                                              if (!ownsCurrentAccount() ||
+                                                  !ctx.mounted) {
+                                                return;
+                                              }
+                                              setSheetState(
+                                                  () => isSubmitting = false);
+                                              if (ctx.mounted) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(SnackBar(
+                                                  content: Text(
+                                                    ApiResponseHandler
+                                                        .extractError(
+                                                      e,
+                                                      fallback: ctx.l10n
+                                                          .messagesReportSubmitFailed,
+                                                    ),
+                                                  ),
+                                                  backgroundColor: Colors.red,
+                                                ));
+                                              }
+                                            }
+                                          },
+                                    icon: isSubmitting
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white))
+                                        : const Icon(Icons.flag,
+                                            size: 16, color: Colors.white),
+                                    label: Text(ctx.l10n.messagesReportSubmit,
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600)),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red.shade600,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 14),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10)),
+                                      elevation: 0,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-          ),
+                      ),
+              ),
+            );
+          },
         );
       },
-    ),
-  ).then((_) => commentController.dispose());
+    );
+  } finally {
+    sessionSubscription.close();
+    commentController.dispose();
+  }
 }
 
 Widget _buildSuccess({
   required BuildContext ctx,
   required String? supportUuid,
   required BuildContext rootContext,
+  required WidgetRef ref,
+  required String ownerAccountId,
+  required bool Function() ownsCurrentAccount,
 }) {
   return Padding(
     padding: const EdgeInsets.fromLTRB(20, 32, 20, 40),
@@ -395,17 +463,47 @@ Widget _buildSuccess({
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () {
+              if (!ownsCurrentAccount()) {
+                Navigator.pop(ctx);
+                return;
+              }
+              final supportCreatedMessage =
+                  ctx.l10n.messagesReportSupportCreated;
+              final viewActionLabel = ctx.l10n.messagesViewAction;
               Navigator.pop(ctx);
-              if (supportUuid != null && rootContext.mounted) {
-                ScaffoldMessenger.of(rootContext).showSnackBar(
+              if (supportUuid != null &&
+                  rootContext.mounted &&
+                  ownsCurrentAccount()) {
+                final messenger = ScaffoldMessenger.of(rootContext);
+                bool actionInvalid = false;
+                final actionSessionSubscription = ref.listenManual<String?>(
+                  authSessionUserIdProvider,
+                  (_, next) {
+                    if (next == ownerAccountId || actionInvalid) return;
+                    actionInvalid = true;
+                    messenger.hideCurrentSnackBar();
+                  },
+                );
+                final controller = messenger.showSnackBar(
                   SnackBar(
-                    content: Text(ctx.l10n.messagesReportSupportCreated),
+                    content: Text(supportCreatedMessage),
                     action: SnackBarAction(
-                      label: ctx.l10n.messagesViewAction,
-                      onPressed: () =>
-                          rootContext.push('/messages/support/$supportUuid'),
+                      label: viewActionLabel,
+                      onPressed: () {
+                        if (actionInvalid ||
+                            ref.read(authSessionUserIdProvider) !=
+                                ownerAccountId ||
+                            !rootContext.mounted) {
+                          messenger.hideCurrentSnackBar();
+                          return;
+                        }
+                        rootContext.push('/messages/support/$supportUuid');
+                      },
                     ),
                   ),
+                );
+                controller.closed.whenComplete(
+                  actionSessionSubscription.close,
                 );
               }
             },

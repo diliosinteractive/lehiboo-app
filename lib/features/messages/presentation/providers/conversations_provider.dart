@@ -4,6 +4,9 @@ import 'dart:developer' as dev;
 import '../../domain/entities/conversation.dart';
 import '../../domain/repositories/messages_repository.dart';
 import '../../data/repositories/messages_repository_impl.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import 'account_scoped_message_request_guard.dart';
 import 'unread_count_provider.dart';
 import 'messages_realtime_provider.dart';
 
@@ -61,24 +64,46 @@ class ConversationsState {
   }
 }
 
-class ConversationsNotifier extends StateNotifier<ConversationsState> {
+class ConversationsNotifier extends StateNotifier<ConversationsState>
+    with AccountScopedMessageRequestGuard<ConversationsState> {
   final MessagesRepository _repo;
   final Ref _ref;
+  final String? _accountId;
+  @override
+  final AuthSessionKey requestOwnerSession;
   Timer? _pollTimer;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
   final Set<String> _readUuids = {};
   final Map<String, int> _realtimeUnreadByUuid = {};
 
-  ConversationsNotifier(this._repo, this._ref)
-      : super(const ConversationsState()) {
+  ConversationsNotifier(
+    this._repo,
+    this._ref,
+    this._accountId,
+    this.requestOwnerSession,
+  ) : super(
+          ConversationsState(
+            conversations: _accountId == null
+                ? const AsyncValue.data(<Conversation>[])
+                : const AsyncValue.loading(),
+          ),
+        ) {
+    if (_accountId == null) return;
     load();
     _startUnreadPolling();
     _subscribeToRealtime();
   }
 
+  @override
+  Ref get requestRef => _ref;
+
+  @override
+  String? get requestAccountId => _accountId;
+
   void _startUnreadPolling() {
     _pollTimer?.cancel();
     _pollTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
+      if (!hasActiveRequestAccount) return;
       // Skip when WebSocket is connected — WS events keep data current
       if (_ref.read(messagesRealtimeProvider)) return;
       // Refresh list + badge (mirrors support conversations polling behaviour)
@@ -91,7 +116,7 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
     dev.log('[ParticipantConv] Subscribed to realtime events');
     _realtimeSub =
         _ref.read(messagesRealtimeProvider.notifier).events.listen((event) {
-      if (!mounted) return;
+      if (!hasActiveRequestAccount) return;
       final type = event.conversationType;
       dev.log(
         '[ParticipantConv] event received: type=${event.type.name} conv=${event.conversationUuid} convType=$type',
@@ -174,6 +199,12 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
   }
 
   Future<void> load() async {
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final statusFilter = state.statusFilter;
+    final unreadOnly = state.unreadOnly;
+    final searchQuery = state.searchQuery;
+    final period = state.period;
     state = state.copyWith(
       conversations: const AsyncValue.loading(),
       currentPage: 1,
@@ -183,13 +214,13 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
     );
     try {
       final result = await _repo.getConversations(
-        status: state.statusFilter,
-        unreadOnly: state.unreadOnly ? true : null,
-        search: state.searchQuery,
-        period: state.period,
+        status: statusFilter,
+        unreadOnly: unreadOnly ? true : null,
+        search: searchQuery,
+        period: period,
         page: 1,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       final conversations = _mergeUnreadState(result.conversations);
       state = state.copyWith(
         conversations: AsyncValue.data(conversations),
@@ -201,7 +232,7 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
       // Refresh global unread count
       _refreshUnreadCount();
     } catch (e, st) {
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(conversations: AsyncValue.error(e, st));
     }
   }
@@ -212,17 +243,23 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
     }
     final current = state.conversations.valueOrNull;
     if (current == null) return;
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final nextPage = state.currentPage + 1;
+    final statusFilter = state.statusFilter;
+    final unreadOnly = state.unreadOnly;
+    final searchQuery = state.searchQuery;
+    final period = state.period;
     state = state.copyWith(isLoadingMore: true, clearLoadMoreError: true);
     try {
-      final nextPage = state.currentPage + 1;
       final result = await _repo.getConversations(
-        status: state.statusFilter,
-        unreadOnly: state.unreadOnly ? true : null,
-        search: state.searchQuery,
-        period: state.period,
+        status: statusFilter,
+        unreadOnly: unreadOnly ? true : null,
+        search: searchQuery,
+        period: period,
         page: nextPage,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         conversations: AsyncValue.data([...current, ...result.conversations]),
         currentPage: nextPage,
@@ -231,7 +268,7 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
         clearLoadMoreError: true,
       );
     } catch (error) {
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         isLoadingMore: false,
         loadMoreError: error,
@@ -250,15 +287,22 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
   }
 
   Future<void> _silentRefresh() async {
+    if (state.conversations.isLoading || state.isLoadingMore) return;
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final statusFilter = state.statusFilter;
+    final unreadOnly = state.unreadOnly;
+    final searchQuery = state.searchQuery;
+    final period = state.period;
     try {
       final result = await _repo.getConversations(
-        status: state.statusFilter,
-        unreadOnly: state.unreadOnly ? true : null,
-        search: state.searchQuery,
-        period: state.period,
+        status: statusFilter,
+        unreadOnly: unreadOnly ? true : null,
+        search: searchQuery,
+        period: period,
         page: 1,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       final conversations = _mergeUnreadState(result.conversations);
       state = state.copyWith(
         conversations: AsyncValue.data(conversations),
@@ -272,6 +316,7 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
   }
 
   void applyRead(String uuid) {
+    if (!hasActiveRequestAccount) return;
     _readUuids.add(uuid);
     _realtimeUnreadByUuid.remove(uuid);
     final current = state.conversations.valueOrNull;
@@ -284,6 +329,7 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
   }
 
   void applyReported(String uuid) {
+    if (!hasActiveRequestAccount) return;
     final current = state.conversations.valueOrNull;
     if (current == null) return;
     final idx = current.indexWhere((c) => c.uuid == uuid);
@@ -294,6 +340,7 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
   }
 
   void setStatusFilter(String? status) {
+    if (!hasActiveRequestAccount) return;
     state = state.copyWith(
       statusFilter: status,
       clearStatusFilter: status == null,
@@ -303,11 +350,13 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
   }
 
   void setUnreadOnly(bool value) {
+    if (!hasActiveRequestAccount) return;
     state = state.copyWith(unreadOnly: value, currentPage: 1);
     load();
   }
 
   void setSearchQuery(String? query) {
+    if (!hasActiveRequestAccount) return;
     final trimmed = query?.trim();
     state = state.copyWith(
       searchQuery: trimmed,
@@ -318,6 +367,7 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
   }
 
   void setPeriod(String? period) {
+    if (!hasActiveRequestAccount) return;
     state = state.copyWith(
       period: period,
       clearPeriod: period == null,
@@ -327,6 +377,7 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
   }
 
   Future<void> _refreshUnreadCount() async {
+    if (!hasActiveRequestAccount) return;
     try {
       await _ref.read(unreadCountProvider.notifier).refresh();
     } catch (_) {}
@@ -370,8 +421,12 @@ class ConversationsNotifier extends StateNotifier<ConversationsState> {
 
 final conversationsProvider =
     StateNotifierProvider<ConversationsNotifier, ConversationsState>((ref) {
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  final accountId = ref.watch(authSessionUserIdProvider);
   return ConversationsNotifier(
     ref.read(messagesRepositoryProvider),
     ref,
+    accountId,
+    ownerSession,
   );
 });

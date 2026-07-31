@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,7 +10,6 @@ import '../providers/conversations_provider.dart';
 import '../widgets/new_conversation_form.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
-import 'package:lehiboo/features/auth/presentation/widgets/guest_restriction_dialog.dart';
 
 class NewConversationScreen extends ConsumerStatefulWidget {
   final String? fromBookingUuid;
@@ -32,51 +33,98 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
 
   bool _isLoading = false;
   String? _errorMessage;
+  late final String? _ownerAccountId;
+  bool _sessionInvalid = false;
+  bool _exitScheduled = false;
+  int _requestGeneration = 0;
+
+  bool get _ownsCurrentAccount {
+    return mounted &&
+        !_sessionInvalid &&
+        _ownerAccountId != null &&
+        ref.read(authSessionUserIdProvider) == _ownerAccountId;
+  }
 
   @override
   void initState() {
     super.initState();
-
-    // Safety check for unauthenticated users (e.g. deep links)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authState = ref.read(authProvider);
-      if (authState.status == AuthStatus.unauthenticated) {
-        GuestRestrictionDialog.show(
-          context,
-          featureName: context.l10n.guestFeatureSendMessage,
-        );
-      } else {
-        _init();
+    _ownerAccountId = ref.read(authSessionUserIdProvider);
+    _sessionInvalid = _ownerAccountId == null;
+    ref.listenManual<String?>(authSessionUserIdProvider, (_, next) {
+      if (_sessionInvalid || next == _ownerAccountId) return;
+      _sessionInvalid = true;
+      _requestGeneration++;
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = null;
+        });
       }
+      _scheduleFailClosedExit();
+    });
+    if (_sessionInvalid) _scheduleFailClosedExit();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_ownsCurrentAccount) return;
+      _init();
     });
   }
 
+  void _scheduleFailClosedExit() {
+    if (_exitScheduled) return;
+    _exitScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_sessionInvalid) return;
+      final ownedRoute = ModalRoute.of(context);
+      final navigator = Navigator.of(context);
+      if (ownedRoute == null) return;
+      navigator.popUntil((route) => identical(route, ownedRoute));
+      if (ownedRoute.isCurrent && navigator.canPop()) navigator.pop();
+    });
+  }
+
+  bool _ownsRequest(
+    int generation,
+    ConversationsNotifier ownerNotifier,
+  ) {
+    return _ownsCurrentAccount &&
+        generation == _requestGeneration &&
+        identical(
+          ref.read(conversationsProvider.notifier),
+          ownerNotifier,
+        );
+  }
+
   Future<void> _init() async {
+    if (!_ownsCurrentAccount) return;
     if (widget.fromBookingUuid != null) {
       await _createFromBooking();
     } else {
       final created = await _showFormModal();
       // Only navigate away when the user cancelled — a successful submission
       // already called context.pushReplacement inside _submit().
-      if (mounted && created != true) {
-        context.canPop() ? context.pop() : context.go('/messages');
-      }
+      if (!mounted || !_ownsCurrentAccount || created == true) return;
+      context.canPop() ? context.pop() : context.go('/messages');
     }
   }
 
   Future<void> _createFromBooking() async {
+    if (!_ownsCurrentAccount) return;
+    final generation = ++_requestGeneration;
+    final repo = ref.read(messagesRepositoryProvider);
+    final ownerNotifier = ref.read(conversationsProvider.notifier);
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
     try {
-      final repo = ref.read(messagesRepositoryProvider);
       final result = await repo.createFromBooking(widget.fromBookingUuid!);
-      if (!mounted) return;
-      ref.read(conversationsProvider.notifier).refresh();
+      if (!mounted || !_ownsRequest(generation, ownerNotifier)) return;
+      unawaited(ownerNotifier.refresh());
+      if (!mounted || !_ownsRequest(generation, ownerNotifier)) return;
       context.pushReplacement('/messages/${result.conversation.uuid}');
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || !_ownsRequest(generation, ownerNotifier)) return;
       setState(() {
         _isLoading = false;
         _errorMessage = ApiResponseHandler.extractError(
@@ -88,7 +136,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
   }
 
   Future<bool?> _showFormModal() async {
-    if (!mounted) return null;
+    if (!_ownsCurrentAccount) return null;
     NewConversationContext ctx;
     if (widget.fromOrganizationUuid != null) {
       ctx = FromOrganizerConversationContext(
@@ -104,6 +152,16 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_sessionInvalid ||
+        (_ownerAccountId != null && currentAccountId != _ownerAccountId) ||
+        (_ownerAccountId == null && currentAccountId != null)) {
+      return const Scaffold(
+        key: Key('new-conversation-session-invalid'),
+        body: SizedBox.shrink(),
+      );
+    }
+
     if (widget.fromBookingUuid != null) {
       return Scaffold(
         appBar: AppBar(

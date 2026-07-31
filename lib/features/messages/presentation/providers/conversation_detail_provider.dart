@@ -7,6 +7,7 @@ import '../../../../core/l10n/app_locale.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/entities/conversation_route.dart';
 import '../../domain/entities/message.dart';
@@ -55,33 +56,49 @@ class ConversationDetailNotifier
   final ConversationRoute _route;
   final MessagesRepository _repo;
   final Ref _ref;
-  late final String? _sessionUserId;
+  final String? _sessionUserId;
+  final AuthSessionKey _ownerSession;
   Timer? _pollTimer;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
+  int _fetchGeneration = 0;
 
   ConversationDetailNotifier(
     this._uuid,
     this._route,
     this._repo,
     this._ref,
+    this._sessionUserId,
+    this._ownerSession,
   ) : super(ConversationDetailState(route: _route)) {
-    _sessionUserId = _ref.read(authProvider).user?.id;
+    if (_sessionUserId == null) return;
     load();
     _startPolling();
     _subscribeToRealtime();
-    _ref.listen<AuthState>(authProvider, (prev, next) {
-      if (prev?.user?.id != next.user?.id) {
-        _pollTimer?.cancel();
-        _pollTimer = null;
-        _realtimeSub?.cancel();
-        _realtimeSub = null;
-      }
-    });
+  }
+
+  bool get _hasActiveSession {
+    if (!mounted || _sessionUserId == null) return false;
+    return identical(_ref.read(authSessionKeyProvider), _ownerSession) &&
+        _ref.read(authSessionUserIdProvider) == _sessionUserId;
+  }
+
+  int? _beginFetch() {
+    if (!_hasActiveSession) return null;
+    return ++_fetchGeneration;
+  }
+
+  bool _canPublishFetch(int generation) {
+    return _hasActiveSession && generation == _fetchGeneration;
   }
 
   void _startPolling() {
     _pollTimer?.cancel();
     _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+      if (!_hasActiveSession) {
+        _pollTimer?.cancel();
+        _pollTimer = null;
+        return;
+      }
       if (_ref.read(messagesRealtimeProvider)) return;
       await _silentRefresh();
     });
@@ -90,7 +107,7 @@ class ConversationDetailNotifier
   void _subscribeToRealtime() {
     _realtimeSub =
         _ref.read(messagesRealtimeProvider.notifier).events.listen((event) {
-      if (!mounted) return;
+      if (!_hasActiveSession) return;
       if (event.conversationUuid != _uuid) return;
       switch (event.type) {
         case RealtimeEventType.messageReceived:
@@ -118,6 +135,7 @@ class ConversationDetailNotifier
   // ── Realtime local state updates ──────────────────────────────────────────
 
   void _applyDelivered(String messageUuid) {
+    if (!_hasActiveSession) return;
     final conv = state.conversation.valueOrNull;
     if (conv == null) return;
     final messages = conv.messages
@@ -128,6 +146,7 @@ class ConversationDetailNotifier
   }
 
   void _applyEdit(String messageUuid, String content, DateTime? editedAt) {
+    if (!_hasActiveSession) return;
     final conv = state.conversation.valueOrNull;
     if (conv == null) return;
     final messages = conv.messages.map((m) {
@@ -144,6 +163,7 @@ class ConversationDetailNotifier
   }
 
   void _applyDelete(String messageUuid) {
+    if (!_hasActiveSession) return;
     final conv = state.conversation.valueOrNull;
     if (conv == null) return;
     final messages = conv.messages
@@ -154,6 +174,7 @@ class ConversationDetailNotifier
   }
 
   void _applyAllRead() {
+    if (!_hasActiveSession) return;
     final conv = state.conversation.valueOrNull;
     if (conv == null) return;
     final now = DateTime.now();
@@ -168,6 +189,7 @@ class ConversationDetailNotifier
   }
 
   void _applyStatus(String status) {
+    if (!_hasActiveSession) return;
     final conv = state.conversation.valueOrNull;
     if (conv == null) return;
     state = state.copyWith(
@@ -176,6 +198,7 @@ class ConversationDetailNotifier
   }
 
   void _invalidateList() {
+    if (!_hasActiveSession) return;
     switch (_route) {
       case ConversationRoute.participant:
         _ref.read(conversationsProvider.notifier).refresh();
@@ -237,9 +260,11 @@ class ConversationDetailNotifier
   }
 
   Future<void> _silentRefresh() async {
+    final generation = _beginFetch();
+    if (generation == null) return;
     try {
       final conversation = await _fetchConversationSilent();
-      if (!mounted) return;
+      if (!_canPublishFetch(generation)) return;
       state = state.copyWith(conversation: AsyncValue.data(conversation));
       final unread = conversation.unreadCount;
       if (unread > 0) {
@@ -251,7 +276,8 @@ class ConversationDetailNotifier
         _applyReadToList();
       }
     } on DioException catch (e) {
-      if (e.response?.statusCode == 403 || e.response?.statusCode == 401) {
+      if (_canPublishFetch(generation) &&
+          (e.response?.statusCode == 403 || e.response?.statusCode == 401)) {
         // Stale provider from a previous session/role — stop polling immediately.
         _pollTimer?.cancel();
         _pollTimer = null;
@@ -260,10 +286,13 @@ class ConversationDetailNotifier
   }
 
   Future<void> load() async {
+    final generation = _beginFetch();
+    if (generation == null) return;
     final prevUnread = _getListUnread();
     state = state.copyWith(conversation: const AsyncValue.loading());
     try {
       final conversation = await _fetchConversation();
+      if (!_canPublishFetch(generation)) return;
       state = state.copyWith(conversation: AsyncValue.data(conversation));
       _applyReadToList();
       if (prevUnread > 0) {
@@ -272,11 +301,13 @@ class ConversationDetailNotifier
             .decrementBy(prevUnread, forUserId: _sessionUserId);
       }
     } catch (e, st) {
+      if (!_canPublishFetch(generation)) return;
       state = state.copyWith(conversation: AsyncValue.error(e, st));
     }
   }
 
   int _getListUnread() {
+    if (!_hasActiveSession) return 0;
     List<Conversation>? list;
     switch (_route) {
       case ConversationRoute.participant:
@@ -315,6 +346,7 @@ class ConversationDetailNotifier
   }
 
   void _applyReadToList() {
+    if (!_hasActiveSession) return;
     switch (_route) {
       case ConversationRoute.participant:
         _ref.read(conversationsProvider.notifier).applyRead(_uuid);
@@ -338,6 +370,7 @@ class ConversationDetailNotifier
   }
 
   Future<void> sendMessage({String? content}) async {
+    if (!_hasActiveSession) return;
     if (_route == ConversationRoute.adminReadonly) return;
     final conversation = state.conversation.valueOrNull;
     if (conversation == null) return;
@@ -367,23 +400,26 @@ class ConversationDetailNotifier
 
     try {
       final sentMessage = await _sendMessageForRoute(content);
-      if (!mounted) return;
-      final updated = optimisticMessages
+      if (!_hasActiveSession) return;
+      final current = state.conversation.valueOrNull;
+      if (current == null) return;
+      final updated = current.messages
           .map((m) => m.uuid == tempUuid ? sentMessage : m)
           .toList();
       state = state.copyWith(
-        conversation: AsyncValue.data(conversation.copyWith(messages: updated)),
+        conversation: AsyncValue.data(current.copyWith(messages: updated)),
         isSending: false,
       );
       _invalidateList();
     } catch (e, s) {
       log(e.toString(), stackTrace: s);
-      if (!mounted) return;
+      if (!_hasActiveSession) return;
+      final current = state.conversation.valueOrNull;
+      if (current == null) return;
       final reverted =
-          optimisticMessages.where((m) => m.uuid != tempUuid).toList();
+          current.messages.where((m) => m.uuid != tempUuid).toList();
       state = state.copyWith(
-        conversation:
-            AsyncValue.data(conversation.copyWith(messages: reverted)),
+        conversation: AsyncValue.data(current.copyWith(messages: reverted)),
         isSending: false,
         sendError: ApiResponseHandler.extractError(
           e,
@@ -423,15 +459,18 @@ class ConversationDetailNotifier
   }
 
   Future<void> editMessage(String messageUuid, String content) async {
+    if (!_hasActiveSession) return;
     final conversation = state.conversation.valueOrNull;
     if (conversation == null) return;
     final updated = await _editMessageForRoute(messageUuid, content);
-    final messages = conversation.messages
+    if (!_hasActiveSession) return;
+    final current = state.conversation.valueOrNull;
+    if (current == null) return;
+    final messages = current.messages
         .map((m) => m.uuid == messageUuid ? updated : m)
         .toList();
     state = state.copyWith(
-        conversation:
-            AsyncValue.data(conversation.copyWith(messages: messages)));
+        conversation: AsyncValue.data(current.copyWith(messages: messages)));
   }
 
   Future<Message> _editMessageForRoute(String messageUuid, String content) {
@@ -468,16 +507,19 @@ class ConversationDetailNotifier
   }
 
   Future<void> deleteMessage(String messageUuid) async {
+    if (!_hasActiveSession) return;
     final conversation = state.conversation.valueOrNull;
     if (conversation == null) return;
     await _deleteMessageForRoute(messageUuid);
-    final messages = conversation.messages.map((m) {
+    if (!_hasActiveSession) return;
+    final current = state.conversation.valueOrNull;
+    if (current == null) return;
+    final messages = current.messages.map((m) {
       if (m.uuid == messageUuid) return m.copyWith(isDeleted: true);
       return m;
     }).toList();
     state = state.copyWith(
-        conversation:
-            AsyncValue.data(conversation.copyWith(messages: messages)));
+        conversation: AsyncValue.data(current.copyWith(messages: messages)));
   }
 
   Future<void> _deleteMessageForRoute(String messageUuid) {
@@ -499,8 +541,9 @@ class ConversationDetailNotifier
   }
 
   Future<void> closeConversation() async {
+    if (!_hasActiveSession) return;
     final closed = await _closeConversationForRoute();
-    if (!mounted) return;
+    if (!_hasActiveSession) return;
     // The close endpoint returns the conversation without messages — preserve them
     final existingMessages = state.conversation.valueOrNull?.messages ?? [];
     state = state.copyWith(
@@ -525,8 +568,10 @@ class ConversationDetailNotifier
   }
 
   Future<void> reopenConversation() async {
+    if (!_hasActiveSession) return;
     if (_route != ConversationRoute.admin) return;
     final reopened = await _repo.reopenAdminConversation(_uuid);
+    if (!_hasActiveSession) return;
     final existingMessages = state.conversation.valueOrNull?.messages ?? [];
     state = state.copyWith(
       conversation: AsyncValue.data(
@@ -539,11 +584,18 @@ class ConversationDetailNotifier
 
   Future<ReportConversationResult> reportConversation(
       String reason, String? comment) async {
-    return _repo.reportConversation(
+    if (!_hasActiveSession) {
+      throw StateError('The authenticated conversation session has changed.');
+    }
+    final result = await _repo.reportConversation(
       conversationUuid: _uuid,
       reason: reason,
       comment: comment,
     );
+    if (!_hasActiveSession) {
+      throw StateError('The authenticated conversation session has changed.');
+    }
+    return result;
   }
 
   /// Marque la conversation signalée localement, sans refetch serveur.
@@ -551,6 +603,7 @@ class ConversationDetailNotifier
   /// La propagation aux providers liste est faite par le caller (sheet),
   /// pour éviter de réveiller des notifiers autoDispose inactifs.
   void applyReportedLocally() {
+    if (!_hasActiveSession) return;
     final conv = state.conversation.valueOrNull;
     if (conv == null) return;
     if (conv.userHasReported) return;
@@ -560,11 +613,13 @@ class ConversationDetailNotifier
   }
 
   void clearSendError() {
+    if (!_hasActiveSession) return;
     state = state.copyWith(clearSendError: true);
   }
 
   @override
   void dispose() {
+    _fetchGeneration++;
     _realtimeSub?.cancel();
     _pollTimer?.cancel();
     super.dispose();
@@ -577,10 +632,14 @@ final conversationDetailProvider = StateNotifierProvider.autoDispose.family<
     ConversationDetailNotifier,
     ConversationDetailState,
     ({String uuid, ConversationRoute route})>((ref, params) {
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  final accountId = ref.watch(authSessionUserIdProvider);
   return ConversationDetailNotifier(
     params.uuid,
     params.route,
     ref.read(messagesRepositoryProvider),
     ref,
+    accountId,
+    ownerSession,
   );
 });

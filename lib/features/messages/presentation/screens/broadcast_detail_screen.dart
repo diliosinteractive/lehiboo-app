@@ -1,15 +1,46 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
+
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../domain/entities/broadcast.dart';
 import '../../data/repositories/messages_repository_impl.dart';
 
-final _broadcastDetailProvider =
-    FutureProvider.family<Broadcast, String>((ref, uuid) async {
-  return ref.read(messagesRepositoryProvider).getBroadcast(uuid);
+typedef _BroadcastDetailRequest = ({
+  String accountId,
+  String broadcastUuid,
 });
+
+final _broadcastDetailProvider = FutureProvider.autoDispose
+    .family<Broadcast, _BroadcastDetailRequest>((ref, request) async {
+  var requestIsActive = true;
+  ref.onDispose(() => requestIsActive = false);
+
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  final currentAccountId = ref.watch(authSessionUserIdProvider);
+  if (ownerSession.accountId != request.accountId ||
+      currentAccountId != request.accountId) {
+    throw const _StaleBroadcastDetailRequest();
+  }
+
+  final broadcast = await ref
+      .read(messagesRepositoryProvider)
+      .getBroadcast(request.broadcastUuid);
+  if (!requestIsActive ||
+      !identical(ref.read(authSessionKeyProvider), ownerSession) ||
+      ref.read(authSessionUserIdProvider) != request.accountId) {
+    throw const _StaleBroadcastDetailRequest();
+  }
+  return broadcast;
+});
+
+class _StaleBroadcastDetailRequest implements Exception {
+  const _StaleBroadcastDetailRequest();
+}
 
 class BroadcastDetailScreen extends ConsumerStatefulWidget {
   final String broadcastUuid;
@@ -23,6 +54,36 @@ class BroadcastDetailScreen extends ConsumerStatefulWidget {
 
 class _BroadcastDetailScreenState extends ConsumerState<BroadcastDetailScreen> {
   Timer? _pollTimer;
+  late final String? _ownerAccountId;
+  bool _sessionInvalid = false;
+  bool _exitScheduled = false;
+
+  bool get _ownsCurrentAccount {
+    return mounted &&
+        !_sessionInvalid &&
+        _ownerAccountId != null &&
+        ref.read(authSessionUserIdProvider) == _ownerAccountId;
+  }
+
+  _BroadcastDetailRequest get _request => (
+        accountId: _ownerAccountId!,
+        broadcastUuid: widget.broadcastUuid,
+      );
+
+  @override
+  void initState() {
+    super.initState();
+    _ownerAccountId = ref.read(authSessionUserIdProvider);
+    _sessionInvalid = _ownerAccountId == null;
+    ref.listenManual<String?>(authSessionUserIdProvider, (_, next) {
+      if (_sessionInvalid || next == _ownerAccountId) return;
+      _sessionInvalid = true;
+      _stopPolling();
+      if (mounted) setState(() {});
+      _scheduleFailClosedExit();
+    });
+    if (_sessionInvalid) _scheduleFailClosedExit();
+  }
 
   @override
   void dispose() {
@@ -30,11 +91,15 @@ class _BroadcastDetailScreenState extends ConsumerState<BroadcastDetailScreen> {
     super.dispose();
   }
 
-  void _startPolling() {
+  void _startPolling(_BroadcastDetailRequest request) {
+    if (!_ownsCurrentAccount || request != _request) return;
     _pollTimer?.cancel();
     _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (!mounted) return;
-      ref.invalidate(_broadcastDetailProvider(widget.broadcastUuid));
+      if (!_ownsCurrentAccount || request != _request) {
+        _stopPolling();
+        return;
+      }
+      ref.invalidate(_broadcastDetailProvider(request));
     });
   }
 
@@ -43,14 +108,41 @@ class _BroadcastDetailScreenState extends ConsumerState<BroadcastDetailScreen> {
     _pollTimer = null;
   }
 
+  void _scheduleFailClosedExit() {
+    if (_exitScheduled) return;
+    _exitScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_sessionInvalid) return;
+      final ownedRoute = ModalRoute.of(context);
+      final navigator = Navigator.of(context);
+      if (ownedRoute == null) return;
+      navigator.popUntil((route) => identical(route, ownedRoute));
+      if (ownedRoute.isCurrent && navigator.canPop()) navigator.pop();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final async = ref.watch(_broadcastDetailProvider(widget.broadcastUuid));
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_sessionInvalid ||
+        _ownerAccountId == null ||
+        currentAccountId != _ownerAccountId) {
+      _stopPolling();
+      return const Scaffold(
+        key: Key('broadcast-detail-session-invalid'),
+        body: SizedBox.shrink(),
+      );
+    }
+
+    final request = _request;
+    final async = ref.watch(_broadcastDetailProvider(request));
 
     // Manage polling based on isSent state
     async.whenData((broadcast) {
       if (!broadcast.isSent && _pollTimer == null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) => _startPolling());
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _startPolling(request);
+        });
       } else if (broadcast.isSent && _pollTimer != null) {
         _stopPolling();
       }
@@ -62,8 +154,9 @@ class _BroadcastDetailScreenState extends ConsumerState<BroadcastDetailScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () =>
-                ref.invalidate(_broadcastDetailProvider(widget.broadcastUuid)),
+            onPressed: _ownsCurrentAccount
+                ? () => ref.invalidate(_broadcastDetailProvider(request))
+                : null,
           ),
         ],
       ),
@@ -84,8 +177,9 @@ class _BroadcastDetailScreenState extends ConsumerState<BroadcastDetailScreen> {
                   style: const TextStyle(color: Colors.red)),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () => ref
-                    .invalidate(_broadcastDetailProvider(widget.broadcastUuid)),
+                onPressed: _ownsCurrentAccount
+                    ? () => ref.invalidate(_broadcastDetailProvider(request))
+                    : null,
                 child: Text(context.l10n.commonRetry),
               ),
             ],

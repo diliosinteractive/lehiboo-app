@@ -4,6 +4,9 @@ import 'dart:developer' as dev;
 import '../../domain/entities/broadcast.dart';
 import '../../domain/repositories/messages_repository.dart';
 import '../../data/repositories/messages_repository_impl.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import 'account_scoped_message_request_guard.dart';
 import 'messages_realtime_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -58,21 +61,42 @@ class VendorBroadcastsState {
 // Notifier
 // ─────────────────────────────────────────────────────────────────────────────
 
-class VendorBroadcastsNotifier extends StateNotifier<VendorBroadcastsState> {
+class VendorBroadcastsNotifier extends StateNotifier<VendorBroadcastsState>
+    with AccountScopedMessageRequestGuard<VendorBroadcastsState> {
   final MessagesRepository _repo;
   final Ref _ref;
+  final String? _accountId;
+  @override
+  final AuthSessionKey requestOwnerSession;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
 
-  VendorBroadcastsNotifier(this._repo, this._ref)
-      : super(const VendorBroadcastsState()) {
+  VendorBroadcastsNotifier(
+    this._repo,
+    this._ref,
+    this._accountId,
+    this.requestOwnerSession,
+  ) : super(
+          VendorBroadcastsState(
+            broadcasts: _accountId == null
+                ? const AsyncValue.data(<Broadcast>[])
+                : const AsyncValue.loading(),
+          ),
+        ) {
+    if (_accountId == null) return;
     load();
     _subscribeToRealtime();
   }
 
+  @override
+  Ref get requestRef => _ref;
+
+  @override
+  String? get requestAccountId => _accountId;
+
   void _subscribeToRealtime() {
     _realtimeSub =
         _ref.read(messagesRealtimeProvider.notifier).events.listen((event) {
-      if (!mounted) return;
+      if (!hasActiveRequestAccount) return;
       if (event.type != RealtimeEventType.broadcastSent) return;
 
       final broadcastUuid = event.conversationUuid;
@@ -103,6 +127,10 @@ class VendorBroadcastsNotifier extends StateNotifier<VendorBroadcastsState> {
   }
 
   Future<void> load() async {
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final searchQuery = state.searchQuery;
+    final period = state.period;
     state = state.copyWith(
       broadcasts: const AsyncValue.loading(),
       currentPage: 1,
@@ -112,11 +140,11 @@ class VendorBroadcastsNotifier extends StateNotifier<VendorBroadcastsState> {
     );
     try {
       final result = await _repo.getBroadcasts(
-        search: state.searchQuery,
-        period: state.period,
+        search: searchQuery,
+        period: period,
         page: 1,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         broadcasts: AsyncValue.data(result.broadcasts),
         currentPage: 1,
@@ -125,7 +153,7 @@ class VendorBroadcastsNotifier extends StateNotifier<VendorBroadcastsState> {
         clearLoadMoreError: true,
       );
     } catch (e, st) {
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(broadcasts: AsyncValue.error(e, st));
     }
   }
@@ -136,15 +164,19 @@ class VendorBroadcastsNotifier extends StateNotifier<VendorBroadcastsState> {
     }
     final current = state.broadcasts.valueOrNull;
     if (current == null) return;
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final nextPage = state.currentPage + 1;
+    final searchQuery = state.searchQuery;
+    final period = state.period;
     state = state.copyWith(isLoadingMore: true, clearLoadMoreError: true);
     try {
-      final nextPage = state.currentPage + 1;
       final result = await _repo.getBroadcasts(
-        search: state.searchQuery,
-        period: state.period,
+        search: searchQuery,
+        period: period,
         page: nextPage,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         broadcasts: AsyncValue.data([...current, ...result.broadcasts]),
         currentPage: nextPage,
@@ -153,7 +185,7 @@ class VendorBroadcastsNotifier extends StateNotifier<VendorBroadcastsState> {
         clearLoadMoreError: true,
       );
     } catch (error) {
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         isLoadingMore: false,
         loadMoreError: error,
@@ -170,13 +202,18 @@ class VendorBroadcastsNotifier extends StateNotifier<VendorBroadcastsState> {
   Future<void> refresh() async => load();
 
   Future<void> _silentRefresh() async {
+    if (state.broadcasts.isLoading || state.isLoadingMore) return;
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final searchQuery = state.searchQuery;
+    final period = state.period;
     try {
       final result = await _repo.getBroadcasts(
-        search: state.searchQuery,
-        period: state.period,
+        search: searchQuery,
+        period: period,
         page: 1,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         broadcasts: AsyncValue.data(result.broadcasts),
         currentPage: 1,
@@ -188,6 +225,7 @@ class VendorBroadcastsNotifier extends StateNotifier<VendorBroadcastsState> {
   }
 
   void setSearchQuery(String? query) {
+    if (!hasActiveRequestAccount) return;
     final trimmed = query?.trim();
     state = state.copyWith(
       searchQuery: trimmed,
@@ -198,6 +236,7 @@ class VendorBroadcastsNotifier extends StateNotifier<VendorBroadcastsState> {
   }
 
   void setPeriod(String? period) {
+    if (!hasActiveRequestAccount) return;
     state = state.copyWith(
       period: period,
       clearPeriod: period == null,
@@ -220,8 +259,12 @@ class VendorBroadcastsNotifier extends StateNotifier<VendorBroadcastsState> {
 final vendorBroadcastsProvider =
     StateNotifierProvider<VendorBroadcastsNotifier, VendorBroadcastsState>(
         (ref) {
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  final accountId = ref.watch(authSessionUserIdProvider);
   return VendorBroadcastsNotifier(
     ref.read(messagesRepositoryProvider),
     ref,
+    accountId,
+    ownerSession,
   );
 });

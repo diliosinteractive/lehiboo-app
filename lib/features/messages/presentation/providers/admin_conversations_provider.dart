@@ -5,6 +5,9 @@ import '../../domain/entities/conversation.dart';
 import '../../domain/entities/conversation_report.dart';
 import '../../domain/repositories/messages_repository.dart';
 import '../../data/repositories/messages_repository_impl.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import 'account_scoped_message_request_guard.dart';
 import 'unread_count_provider.dart';
 import 'messages_realtime_provider.dart';
 
@@ -67,11 +70,14 @@ class AdminConversationsState {
   }
 }
 
-class AdminConversationsNotifier
-    extends StateNotifier<AdminConversationsState> {
+class AdminConversationsNotifier extends StateNotifier<AdminConversationsState>
+    with AccountScopedMessageRequestGuard<AdminConversationsState> {
   final String _conversationType;
   final MessagesRepository _repo;
   final Ref _ref;
+  final String? _accountId;
+  @override
+  final AuthSessionKey requestOwnerSession;
   Timer? _pollTimer;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
   final Set<String> _readUuids = {};
@@ -81,7 +87,16 @@ class AdminConversationsNotifier
     this._conversationType,
     this._repo,
     this._ref,
-  ) : super(const AdminConversationsState()) {
+    this._accountId,
+    this.requestOwnerSession,
+  ) : super(
+          AdminConversationsState(
+            conversations: _accountId == null
+                ? const AsyncValue.data(<Conversation>[])
+                : const AsyncValue.loading(),
+          ),
+        ) {
+    if (_accountId == null) return;
     load();
     // Only one instance polls to avoid duplicate unread requests
     if (_conversationType == 'user_support') {
@@ -90,9 +105,16 @@ class AdminConversationsNotifier
     _subscribeToRealtime();
   }
 
+  @override
+  Ref get requestRef => _ref;
+
+  @override
+  String? get requestAccountId => _accountId;
+
   void _startUnreadPolling() {
     _pollTimer?.cancel();
     _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      if (!hasActiveRequestAccount) return;
       if (_ref.read(messagesRealtimeProvider)) return;
       try {
         await _ref.read(unreadCountProvider.notifier).refresh();
@@ -103,7 +125,7 @@ class AdminConversationsNotifier
   void _subscribeToRealtime() {
     _realtimeSub =
         _ref.read(messagesRealtimeProvider.notifier).events.listen((event) {
-      if (!mounted) return;
+      if (!hasActiveRequestAccount) return;
       // messageReceived: validate by UUID in _applyNewMessage — not by type.
       if (event.type == RealtimeEventType.messageReceived) {
         if (event.conversationType != null &&
@@ -175,16 +197,23 @@ class AdminConversationsNotifier
   }
 
   Future<void> _silentRefresh() async {
+    if (state.conversations.isLoading || state.isLoadingMore) return;
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final statusFilter = state.statusFilter;
+    final unreadOnly = state.unreadOnly;
+    final searchQuery = state.searchQuery;
+    final period = state.period;
     try {
       final result = await _repo.getAdminConversations(
         conversationType: _conversationType,
-        status: state.statusFilter,
-        unreadOnly: state.unreadOnly ? true : null,
-        search: state.searchQuery,
-        period: state.period,
+        status: statusFilter,
+        unreadOnly: unreadOnly ? true : null,
+        search: searchQuery,
+        period: period,
         page: 1,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       final conversations = _mergeUnreadState(result.conversations);
       state = state.copyWith(
         conversations: AsyncValue.data(conversations),
@@ -197,6 +226,12 @@ class AdminConversationsNotifier
   }
 
   Future<void> load() async {
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final statusFilter = state.statusFilter;
+    final unreadOnly = state.unreadOnly;
+    final searchQuery = state.searchQuery;
+    final period = state.period;
     state = state.copyWith(
       conversations: const AsyncValue.loading(),
       currentPage: 1,
@@ -207,13 +242,13 @@ class AdminConversationsNotifier
     try {
       final result = await _repo.getAdminConversations(
         conversationType: _conversationType,
-        status: state.statusFilter,
-        unreadOnly: state.unreadOnly ? true : null,
-        search: state.searchQuery,
-        period: state.period,
+        status: statusFilter,
+        unreadOnly: unreadOnly ? true : null,
+        search: searchQuery,
+        period: period,
         page: 1,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       final conversations = _mergeUnreadState(result.conversations);
       state = state.copyWith(
         conversations: AsyncValue.data(conversations),
@@ -224,7 +259,7 @@ class AdminConversationsNotifier
       );
       if (_conversationType == 'user_support') _refreshUnreadCount();
     } catch (e, st) {
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(conversations: AsyncValue.error(e, st));
     }
   }
@@ -235,18 +270,24 @@ class AdminConversationsNotifier
     }
     final current = state.conversations.valueOrNull;
     if (current == null) return;
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final nextPage = state.currentPage + 1;
+    final statusFilter = state.statusFilter;
+    final unreadOnly = state.unreadOnly;
+    final searchQuery = state.searchQuery;
+    final period = state.period;
     state = state.copyWith(isLoadingMore: true, clearLoadMoreError: true);
     try {
-      final nextPage = state.currentPage + 1;
       final result = await _repo.getAdminConversations(
         conversationType: _conversationType,
-        status: state.statusFilter,
-        unreadOnly: state.unreadOnly ? true : null,
-        search: state.searchQuery,
-        period: state.period,
+        status: statusFilter,
+        unreadOnly: unreadOnly ? true : null,
+        search: searchQuery,
+        period: period,
         page: nextPage,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         conversations: AsyncValue.data([...current, ...result.conversations]),
         currentPage: nextPage,
@@ -255,7 +296,7 @@ class AdminConversationsNotifier
         clearLoadMoreError: true,
       );
     } catch (error) {
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         isLoadingMore: false,
         loadMoreError: error,
@@ -272,6 +313,7 @@ class AdminConversationsNotifier
   Future<void> refresh() async => load();
 
   void applyRead(String uuid) {
+    if (!hasActiveRequestAccount) return;
     _readUuids.add(uuid);
     _realtimeUnreadByUuid.remove(uuid);
     final current = state.conversations.valueOrNull;
@@ -284,6 +326,7 @@ class AdminConversationsNotifier
   }
 
   void applyReported(String uuid) {
+    if (!hasActiveRequestAccount) return;
     final current = state.conversations.valueOrNull;
     if (current == null) return;
     final idx = current.indexWhere((c) => c.uuid == uuid);
@@ -294,6 +337,7 @@ class AdminConversationsNotifier
   }
 
   void setStatusFilter(String? status) {
+    if (!hasActiveRequestAccount) return;
     state = state.copyWith(
       statusFilter: status,
       clearStatusFilter: status == null,
@@ -303,11 +347,13 @@ class AdminConversationsNotifier
   }
 
   void setUnreadOnly(bool value) {
+    if (!hasActiveRequestAccount) return;
     state = state.copyWith(unreadOnly: value, currentPage: 1);
     load();
   }
 
   void setSearchQuery(String? query) {
+    if (!hasActiveRequestAccount) return;
     final trimmed = query?.trim();
     state = state.copyWith(
       searchQuery: trimmed,
@@ -318,6 +364,7 @@ class AdminConversationsNotifier
   }
 
   void setPeriod(String? period) {
+    if (!hasActiveRequestAccount) return;
     state = state.copyWith(
       period: period,
       clearPeriod: period == null,
@@ -327,6 +374,7 @@ class AdminConversationsNotifier
   }
 
   Future<void> _refreshUnreadCount() async {
+    if (!hasActiveRequestAccount) return;
     try {
       await _ref.read(unreadCountProvider.notifier).refresh();
     } catch (_) {}
@@ -418,14 +466,41 @@ class AdminReportsState {
   }
 }
 
-class AdminReportsNotifier extends StateNotifier<AdminReportsState> {
+class AdminReportsNotifier extends StateNotifier<AdminReportsState>
+    with AccountScopedMessageRequestGuard<AdminReportsState> {
   final MessagesRepository _repo;
+  final Ref _ref;
+  final String? _accountId;
+  @override
+  final AuthSessionKey requestOwnerSession;
 
-  AdminReportsNotifier(this._repo) : super(const AdminReportsState()) {
+  AdminReportsNotifier(
+    this._repo,
+    this._ref,
+    this._accountId,
+    this.requestOwnerSession,
+  ) : super(
+          AdminReportsState(
+            reports: _accountId == null
+                ? const AsyncValue.data(<ConversationReport>[])
+                : const AsyncValue.loading(),
+          ),
+        ) {
+    if (_accountId == null) return;
     load();
   }
 
+  @override
+  Ref get requestRef => _ref;
+
+  @override
+  String? get requestAccountId => _accountId;
+
   Future<void> load() async {
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final searchQuery = state.searchQuery;
+    final reasonFilter = state.reasonFilter;
     state = state.copyWith(
       reports: const AsyncValue.loading(),
       currentPage: 1,
@@ -435,11 +510,11 @@ class AdminReportsNotifier extends StateNotifier<AdminReportsState> {
     );
     try {
       final result = await _repo.getAdminConversationReports(
-        search: state.searchQuery,
-        reason: state.reasonFilter,
+        search: searchQuery,
+        reason: reasonFilter,
         page: 1,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         reports: AsyncValue.data(result.reports),
         currentPage: 1,
@@ -448,7 +523,7 @@ class AdminReportsNotifier extends StateNotifier<AdminReportsState> {
         clearLoadMoreError: true,
       );
     } catch (e, st) {
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(reports: AsyncValue.error(e, st));
     }
   }
@@ -459,15 +534,19 @@ class AdminReportsNotifier extends StateNotifier<AdminReportsState> {
     }
     final current = state.reports.valueOrNull;
     if (current == null) return;
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final nextPage = state.currentPage + 1;
+    final searchQuery = state.searchQuery;
+    final reasonFilter = state.reasonFilter;
     state = state.copyWith(isLoadingMore: true, clearLoadMoreError: true);
     try {
-      final nextPage = state.currentPage + 1;
       final result = await _repo.getAdminConversationReports(
-        search: state.searchQuery,
-        reason: state.reasonFilter,
+        search: searchQuery,
+        reason: reasonFilter,
         page: nextPage,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         reports: AsyncValue.data([...current, ...result.reports]),
         currentPage: nextPage,
@@ -476,7 +555,7 @@ class AdminReportsNotifier extends StateNotifier<AdminReportsState> {
         clearLoadMoreError: true,
       );
     } catch (error) {
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         isLoadingMore: false,
         loadMoreError: error,
@@ -493,6 +572,7 @@ class AdminReportsNotifier extends StateNotifier<AdminReportsState> {
   Future<void> refresh() async => load();
 
   void setSearch(String? query) {
+    if (!hasActiveRequestAccount) return;
     final trimmed = query?.trim();
     state = state.copyWith(
       searchQuery: trimmed,
@@ -503,6 +583,7 @@ class AdminReportsNotifier extends StateNotifier<AdminReportsState> {
   }
 
   void setReasonFilter(String? reason) {
+    if (!hasActiveRequestAccount) return;
     state = state.copyWith(
       reasonFilter: reason,
       clearReasonFilter: reason == null,
@@ -516,11 +597,13 @@ class AdminReportsNotifier extends StateNotifier<AdminReportsState> {
     String action, {
     String? adminNote,
   }) async {
+    if (!hasActiveRequestAccount) return;
     await _repo.reviewAdminConversationReport(
       reportUuid: reportUuid,
       action: action,
       adminNote: adminNote,
     );
+    if (!hasActiveRequestAccount) return;
     _updateReportLocally(
         reportUuid,
         (r) => ConversationReport(
@@ -541,10 +624,12 @@ class AdminReportsNotifier extends StateNotifier<AdminReportsState> {
   }
 
   Future<void> updateNote(String reportUuid, String? note) async {
+    if (!hasActiveRequestAccount) return;
     await _repo.updateAdminConversationReportNote(
       reportUuid: reportUuid,
       adminNote: note,
     );
+    if (!hasActiveRequestAccount) return;
     _updateReportLocally(
         reportUuid,
         (r) => ConversationReport(
@@ -566,6 +651,7 @@ class AdminReportsNotifier extends StateNotifier<AdminReportsState> {
 
   void _updateReportLocally(
       String uuid, ConversationReport Function(ConversationReport) updater) {
+    if (!hasActiveRequestAccount) return;
     final current = state.reports.valueOrNull;
     if (current == null) return;
     state = state.copyWith(
@@ -582,18 +668,59 @@ class AdminReportsNotifier extends StateNotifier<AdminReportsState> {
 
 final adminConversationsProvider = StateNotifierProvider.family<
     AdminConversationsNotifier, AdminConversationsState, String>(
-  (ref, conversationType) => AdminConversationsNotifier(
-    conversationType,
-    ref.read(messagesRepositoryProvider),
-    ref,
-  ),
+  (ref, conversationType) {
+    final ownerSession = ref.watch(authSessionKeyProvider);
+    return AdminConversationsNotifier(
+      conversationType,
+      ref.read(messagesRepositoryProvider),
+      ref,
+      ref.watch(authSessionUserIdProvider),
+      ownerSession,
+    );
+  },
 );
 
 final adminReportsProvider =
     StateNotifierProvider<AdminReportsNotifier, AdminReportsState>((ref) {
-  return AdminReportsNotifier(ref.read(messagesRepositoryProvider));
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  final accountId = ref.watch(authSessionUserIdProvider);
+  return AdminReportsNotifier(
+    ref.read(messagesRepositoryProvider),
+    ref,
+    accountId,
+    ownerSession,
+  );
 });
 
-final adminReportStatsProvider = FutureProvider<AdminReportStats>((ref) async {
-  return ref.read(messagesRepositoryProvider).getAdminConversationReportStats();
+const _emptyAdminReportStats = AdminReportStats(
+  pending: 0,
+  reviewed: 0,
+  dismissed: 0,
+  total: 0,
+);
+
+final _adminReportStatsForSessionProvider = FutureProvider.autoDispose
+    .family<AdminReportStats, AuthSessionKey>((ref, ownerSession) async {
+  if (ownerSession.accountId == null ||
+      !identical(ref.read(authSessionKeyProvider), ownerSession)) {
+    return _emptyAdminReportStats;
+  }
+  final stats = await ref
+      .read(messagesRepositoryProvider)
+      .getAdminConversationReportStats();
+  if (!identical(ref.read(authSessionKeyProvider), ownerSession)) {
+    return _emptyAdminReportStats;
+  }
+  return stats;
+});
+
+/// Exact-session wrapper that never carries account A's completed stats into
+/// B or a replacement A session's loading state.
+final adminReportStatsProvider =
+    Provider.autoDispose<AsyncValue<AdminReportStats>>((ref) {
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  if (ownerSession.accountId == null) {
+    return const AsyncValue.data(_emptyAdminReportStats);
+  }
+  return ref.watch(_adminReportStatsForSessionProvider(ownerSession));
 });

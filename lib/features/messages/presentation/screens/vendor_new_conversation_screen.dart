@@ -8,6 +8,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../domain/entities/accepted_partner.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/repositories/messages_repository.dart';
@@ -42,13 +44,35 @@ class _VendorNewConversationScreenState
 
   bool _submitting = false;
   String? _error;
+  late final String? _ownerAccountId;
+  bool _sessionInvalid = false;
 
   @override
   void initState() {
     super.initState();
+    _ownerAccountId = ref.read(authSessionUserIdProvider);
     if (widget.mode == VendorConversationMode.toPartner) {
       _loadPartners();
     }
+  }
+
+  bool get _ownsCurrentAccount =>
+      !_sessionInvalid &&
+      _ownerAccountId != null &&
+      ref.read(authSessionUserIdProvider) == _ownerAccountId;
+
+  void _handleAccountChange(String? nextAccountId) {
+    if (nextAccountId == _ownerAccountId || _sessionInvalid) return;
+    _sessionInvalid = true;
+    _subjectController.clear();
+    _messageController.clear();
+    _selectedParticipant = null;
+    _selectedPartner = null;
+    _partners = const [];
+    if (mounted) setState(() => _submitting = false);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _sessionInvalid) Navigator.of(context).maybePop();
+    });
   }
 
   @override
@@ -59,6 +83,7 @@ class _VendorNewConversationScreenState
   }
 
   Future<void> _loadPartners() async {
+    if (!_ownsCurrentAccount) return;
     setState(() {
       _loadingPartners = true;
       _partnersLoadError = null;
@@ -66,14 +91,14 @@ class _VendorNewConversationScreenState
     try {
       final partners =
           await ref.read(messagesRepositoryProvider).getAcceptedPartners();
-      if (!mounted) return;
+      if (!mounted || !_ownsCurrentAccount) return;
       setState(() {
         _partners = partners;
         _loadingPartners = false;
         _partnersLoadError = null;
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || !_ownsCurrentAccount) return;
       setState(() {
         _loadingPartners = false;
         _partnersLoadError = ApiResponseHandler.extractError(
@@ -87,33 +112,48 @@ class _VendorNewConversationScreenState
   // ── Search modals ─────────────────────────────────────────────────────────────
 
   Future<void> _openParticipantSearch() async {
+    if (!_ownsCurrentAccount) return;
     final repo = ref.read(messagesRepositoryProvider);
     final selected = await showModalBottomSheet<ConversationParticipant>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => _ParticipantSearchSheet(repo: repo),
+      builder: (_) => AccountBoundRouteGuard<ConversationParticipant>(
+        ownerAccountId: _ownerAccountId!,
+        builder: (_) => _ParticipantSearchSheet(repo: repo),
+      ),
     );
-    if (selected != null) setState(() => _selectedParticipant = selected);
+    if (selected != null && mounted && _ownsCurrentAccount) {
+      setState(() => _selectedParticipant = selected);
+    }
   }
 
   Future<void> _openPartnerSearch() async {
+    if (!_ownsCurrentAccount) return;
     if (_partnersLoadError != null) {
       await _loadPartners();
-      if (!mounted || _partnersLoadError != null) return;
+      if (!mounted || !_ownsCurrentAccount || _partnersLoadError != null) {
+        return;
+      }
     }
     final selected = await showModalBottomSheet<AcceptedPartner>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => _PartnerSearchSheet(partners: _partners),
+      builder: (_) => AccountBoundRouteGuard<AcceptedPartner>(
+        ownerAccountId: _ownerAccountId!,
+        builder: (_) => _PartnerSearchSheet(partners: _partners),
+      ),
     );
-    if (selected != null) setState(() => _selectedPartner = selected);
+    if (selected != null && mounted && _ownsCurrentAccount) {
+      setState(() => _selectedPartner = selected);
+    }
   }
 
   // ── Submit ────────────────────────────────────────────────────────────────────
 
   Future<void> _submit() async {
+    if (!_ownsCurrentAccount) return;
     final subject = _subjectController.text.trim();
     final message = _messageController.text.trim();
 
@@ -181,14 +221,14 @@ class _VendorNewConversationScreenState
           isOrgRoute = false;
       }
 
-      if (mounted) {
+      if (mounted && _ownsCurrentAccount) {
         final path = isOrgRoute
             ? '/messages/vendor-org/$convUuid'
             : '/messages/vendor/$convUuid';
         context.pushReplacement(path);
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && _ownsCurrentAccount) {
         final isForbidden = e is DioException && e.response?.statusCode == 403;
         setState(() {
           _submitting = false;
@@ -225,6 +265,19 @@ class _VendorNewConversationScreenState
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<String?>(authSessionUserIdProvider, (_, next) {
+      _handleAccountChange(next);
+    });
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_ownerAccountId == null ||
+        currentAccountId != _ownerAccountId ||
+        _sessionInvalid) {
+      return const Scaffold(
+        key: Key('vendor-new-conversation-session-invalid'),
+        body: SizedBox.shrink(),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(_title(context))),
       body: SingleChildScrollView(

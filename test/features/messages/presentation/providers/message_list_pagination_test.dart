@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lehiboo/features/auth/domain/repositories/auth_repository.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/messages/data/repositories/messages_repository_impl.dart';
 import 'package:lehiboo/features/messages/domain/entities/broadcast.dart';
 import 'package:lehiboo/features/messages/domain/entities/conversation.dart';
@@ -22,6 +23,9 @@ typedef _PaginationSnapshot = ({
   Object? error,
 });
 
+final _messageSessionUserIdProvider =
+    StateProvider<String?>((ref) => 'account-a');
+
 void main() {
   late _FakeMessagesRepository repository;
   late ProviderContainer container;
@@ -33,6 +37,7 @@ void main() {
         authRepositoryProvider.overrideWithValue(
           _NeverCompletingAuthRepository(),
         ),
+        authSessionUserIdProvider.overrideWithValue('test-user'),
         messagesRepositoryProvider.overrideWithValue(repository),
       ],
     );
@@ -231,6 +236,182 @@ void main() {
       },
     );
   });
+
+  test('message lists stay empty and make no requests without an account',
+      () async {
+    container.dispose();
+    final controlledRepository = _ControlledMessagesRepository();
+    container = ProviderContainer(
+      overrides: [
+        authRepositoryProvider.overrideWithValue(
+          _NeverCompletingAuthRepository(),
+        ),
+        authSessionUserIdProvider.overrideWithValue(null),
+        messagesRepositoryProvider.overrideWithValue(controlledRepository),
+      ],
+    );
+
+    _listenToAllMessageLists(container);
+    await pumpEventQueue();
+
+    expect(controlledRepository.totalRequests, 0);
+    _expectAllMessageLists(container, marker: null);
+  });
+
+  test('late message-list responses cannot cross account boundaries', () async {
+    container.dispose();
+    final controlledRepository = _ControlledMessagesRepository();
+    container = _accountScopedContainer(controlledRepository);
+    _listenToAllMessageLists(container);
+    await pumpEventQueue();
+    controlledRepository.expectEveryRequestCount(1);
+
+    container.read(_messageSessionUserIdProvider.notifier).state = 'account-b';
+    await pumpEventQueue();
+    controlledRepository.expectEveryRequestCount(2);
+
+    controlledRepository.completeEveryRequest(1, 'account-b');
+    await pumpEventQueue();
+    _expectAllMessageLists(container, marker: 'account-b');
+
+    controlledRepository.completeEveryRequest(0, 'account-a');
+    await pumpEventQueue();
+    _expectAllMessageLists(container, marker: 'account-b');
+  });
+
+  test('late filter and refresh responses cannot replace newer list state',
+      () async {
+    container.dispose();
+    final controlledRepository = _ControlledMessagesRepository();
+    container = _accountScopedContainer(controlledRepository);
+    _listenToAllMessageLists(container);
+    await pumpEventQueue();
+    controlledRepository.expectEveryRequestCount(1);
+
+    container.read(conversationsProvider.notifier).setSearchQuery('new query');
+    container
+        .read(supportConversationsProvider.notifier)
+        .setSearchQuery('new query');
+    container
+        .read(vendorConversationsProvider.notifier)
+        .setSearchQuery('new query');
+    container
+        .read(vendorOrgConversationsProvider.notifier)
+        .setSearchQuery('new query');
+    container
+        .read(adminConversationsProvider('user_support').notifier)
+        .setSearchQuery('new query');
+    container
+        .read(vendorBroadcastsProvider.notifier)
+        .setSearchQuery('new query');
+    container.read(adminReportsProvider.notifier).setSearch('new query');
+    unawaited(container.read(vendorSupportProvider.notifier).refresh());
+    await pumpEventQueue();
+    controlledRepository.expectEveryRequestCount(2);
+
+    controlledRepository.completeEveryRequest(1, 'new-query');
+    await pumpEventQueue();
+    _expectAllMessageLists(container, marker: 'new-query');
+
+    controlledRepository.completeEveryRequest(0, 'old-query');
+    await pumpEventQueue();
+    _expectAllMessageLists(container, marker: 'new-query');
+  });
+}
+
+ProviderContainer _accountScopedContainer(
+  _ControlledMessagesRepository repository,
+) {
+  return ProviderContainer(
+    overrides: [
+      authRepositoryProvider.overrideWithValue(
+        _NeverCompletingAuthRepository(),
+      ),
+      authSessionUserIdProvider.overrideWith(
+        (ref) => ref.watch(_messageSessionUserIdProvider),
+      ),
+      messagesRepositoryProvider.overrideWithValue(repository),
+    ],
+  );
+}
+
+void _listenToAllMessageLists(ProviderContainer container) {
+  container.listen(conversationsProvider, (_, __) {}, fireImmediately: true);
+  container.listen(
+    supportConversationsProvider,
+    (_, __) {},
+    fireImmediately: true,
+  );
+  container.listen(
+    vendorConversationsProvider,
+    (_, __) {},
+    fireImmediately: true,
+  );
+  container.listen(vendorSupportProvider, (_, __) {}, fireImmediately: true);
+  container.listen(
+    vendorOrgConversationsProvider,
+    (_, __) {},
+    fireImmediately: true,
+  );
+  container.listen(
+    adminConversationsProvider('user_support'),
+    (_, __) {},
+    fireImmediately: true,
+  );
+  container.listen(vendorBroadcastsProvider, (_, __) {}, fireImmediately: true);
+  container.listen(adminReportsProvider, (_, __) {}, fireImmediately: true);
+}
+
+void _expectAllMessageLists(
+  ProviderContainer container, {
+  required String? marker,
+}) {
+  String? conversationUuid(AsyncValue<List<Conversation>> value) =>
+      value.valueOrNull?.firstOrNull?.uuid;
+  String? broadcastUuid(AsyncValue<List<Broadcast>> value) =>
+      value.valueOrNull?.firstOrNull?.uuid;
+  String? reportUuid(AsyncValue<List<ConversationReport>> value) =>
+      value.valueOrNull?.firstOrNull?.uuid;
+
+  final suffix = marker == null ? null : '-$marker';
+  expect(
+    conversationUuid(container.read(conversationsProvider).conversations),
+    marker == null ? isNull : 'participant$suffix',
+  );
+  expect(
+    conversationUuid(
+      container.read(supportConversationsProvider).conversations,
+    ),
+    marker == null ? isNull : 'support$suffix',
+  );
+  expect(
+    conversationUuid(container.read(vendorConversationsProvider).conversations),
+    marker == null ? isNull : 'vendor-client$suffix',
+  );
+  expect(
+    conversationUuid(container.read(vendorSupportProvider).conversations),
+    marker == null ? isNull : 'vendor-support$suffix',
+  );
+  expect(
+    conversationUuid(
+      container.read(vendorOrgConversationsProvider).conversations,
+    ),
+    marker == null ? isNull : 'vendor-org$suffix',
+  );
+  expect(
+    conversationUuid(
+      container.read(adminConversationsProvider('user_support')).conversations,
+    ),
+    marker == null ? isNull : 'admin$suffix',
+  );
+  expect(
+    broadcastUuid(container.read(vendorBroadcastsProvider).broadcasts),
+    marker == null ? isNull : 'broadcast$suffix',
+  );
+  expect(
+    reportUuid(container.read(adminReportsProvider).reports),
+    marker == null ? isNull : 'report$suffix',
+  );
 }
 
 Future<void> _verifyFailureAndRetry({
@@ -274,6 +455,176 @@ class _NeverCompletingAuthRepository implements AuthRepository {
 
   @override
   Future<bool> isAuthenticated() => _authenticated.future;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _ControlledMessagesRepository implements MessagesRepository {
+  final participantRequests = <Completer<ConversationsListResult>>[];
+  final supportRequests = <Completer<ConversationsListResult>>[];
+  final vendorClientRequests = <Completer<ConversationsListResult>>[];
+  final vendorSupportRequests = <Completer<ConversationsListResult>>[];
+  final vendorOrgRequests = <Completer<ConversationsListResult>>[];
+  final adminRequests = <Completer<ConversationsListResult>>[];
+  final broadcastRequests = <Completer<BroadcastsListResult>>[];
+  final reportRequests = <Completer<ConversationReportsListResult>>[];
+
+  int get totalRequests =>
+      participantRequests.length +
+      supportRequests.length +
+      vendorClientRequests.length +
+      vendorSupportRequests.length +
+      vendorOrgRequests.length +
+      adminRequests.length +
+      broadcastRequests.length +
+      reportRequests.length;
+
+  void expectEveryRequestCount(int count) {
+    expect(participantRequests, hasLength(count));
+    expect(supportRequests, hasLength(count));
+    expect(vendorClientRequests, hasLength(count));
+    expect(vendorSupportRequests, hasLength(count));
+    expect(vendorOrgRequests, hasLength(count));
+    expect(adminRequests, hasLength(count));
+    expect(broadcastRequests, hasLength(count));
+    expect(reportRequests, hasLength(count));
+  }
+
+  void completeEveryRequest(int index, String marker) {
+    participantRequests[index].complete(
+      _conversationResult('participant-$marker'),
+    );
+    supportRequests[index].complete(_conversationResult('support-$marker'));
+    vendorClientRequests[index].complete(
+      _conversationResult('vendor-client-$marker'),
+    );
+    vendorSupportRequests[index].complete(
+      _conversationResult('vendor-support-$marker'),
+    );
+    vendorOrgRequests[index].complete(
+      _conversationResult('vendor-org-$marker'),
+    );
+    adminRequests[index].complete(_conversationResult('admin-$marker'));
+    broadcastRequests[index].complete(
+      BroadcastsListResult(
+        broadcasts: [_broadcast('broadcast-$marker')],
+        hasMore: false,
+        currentPage: 1,
+        totalCount: 1,
+      ),
+    );
+    reportRequests[index].complete(
+      ConversationReportsListResult(
+        reports: [_report('report-$marker')],
+        hasMore: false,
+        currentPage: 1,
+        totalCount: 1,
+      ),
+    );
+  }
+
+  ConversationsListResult _conversationResult(String uuid) {
+    return ConversationsListResult(
+      conversations: [_conversation(uuid)],
+      hasMore: false,
+      currentPage: 1,
+      totalCount: 1,
+    );
+  }
+
+  Future<ConversationsListResult> _requestConversation(
+    List<Completer<ConversationsListResult>> requests,
+  ) {
+    final completer = Completer<ConversationsListResult>();
+    requests.add(completer);
+    return completer.future;
+  }
+
+  @override
+  Future<ConversationsListResult> getConversations({
+    String? status,
+    bool? unreadOnly,
+    String? search,
+    String? period,
+    int page = 1,
+    int perPage = 15,
+  }) =>
+      _requestConversation(participantRequests);
+
+  @override
+  Future<ConversationsListResult> getSupportConversations({
+    int page = 1,
+    int perPage = 15,
+    String? status,
+    bool? unreadOnly,
+    String? search,
+    String? period,
+  }) =>
+      _requestConversation(supportRequests);
+
+  @override
+  Future<ConversationsListResult> getVendorConversations({
+    String? conversationType,
+    String? status,
+    bool? unreadOnly,
+    String? search,
+    String? period,
+    int page = 1,
+    int perPage = 15,
+  }) =>
+      _requestConversation(
+        conversationType == 'vendor_admin'
+            ? vendorSupportRequests
+            : vendorClientRequests,
+      );
+
+  @override
+  Future<ConversationsListResult> getOrgConversations({
+    String? status,
+    bool? unreadOnly,
+    String? search,
+    String? period,
+    int page = 1,
+    int perPage = 15,
+  }) =>
+      _requestConversation(vendorOrgRequests);
+
+  @override
+  Future<ConversationsListResult> getAdminConversations({
+    String? conversationType,
+    String? status,
+    bool? unreadOnly,
+    String? search,
+    String? period,
+    int page = 1,
+    int perPage = 15,
+  }) =>
+      _requestConversation(adminRequests);
+
+  @override
+  Future<BroadcastsListResult> getBroadcasts({
+    String? search,
+    String? period,
+    int page = 1,
+    int perPage = 15,
+  }) {
+    final completer = Completer<BroadcastsListResult>();
+    broadcastRequests.add(completer);
+    return completer.future;
+  }
+
+  @override
+  Future<ConversationReportsListResult> getAdminConversationReports({
+    String? search,
+    String? reason,
+    int page = 1,
+    int perPage = 20,
+  }) {
+    final completer = Completer<ConversationReportsListResult>();
+    reportRequests.add(completer);
+    return completer.future;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

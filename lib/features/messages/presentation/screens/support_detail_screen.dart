@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../domain/entities/conversation_route.dart';
 import '../../domain/entities/message.dart';
 import '../providers/conversation_detail_provider.dart';
@@ -28,27 +30,68 @@ class SupportDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _SupportDetailScreenState extends ConsumerState<SupportDetailScreen> {
+  late final String? _ownerAccountId;
+  bool _sessionInvalid = false;
+  bool _exitScheduled = false;
+
+  bool get _ownsCurrentAccount =>
+      !_sessionInvalid &&
+      _ownerAccountId != null &&
+      ref.read(authSessionUserIdProvider) == _ownerAccountId;
+
   @override
   void initState() {
     super.initState();
+    _ownerAccountId = ref.read(authSessionUserIdProvider);
+    _sessionInvalid = _ownerAccountId == null;
+    ref.listenManual<String?>(authSessionUserIdProvider, (_, next) {
+      if (next == _ownerAccountId || _sessionInvalid) return;
+      _sessionInvalid = true;
+      if (mounted) setState(() {});
+      _scheduleFailClosedExit();
+    });
     if (widget.isNew) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!_ownsCurrentAccount) return;
         final created = await NewConversationForm.show(
           context,
           conversationContext: SupportConversationContext(),
         );
+        if (!mounted || !_ownsCurrentAccount) return;
         // Only navigate back if the user cancelled (form already navigates on success)
-        if (mounted && created != true) {
+        if (created != true) {
           context.canPop() ? context.pop() : context.go('/messages');
         }
       });
     }
   }
 
+  void _scheduleFailClosedExit() {
+    if (_exitScheduled) return;
+    _exitScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_sessionInvalid) return;
+      final navigator = Navigator.of(context);
+      if (navigator.canPop()) navigator.maybePop();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_sessionInvalid ||
+        _ownerAccountId == null ||
+        currentAccountId != _ownerAccountId) {
+      return const Scaffold(
+        key: Key('support-detail-session-invalid'),
+        body: SizedBox.shrink(),
+      );
+    }
     if (!widget.isNew && widget.conversationUuid != null) {
-      return _SupportThreadView(conversationUuid: widget.conversationUuid!);
+      return _SupportThreadView(
+        conversationUuid: widget.conversationUuid!,
+        ownerAccountId: _ownerAccountId,
+      );
     }
     return const Scaffold(
       body: Center(child: CircularProgressIndicator()),
@@ -58,8 +101,12 @@ class _SupportDetailScreenState extends ConsumerState<SupportDetailScreen> {
 
 class _SupportThreadView extends ConsumerStatefulWidget {
   final String conversationUuid;
+  final String ownerAccountId;
 
-  const _SupportThreadView({required this.conversationUuid});
+  const _SupportThreadView({
+    required this.conversationUuid,
+    required this.ownerAccountId,
+  });
 
   @override
   ConsumerState<_SupportThreadView> createState() => _SupportThreadViewState();
@@ -71,32 +118,40 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
         route: ConversationRoute.participantSupport,
       );
 
+  bool get _ownsCurrentAccount =>
+      ref.read(authSessionUserIdProvider) == widget.ownerAccountId;
+
   Future<void> _handleClose(ConversationDetailNotifier notifier) async {
+    if (!_ownsCurrentAccount) return;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(context.l10n.messagesCloseConversation),
-        content: Text(context.l10n.messagesCloseConversationBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(context.l10n.commonCancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(
-              context.l10n.commonClose,
-              style: const TextStyle(color: Colors.red),
+      builder: (ctx) => AccountBoundRouteGuard<bool>(
+        ownerAccountId: widget.ownerAccountId,
+        invalidResult: false,
+        builder: (_) => AlertDialog(
+          title: Text(context.l10n.messagesCloseConversation),
+          content: Text(context.l10n.messagesCloseConversationBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(context.l10n.commonCancel),
             ),
-          ),
-        ],
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(
+                context.l10n.commonClose,
+                style: const TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        ),
       ),
     );
-    if (confirmed == true && mounted) {
+    if (confirmed == true && mounted && _ownsCurrentAccount) {
       try {
         await notifier.closeConversation();
       } catch (e) {
-        if (mounted) {
+        if (mounted && _ownsCurrentAccount) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -115,10 +170,18 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
 
   @override
   Widget build(BuildContext context) {
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (currentAccountId != widget.ownerAccountId) {
+      return const Scaffold(
+        key: Key('support-thread-session-invalid'),
+        body: SizedBox.shrink(),
+      );
+    }
     final state = ref.watch(conversationDetailProvider(_pk));
     final notifier = ref.read(conversationDetailProvider(_pk).notifier);
 
     ref.listen(conversationDetailProvider(_pk), (prev, next) {
+      if (!_ownsCurrentAccount) return;
       if (next.sendError != null && prev?.sendError != next.sendError) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -163,7 +226,9 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
             Expanded(
               child: ConversationLoadErrorView(
                 error: e,
-                onRetry: notifier.load,
+                onRetry: () {
+                  if (_ownsCurrentAccount) notifier.load();
+                },
               ),
             ),
           ],
@@ -220,7 +285,9 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
                   if (!isClosed)
                     PopupMenuButton<String>(
                       onSelected: (value) {
-                        if (value == 'close') _handleClose(notifier);
+                        if (_ownsCurrentAccount && value == 'close') {
+                          _handleClose(notifier);
+                        }
                       },
                       itemBuilder: (_) => [
                         PopupMenuItem(
@@ -265,9 +332,11 @@ class _SupportThreadViewState extends ConsumerState<_SupportThreadView> {
               MessageComposer(
                 conversationUuid: widget.conversationUuid,
                 disabled: isClosed,
-                onSend: (content) => notifier.sendMessage(
-                  content: content,
-                ),
+                onSend: (content) {
+                  if (_ownsCurrentAccount) {
+                    notifier.sendMessage(content: content);
+                  }
+                },
               ),
             ],
           );

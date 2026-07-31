@@ -13,6 +13,7 @@ import '../widgets/message_bubble.dart';
 import '../widgets/message_composer.dart';
 import '../widgets/report_conversation_sheet.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/widgets/account_bound_route_guard.dart';
 import 'package:lehiboo/features/auth/presentation/widgets/guest_restriction_dialog.dart';
 
 class ConversationDetailScreen extends ConsumerStatefulWidget {
@@ -33,13 +34,29 @@ class ConversationDetailScreen extends ConsumerStatefulWidget {
 class _ConversationDetailScreenState
     extends ConsumerState<ConversationDetailScreen> {
   static const _primaryColor = Color(0xFFFF601F);
+  late final String? _ownerAccountId;
+  bool _sessionInvalid = false;
+  bool _exitScheduled = false;
 
   bool get _isReadonly => widget.route == ConversationRoute.adminReadonly;
+  bool get _ownsCurrentAccount =>
+      !_sessionInvalid &&
+      _ownerAccountId != null &&
+      ref.read(authSessionUserIdProvider) == _ownerAccountId;
 
   @override
   void initState() {
     super.initState();
+    _ownerAccountId = ref.read(authSessionUserIdProvider);
+    _sessionInvalid = _ownerAccountId == null;
+    ref.listenManual<String?>(authSessionUserIdProvider, (_, next) {
+      if (next == _ownerAccountId || _sessionInvalid) return;
+      _sessionInvalid = true;
+      if (mounted) setState(() {});
+      _scheduleFailClosedExit();
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_ownsCurrentAccount) return;
       final authState = ref.read(authProvider);
       if (authState.status == AuthStatus.unauthenticated) {
         GuestRestrictionDialog.show(
@@ -50,8 +67,28 @@ class _ConversationDetailScreenState
     });
   }
 
+  void _scheduleFailClosedExit() {
+    if (_exitScheduled) return;
+    _exitScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_sessionInvalid) return;
+      final navigator = Navigator.of(context);
+      if (navigator.canPop()) navigator.maybePop();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_sessionInvalid ||
+        _ownerAccountId == null ||
+        currentAccountId != _ownerAccountId) {
+      return const Scaffold(
+        key: Key('conversation-detail-session-invalid'),
+        body: SizedBox.shrink(),
+      );
+    }
+
     final pk = (uuid: widget.conversationUuid, route: widget.route);
     final state = ref.watch(conversationDetailProvider(pk));
     final detailNotifier = ref.read(conversationDetailProvider(pk).notifier);
@@ -59,6 +96,7 @@ class _ConversationDetailScreenState
     ref.listen<ConversationDetailState>(
       conversationDetailProvider(pk),
       (ConversationDetailState? prev, ConversationDetailState next) {
+        if (!_ownsCurrentAccount) return;
         if (next.sendError != null && prev?.sendError != next.sendError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -104,8 +142,11 @@ class _ConversationDetailScreenState
             Expanded(
               child: ConversationLoadErrorView(
                 error: e,
-                onRetry: () =>
-                    ref.read(conversationDetailProvider(pk).notifier).load(),
+                onRetry: () {
+                  if (_ownsCurrentAccount) {
+                    ref.read(conversationDetailProvider(pk).notifier).load();
+                  }
+                },
               ),
             ),
           ],
@@ -260,10 +301,11 @@ class _ConversationDetailScreenState
                       icon: const Icon(Icons.lock_open),
                       tooltip: context.l10n.messagesReopenTooltip,
                       onPressed: () async {
+                        if (!_ownsCurrentAccount) return;
                         try {
                           await notifier.reopenConversation();
                         } catch (e) {
-                          if (context.mounted) {
+                          if (context.mounted && _ownsCurrentAccount) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                   content: Text(
@@ -392,32 +434,41 @@ class _ConversationDetailScreenState
     ConversationDetailNotifier notifier,
     String status,
   ) async {
+    if (!_ownsCurrentAccount) return;
     if (action == 'close') {
+      final ownerAccountId = _ownerAccountId!;
       final confirmed = await showDialog<bool>(
         context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(context.l10n.messagesCloseConversation),
-          content: Text(context.l10n.messagesCloseConversationBody),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: Text(context.l10n.commonCancel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(
-                context.l10n.commonClose,
-                style: const TextStyle(color: Colors.red),
+        builder: (ctx) => AccountBoundRouteGuard<bool>(
+          ownerAccountId: ownerAccountId,
+          invalidResult: false,
+          builder: (_) => AlertDialog(
+            title: Text(context.l10n.messagesCloseConversation),
+            content: Text(context.l10n.messagesCloseConversationBody),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(context.l10n.commonCancel),
               ),
-            ),
-          ],
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(
+                  context.l10n.commonClose,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
+          ),
         ),
       );
-      if (confirmed == true && context.mounted) {
+      if (confirmed == true &&
+          context.mounted &&
+          ref.read(authSessionUserIdProvider) == ownerAccountId) {
         try {
           await notifier.closeConversation();
         } catch (e) {
-          if (context.mounted) {
+          if (context.mounted &&
+              ref.read(authSessionUserIdProvider) == ownerAccountId) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                   content: Text(
@@ -432,6 +483,7 @@ class _ConversationDetailScreenState
         }
       }
     } else if (action == 'report') {
+      if (!_ownsCurrentAccount) return;
       showConversationReportSheet(
         context,
         conversationUuid: widget.conversationUuid,

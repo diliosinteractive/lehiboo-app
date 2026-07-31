@@ -5,6 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../data/datasources/messages_api_datasource.dart';
 import '../../data/repositories/messages_repository_impl.dart';
 import '../../domain/entities/accepted_partner.dart';
@@ -100,11 +103,13 @@ ConversationOrganization _orgFromJson(Map<String, dynamic> json) {
 class NewConversationForm extends ConsumerStatefulWidget {
   final NewConversationContext conversationContext;
   final BuildContext navigationContext;
+  final String? ownerAccountId;
 
   const NewConversationForm({
     super.key,
     required this.conversationContext,
     required this.navigationContext,
+    this.ownerAccountId,
   });
 
   /// Present as a modal bottom sheet from any BuildContext.
@@ -112,7 +117,20 @@ class NewConversationForm extends ConsumerStatefulWidget {
   static Future<bool?> show(
     BuildContext context, {
     required NewConversationContext conversationContext,
+    AuthSessionKey? ownerSession,
   }) {
+    final container = ProviderScope.containerOf(
+      context,
+      listen: false,
+    );
+    final activeSession = container.read(authSessionKeyProvider);
+    final effectiveOwner = ownerSession ?? activeSession;
+    if (!identical(activeSession, effectiveOwner)) {
+      return Future<bool?>.value();
+    }
+    final ownerAccountId = effectiveOwner.accountId;
+    if (ownerAccountId == null) return Future<bool?>.value();
+
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -123,15 +141,21 @@ class NewConversationForm extends ConsumerStatefulWidget {
       // Keyboard insets MUST be read from the builder's ctx, not from the
       // form widget's own context. Using the form's context can lag or miss
       // updates, leaving the action bar hidden behind the keyboard.
-      builder: (ctx) => AnimatedPadding(
-        duration: const Duration(milliseconds: 130),
-        curve: Curves.easeOut,
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.viewInsetsOf(ctx).bottom,
-        ),
-        child: NewConversationForm(
-          conversationContext: conversationContext,
-          navigationContext: context,
+      builder: (ctx) => AccountBoundRouteGuard<bool>(
+        ownerAccountId: ownerAccountId,
+        ownerSession: effectiveOwner,
+        invalidResult: false,
+        builder: (_) => AnimatedPadding(
+          duration: const Duration(milliseconds: 130),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(ctx).bottom,
+          ),
+          child: NewConversationForm(
+            conversationContext: conversationContext,
+            navigationContext: context,
+            ownerAccountId: ownerAccountId,
+          ),
         ),
       ),
     );
@@ -170,6 +194,8 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   String? _partnersLoadError;
   // Shared error flag for new contexts
   bool _recipientError = false;
+  late final String? _ownerAccountId;
+  bool _sessionInvalid = false;
 
   // Contactable orgs for DashboardContext (loaded eagerly)
   List<ConversationOrganization>? _contactableOrgs;
@@ -199,6 +225,8 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   @override
   void initState() {
     super.initState();
+    _ownerAccountId =
+        widget.ownerAccountId ?? ref.read(authSessionUserIdProvider);
     final ctx = widget.conversationContext;
     if (ctx is FromOrganizerConversationContext) {
       _eventId = ctx.prefilledEventId;
@@ -218,8 +246,35 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     }
   }
 
+  bool get _ownsCurrentAccount =>
+      !_sessionInvalid &&
+      _ownerAccountId != null &&
+      ref.read(authSessionUserIdProvider) == _ownerAccountId;
+
+  void _handleAccountChange(String? nextAccountId) {
+    if (nextAccountId == _ownerAccountId || _sessionInvalid) return;
+    _sessionInvalid = true;
+    _subjectCtrl.clear();
+    _messageCtrl.clear();
+    _selectedOrg = null;
+    _selectedAdminUser = null;
+    _selectedAdminOrg = null;
+    _selectedVendorParticipant = null;
+    _selectedPartner = null;
+    _allPartners = const [];
+    _contactableOrgs = null;
+    _eventId = null;
+    _eventTitle = null;
+    if (mounted) setState(() => _isLoading = false);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _sessionInvalid) {
+        Navigator.of(context).maybePop(false);
+      }
+    });
+  }
+
   Future<void> _loadAcceptedPartners() async {
-    if (!mounted || _partnersLoading) return;
+    if (!mounted || !_ownsCurrentAccount || _partnersLoading) return;
     setState(() {
       _partnersLoading = true;
       _partnersLoadError = null;
@@ -227,14 +282,14 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
     try {
       final partners =
           await ref.read(messagesRepositoryProvider).getAcceptedPartners();
-      if (!mounted) return;
+      if (!mounted || !_ownsCurrentAccount) return;
       setState(() {
         _allPartners = partners;
         _partnersLoading = false;
         _partnersLoadError = null;
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || !_ownsCurrentAccount) return;
       setState(() {
         _partnersLoading = false;
         _partnersLoadError = ApiResponseHandler.extractError(
@@ -246,7 +301,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   }
 
   Future<void> _loadContactableOrgs() async {
-    if (!mounted) return;
+    if (!mounted || !_ownsCurrentAccount) return;
     setState(() {
       _orgsLoading = true;
       _orgsLoadError = null;
@@ -255,7 +310,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
       final orgs = await ref
           .read(messagesRepositoryProvider)
           .getContactableOrganizations();
-      if (mounted) {
+      if (mounted && _ownsCurrentAccount) {
         setState(() {
           _contactableOrgs = orgs;
           _orgsLoading = false;
@@ -263,7 +318,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
         });
       }
     } catch (error) {
-      if (mounted) {
+      if (mounted && _ownsCurrentAccount) {
         setState(() {
           _orgsLoading = false;
           _orgsLoadError = ApiResponseHandler.extractError(
@@ -331,6 +386,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   }
 
   bool _validate() {
+    if (!_ownsCurrentAccount) return false;
     final orgMissing = _isDashboard && _selectedOrg == null;
     final recipientMissing = (_isAdminToUser && _selectedAdminUser == null) ||
         (_isAdminToOrg && _selectedAdminOrg == null) ||
@@ -353,9 +409,10 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   // ── Org picker (DashboardContext only) ─────────────────────────────────────
 
   Future<void> _openOrgPicker() async {
+    if (!_ownsCurrentAccount) return;
     if (_orgsLoadError != null) {
       await _loadContactableOrgs();
-      if (!mounted || _orgsLoadError != null) return;
+      if (!mounted || !_ownsCurrentAccount || _orgsLoadError != null) return;
     }
     final orgs = _contactableOrgs;
     if (orgs == null || orgs.isEmpty) return;
@@ -366,9 +423,12 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => _OrgPickerSheet(orgs: orgs),
+      builder: (_) => AccountBoundRouteGuard<ConversationOrganization>(
+        ownerAccountId: _ownerAccountId!,
+        builder: (_) => _OrgPickerSheet(orgs: orgs),
+      ),
     );
-    if (picked != null && mounted) {
+    if (picked != null && mounted && _ownsCurrentAccount) {
       setState(() {
         _selectedOrg = picked;
         _orgError = false;
@@ -379,6 +439,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   // ── Admin/Vendor search openers ────────────────────────────────────────────
 
   Future<void> _openAdminUserSearch() async {
+    if (!_ownsCurrentAccount) return;
     final ds = ref.read(messagesApiDataSourceProvider);
     final selected = await showModalBottomSheet<ConversationParticipant>(
       context: context,
@@ -386,9 +447,12 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
       useSafeArea: true,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => _AdminUserSearchSheet(datasource: ds),
+      builder: (_) => AccountBoundRouteGuard<ConversationParticipant>(
+        ownerAccountId: _ownerAccountId!,
+        builder: (_) => _AdminUserSearchSheet(datasource: ds),
+      ),
     );
-    if (selected != null && mounted) {
+    if (selected != null && mounted && _ownsCurrentAccount) {
       setState(() {
         _selectedAdminUser = selected;
         _recipientError = false;
@@ -397,6 +461,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   }
 
   Future<void> _openAdminOrgSearch() async {
+    if (!_ownsCurrentAccount) return;
     final ds = ref.read(messagesApiDataSourceProvider);
     final selected = await showModalBottomSheet<ConversationOrganization>(
       context: context,
@@ -404,9 +469,12 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
       useSafeArea: true,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => _AdminOrgSearchSheet(datasource: ds),
+      builder: (_) => AccountBoundRouteGuard<ConversationOrganization>(
+        ownerAccountId: _ownerAccountId!,
+        builder: (_) => _AdminOrgSearchSheet(datasource: ds),
+      ),
     );
-    if (selected != null && mounted) {
+    if (selected != null && mounted && _ownsCurrentAccount) {
       setState(() {
         _selectedAdminOrg = selected;
         _recipientError = false;
@@ -415,6 +483,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   }
 
   Future<void> _openVendorParticipantSearch() async {
+    if (!_ownsCurrentAccount) return;
     final repo = ref.read(messagesRepositoryProvider);
     final selected = await showModalBottomSheet<ConversationParticipant>(
       context: context,
@@ -422,9 +491,12 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
       useSafeArea: true,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => _VendorParticipantSearchSheet(repo: repo),
+      builder: (_) => AccountBoundRouteGuard<ConversationParticipant>(
+        ownerAccountId: _ownerAccountId!,
+        builder: (_) => _VendorParticipantSearchSheet(repo: repo),
+      ),
     );
-    if (selected != null && mounted) {
+    if (selected != null && mounted && _ownsCurrentAccount) {
       setState(() {
         _selectedVendorParticipant = selected;
         _recipientError = false;
@@ -433,6 +505,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   }
 
   Future<void> _openVendorPartnerSearch() async {
+    if (!_ownsCurrentAccount) return;
     if (_partnersLoading) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.commonLoading)),
@@ -460,9 +533,12 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
       useSafeArea: true,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => _VendorPartnerSearchSheet(partners: _allPartners),
+      builder: (_) => AccountBoundRouteGuard<AcceptedPartner>(
+        ownerAccountId: _ownerAccountId!,
+        builder: (_) => _VendorPartnerSearchSheet(partners: _allPartners),
+      ),
     );
-    if (selected != null && mounted) {
+    if (selected != null && mounted && _ownsCurrentAccount) {
       setState(() {
         _selectedPartner = selected;
         _recipientError = false;
@@ -473,7 +549,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
   // ── Submit ──────────────────────────────────────────────────────────────────
 
   Future<void> _submit() async {
-    if (!_validate()) return;
+    if (!_ownsCurrentAccount || !_validate()) return;
     final conversationContext = widget.conversationContext;
     setState(() {
       _isLoading = true;
@@ -554,7 +630,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
         route = '/messages/support/$uuid';
       }
 
-      if (!mounted) return;
+      if (!mounted || !_ownsCurrentAccount) return;
       // Refresh the relevant list so the newly created conversation appears
       // immediately, regardless of user type (participant / vendor / admin / support).
       // WS event `conversation.created` will also refresh on the recipient side.
@@ -581,7 +657,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
       }
       Navigator.of(context).pop(true);
       final navigationContext = widget.navigationContext;
-      if (!navigationContext.mounted) return;
+      if (!navigationContext.mounted || !_ownsCurrentAccount) return;
       // Use pushReplacement for contexts that are opened from a dedicated
       // "new conversation" screen (/messages/new, /messages/support/new,
       // /messages/new/from-organizer/…) so pressing back skips the spinner.
@@ -593,7 +669,7 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
         navigationContext.push(route);
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && _ownsCurrentAccount) {
         setState(() {
           _isLoading = false;
           _submitError = ApiResponseHandler.extractError(
@@ -617,6 +693,18 @@ class _NewConversationFormState extends ConsumerState<NewConversationForm> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<String?>(authSessionUserIdProvider, (_, next) {
+      _handleAccountChange(next);
+    });
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_ownerAccountId == null ||
+        currentAccountId != _ownerAccountId ||
+        _sessionInvalid) {
+      return const SizedBox.shrink(
+        key: Key('new-conversation-form-session-invalid'),
+      );
+    }
+
     // Simple Column fills the height provided by AnimatedPadding (in show()).
     // DraggableScrollableSheet is not needed — the sheet is always full-height
     // and the keyboard lift is handled at the builder level.

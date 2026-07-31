@@ -5,6 +5,9 @@ import '../../domain/entities/conversation.dart';
 import '../../domain/entities/vendor_stats.dart';
 import '../../domain/repositories/messages_repository.dart';
 import '../../data/repositories/messages_repository_impl.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import 'account_scoped_message_request_guard.dart';
 import 'unread_count_provider.dart';
 import 'messages_realtime_provider.dart';
 
@@ -106,24 +109,46 @@ class VendorSupportState {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class VendorConversationsNotifier
-    extends StateNotifier<VendorConversationsState> {
+    extends StateNotifier<VendorConversationsState>
+    with AccountScopedMessageRequestGuard<VendorConversationsState> {
   final MessagesRepository _repo;
   final Ref _ref;
+  final String? _accountId;
+  @override
+  final AuthSessionKey requestOwnerSession;
   Timer? _pollTimer;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
   final Set<String> _readUuids = {};
   final Map<String, int> _realtimeUnreadByUuid = {};
 
-  VendorConversationsNotifier(this._repo, this._ref)
-      : super(const VendorConversationsState()) {
+  VendorConversationsNotifier(
+    this._repo,
+    this._ref,
+    this._accountId,
+    this.requestOwnerSession,
+  ) : super(
+          VendorConversationsState(
+            conversations: _accountId == null
+                ? const AsyncValue.data(<Conversation>[])
+                : const AsyncValue.loading(),
+          ),
+        ) {
+    if (_accountId == null) return;
     load();
     _startUnreadPolling();
     _subscribeToRealtime();
   }
 
+  @override
+  Ref get requestRef => _ref;
+
+  @override
+  String? get requestAccountId => _accountId;
+
   void _startUnreadPolling() {
     _pollTimer?.cancel();
     _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      if (!hasActiveRequestAccount) return;
       if (_ref.read(messagesRealtimeProvider)) return;
       try {
         await _ref.read(unreadCountProvider.notifier).refresh();
@@ -134,7 +159,7 @@ class VendorConversationsNotifier
   void _subscribeToRealtime() {
     _realtimeSub =
         _ref.read(messagesRealtimeProvider.notifier).events.listen((event) {
-      if (!mounted) return;
+      if (!hasActiveRequestAccount) return;
       final type = event.conversationType;
       // messageReceived: validate by UUID in _applyNewMessage — not by type.
       if (event.type == RealtimeEventType.messageReceived) {
@@ -217,6 +242,12 @@ class VendorConversationsNotifier
   }
 
   Future<void> load() async {
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final statusFilter = state.statusFilter;
+    final unreadOnly = state.unreadOnly;
+    final searchQuery = state.searchQuery;
+    final period = state.period;
     state = state.copyWith(
       conversations: const AsyncValue.loading(),
       currentPage: 1,
@@ -227,13 +258,13 @@ class VendorConversationsNotifier
     try {
       final result = await _repo.getVendorConversations(
         conversationType: 'participant_vendor',
-        status: state.statusFilter,
-        unreadOnly: state.unreadOnly ? true : null,
-        search: state.searchQuery,
-        period: state.period,
+        status: statusFilter,
+        unreadOnly: unreadOnly ? true : null,
+        search: searchQuery,
+        period: period,
         page: 1,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       final conversations = _mergeUnreadState(result.conversations);
       state = state.copyWith(
         conversations: AsyncValue.data(conversations),
@@ -251,10 +282,10 @@ class VendorConversationsNotifier
       if (orgId != null) {
         _ref
             .read(messagesRealtimeProvider.notifier)
-            .subscribeToOrganization(orgId);
+            .subscribeToOrganization(orgId, forUserId: _accountId);
       }
     } catch (e, st) {
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(conversations: AsyncValue.error(e, st));
     }
   }
@@ -265,18 +296,24 @@ class VendorConversationsNotifier
     }
     final current = state.conversations.valueOrNull;
     if (current == null) return;
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final nextPage = state.currentPage + 1;
+    final statusFilter = state.statusFilter;
+    final unreadOnly = state.unreadOnly;
+    final searchQuery = state.searchQuery;
+    final period = state.period;
     state = state.copyWith(isLoadingMore: true, clearLoadMoreError: true);
     try {
-      final nextPage = state.currentPage + 1;
       final result = await _repo.getVendorConversations(
         conversationType: 'participant_vendor',
-        status: state.statusFilter,
-        unreadOnly: state.unreadOnly ? true : null,
-        search: state.searchQuery,
-        period: state.period,
+        status: statusFilter,
+        unreadOnly: unreadOnly ? true : null,
+        search: searchQuery,
+        period: period,
         page: nextPage,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         conversations: AsyncValue.data([...current, ...result.conversations]),
         currentPage: nextPage,
@@ -285,7 +322,7 @@ class VendorConversationsNotifier
         clearLoadMoreError: true,
       );
     } catch (error) {
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         isLoadingMore: false,
         loadMoreError: error,
@@ -302,16 +339,23 @@ class VendorConversationsNotifier
   Future<void> refresh() async => load();
 
   Future<void> _silentRefresh() async {
+    if (state.conversations.isLoading || state.isLoadingMore) return;
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final statusFilter = state.statusFilter;
+    final unreadOnly = state.unreadOnly;
+    final searchQuery = state.searchQuery;
+    final period = state.period;
     try {
       final result = await _repo.getVendorConversations(
         conversationType: 'participant_vendor',
-        status: state.statusFilter,
-        unreadOnly: state.unreadOnly ? true : null,
-        search: state.searchQuery,
-        period: state.period,
+        status: statusFilter,
+        unreadOnly: unreadOnly ? true : null,
+        search: searchQuery,
+        period: period,
         page: 1,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       final conversations = _mergeUnreadState(result.conversations);
       state = state.copyWith(
         conversations: AsyncValue.data(conversations),
@@ -325,6 +369,7 @@ class VendorConversationsNotifier
   }
 
   void applyRead(String uuid) {
+    if (!hasActiveRequestAccount) return;
     _readUuids.add(uuid);
     _realtimeUnreadByUuid.remove(uuid);
     final current = state.conversations.valueOrNull;
@@ -337,6 +382,7 @@ class VendorConversationsNotifier
   }
 
   void applyReported(String uuid) {
+    if (!hasActiveRequestAccount) return;
     final current = state.conversations.valueOrNull;
     if (current == null) return;
     final idx = current.indexWhere((c) => c.uuid == uuid);
@@ -347,6 +393,7 @@ class VendorConversationsNotifier
   }
 
   void setStatusFilter(String? status) {
+    if (!hasActiveRequestAccount) return;
     state = state.copyWith(
       statusFilter: status,
       clearStatusFilter: status == null,
@@ -356,11 +403,13 @@ class VendorConversationsNotifier
   }
 
   void setUnreadOnly(bool value) {
+    if (!hasActiveRequestAccount) return;
     state = state.copyWith(unreadOnly: value, currentPage: 1);
     load();
   }
 
   void setSearchQuery(String? query) {
+    if (!hasActiveRequestAccount) return;
     final trimmed = query?.trim();
     state = state.copyWith(
       searchQuery: trimmed,
@@ -371,6 +420,7 @@ class VendorConversationsNotifier
   }
 
   void setPeriod(String? period) {
+    if (!hasActiveRequestAccount) return;
     state = state.copyWith(
       period: period,
       clearPeriod: period == null,
@@ -380,6 +430,7 @@ class VendorConversationsNotifier
   }
 
   Future<void> _refreshUnreadCount() async {
+    if (!hasActiveRequestAccount) return;
     try {
       await _ref.read(unreadCountProvider.notifier).refresh();
     } catch (_) {}
@@ -426,23 +477,44 @@ class VendorConversationsNotifier
 // No polling — VendorConversationsNotifier covers global vendor unread.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
+class VendorSupportNotifier extends StateNotifier<VendorSupportState>
+    with AccountScopedMessageRequestGuard<VendorSupportState> {
   final MessagesRepository _repo;
   final Ref _ref;
+  final String? _accountId;
+  @override
+  final AuthSessionKey requestOwnerSession;
   StreamSubscription<RealtimeEvent>? _realtimeSub;
   final Set<String> _readUuids = {};
   final Map<String, int> _realtimeUnreadByUuid = {};
 
-  VendorSupportNotifier(this._repo, this._ref)
-      : super(const VendorSupportState()) {
+  VendorSupportNotifier(
+    this._repo,
+    this._ref,
+    this._accountId,
+    this.requestOwnerSession,
+  ) : super(
+          VendorSupportState(
+            conversations: _accountId == null
+                ? const AsyncValue.data(<Conversation>[])
+                : const AsyncValue.loading(),
+          ),
+        ) {
+    if (_accountId == null) return;
     load();
     _subscribeToRealtime();
   }
 
+  @override
+  Ref get requestRef => _ref;
+
+  @override
+  String? get requestAccountId => _accountId;
+
   void _subscribeToRealtime() {
     _realtimeSub =
         _ref.read(messagesRealtimeProvider.notifier).events.listen((event) {
-      if (!mounted) return;
+      if (!hasActiveRequestAccount) return;
       final type = event.conversationType;
       // messageReceived: validate by UUID in _applyNewMessage — not by type.
       if (event.type == RealtimeEventType.messageReceived) {
@@ -508,12 +580,15 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
   }
 
   Future<void> _silentRefresh() async {
+    if (state.conversations.isLoading || state.isLoadingMore) return;
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
     try {
       final result = await _repo.getVendorConversations(
         conversationType: 'vendor_admin',
         page: 1,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       final conversations = _mergeUnreadState(result.conversations);
       state = state.copyWith(
         conversations: AsyncValue.data(conversations),
@@ -538,6 +613,8 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
   }
 
   Future<void> load() async {
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
     state = state.copyWith(
       conversations: const AsyncValue.loading(),
       currentPage: 1,
@@ -550,7 +627,7 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
         conversationType: 'vendor_admin',
         page: 1,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       final conversations = _mergeUnreadState(result.conversations);
       state = state.copyWith(
         conversations: AsyncValue.data(conversations),
@@ -560,7 +637,7 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
         clearLoadMoreError: true,
       );
     } catch (e, st) {
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(conversations: AsyncValue.error(e, st));
     }
   }
@@ -571,14 +648,16 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
     }
     final current = state.conversations.valueOrNull;
     if (current == null) return;
+    final requestGeneration = beginMessageListRequest();
+    if (requestGeneration == null) return;
+    final nextPage = state.currentPage + 1;
     state = state.copyWith(isLoadingMore: true, clearLoadMoreError: true);
     try {
-      final nextPage = state.currentPage + 1;
       final result = await _repo.getVendorConversations(
         conversationType: 'vendor_admin',
         page: nextPage,
       );
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         conversations: AsyncValue.data([...current, ...result.conversations]),
         currentPage: nextPage,
@@ -587,7 +666,7 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
         clearLoadMoreError: true,
       );
     } catch (error) {
-      if (!mounted) return;
+      if (!canPublishMessageListRequest(requestGeneration)) return;
       state = state.copyWith(
         isLoadingMore: false,
         loadMoreError: error,
@@ -604,6 +683,7 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
   Future<void> refresh() async => load();
 
   void applyRead(String uuid) {
+    if (!hasActiveRequestAccount) return;
     _readUuids.add(uuid);
     _realtimeUnreadByUuid.remove(uuid);
     final current = state.conversations.valueOrNull;
@@ -616,6 +696,7 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
   }
 
   void applyReported(String uuid) {
+    if (!hasActiveRequestAccount) return;
     final current = state.conversations.valueOrNull;
     if (current == null) return;
     final idx = current.indexWhere((c) => c.uuid == uuid);
@@ -666,20 +747,57 @@ class VendorSupportNotifier extends StateNotifier<VendorSupportState> {
 
 final vendorConversationsProvider = StateNotifierProvider<
     VendorConversationsNotifier, VendorConversationsState>((ref) {
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  final accountId = ref.watch(authSessionUserIdProvider);
   return VendorConversationsNotifier(
     ref.read(messagesRepositoryProvider),
     ref,
+    accountId,
+    ownerSession,
   );
 });
 
 final vendorSupportProvider =
     StateNotifierProvider<VendorSupportNotifier, VendorSupportState>((ref) {
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  final accountId = ref.watch(authSessionUserIdProvider);
   return VendorSupportNotifier(
     ref.read(messagesRepositoryProvider),
     ref,
+    accountId,
+    ownerSession,
   );
 });
 
-final vendorStatsProvider = FutureProvider<VendorStats>((ref) async {
-  return ref.read(messagesRepositoryProvider).getVendorStats();
+const _emptyVendorStats = VendorStats(
+  clientTotal: 0,
+  clientUnread: 0,
+  supportTotal: 0,
+  supportUnread: 0,
+);
+
+final _vendorStatsForSessionProvider = FutureProvider.autoDispose
+    .family<VendorStats, AuthSessionKey>((ref, ownerSession) async {
+  if (ownerSession.accountId == null ||
+      !identical(ref.read(authSessionKeyProvider), ownerSession)) {
+    return _emptyVendorStats;
+  }
+  final stats = await ref.read(messagesRepositoryProvider).getVendorStats();
+  if (!identical(ref.read(authSessionKeyProvider), ownerSession)) {
+    return _emptyVendorStats;
+  }
+  return stats;
+});
+
+/// Exact-session wrapper that clears the previous value synchronously.
+///
+/// The opaque key also prevents an A -> B -> A cycle in one disposal grace
+/// period from reviving the first A session's cached stats.
+final vendorStatsProvider =
+    Provider.autoDispose<AsyncValue<VendorStats>>((ref) {
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  if (ownerSession.accountId == null) {
+    return const AsyncValue.data(_emptyVendorStats);
+  }
+  return ref.watch(_vendorStatsForSessionProvider(ownerSession));
 });

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
+import 'package:lehiboo/features/auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../domain/entities/broadcast.dart';
 import '../../data/repositories/messages_repository_impl.dart';
 import '../providers/vendor_broadcasts_provider.dart';
@@ -10,13 +13,40 @@ import '../providers/vendor_broadcasts_provider.dart';
 // Providers
 // ─────────────────────────────────────────────────────────────────────────────
 
-final _vendorEventsProvider = FutureProvider<List<VendorEvent>>((ref) async {
-  return ref.read(messagesRepositoryProvider).getVendorEvents();
+final _vendorEventsProvider = FutureProvider.autoDispose
+    .family<List<VendorEvent>, String>((ref, accountId) async {
+  var requestIsActive = true;
+  ref.onDispose(() => requestIsActive = false);
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  if (ownerSession.accountId != accountId ||
+      ref.watch(authSessionUserIdProvider) != accountId) {
+    return const [];
+  }
+  final events = await ref.read(messagesRepositoryProvider).getVendorEvents();
+  if (!requestIsActive ||
+      !identical(ref.read(authSessionKeyProvider), ownerSession)) {
+    return const [];
+  }
+  return events;
 });
 
-final _eventSlotsProvider =
-    FutureProvider.family<List<SlotOption>, String>((ref, eventUuid) async {
-  return ref.read(messagesRepositoryProvider).getEventSlots(eventUuid);
+final _eventSlotsProvider = FutureProvider.autoDispose
+    .family<List<SlotOption>, ({String accountId, String eventUuid})>(
+        (ref, args) async {
+  var requestIsActive = true;
+  ref.onDispose(() => requestIsActive = false);
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  if (ownerSession.accountId != args.accountId ||
+      ref.watch(authSessionUserIdProvider) != args.accountId) {
+    return const [];
+  }
+  final slots =
+      await ref.read(messagesRepositoryProvider).getEventSlots(args.eventUuid);
+  if (!requestIsActive ||
+      !identical(ref.read(authSessionKeyProvider), ownerSession)) {
+    return const [];
+  }
+  return slots;
 });
 
 String _broadcastSlotLabel(BuildContext context, SlotOption slot) {
@@ -82,6 +112,40 @@ class _CreateBroadcastScreenState extends ConsumerState<CreateBroadcastScreen> {
 
   // Step 3
   bool _sending = false;
+  late final String? _ownerAccountId;
+  bool _sessionInvalid = false;
+  int _previewGeneration = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _ownerAccountId = ref.read(authSessionUserIdProvider);
+  }
+
+  bool get _ownsCurrentAccount =>
+      !_sessionInvalid &&
+      _ownerAccountId != null &&
+      ref.read(authSessionUserIdProvider) == _ownerAccountId;
+
+  void _handleAccountChange(String? nextAccountId) {
+    if (nextAccountId == _ownerAccountId || _sessionInvalid) return;
+    _sessionInvalid = true;
+    _previewGeneration++;
+    _subjectCtrl.clear();
+    _messageCtrl.clear();
+    _selectedEvent = null;
+    _selectedSlot = null;
+    _recipientsCount = null;
+    if (mounted) {
+      setState(() {
+        _loadingPreview = false;
+        _sending = false;
+      });
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _sessionInvalid) Navigator.of(context).maybePop();
+    });
+  }
 
   @override
   void dispose() {
@@ -91,7 +155,10 @@ class _CreateBroadcastScreenState extends ConsumerState<CreateBroadcastScreen> {
   }
 
   Future<void> _previewRecipients() async {
-    if (_selectedEvent == null) return;
+    if (!_ownsCurrentAccount || _selectedEvent == null) return;
+    final generation = ++_previewGeneration;
+    final event = _selectedEvent!;
+    final slot = _selectedSlot;
     setState(() {
       _loadingPreview = true;
       _previewError = null;
@@ -100,16 +167,24 @@ class _CreateBroadcastScreenState extends ConsumerState<CreateBroadcastScreen> {
     try {
       final count =
           await ref.read(messagesRepositoryProvider).previewBroadcastRecipients(
-        eventIds: [_selectedEvent!.uuid],
-        slotIds: _selectedSlot != null ? [_selectedSlot!.uuid] : null,
+        eventIds: [event.uuid],
+        slotIds: slot != null ? [slot.uuid] : null,
       );
-      if (!mounted) return;
+      if (!mounted ||
+          !_ownsCurrentAccount ||
+          generation != _previewGeneration) {
+        return;
+      }
       setState(() {
         _recipientsCount = count;
         _loadingPreview = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted ||
+          !_ownsCurrentAccount ||
+          generation != _previewGeneration) {
+        return;
+      }
       setState(() {
         _previewError = ApiResponseHandler.extractError(
           e,
@@ -121,15 +196,20 @@ class _CreateBroadcastScreenState extends ConsumerState<CreateBroadcastScreen> {
   }
 
   Future<void> _send() async {
+    if (!_ownsCurrentAccount || _selectedEvent == null) return;
+    final event = _selectedEvent!;
+    final slot = _selectedSlot;
+    final subject = _subjectCtrl.text.trim();
+    final message = _messageCtrl.text.trim();
     setState(() => _sending = true);
     try {
       await ref.read(messagesRepositoryProvider).createBroadcast(
-            subject: _subjectCtrl.text.trim(),
-            message: _messageCtrl.text.trim(),
-            eventIds: [_selectedEvent!.uuid],
-            slotIds: _selectedSlot != null ? [_selectedSlot!.uuid] : null,
+            subject: subject,
+            message: message,
+            eventIds: [event.uuid],
+            slotIds: slot != null ? [slot.uuid] : null,
           );
-      if (!mounted) return;
+      if (!mounted || !_ownsCurrentAccount) return;
       ref.read(vendorBroadcastsProvider.notifier).refresh();
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -139,7 +219,7 @@ class _CreateBroadcastScreenState extends ConsumerState<CreateBroadcastScreen> {
         ),
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || !_ownsCurrentAccount) return;
       setState(() => _sending = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -156,6 +236,7 @@ class _CreateBroadcastScreenState extends ConsumerState<CreateBroadcastScreen> {
   }
 
   void _nextStep() {
+    if (!_ownsCurrentAccount) return;
     setState(() {
       _step = switch (_step) {
         _Step.recipients => _Step.message,
@@ -166,6 +247,7 @@ class _CreateBroadcastScreenState extends ConsumerState<CreateBroadcastScreen> {
   }
 
   void _prevStep() {
+    if (!_ownsCurrentAccount) return;
     setState(() {
       _step = switch (_step) {
         _Step.recipients => _Step.recipients,
@@ -192,6 +274,19 @@ class _CreateBroadcastScreenState extends ConsumerState<CreateBroadcastScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<String?>(authSessionUserIdProvider, (_, next) {
+      _handleAccountChange(next);
+    });
+    final currentAccountId = ref.watch(authSessionUserIdProvider);
+    if (_ownerAccountId == null ||
+        currentAccountId != _ownerAccountId ||
+        _sessionInvalid) {
+      return const Scaffold(
+        key: Key('create-broadcast-session-invalid'),
+        body: SizedBox.shrink(),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -241,23 +336,29 @@ class _CreateBroadcastScreenState extends ConsumerState<CreateBroadcastScreen> {
             Expanded(
               child: switch (_step) {
                 _Step.recipients => _RecipientsStep(
+                    ownerAccountId: _ownerAccountId,
                     selectedEvent: _selectedEvent,
                     selectedSlot: _selectedSlot,
                     recipientsCount: _recipientsCount,
                     loadingPreview: _loadingPreview,
                     previewError: _previewError,
                     onEventSelected: (event) {
+                      if (!_ownsCurrentAccount) return;
                       setState(() {
                         _selectedEvent = event;
                         _selectedSlot = null;
                         _recipientsCount = null;
                       });
                       if (event != null) {
-                        ref.invalidate(_eventSlotsProvider(event.uuid));
+                        ref.invalidate(_eventSlotsProvider((
+                          accountId: _ownerAccountId,
+                          eventUuid: event.uuid,
+                        )));
                         _previewRecipients();
                       }
                     },
                     onSlotSelected: (slot) {
+                      if (!_ownsCurrentAccount) return;
                       setState(() => _selectedSlot = slot);
                       _previewRecipients();
                     },
@@ -333,6 +434,7 @@ class _CreateBroadcastScreenState extends ConsumerState<CreateBroadcastScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _RecipientsStep extends ConsumerWidget {
+  final String ownerAccountId;
   final VendorEvent? selectedEvent;
   final SlotOption? selectedSlot;
   final int? recipientsCount;
@@ -342,6 +444,7 @@ class _RecipientsStep extends ConsumerWidget {
   final ValueChanged<SlotOption?> onSlotSelected;
 
   const _RecipientsStep({
+    required this.ownerAccountId,
     required this.selectedEvent,
     required this.selectedSlot,
     required this.recipientsCount,
@@ -360,9 +463,12 @@ class _RecipientsStep extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => _EventPickerSheet(
-        events: events,
-        selected: selectedEvent,
+      builder: (_) => AccountBoundRouteGuard<VendorEvent>(
+        ownerAccountId: ownerAccountId,
+        builder: (_) => _EventPickerSheet(
+          events: events,
+          selected: selectedEvent,
+        ),
       ),
     );
     if (picked != null) onEventSelected(picked);
@@ -370,7 +476,7 @@ class _RecipientsStep extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final eventsAsync = ref.watch(_vendorEventsProvider);
+    final eventsAsync = ref.watch(_vendorEventsProvider(ownerAccountId));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -415,7 +521,12 @@ class _RecipientsStep extends ConsumerWidget {
               onTap: null,
             )
           else
-            ref.watch(_eventSlotsProvider(selectedEvent!.uuid)).when(
+            ref
+                .watch(_eventSlotsProvider((
+                  accountId: ownerAccountId,
+                  eventUuid: selectedEvent!.uuid,
+                )))
+                .when(
                   loading: () => _SelectorField(
                     label: context.l10n.messagesBroadcastLoadingSlots,
                     isPlaceholder: true,
