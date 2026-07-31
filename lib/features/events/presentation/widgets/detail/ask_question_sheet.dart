@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/colors.dart';
+import '../../../../auth/presentation/providers/auth_session_key_provider.dart';
+import '../../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../providers/event_questions_providers.dart';
 
 /// Résultat renvoyé par le bottom sheet à la fermeture — le parent s'en sert
@@ -15,11 +17,13 @@ enum AskQuestionOutcome { created, alreadyExists }
 class AskQuestionSheet extends ConsumerStatefulWidget {
   final String eventSlug;
   final String eventTitle;
+  final AuthSessionKey ownerSession;
 
   const AskQuestionSheet({
     super.key,
     required this.eventSlug,
     required this.eventTitle,
+    required this.ownerSession,
   });
 
   /// Renvoie `AskQuestionOutcome.created` si création OK,
@@ -29,14 +33,20 @@ class AskQuestionSheet extends ConsumerStatefulWidget {
     BuildContext context, {
     required String eventSlug,
     required String eventTitle,
+    required AuthSessionKey ownerSession,
   }) {
     return showModalBottomSheet<AskQuestionOutcome>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => AskQuestionSheet(
-        eventSlug: eventSlug,
-        eventTitle: eventTitle,
+      builder: (_) => AccountBoundRouteGuard<AskQuestionOutcome>(
+        ownerAccountId: ownerSession.accountId,
+        ownerSession: ownerSession,
+        builder: (_) => AskQuestionSheet(
+          eventSlug: eventSlug,
+          eventTitle: eventTitle,
+          ownerSession: ownerSession,
+        ),
       ),
     );
   }
@@ -52,24 +62,47 @@ class _AskQuestionSheetState extends ConsumerState<AskQuestionSheet> {
   bool _submitting = false;
 
   @override
+  void initState() {
+    super.initState();
+    ref.listenManual<AuthSessionKey>(authSessionKeyProvider, (_, next) {
+      if (identical(next, widget.ownerSession)) return;
+      _controller.clear();
+      _serverError = null;
+      _submitting = false;
+    });
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
+    if (widget.ownerSession.accountId == null ||
+        !identical(ref.read(authSessionKeyProvider), widget.ownerSession)) {
+      _controller.clear();
+      if (mounted) Navigator.of(context).pop();
+      return;
+    }
+
     setState(() => _serverError = null);
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _submitting = true);
 
-    final result =
-        await ref.read(eventQuestionsActionsProvider.notifier).createQuestion(
-              eventSlug: widget.eventSlug,
-              text: _controller.text,
-            );
+    final actionsProvider = eventQuestionsActionsProvider;
+    final actionsController = ref.read(actionsProvider.notifier);
+    final result = await actionsController.createQuestion(
+      eventSlug: widget.eventSlug,
+      text: _controller.text,
+    );
 
-    if (!mounted) return;
+    if (!mounted ||
+        !identical(ref.read(authSessionKeyProvider), widget.ownerSession) ||
+        !identical(ref.read(actionsProvider.notifier), actionsController)) {
+      return;
+    }
 
     switch (result) {
       case CreateQuestionSuccess():

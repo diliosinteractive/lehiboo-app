@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 
+import '../../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../../domain/entities/locked_event_shell.dart';
 import '../../screens/event_detail_screen.dart';
 import 'event_password_sheet.dart';
@@ -44,14 +45,20 @@ class _EventLockedViewState extends ConsumerState<EventLockedView> {
 
   Future<void> _openSheet() async {
     if (_sheetOpen) return;
+    final owner = ref.read(authSessionKeyProvider);
+    final request = eventDetailRequest(owner, widget.identifier);
+    final controller =
+        ref.read(eventDetailControllerProvider(request).notifier);
     _sheetOpen = true;
     try {
       await EventPasswordSheet.show(
         context,
         identifier: widget.identifier,
-        onSubmit: (password) => ref
-            .read(eventDetailControllerProvider(widget.identifier).notifier)
-            .unlock(password),
+        ownerSession: owner,
+        onSubmit: (password) => controller.unlock(
+          password,
+          owner: owner,
+        ),
         eventTitle: widget.shell.title,
       );
     } finally {

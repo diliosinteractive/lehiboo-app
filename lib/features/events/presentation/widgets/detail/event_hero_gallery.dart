@@ -1,8 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Galerie hero avec effet parallax et swipe horizontal
@@ -20,10 +22,12 @@ class EventHeroGallery extends StatefulWidget {
   final Function(int index)? onImageTap;
   final double height;
   final String? heroTag;
+  final AuthSessionKey ownerSession;
 
   const EventHeroGallery({
     super.key,
     required this.images,
+    required this.ownerSession,
     this.videoUrl,
     this.onViewAll,
     this.onImageTap,
@@ -275,11 +279,30 @@ class _EventHeroGalleryState extends State<EventHeroGallery> {
 
   Future<void> _playVideo() async {
     HapticFeedback.mediumImpact();
-    if (widget.videoUrl == null || widget.videoUrl!.isEmpty) return;
+    if (widget.videoUrl == null ||
+        widget.videoUrl!.isEmpty ||
+        !_ownsSession()) {
+      return;
+    }
 
     final url = Uri.parse(widget.videoUrl!);
-    if (await canLaunchUrl(url)) {
+    final canLaunch = await canLaunchUrl(url);
+    if (!mounted || !_ownsSession()) return;
+    if (canLaunch) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  bool _ownsSession() {
+    if (!mounted) return false;
+    try {
+      return identical(
+        ProviderScope.containerOf(context, listen: false)
+            .read(authSessionKeyProvider),
+        widget.ownerSession,
+      );
+    } catch (_) {
+      return false;
     }
   }
 }
@@ -295,10 +318,12 @@ class EventParallaxAppBar extends StatelessWidget {
   final VoidCallback? onViewAllImages;
   final Function(int)? onImageTap;
   final double expandedHeight;
+  final AuthSessionKey ownerSession;
 
   const EventParallaxAppBar({
     super.key,
     required this.images,
+    required this.ownerSession,
     this.videoUrl,
     required this.title,
     this.onBack,
@@ -343,6 +368,7 @@ class EventParallaxAppBar extends StatelessWidget {
         ],
         background: EventHeroGallery(
           images: images,
+          ownerSession: ownerSession,
           videoUrl: videoUrl,
           onViewAll: onViewAllImages,
           onImageTap: onImageTap,

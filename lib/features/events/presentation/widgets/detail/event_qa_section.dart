@@ -7,7 +7,7 @@ import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/colors.dart';
 import '../../../../../core/utils/api_response_handler.dart';
 import '../../../../../core/utils/guest_guard.dart';
-import '../../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../../domain/entities/event_question.dart';
 import '../../providers/event_questions_providers.dart';
 import '../../utils/event_l10n.dart';
@@ -19,20 +19,22 @@ import 'question_card.dart';
 class EventQASection extends ConsumerWidget {
   final String eventSlug;
   final String eventTitle;
+  final AuthSessionKey ownerSession;
 
   const EventQASection({
     super.key,
     required this.eventSlug,
     required this.eventTitle,
+    required this.ownerSession,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final currentSession = ref.watch(authSessionKeyProvider);
+    if (!identical(currentSession, ownerSession)) {
+      return const SizedBox.shrink();
+    }
     final previewAsync = ref.watch(eventQuestionsPreviewProvider(eventSlug));
-    // Observe l'état auth pour rebuild dès qu'il change, mais on re-vérifie
-    // toujours via `ref.read` au moment du tap pour éviter les valeurs
-    // capturées obsolètes (ex: auth state async qui se résout après le build).
-    ref.watch(isAuthenticatedProvider);
     final myQuestionAsync = ref.watch(myQuestionProvider(eventSlug));
     final myQuestion = myQuestionAsync.valueOrNull;
     final canAsk =
@@ -66,7 +68,7 @@ class EventQASection extends ConsumerWidget {
             // le CTA reste visible mais désactivé pour éviter un doublon.
             showAsk: myQuestion == null,
             askEnabled: canAsk,
-            onAsk: () => _handleAsk(context, ref),
+            onAsk: () => _handleAsk(context, ref, ownerSession),
           ),
           const SizedBox(height: 12),
           if (isLoading)
@@ -102,7 +104,8 @@ class EventQASection extends ConsumerWidget {
                 // avec ses boutons (Utile, etc.) dans la liste.
                 myQuestion: myQuestionToDisplay,
                 canAsk: canAsk,
-                onAsk: () => _handleAsk(context, ref),
+                ownerSession: ownerSession,
+                onAsk: () => _handleAsk(context, ref, ownerSession),
               ),
             ),
           ],
@@ -111,8 +114,14 @@ class EventQASection extends ConsumerWidget {
     );
   }
 
-  Future<void> _handleAsk(BuildContext context, WidgetRef ref) async {
+  Future<void> _handleAsk(
+    BuildContext context,
+    WidgetRef ref,
+    AuthSessionKey renderOwner,
+  ) async {
     HapticFeedback.lightImpact();
+    if (!context.mounted) return;
+    if (!identical(ref.read(authSessionKeyProvider), renderOwner)) return;
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
@@ -120,16 +129,31 @@ class EventQASection extends ConsumerWidget {
     );
     if (!allowed || !context.mounted) return;
 
+    final actionOwner = ref.read(authSessionKeyProvider);
+    if (actionOwner.accountId == null ||
+        (renderOwner.accountId != null &&
+            !identical(actionOwner, renderOwner))) {
+      return;
+    }
+    final actionsProvider = eventQuestionsActionsProvider;
+    final actionsController = ref.read(actionsProvider.notifier);
+
     final outcome = await AskQuestionSheet.show(
       context,
       eventSlug: eventSlug,
       eventTitle: eventTitle,
+      ownerSession: actionOwner,
     );
-    if (outcome == null || !context.mounted) return;
+    if (outcome == null ||
+        !context.mounted ||
+        !identical(ref.read(authSessionKeyProvider), actionOwner) ||
+        !identical(ref.read(actionsProvider.notifier), actionsController)) {
+      return;
+    }
 
     // Refresh les vues Q&A maintenant que le sheet est fermé — le loader
     // de la section s'affiche pendant le refetch.
-    ref.read(eventQuestionsActionsProvider.notifier).refreshAll(eventSlug);
+    actionsController.refreshAll(eventSlug);
 
     final message = switch (outcome) {
       AskQuestionOutcome.created => context.l10n.eventQuestionSent,
@@ -315,6 +339,7 @@ class _Content extends ConsumerWidget {
   final QuestionsPage page;
   final EventQuestion? myQuestion;
   final bool canAsk;
+  final AuthSessionKey ownerSession;
   final VoidCallback onAsk;
 
   const _Content({
@@ -323,6 +348,7 @@ class _Content extends ConsumerWidget {
     required this.page,
     required this.myQuestion,
     required this.canAsk,
+    required this.ownerSession,
     required this.onAsk,
   });
 
@@ -346,7 +372,12 @@ class _Content extends ConsumerWidget {
         ...visible.map(
           (q) => QuestionCard(
             question: q,
-            onToggleHelpful: () => _handleVote(context, ref, q),
+            onToggleHelpful: () => _handleVote(
+              context,
+              ref,
+              q,
+              ownerSession,
+            ),
           ),
         ),
         if (remaining > 0) ...[
@@ -355,10 +386,20 @@ class _Content extends ConsumerWidget {
             width: double.infinity,
             child: OutlinedButton(
               onPressed: () {
+                if (!context.mounted) return;
+                if (!identical(
+                  ref.read(authSessionKeyProvider),
+                  ownerSession,
+                )) {
+                  return;
+                }
                 HapticFeedback.lightImpact();
                 context.push(
                   '/event/$eventSlug/questions',
-                  extra: {'title': eventTitle},
+                  extra: {
+                    'title': eventTitle,
+                    'ownerSession': ownerSession,
+                  },
                 );
               },
               style: OutlinedButton.styleFrom(
@@ -388,18 +429,36 @@ class _Content extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     EventQuestion q,
+    AuthSessionKey renderOwner,
   ) async {
+    if (!context.mounted) return;
+    if (!identical(ref.read(authSessionKeyProvider), renderOwner)) return;
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
       featureName: context.l10n.guestFeatureVoteQuestion,
     );
-    if (!allowed) return;
-    final updated = await ref
-        .read(eventQuestionsActionsProvider.notifier)
-        .toggleHelpful(eventSlug: eventSlug, question: q);
+    if (!allowed || !context.mounted) return;
+
+    final actionOwner = ref.read(authSessionKeyProvider);
+    if (actionOwner.accountId == null ||
+        (renderOwner.accountId != null &&
+            !identical(actionOwner, renderOwner))) {
+      return;
+    }
+    final actionsProvider = eventQuestionsActionsProvider;
+    final actionsController = ref.read(actionsProvider.notifier);
+    final updated = await actionsController.toggleHelpful(
+      eventSlug: eventSlug,
+      question: q,
+    );
+    if (!context.mounted ||
+        !identical(ref.read(authSessionKeyProvider), actionOwner) ||
+        !identical(ref.read(actionsProvider.notifier), actionsController)) {
+      return;
+    }
     // Preview invalidée dans le controller si aucun listController fourni.
-    if (!updated && context.mounted) {
+    if (!updated) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(context.l10n.eventVoteUnavailable),

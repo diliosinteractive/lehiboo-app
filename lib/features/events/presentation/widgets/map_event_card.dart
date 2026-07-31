@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/favorites/presentation/providers/favorites_provider.dart';
 import 'package:lehiboo/features/favorites/presentation/widgets/favorite_button.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart'
@@ -11,8 +12,13 @@ import 'package:lehiboo/features/events/domain/entities/event.dart'
 
 class MapEventCard extends ConsumerWidget {
   final Activity activity;
+  final AuthSessionKey ownerSession;
 
-  const MapEventCard({super.key, required this.activity});
+  const MapEventCard({
+    super.key,
+    required this.activity,
+    required this.ownerSession,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -26,7 +32,10 @@ class MapEventCard extends ConsumerWidget {
     return GestureDetector(
       // Activity-based surface: password gate handled by detail screen's
       // locked-state fallback (no isPasswordProtected on Activity).
-      onTap: () => context.push('/event/${activity.id}', extra: activity),
+      onTap: () {
+        if (!identical(ref.read(authSessionKeyProvider), ownerSession)) return;
+        context.push('/event/${activity.id}', extra: activity);
+      },
       child: Container(
         // remove fixed width, parent controls it via PageView
         decoration: BoxDecoration(
@@ -225,6 +234,7 @@ class MapEventCard extends ConsumerWidget {
               top: 8,
               right: 8,
               child: FavoriteButton(
+                ownerSession: ownerSession,
                 event: Event(
                     id: activity.id,
                     slug: activity.slug,

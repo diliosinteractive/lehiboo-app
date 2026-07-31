@@ -1,8 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
+import 'package:lehiboo/features/auth/presentation/widgets/account_bound_route_guard.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Bottom sheet avec détails d'une info pratique
@@ -32,19 +35,24 @@ class PracticalInfoSheet extends StatelessWidget {
     String? imageUrl,
     Color color = HbColors.brandPrimary,
     List<PracticalInfoAction>? actions,
+    required AuthSessionKey ownerSession,
   }) {
     HapticFeedback.mediumImpact();
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => PracticalInfoSheet(
-        icon: icon,
-        title: title,
-        description: description,
-        imageUrl: imageUrl,
-        color: color,
-        actions: actions,
+      builder: (context) => AccountBoundRouteGuard<void>(
+        ownerAccountId: ownerSession.accountId,
+        ownerSession: ownerSession,
+        builder: (_) => PracticalInfoSheet(
+          icon: icon,
+          title: title,
+          description: description,
+          imageUrl: imageUrl,
+          color: color,
+          actions: actions,
+        ),
       ),
     );
   }
@@ -270,19 +278,23 @@ class PracticalInfoActions {
     required double lng,
     String? label,
     String? destinationLabel,
+    required AuthSessionKey ownerSession,
   }) {
     return PracticalInfoAction(
       icon: Icons.directions_car,
       label: label ?? context.l10n.eventDrivingDirections,
       isPrimary: true,
       onTap: () async {
+        if (!_ownsSession(context, ownerSession)) return;
         final url = _directionsUrl(
           lat: lat,
           lng: lng,
           travelMode: 'driving',
           destinationLabel: destinationLabel,
         );
-        if (await canLaunchUrl(url)) {
+        final canLaunch = await canLaunchUrl(url);
+        if (!context.mounted || !_ownsSession(context, ownerSession)) return;
+        if (canLaunch) {
           await launchUrl(url, mode: LaunchMode.externalApplication);
         }
       },
@@ -294,18 +306,22 @@ class PracticalInfoActions {
     required double lat,
     required double lng,
     String? destinationLabel,
+    required AuthSessionKey ownerSession,
   }) {
     return PracticalInfoAction(
       icon: Icons.directions_walk,
       label: context.l10n.eventWalkingDirections,
       onTap: () async {
+        if (!_ownsSession(context, ownerSession)) return;
         final url = _directionsUrl(
           lat: lat,
           lng: lng,
           travelMode: 'walking',
           destinationLabel: destinationLabel,
         );
-        if (await canLaunchUrl(url)) {
+        final canLaunch = await canLaunchUrl(url);
+        if (!context.mounted || !_ownsSession(context, ownerSession)) return;
+        if (canLaunch) {
           await launchUrl(url, mode: LaunchMode.externalApplication);
         }
       },
@@ -317,18 +333,22 @@ class PracticalInfoActions {
     required double lat,
     required double lng,
     String? destinationLabel,
+    required AuthSessionKey ownerSession,
   }) {
     return PracticalInfoAction(
       icon: Icons.directions_transit,
       label: context.l10n.eventPublicTransportDirections,
       onTap: () async {
+        if (!_ownsSession(context, ownerSession)) return;
         final url = _directionsUrl(
           lat: lat,
           lng: lng,
           travelMode: 'transit',
           destinationLabel: destinationLabel,
         );
-        if (await canLaunchUrl(url)) {
+        final canLaunch = await canLaunchUrl(url);
+        if (!context.mounted || !_ownsSession(context, ownerSession)) return;
+        if (canLaunch) {
           await launchUrl(url, mode: LaunchMode.externalApplication);
         }
       },
@@ -365,11 +385,13 @@ class PracticalInfoActions {
   static PracticalInfoAction copyAddress({
     required String address,
     required BuildContext context,
+    required AuthSessionKey ownerSession,
   }) {
     return PracticalInfoAction(
       icon: Icons.copy,
       label: context.l10n.eventCopyAddress,
       onTap: () {
+        if (!_ownsSession(context, ownerSession)) return;
         Clipboard.setData(ClipboardData(text: address));
         HapticFeedback.mediumImpact();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -380,5 +402,21 @@ class PracticalInfoActions {
         );
       },
     );
+  }
+
+  static bool _ownsSession(
+    BuildContext context,
+    AuthSessionKey ownerSession,
+  ) {
+    if (!context.mounted) return false;
+    try {
+      return identical(
+        ProviderScope.containerOf(context, listen: false)
+            .read(authSessionKeyProvider),
+        ownerSession,
+      );
+    } catch (_) {
+      return false;
+    }
   }
 }

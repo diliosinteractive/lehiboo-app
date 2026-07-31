@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
@@ -11,6 +12,8 @@ import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.da
 import 'package:lehiboo/features/search/domain/models/event_filter.dart';
 import 'package:lehiboo/features/thematiques/presentation/providers/thematiques_provider.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 
 const _filterPersistenceKey = 'event_filter_state';
 const _defaultPriceMax = 500.0;
@@ -82,9 +85,46 @@ bool _hasPriceRangeFilter(EventFilter filter) {
       filter.priceMax < _defaultPriceMax;
 }
 
+final _searchSessionBoundaryProvider =
+    NotifierProvider<_SearchSessionBoundaryNotifier, Object>(
+  _SearchSessionBoundaryNotifier.new,
+);
+
+/// Opaque boundary that rotates for every exact account-id transition.
+///
+/// Unlike a derived `String?` provider, this cannot collapse an A -> B -> A
+/// sequence back to the original value before dependants rebuild. Profile
+/// updates for the same account do not discard the user's active search.
+class _SearchSessionBoundaryNotifier extends Notifier<Object> {
+  String? _accountId;
+
+  @override
+  Object build() {
+    _accountId = _authenticatedAccountId(ref.read(authProvider));
+    ref.listen<AuthState>(authProvider, (_, next) {
+      final nextAccountId = _authenticatedAccountId(next);
+      if (nextAccountId == _accountId) return;
+      _accountId = nextAccountId;
+      state = Object();
+    });
+    return Object();
+  }
+
+  String? _authenticatedAccountId(AuthState auth) {
+    if (!auth.isAuthenticated) return null;
+    final accountId = auth.user?.id.trim();
+    return accountId == null || accountId.isEmpty ? null : accountId;
+  }
+}
+
 /// Main filter state provider
 final eventFilterProvider =
     StateNotifierProvider<EventFilterNotifier, EventFilter>((ref) {
+  // Recreate the draft on every exact session transition (including A → B
+  // without an unauthenticated frame). Persistent, non-sensitive preferences
+  // are rehydrated below; query, dates, GPS/bounds, selected event and other
+  // ephemeral fields start clean.
+  ref.watch(_searchSessionBoundaryProvider);
   return EventFilterNotifier(ref);
 });
 
@@ -113,6 +153,7 @@ class SelectedSearchEvent {
 }
 
 final selectedSearchEventProvider = StateProvider<SelectedSearchEvent?>((ref) {
+  ref.watch(_searchSessionBoundaryProvider);
   return null;
 });
 
@@ -131,6 +172,7 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
       final filterJson = prefs.getString(_filterPersistenceKey);
       if (filterJson != null) {
         final filterMap = json.decode(filterJson) as Map<String, dynamic>;
+        if (!mounted) return;
         state = _fromJson(filterMap);
       }
     } catch (e) {
@@ -140,9 +182,11 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
 
   /// Persist current filter state to SharedPreferences
   Future<void> _persistFilters() async {
+    final snapshot = state;
     try {
       final prefs = await SharedPreferences.getInstance();
-      final filterJson = json.encode(_toJson(state));
+      if (!mounted) return;
+      final filterJson = json.encode(_toJson(snapshot));
       await prefs.setString(_filterPersistenceKey, filterJson);
     } catch (e) {
       // Ignore persistence errors
@@ -756,6 +800,11 @@ class PaginatedActivities {
   }
 }
 
+const _emptyPaginatedActivities = PaginatedActivities(
+  activities: [],
+  hasMore: false,
+);
+
 Future<EventsResult> _fetchEventsForFilter(
   EventRepository eventRepository,
   EventFilter filter, {
@@ -824,74 +873,147 @@ Future<EventsResult> _fetchEventsForFilter(
 }
 
 /// Notifier for filtered events results with pagination support
-final filteredEventsProvider =
-    AsyncNotifierProvider<FilteredEventsNotifier, PaginatedActivities>(() {
-  return FilteredEventsNotifier();
+final filteredEventsProvider = StateNotifierProvider<FilteredEventsNotifier,
+    AsyncValue<PaginatedActivities>>((ref) {
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  final eventRepository = ref.watch(eventRepositoryProvider);
+  final notifier = FilteredEventsNotifier(
+    eventRepository,
+    ownerSession: ownerSession,
+    initialFilter: ref.read(eventFilterProvider),
+    initialSelectedSearchEvent: ref.read(selectedSearchEventProvider),
+  );
+
+  void scheduleCurrentRequest() {
+    notifier.scheduleLoad(
+      filter: ref.read(eventFilterProvider),
+      selectedSearchEvent: ref.read(selectedSearchEventProvider),
+    );
+  }
+
+  ref.listen<EventFilter>(eventFilterProvider, (_, __) {
+    scheduleCurrentRequest();
+  });
+  ref.listen<SelectedSearchEvent?>(selectedSearchEventProvider, (_, __) {
+    scheduleCurrentRequest();
+  });
+  return notifier;
 });
 
-class FilteredEventsNotifier extends AsyncNotifier<PaginatedActivities> {
-  @override
-  Future<PaginatedActivities> build() async {
-    final filter = ref.watch(eventFilterProvider);
-    final selectedSearchEvent = ref.watch(selectedSearchEventProvider);
-    final eventRepository = ref.watch(eventRepositoryProvider);
+class FilteredEventsNotifier
+    extends StateNotifier<AsyncValue<PaginatedActivities>> {
+  FilteredEventsNotifier(
+    this._eventRepository, {
+    required this.ownerSession,
+    required EventFilter initialFilter,
+    required SelectedSearchEvent? initialSelectedSearchEvent,
+  }) : super(const AsyncValue.loading()) {
+    _currentLoad = _load(
+      initialFilter,
+      initialSelectedSearchEvent,
+    );
+    unawaited(_currentLoad);
+  }
 
-    if (_isSelectedSearchEventActive(selectedSearchEvent, filter)) {
-      return _fetchSelectedSearchEvent(
-        eventRepository,
-        filter,
-        selectedSearchEvent!,
+  final EventRepository _eventRepository;
+  final AuthSessionKey ownerSession;
+  int _requestGeneration = 0;
+  int _scheduledLoadGeneration = 0;
+  late Future<void> _currentLoad;
+
+  Future<void> waitForCurrentLoad() => _currentLoad;
+
+  void scheduleLoad({
+    required EventFilter filter,
+    required SelectedSearchEvent? selectedSearchEvent,
+  }) {
+    final scheduledGeneration = ++_scheduledLoadGeneration;
+    _currentLoad = Future<void>.microtask(() async {
+      if (!mounted || scheduledGeneration != _scheduledLoadGeneration) return;
+      await _load(filter, selectedSearchEvent);
+    });
+  }
+
+  Future<void> _load(
+    EventFilter filter,
+    SelectedSearchEvent? selectedSearchEvent,
+  ) async {
+    if (!mounted) return;
+    final requestGeneration = ++_requestGeneration;
+    final previous = state.valueOrNull;
+    final previousActivities = previous?.activities ?? const <Activity>[];
+    if (filter.page == 1 || previous == null) {
+      state = const AsyncValue.loading();
+    } else {
+      state = const AsyncLoading<PaginatedActivities>().copyWithPrevious(
+        AsyncData(previous),
       );
     }
 
-    // If it's a new search, or if we are verifying valid initial build
-    // But wait, if page > 1, it means we triggered loadMore.
-    // BUT ref.watch(filter) will trigger rebuild every time page increments in filter.
-    // So we need to handle that.
-
-    // Actually, `EventFilterNotifier` updates state.page which triggers this build.
-    // If page == 1, it's a fresh search.
-    // If page > 1, it's a load more.
-
-    // HOWEVER, we need to access the *previous* state data to append if page > 1.
-    final previousActivities = state.valueOrNull?.activities ?? [];
+    if (_isSelectedSearchEventActive(selectedSearchEvent, filter)) {
+      try {
+        final selectedResult = await _fetchSelectedSearchEvent(
+          _eventRepository,
+          filter,
+          selectedSearchEvent!,
+          requestGeneration,
+        );
+        if (!_ownsRequest(requestGeneration)) return;
+        state = AsyncData(selectedResult);
+      } catch (error, stackTrace) {
+        if (!_ownsRequest(requestGeneration)) return;
+        state = AsyncError(error, stackTrace);
+      }
+      return;
+    }
 
     try {
-      final result = await _fetchEventsForFilter(eventRepository, filter);
+      final result = await _fetchEventsForFilter(_eventRepository, filter);
+      if (!_ownsRequest(requestGeneration)) return;
 
       final newActivities = EventToActivityMapper.toActivities(result.events);
       final hasMore = result.hasNext;
 
       if (filter.page == 1) {
         // New search: Replace everything
-        return PaginatedActivities(
-          activities: newActivities,
-          hasMore: hasMore,
-          totalItems: result.totalItems,
+        state = AsyncData(
+          PaginatedActivities(
+            activities: newActivities,
+            hasMore: hasMore,
+            totalItems: result.totalItems,
+          ),
         );
       } else {
         // Load more: Append
-        return PaginatedActivities(
-          activities: [...previousActivities, ...newActivities],
-          hasMore: hasMore,
-          totalItems: result.totalItems,
+        state = AsyncData(
+          PaginatedActivities(
+            activities: [...previousActivities, ...newActivities],
+            hasMore: hasMore,
+            totalItems: result.totalItems,
+          ),
         );
       }
-    } catch (e) {
+    } catch (error, stackTrace) {
+      if (!_ownsRequest(requestGeneration)) return;
       if (filter.page > 1) {
-        final previous = state.valueOrNull;
         // Keep the existing page visible and expose a retryable footer. Do not
         // claim that there are no more results or advance to the next page.
-        return PaginatedActivities(
-          activities: previousActivities,
-          hasMore: previous?.hasMore ?? true,
-          totalItems: previous?.totalItems ?? previousActivities.length,
-          loadMoreError: e,
+        state = AsyncData(
+          PaginatedActivities(
+            activities: previousActivities,
+            hasMore: previous?.hasMore ?? true,
+            totalItems: previous?.totalItems ?? previousActivities.length,
+            loadMoreError: error,
+          ),
         );
+      } else {
+        state = AsyncError(error, stackTrace);
       }
-      rethrow;
     }
   }
+
+  bool _ownsRequest(int requestGeneration) =>
+      mounted && requestGeneration == _requestGeneration;
 
   bool _isSelectedSearchEventActive(
     SelectedSearchEvent? selectedSearchEvent,
@@ -906,19 +1028,29 @@ class FilteredEventsNotifier extends AsyncNotifier<PaginatedActivities> {
     EventRepository eventRepository,
     EventFilter filter,
     SelectedSearchEvent selectedSearchEvent,
+    int requestGeneration,
   ) async {
     try {
       final event = await eventRepository.getEvent(
         selectedSearchEvent.identifier,
       );
+      if (!_ownsRequest(requestGeneration)) {
+        return _emptyPaginatedActivities;
+      }
       return _singlePageActivities([event]);
     } catch (_) {
+      if (!_ownsRequest(requestGeneration)) {
+        return _emptyPaginatedActivities;
+      }
       final result = await _fetchEventsForFilter(
         eventRepository,
         filter.copyWith(page: 1, perPage: 100),
         page: 1,
         perPage: 100,
       );
+      if (!_ownsRequest(requestGeneration)) {
+        return _emptyPaginatedActivities;
+      }
       final exactEvents = result.events.where((event) {
         return event.slug == selectedSearchEvent.slug ||
             event.id == selectedSearchEvent.id ||
@@ -951,37 +1083,103 @@ final eventReferenceDataProvider =
   return result;
 });
 
-final searchSuggestionsProvider = FutureProvider.autoDispose
-    .family<SearchSuggestionsDto, SearchSuggestionsRequest>(
-        (ref, request) async {
-  final query = request.query.trim();
-  if (query.length < searchAutocompleteMinQueryLength) {
+typedef _SearchSuggestionsSessionQuery = ({
+  AuthSessionKey ownerSession,
+  SearchSuggestionsRequest request,
+});
+
+final _searchSuggestionsForSessionProvider = FutureProvider.autoDispose
+    .family<SearchSuggestionsDto, _SearchSuggestionsSessionQuery>(
+        (ref, query) async {
+  final ownerSession = query.ownerSession;
+  final request = query.request;
+  if (!identical(ref.read(authSessionKeyProvider), ownerSession)) {
+    return const SearchSuggestionsDto.empty();
+  }
+  var requestActive = true;
+  ref.onDispose(() => requestActive = false);
+  final eventRepository = ref.watch(eventRepositoryProvider);
+  final searchText = request.query.trim();
+  if (searchText.length < searchAutocompleteMinQueryLength) {
     return const SearchSuggestionsDto.empty();
   }
 
   await Future<void>.delayed(const Duration(milliseconds: 250));
+  if (!requestActive ||
+      !identical(ref.read(authSessionKeyProvider), ownerSession)) {
+    return const SearchSuggestionsDto.empty();
+  }
 
-  final eventRepository = ref.watch(eventRepositoryProvider);
-  return eventRepository.getSearchSuggestions(
-    query: query,
+  final suggestions = await eventRepository.getSearchSuggestions(
+    query: searchText,
     types: request.typeList,
     limit: request.limit,
   );
+  if (!requestActive ||
+      !identical(ref.read(authSessionKeyProvider), ownerSession)) {
+    return const SearchSuggestionsDto.empty();
+  }
+  return suggestions;
 });
 
-final filterPreviewCountProvider =
-    FutureProvider.autoDispose.family<int, EventFilter>((ref, filter) async {
+/// Synchronous exact-session wrapper.
+///
+/// Watching the session from inside one [FutureProvider] instance would let
+/// Riverpod retain that instance's previous value while it reloads. Selecting
+/// a new session-keyed instance instead starts with a genuinely empty loading
+/// state, including after a rapid A -> B -> A transition.
+final searchSuggestionsProvider = Provider.autoDispose
+    .family<AsyncValue<SearchSuggestionsDto>, SearchSuggestionsRequest>(
+        (ref, request) {
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  return ref.watch(
+    _searchSuggestionsForSessionProvider(
+      (ownerSession: ownerSession, request: request),
+    ),
+  );
+});
+
+typedef _FilterPreviewSessionQuery = ({
+  AuthSessionKey ownerSession,
+  EventFilter filter,
+});
+
+final _filterPreviewCountForSessionProvider = FutureProvider.autoDispose
+    .family<int, _FilterPreviewSessionQuery>((ref, query) async {
+  final ownerSession = query.ownerSession;
+  if (!identical(ref.read(authSessionKeyProvider), ownerSession)) return 0;
+  var requestActive = true;
+  ref.onDispose(() => requestActive = false);
   final eventRepository = ref.watch(eventRepositoryProvider);
 
   await Future<void>.delayed(const Duration(milliseconds: 350));
+  if (!requestActive ||
+      !identical(ref.read(authSessionKeyProvider), ownerSession)) {
+    return 0;
+  }
 
   final result = await _fetchEventsForFilter(
     eventRepository,
-    filter,
+    query.filter,
     page: 1,
     perPage: 1,
   );
+  if (!requestActive ||
+      !identical(ref.read(authSessionKeyProvider), ownerSession)) {
+    return 0;
+  }
   return result.totalItems;
+});
+
+/// Synchronous exact-session wrapper; see [searchSuggestionsProvider].
+final filterPreviewCountProvider =
+    Provider.autoDispose.family<AsyncValue<int>, EventFilter>((ref, filter) {
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  return ref.watch(
+    _filterPreviewCountForSessionProvider(
+      (ownerSession: ownerSession, filter: filter),
+    ),
+  );
 });
 
 /// Provider for active filter chips (for UI display)

@@ -11,6 +11,8 @@ import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
 import 'package:lehiboo/features/favorites/presentation/widgets/favorite_button.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
+import 'package:lehiboo/features/auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/event_detail_state.dart';
 import '../../domain/entities/event_submodels.dart';
@@ -52,48 +54,116 @@ import '../../../booking/presentation/providers/order_cart_provider.dart';
 /// (`403 password_required`). The controller exposes [seed] for callers that
 /// already have a verified [Event] (list-side unlock path) and [unlock] for
 /// the password sheet to submit a password and transition into `.loaded`.
-final eventDetailControllerProvider = AsyncNotifierProviderFamily<
-    EventDetailController, EventDetailState, String>(
+typedef EventDetailRequest = ({AuthSessionKey owner, String identifier});
+
+EventDetailRequest eventDetailRequest(
+  AuthSessionKey owner,
+  String identifier,
+) =>
+    (owner: owner, identifier: identifier);
+
+final eventDetailControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<EventDetailController, EventDetailState, EventDetailRequest>(
   EventDetailController.new,
 );
 
-class EventDetailController
-    extends FamilyAsyncNotifier<EventDetailState, String> {
+class EventDetailController extends AutoDisposeFamilyAsyncNotifier<
+    EventDetailState, EventDetailRequest> {
+  int _stateGeneration = 0;
+  bool _disposed = false;
+
   @override
-  Future<EventDetailState> build(String identifier) async {
+  Future<EventDetailState> build(EventDetailRequest request) async {
+    _disposed = false;
+    ref.onDispose(() {
+      _disposed = true;
+      _stateGeneration++;
+    });
+    final generation = ++_stateGeneration;
+    final activeOwner = ref.watch(authSessionKeyProvider);
+    if (!identical(activeOwner, request.owner)) {
+      throw const EventDetailSessionChangedException();
+    }
+
     try {
       final event =
-          await ref.read(eventRepositoryProvider).getEvent(identifier);
+          await ref.read(eventRepositoryProvider).getEvent(request.identifier);
+      _ensureOwned(request.owner, generation);
       return EventDetailState.loaded(event);
     } on EventPasswordRequiredException catch (e) {
+      _ensureOwned(request.owner, generation);
       return EventDetailState.locked(e.shell);
     }
   }
 
   /// Pre-seed the cache with an already-unlocked event (list-side unlock).
-  void seed(Event event) {
+  bool seed(Event event, {required AuthSessionKey owner}) {
+    if (!_owns(owner)) return false;
+    _stateGeneration++;
     state = AsyncData(EventDetailState.loaded(event));
+    return true;
   }
 
   /// Submit a password to the verify endpoint. On success the state flips to
   /// `loaded(event)` and the returned event is handed back to the sheet.
   /// Typed exceptions propagate so the sheet can surface them (shake,
   /// countdown, members-only swap).
-  Future<Event> unlock(String password) async {
+  Future<Event> unlock(
+    String password, {
+    required AuthSessionKey owner,
+  }) async {
+    if (!_owns(owner)) throw const EventDetailSessionChangedException();
     final event = await ref
         .read(eventRepositoryProvider)
-        .verifyEventPassword(arg, password);
+        .verifyEventPassword(arg.identifier, password);
+    if (!_owns(owner)) throw const EventDetailSessionChangedException();
+    _stateGeneration++;
     state = AsyncData(EventDetailState.loaded(event));
     return event;
   }
+
+  bool _owns(AuthSessionKey owner) {
+    return !_disposed &&
+        identical(owner, arg.owner) &&
+        identical(ref.read(authSessionKeyProvider), owner);
+  }
+
+  void _ensureOwned(AuthSessionKey owner, int generation) {
+    if (!_owns(owner) || generation != _stateGeneration) {
+      throw const EventDetailSessionChangedException();
+    }
+  }
+}
+
+class EventDetailSessionChangedException implements Exception {
+  const EventDetailSessionChangedException();
 }
 
 /// Provider to fetch event availability (slots & tickets)
-final eventAvailabilityProvider =
-    FutureProvider.family<EventAvailabilityResponseDto, String>(
-        (ref, eventId) async {
+typedef EventAvailabilityRequest = ({
+  AuthSessionKey owner,
+  String eventId,
+});
+
+EventAvailabilityRequest eventAvailabilityRequest(
+  AuthSessionKey owner,
+  String eventId,
+) =>
+    (owner: owner, eventId: eventId);
+
+final eventAvailabilityProvider = FutureProvider.autoDispose
+    .family<EventAvailabilityResponseDto, EventAvailabilityRequest>(
+        (ref, request) async {
+  final activeOwner = ref.watch(authSessionKeyProvider);
+  if (!identical(activeOwner, request.owner)) {
+    throw const EventDetailSessionChangedException();
+  }
   final dataSource = ref.watch(eventsApiDataSourceProvider);
-  return dataSource.getEventAvailability(eventId);
+  final availability = await dataSource.getEventAvailability(request.eventId);
+  if (!identical(ref.read(authSessionKeyProvider), request.owner)) {
+    throw const EventDetailSessionChangedException();
+  }
+  return availability;
 });
 
 /// Provider for similar events (could be from API or cached)
@@ -117,6 +187,9 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _dateSectionKey = GlobalKey();
   final Map<String, int> _ticketQuantities = {};
+  late AuthSessionKey _sessionOwner;
+  ProviderSubscription<AuthSessionKey>? _sessionSubscription;
+  int _sessionGeneration = 0;
   String? _selectedSlotId;
   bool _isDescriptionExpanded = false;
   double _scrollOffset = 0;
@@ -133,7 +206,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   /// Read the currently-loaded [Event] from cache, or null if the state is
   /// loading, errored, or still in the `locked(shell)` branch.
   Event? _currentEvent() {
-    final async = ref.read(eventDetailControllerProvider(widget.eventId));
+    final owner = ref.read(authSessionKeyProvider);
+    final async = ref.read(
+      eventDetailControllerProvider(eventDetailRequest(owner, widget.eventId)),
+    );
     final state = async.valueOrNull;
     if (state is EventDetailLoaded) return state.event;
     return null;
@@ -208,7 +284,10 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     final today = DateTime(now.year, now.month, now.day);
 
     final id = _looksLikeUuid(event.id) ? event.id : widget.eventId;
-    final asyncAvail = ref.watch(eventAvailabilityProvider(id));
+    final owner = ref.watch(authSessionKeyProvider);
+    final asyncAvail = ref.watch(
+      eventAvailabilityProvider(eventAvailabilityRequest(owner, id)),
+    );
 
     // Once availability has resolved (success or error), `_availableSlots`
     // is the authoritative cache: the success branch fills it from the
@@ -262,10 +341,47 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     }
   }
 
+  void _scheduleAvailableSlotsReplacement(
+    List<CalendarDateSlot> slots,
+    AuthSessionKey owner,
+  ) {
+    final generation = _sessionGeneration;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_ownsSession(owner, generation) ||
+          _sameSlots(_availableSlots, slots)) {
+        return;
+      }
+      setState(() => _replaceAvailableSlots(slots));
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    _sessionOwner = ref.read(authSessionKeyProvider);
+    _sessionSubscription = ref.listenManual<AuthSessionKey>(
+      authSessionKeyProvider,
+      (_, next) => _replaceSessionOwner(next),
+    );
     _scrollController.addListener(_onScroll);
+  }
+
+  void _replaceSessionOwner(AuthSessionKey next, {bool notify = true}) {
+    if (identical(next, _sessionOwner)) return;
+    _sessionOwner = next;
+    _sessionGeneration++;
+    _selectedSlotId = null;
+    _ticketQuantities.clear();
+    _availableSlots = [];
+    _loggedView = false;
+    if (notify && mounted) setState(() {});
+  }
+
+  bool _ownsSession(AuthSessionKey owner, int generation) {
+    return mounted &&
+        generation == _sessionGeneration &&
+        identical(owner, _sessionOwner) &&
+        identical(ref.read(authSessionKeyProvider), owner);
   }
 
   void _onScroll() {
@@ -276,6 +392,8 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   @override
   void dispose() {
+    _sessionGeneration++;
+    _sessionSubscription?.close();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
@@ -283,7 +401,16 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final stateAsync = ref.watch(eventDetailControllerProvider(widget.eventId));
+    final owner = ref.watch(authSessionKeyProvider);
+    if (!identical(owner, _sessionOwner)) {
+      // The dependency can become dirty before the manual listener is
+      // delivered. Clear all event-local booking state synchronously so no
+      // previous-session selection survives this build.
+      _replaceSessionOwner(owner, notify: false);
+    }
+    final renderGeneration = _sessionGeneration;
+    final detailRequest = eventDetailRequest(owner, widget.eventId);
+    final stateAsync = ref.watch(eventDetailControllerProvider(detailRequest));
 
     // Sticky booking bar is only meaningful when an Event is loaded — never
     // show it on top of the locked shell, the loading spinner, or an error.
@@ -315,7 +442,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         data: (state) {
           switch (state) {
             case EventDetailLoaded(:final event):
-              return _buildContent(event);
+              return _buildContent(event, owner, renderGeneration);
             case EventDetailLocked(:final shell):
               return EventLockedView(
                 shell: shell,
@@ -330,24 +457,35 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           // Spec MEMBERSHIPS §20: 403 with body { error: members_only }
           // is a non-fatal "you're not a member" gate, not an error.
           if (error is MembersOnlyException) {
-            return MembersOnlyGate(organization: error.organization);
+            return MembersOnlyGate(
+              organization: error.organization,
+              ownerSession: owner,
+            );
           }
           return _buildErrorState(error);
         },
       ),
       bottomNavigationBar:
           loadedEvent != null && !_shouldHideBookingBar(loadedEvent)
-              ? _buildStickyBar(loadedEvent)
+              ? _buildStickyBar(loadedEvent, owner, renderGeneration)
               : null,
     );
   }
 
-  Widget _buildStickyBar(Event event) {
+  Widget _buildStickyBar(
+    Event event,
+    AuthSessionKey owner,
+    int generation,
+  ) {
     int reminderCount = 0;
     bool isSelectedSlotReminded = false;
     if (!event.hasDirectBooking) {
       final eventUuid = _looksLikeUuid(event.id) ? event.id : widget.eventId;
-      final remindersAsync = ref.watch(eventRemindersProvider(eventUuid));
+      final remindersAsync = ref.watch(
+        eventRemindersProvider(
+          (ownerSession: owner, eventUuid: eventUuid),
+        ),
+      );
       final remindedIds = remindersAsync.maybeWhen(
         data: (ids) => ids,
         orElse: () => <String>{},
@@ -370,7 +508,12 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       reminderCount: reminderCount,
       isSelectedSlotReminded: isSelectedSlotReminded,
       onReminderToggled: _selectedSlot != null
-          ? () => _toggleReminder(event, _selectedSlot!)
+          ? () => _toggleReminder(
+                event,
+                _selectedSlot!,
+                owner,
+                generation,
+              )
           : null,
     );
   }
@@ -413,8 +556,14 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 ),
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
-                  onPressed: () => ref.invalidate(
-                      eventDetailControllerProvider(widget.eventId)),
+                  onPressed: () {
+                    final activeOwner = ref.read(authSessionKeyProvider);
+                    ref.invalidate(
+                      eventDetailControllerProvider(
+                        eventDetailRequest(activeOwner, widget.eventId),
+                      ),
+                    );
+                  },
                   icon: const Icon(Icons.refresh, size: 18),
                   label: Text(context.l10n.searchRetry),
                   style: ElevatedButton.styleFrom(
@@ -433,7 +582,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     );
   }
 
-  Widget _buildContent(Event event) {
+  Widget _buildContent(
+    Event event,
+    AuthSessionKey owner,
+    int sessionGeneration,
+  ) {
     final similarEventsAsync = ref.watch(similarEventsProvider(widget.eventId));
 
     return CustomScrollView(
@@ -446,9 +599,20 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               // Galerie hero
               EventHeroGallery(
                 images: event.images,
+                ownerSession: owner,
                 videoUrl: event.socialMedia?.videoUrl,
-                onViewAll: () => _openFullscreenGallery(event, 0),
-                onImageTap: (index) => _openFullscreenGallery(event, index),
+                onViewAll: () => _openFullscreenGallery(
+                  event,
+                  0,
+                  owner,
+                  sessionGeneration,
+                ),
+                onImageTap: (index) => _openFullscreenGallery(
+                  event,
+                  index,
+                  owner,
+                  sessionGeneration,
+                ),
               ),
 
               // AppBar overlay
@@ -456,7 +620,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 top: 0,
                 left: 0,
                 right: 0,
-                child: _buildOverlayAppBar(event),
+                child: _buildOverlayAppBar(event, owner),
               ),
             ],
           ),
@@ -506,6 +670,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               // 4. Organisateur (below excerpt)
               EventOrganizerCard(
                 event: event,
+                ownerSession: owner,
                 onOrganizerTap: () =>
                     context.push('/partner/${event.organizerId}'),
               ),
@@ -533,7 +698,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               if (event.hasDirectBooking) ...[
                 KeyedSubtree(
                   key: _dateSectionKey,
-                  child: _buildDateSection(event),
+                  child: _buildDateSection(
+                    event,
+                    owner,
+                    sessionGeneration,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 if (event.tickets.isNotEmpty) ...[
@@ -542,12 +711,13 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                     quantities: _ticketQuantities,
                     enabled: _hasSelectableSlot(event),
                     onQuantityChanged: (entry) {
+                      if (!_ownsSession(owner, sessionGeneration)) return;
                       setState(() {
                         _ticketQuantities[entry.key] = entry.value;
                       });
                     },
                   ),
-                  _buildRefundPolicyLink(event),
+                  _buildRefundPolicyLink(event, owner, sessionGeneration),
                   const SizedBox(height: 24),
                 ],
                 // Services additionnels indicatifs (parking, restauration…)
@@ -565,6 +735,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               // 5d. Carte localisation
               EventLocationMap(
                 event: event,
+                ownerSession: owner,
                 userLatitude: null, // TODO: get from location provider
                 userLongitude: null,
               ),
@@ -575,7 +746,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               if (!event.hasDirectBooking) ...[
                 KeyedSubtree(
                   key: _dateSectionKey,
-                  child: _buildDateSection(event),
+                  child: _buildDateSection(
+                    event,
+                    owner,
+                    sessionGeneration,
+                  ),
                 ),
                 const SizedBox(height: 24),
               ],
@@ -587,12 +762,13 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                   quantities: _ticketQuantities,
                   enabled: _hasSelectableSlot(event),
                   onQuantityChanged: (entry) {
+                    if (!_ownsSession(owner, sessionGeneration)) return;
                     setState(() {
                       _ticketQuantities[entry.key] = entry.value;
                     });
                   },
                 ),
-                _buildRefundPolicyLink(event),
+                _buildRefundPolicyLink(event, owner, sessionGeneration),
                 const SizedBox(height: 24),
               ],
 
@@ -600,6 +776,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               EventPracticalInfo(
                 event: event,
                 locationDetails: event.locationDetails,
+                ownerSession: owner,
               ),
 
               const SizedBox(height: 24),
@@ -607,6 +784,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               // 9b. Accessibilité
               EventAccessibilitySection(
                 locationDetails: event.locationDetails,
+                ownerSession: owner,
               ),
 
               const SizedBox(height: 24),
@@ -615,8 +793,16 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               EventReviewsSection(
                 eventSlug: event.slug,
                 eventTitle: event.title,
-                onWriteReview: () => _showWriteReviewDialog(event),
-                onViewAll: () => _showAllReviews(event),
+                onWriteReview: () => _showWriteReviewDialog(
+                  event,
+                  owner,
+                  sessionGeneration,
+                ),
+                onViewAll: () => _showAllReviews(
+                  event,
+                  owner,
+                  sessionGeneration,
+                ),
               ),
 
               const SizedBox(height: 24),
@@ -628,6 +814,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 EventQASection(
                   eventSlug: event.slug,
                   eventTitle: event.title,
+                  ownerSession: owner,
                 ),
                 const SizedBox(height: 24),
               ],
@@ -636,6 +823,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               if (event.relatedEvents.isNotEmpty) ...[
                 EventSimilarCarousel(
                   events: event.relatedEvents,
+                  ownerSession: owner,
                   currentEventId: event.id,
                   title: context.l10n.eventRelatedActivities,
                   showPriceBadge: false,
@@ -648,6 +836,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                 data: (similarEvents) => similarEvents.isNotEmpty
                     ? EventSimilarCarousel(
                         events: similarEvents,
+                        ownerSession: owner,
                         currentEventId: event.id,
                       )
                     : const SizedBox.shrink(),
@@ -664,7 +853,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     );
   }
 
-  Widget _buildRefundPolicyLink(Event event) {
+  Widget _buildRefundPolicyLink(
+    Event event,
+    AuthSessionKey owner,
+    int generation,
+  ) {
     final policy = event.vendorCancellationPolicy?.trim();
     if (policy == null || policy.isEmpty) {
       return const SizedBox.shrink();
@@ -675,7 +868,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       child: Align(
         alignment: Alignment.centerLeft,
         child: TextButton(
-          onPressed: () => _openRefundPolicy(event),
+          onPressed: () => _openRefundPolicy(
+            event,
+            owner,
+            generation,
+          ),
           style: TextButton.styleFrom(
             foregroundColor: HbColors.brandPrimary,
             padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
@@ -694,7 +891,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     );
   }
 
-  Widget _buildOverlayAppBar(Event event) {
+  Widget _buildOverlayAppBar(Event event, AuthSessionKey owner) {
     // Calculer l'opacité du fond en fonction du scroll
     final opacity = (_scrollOffset / 200).clamp(0.0, 1.0);
 
@@ -727,6 +924,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           // Bouton partage (ouvre le nouveau sheet)
           ShareButton(
             event: event,
+            ownerSession: owner,
             shareUrl: EnvConfig.eventShareUrl(event.slug),
             backgroundColor:
                 opacity < 0.5 ? Colors.white : Colors.grey.shade100,
@@ -735,6 +933,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           const SizedBox(width: 8),
           FavoriteButton(
             event: event,
+            ownerSession: owner,
             internalId: int.tryParse(widget.eventId),
             iconSize: 20,
             containerSize: 40,
@@ -746,10 +945,14 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     );
   }
 
-  Widget _buildDateSection(Event event) {
+  Widget _buildDateSection(
+    Event event,
+    AuthSessionKey owner,
+    int generation,
+  ) {
     final availabilityId = _looksLikeUuid(event.id) ? event.id : widget.eventId;
-    final availabilityAsync =
-        ref.watch(eventAvailabilityProvider(availabilityId));
+    final request = eventAvailabilityRequest(owner, availabilityId);
+    final availabilityAsync = ref.watch(eventAvailabilityProvider(request));
 
     return availabilityAsync.when(
       loading: () => const Padding(
@@ -799,9 +1002,11 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
                   ),
                   const SizedBox(height: 8),
                   TextButton.icon(
-                    onPressed: () => ref.invalidate(
-                      eventAvailabilityProvider(availabilityId),
-                    ),
+                    onPressed: () {
+                      if (identical(ref.read(authSessionKeyProvider), owner)) {
+                        ref.invalidate(eventAvailabilityProvider(request));
+                      }
+                    },
                     icon: const Icon(Icons.refresh, size: 18),
                     label: Text(context.l10n.commonRetry),
                   ),
@@ -809,7 +1014,7 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            _buildDateSelectorFromEvent(event),
+            _buildDateSelectorFromEvent(event, owner, generation),
           ],
         );
       },
@@ -844,37 +1049,29 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
         // Stocker les slots pour pouvoir obtenir le label de date
         if (!_sameSlots(_availableSlots, slots)) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              setState(() {
-                _replaceAvailableSlots(slots);
-              });
-            }
-          });
+          _scheduleAvailableSlotsReplacement(slots, owner);
         }
 
         if (slots.isEmpty) {
           return const SizedBox.shrink();
         }
 
-        return _buildDateSelectorWidget(event, slots);
+        return _buildDateSelectorWidget(event, slots, owner, generation);
       },
     );
   }
 
-  Widget _buildDateSelectorFromEvent(Event event) {
+  Widget _buildDateSelectorFromEvent(
+    Event event,
+    AuthSessionKey owner,
+    int generation,
+  ) {
     final slots = event.calendar?.dateSlots ?? [];
 
     // The fallback is authoritative while live availability is unavailable.
     // Clear stale API slots as well when the event payload has no fallback.
     if (!_sameSlots(_availableSlots, slots)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {
-            _replaceAvailableSlots(slots);
-          });
-        }
-      });
+      _scheduleAvailableSlotsReplacement(slots, owner);
     }
 
     // Si pas de slots ET pas de récurrence, afficher un message d'aide
@@ -907,38 +1104,54 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       );
     }
 
-    return _buildDateSelectorWidget(event, slots);
+    return _buildDateSelectorWidget(event, slots, owner, generation);
   }
 
-  Widget _buildDateSelectorWidget(Event event, List<CalendarDateSlot> slots) {
+  Widget _buildDateSelectorWidget(
+    Event event,
+    List<CalendarDateSlot> slots,
+    AuthSessionKey owner,
+    int generation,
+  ) {
     return EventDateSelector(
       slots: slots,
       selectedSlotId: _selectedSlotId,
       onSlotSelected: (slot) {
+        if (!_ownsSession(owner, generation)) return;
         HapticFeedback.selectionClick();
         setState(() => _selectedSlotId = slot.id);
       },
-      onViewAllDates: () => _showAllDatesModal(slots),
+      onViewAllDates: () => _showAllDatesModal(slots, owner, generation),
     );
   }
 
-  Future<void> _toggleReminder(Event event, CalendarDateSlot slot) async {
+  Future<void> _toggleReminder(
+    Event event,
+    CalendarDateSlot slot,
+    AuthSessionKey owner,
+    int generation,
+  ) async {
+    if (!_ownsSession(owner, generation)) return;
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
       featureName: context.l10n.guestFeatureEnableReminder,
     );
-    if (!allowed || !mounted) return;
+    if (!allowed || !mounted || !_ownsSession(owner, generation)) return;
 
     final eventUuid = _looksLikeUuid(event.id) ? event.id : widget.eventId;
     final dataSource = ref.read(remindersApiDataSourceProvider);
 
-    final remindersAsync = ref.read(eventRemindersProvider(eventUuid));
+    final remindersQuery = (ownerSession: owner, eventUuid: eventUuid);
+    final remindersAsync = ref.read(eventRemindersProvider(remindersQuery));
     final currentIds = remindersAsync.maybeWhen(
       data: (ids) => ids,
       orElse: () => <String>{},
     );
     final isCurrentlyReminded = currentIds.contains(slot.id);
+    final failureMessage = isCurrentlyReminded
+        ? context.l10n.eventReminderRemoveFailed
+        : context.l10n.eventReminderCreateFailed;
 
     try {
       if (isCurrentlyReminded) {
@@ -952,19 +1165,17 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           slotUuid: slot.id,
         );
       }
+      if (!mounted || !_ownsSession(owner, generation)) return;
       // Refresh the provider to reflect the change
-      ref.invalidate(eventRemindersProvider(eventUuid));
+      ref.invalidate(eventRemindersProvider(remindersQuery));
       // Reminder signal changed — drop the personalized feed (spec §7).
       ref.invalidate(personalizedFeedProvider);
     } catch (e) {
-      if (mounted) {
-        final fallback = isCurrentlyReminded
-            ? context.l10n.eventReminderRemoveFailed
-            : context.l10n.eventReminderCreateFailed;
+      if (mounted && _ownsSession(owner, generation)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              ApiResponseHandler.extractError(e, fallback: fallback),
+              ApiResponseHandler.extractError(e, fallback: failureMessage),
             ),
             backgroundColor: Colors.red,
           ),
@@ -1282,24 +1493,37 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   // --- Actions ---
 
-  void _openFullscreenGallery(Event event, int initialIndex) {
+  void _openFullscreenGallery(
+    Event event,
+    int initialIndex,
+    AuthSessionKey owner,
+    int generation,
+  ) {
+    if (!_ownsSession(owner, generation)) return;
     EventGalleryFullscreen.show(
       context,
       images: event.images,
       initialIndex: initialIndex,
       eventTitle: event.title,
       shareUrl: EnvConfig.eventShareUrl(event.slug),
+      ownerSession: owner,
     );
   }
 
-  void _openRefundPolicy(Event event) {
+  void _openRefundPolicy(
+    Event event,
+    AuthSessionKey owner,
+    int generation,
+  ) {
     final policy = event.vendorCancellationPolicy?.trim();
     if (policy == null || policy.isEmpty) return;
+    if (!_ownsSession(owner, generation)) return;
 
     context.push(
       '/refund-policy',
       extra: RefundPolicyRouteArgs(
         title: context.l10n.refundPolicyTitle,
+        ownerAccountId: owner.accountId,
         policies: [
           RefundPolicyEntry(
             eventTitle: event.title,
@@ -1443,19 +1667,45 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     return null;
   }
 
-  bool _addCurrentSelectionToCart(Event event) {
-    final selectedSlot = _selectedSlot;
-    if (_selectedSlotId == null || selectedSlot == null) return false;
+  bool _addSelectionToOwnedCart({
+    required Event event,
+    required String slotId,
+    required CalendarDateSlot selectedSlot,
+    required Map<String, int> ticketQuantities,
+    required AuthSessionKey owner,
+    required int generation,
+    required OrderCartNotifier cartNotifier,
+  }) {
+    if (!_ownsSession(owner, generation) ||
+        !identical(ref.read(orderCartProvider.notifier), cartNotifier)) {
+      return false;
+    }
 
-    return ref.read(orderCartProvider.notifier).addSelection(
-          event: event,
-          slotId: _selectedSlotId!,
-          selectedSlot: selectedSlot,
-          ticketQuantities: Map<String, int>.from(_ticketQuantities),
-        );
+    return cartNotifier.addSelection(
+      event: event,
+      slotId: slotId,
+      selectedSlot: selectedSlot,
+      ticketQuantities: ticketQuantities,
+    );
   }
 
   void _showBookingChoiceSheet(Event event) {
+    final owner = ref.read(authSessionKeyProvider);
+    final ownerAccountId = owner.accountId;
+    final generation = _sessionGeneration;
+    final slotId = _selectedSlotId;
+    final selectedSlot = _selectedSlot;
+    if (ownerAccountId == null ||
+        slotId == null ||
+        selectedSlot == null ||
+        !_ownsSession(owner, generation)) {
+      return;
+    }
+    final ticketQuantities = Map<String, int>.unmodifiable(
+      Map<String, int>.from(_ticketQuantities),
+    );
+    final cartNotifier = ref.read(orderCartProvider.notifier);
+
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.white,
@@ -1463,112 +1713,135 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  width: 44,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 18),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(99),
+        return AccountBoundRouteGuard<void>(
+          ownerAccountId: ownerAccountId,
+          ownerSession: owner,
+          builder: (guardedContext) => SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 18),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    alignment: Alignment.center,
                   ),
-                  alignment: Alignment.center,
-                ),
-                Text(
-                  context.l10n.eventBookingChoiceTitle,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: HbColors.textPrimary,
+                  Text(
+                    context.l10n.eventBookingChoiceTitle,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: HbColors.textPrimary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  context.l10n.eventBookingChoiceBody,
-                  style: TextStyle(color: Colors.grey.shade600),
-                ),
-                const SizedBox(height: 18),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    // Capture the router + messenger before popping the sheet
-                    // so the SnackBar action keeps a valid reference even after
-                    // the sheet's BuildContext is gone.
-                    final router = GoRouter.of(context);
-                    final messenger = ScaffoldMessenger.of(context);
+                  const SizedBox(height: 8),
+                  Text(
+                    context.l10n.eventBookingChoiceBody,
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 18),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      final added = _addSelectionToOwnedCart(
+                        event: event,
+                        slotId: slotId,
+                        selectedSlot: selectedSlot,
+                        ticketQuantities: ticketQuantities,
+                        owner: owner,
+                        generation: generation,
+                        cartNotifier: cartNotifier,
+                      );
+                      if (!added && !_ownsSession(owner, generation)) return;
 
-                    final added = _addCurrentSelectionToCart(event);
-                    Navigator.of(sheetContext).pop();
-                    if (!added) {
+                      // Capture the router + messenger before popping the sheet
+                      // so the SnackBar action keeps a valid reference even after
+                      // the sheet's BuildContext is gone.
+                      final router = GoRouter.of(context);
+                      final messenger = ScaffoldMessenger.of(context);
+                      Navigator.of(sheetContext).pop();
+                      if (!added) {
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              context.l10n.bookingTicketAvailabilityChanged,
+                            ),
+                          ),
+                        );
+                        return;
+                      }
                       messenger.showSnackBar(
                         SnackBar(
-                          content: Text(
-                            context.l10n.bookingTicketAvailabilityChanged,
+                          content: Text(context.l10n.eventTicketsAddedToCart),
+                          duration: const Duration(seconds: 6),
+                          action: SnackBarAction(
+                            label: context.l10n.eventView,
+                            onPressed: () => router.push('/cart'),
                           ),
                         ),
                       );
-                      return;
-                    }
-                    messenger.showSnackBar(
-                      SnackBar(
-                        content: Text(context.l10n.eventTicketsAddedToCart),
-                        duration: const Duration(seconds: 6),
-                        action: SnackBarAction(
-                          label: context.l10n.eventView,
-                          onPressed: () => router.push('/cart'),
-                        ),
+                    },
+                    icon: const Icon(Icons.add_shopping_cart),
+                    label: Text(context.l10n.eventAddToCart),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    );
-                  },
-                  icon: const Icon(Icons.add_shopping_cart),
-                  label: Text(context.l10n.eventAddToCart),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // Capture router before pop — sheetContext is disposed by
-                    // Navigator.pop() and the navigation call would otherwise
-                    // dereference a dead context (same trap as the
-                    // "Ajouter au panier" button above).
-                    final router = GoRouter.of(context);
-                    final messenger = ScaffoldMessenger.of(context);
-                    final added = _addCurrentSelectionToCart(event);
-                    Navigator.of(sheetContext).pop();
-                    if (!added) {
-                      messenger.showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            context.l10n.bookingTicketAvailabilityChanged,
-                          ),
-                        ),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      final added = _addSelectionToOwnedCart(
+                        event: event,
+                        slotId: slotId,
+                        selectedSlot: selectedSlot,
+                        ticketQuantities: ticketQuantities,
+                        owner: owner,
+                        generation: generation,
+                        cartNotifier: cartNotifier,
                       );
-                      return;
-                    }
-                    router.push('/cart');
-                  },
-                  icon: const Icon(Icons.lock),
-                  label: Text(context.l10n.eventBookNow),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: HbColors.brandPrimary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      if (!added && !_ownsSession(owner, generation)) return;
+
+                      // Capture router before pop — sheetContext is disposed by
+                      // Navigator.pop() and the navigation call would otherwise
+                      // dereference a dead context (same trap as the
+                      // "Ajouter au panier" button above).
+                      final router = GoRouter.of(context);
+                      final messenger = ScaffoldMessenger.of(context);
+                      Navigator.of(sheetContext).pop();
+                      if (!added) {
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              context.l10n.bookingTicketAvailabilityChanged,
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+                      router.push('/cart');
+                    },
+                    icon: const Icon(Icons.lock),
+                    label: Text(context.l10n.eventBookNow),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: HbColors.brandPrimary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -1576,77 +1849,87 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     );
   }
 
-  void _showAllDatesModal(List<CalendarDateSlot> slots) {
+  void _showAllDatesModal(
+    List<CalendarDateSlot> slots,
+    AuthSessionKey owner,
+    int generation,
+  ) {
+    if (!_ownsSession(owner, generation)) return;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (context, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
+      builder: (sheetContext) => AccountBoundRouteGuard<void>(
+        ownerAccountId: owner.accountId,
+        ownerSession: owner,
+        builder: (_) => DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          builder: (context, scrollController) => Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      context.eventAllDatesCount(slots.length),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        context.eventAllDatesCount(slots.length),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const Divider(),
-              Expanded(
-                child: ListView.builder(
-                  controller: scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: slots.length,
-                  itemBuilder: (context, index) {
-                    final slot = slots[index];
-                    final isSelected = slot.id == _selectedSlotId;
+                const Divider(),
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: slots.length,
+                    itemBuilder: (context, index) {
+                      final slot = slots[index];
+                      final isSelected = slot.id == _selectedSlotId;
 
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _DateSlotModalCard(
-                        slot: slot,
-                        isSelected: isSelected,
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          setState(() => _selectedSlotId = slot.id);
-                          Navigator.pop(context);
-                        },
-                      ),
-                    );
-                  },
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _DateSlotModalCard(
+                          slot: slot,
+                          isSelected: isSelected,
+                          onTap: () {
+                            if (!_ownsSession(owner, generation)) return;
+                            HapticFeedback.selectionClick();
+                            setState(() => _selectedSlotId = slot.id);
+                            Navigator.pop(context);
+                          },
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -1655,24 +1938,40 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
 
   // --- Actions pour reviews et Q&A ---
 
-  Future<void> _showWriteReviewDialog(Event event) async {
+  Future<void> _showWriteReviewDialog(
+    Event event,
+    AuthSessionKey owner,
+    int generation,
+  ) async {
+    if (!_ownsSession(owner, generation)) return;
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
       featureName: context.l10n.guestFeatureWriteReview,
     );
-    if (!allowed || !mounted) return;
+    if (!allowed || !mounted || !_ownsSession(owner, generation)) return;
+    final ownerAccountId = owner.accountId;
+    if (ownerAccountId == null) return;
     await WriteReviewSheet.show(
       context,
       eventSlug: event.slug,
       eventTitle: event.title,
+      ownerSession: owner,
     );
   }
 
-  void _showAllReviews(Event event) {
+  void _showAllReviews(
+    Event event,
+    AuthSessionKey owner,
+    int generation,
+  ) {
+    if (!_ownsSession(owner, generation)) return;
     context.push(
       '/event/${event.slug}/reviews',
-      extra: {'title': event.title},
+      extra: {
+        'title': event.title,
+        'ownerSession': owner,
+      },
     );
   }
 

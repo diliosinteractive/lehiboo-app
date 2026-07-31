@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +10,7 @@ import 'package:lehiboo/domain/entities/city.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/events/domain/repositories/event_repository.dart';
 import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 
 /// Provider for city detail - finds city by slug from the cities list
@@ -71,28 +74,53 @@ class CityActivitiesResult {
 }
 
 class CityActivitiesController
-    extends FamilyAsyncNotifier<CityActivitiesResult, String> {
+    extends StateNotifier<AsyncValue<CityActivitiesResult>> {
   static const _perPage = 20;
 
-  @override
-  Future<CityActivitiesResult> build(String citySlug) async {
-    debugPrint('Fetching activities for city: $citySlug');
-    final result = await ref.read(eventRepositoryProvider).getEvents(
-          location: citySlug,
-          page: 1,
-          perPage: _perPage,
-        );
-    debugPrint(
-        'Got ${result.events.length}/${result.totalItems} events for city $citySlug (page ${result.currentPage}/${result.totalPages})');
-    return CityActivitiesResult(
-      activities: EventToActivityMapper.toActivities(result.events),
-      total: result.totalItems,
-      page: result.currentPage,
-      lastPage: result.totalPages,
-    );
+  CityActivitiesController(
+    this._repository, {
+    required String citySlug,
+  })  : _citySlug = citySlug,
+        super(const AsyncValue.loading()) {
+    unawaited(_loadFirstPage());
+  }
+
+  final EventRepository _repository;
+  final String _citySlug;
+  int _requestGeneration = 0;
+
+  Future<void> _loadFirstPage() async {
+    if (!mounted) return;
+    final requestGeneration = ++_requestGeneration;
+    state = const AsyncValue.loading();
+    debugPrint('Fetching activities for city: $_citySlug');
+    try {
+      final result = await _repository.getEvents(
+        location: _citySlug,
+        page: 1,
+        perPage: _perPage,
+      );
+      if (!mounted || requestGeneration != _requestGeneration) return;
+      debugPrint(
+        'Got ${result.events.length}/${result.totalItems} events for city '
+        '$_citySlug (page ${result.currentPage}/${result.totalPages})',
+      );
+      state = AsyncValue.data(
+        CityActivitiesResult(
+          activities: EventToActivityMapper.toActivities(result.events),
+          total: result.totalItems,
+          page: result.currentPage,
+          lastPage: result.totalPages,
+        ),
+      );
+    } catch (error, stackTrace) {
+      if (!mounted || requestGeneration != _requestGeneration) return;
+      state = AsyncValue.error(error, stackTrace);
+    }
   }
 
   Future<void> loadMore() async {
+    if (!mounted) return;
     final current = state.valueOrNull;
     if (current == null ||
         !current.hasMore ||
@@ -101,16 +129,18 @@ class CityActivitiesController
       return;
     }
 
+    final requestGeneration = ++_requestGeneration;
     state = AsyncData(
       current.copyWith(isLoadingMore: true, loadMoreError: null),
     );
 
     try {
-      final next = await ref.read(eventRepositoryProvider).getEvents(
-            location: arg,
-            page: current.page + 1,
-            perPage: _perPage,
-          );
+      final next = await _repository.getEvents(
+        location: _citySlug,
+        page: current.page + 1,
+        perPage: _perPage,
+      );
+      if (!mounted || requestGeneration != _requestGeneration) return;
       final newActivities = EventToActivityMapper.toActivities(next.events);
       state = AsyncData(
         current.copyWith(
@@ -122,6 +152,7 @@ class CityActivitiesController
         ),
       );
     } catch (e, st) {
+      if (!mounted || requestGeneration != _requestGeneration) return;
       state = AsyncData(
         current.copyWith(isLoadingMore: false, loadMoreError: e),
       );
@@ -132,6 +163,7 @@ class CityActivitiesController
   }
 
   Future<void> retryLoadMore() async {
+    if (!mounted) return;
     final current = state.valueOrNull;
     if (current == null || current.isLoadingMore) return;
     state = AsyncData(current.copyWith(loadMoreError: null));
@@ -139,9 +171,16 @@ class CityActivitiesController
   }
 }
 
-final cityActivitiesProvider = AsyncNotifierProvider.family<
-    CityActivitiesController, CityActivitiesResult, String>(
-  CityActivitiesController.new,
+final cityActivitiesProvider = StateNotifierProvider.family<
+    CityActivitiesController, AsyncValue<CityActivitiesResult>, String>(
+  (ref, citySlug) {
+    // The endpoint is auth-optional and may include membership-only events.
+    // Watching the opaque key recreates the controller for guest/account
+    // transitions, including a rapid A -> B -> A cycle.
+    ref.watch(authSessionKeyProvider);
+    final repository = ref.watch(eventRepositoryProvider);
+    return CityActivitiesController(repository, citySlug: citySlug);
+  },
 );
 
 class CityDetailScreen extends ConsumerStatefulWidget {
@@ -180,6 +219,7 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen> {
     final cityAsyncValue = ref.watch(cityDetailProvider(widget.citySlug));
     final activitiesAsyncValue =
         ref.watch(cityActivitiesProvider(widget.citySlug));
+    final renderedEventsSession = ref.watch(authSessionKeyProvider);
 
     final l10n = context.l10n;
 
@@ -343,7 +383,11 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen> {
                 ),
               ),
               // Activities list from real API
-              ..._buildActivitiesSlivers(context, activitiesAsyncValue),
+              ..._buildActivitiesSlivers(
+                context,
+                activitiesAsyncValue,
+                renderedEventsSession,
+              ),
               const SliverToBoxAdapter(child: SizedBox(height: 40)),
             ],
           );
@@ -365,6 +409,7 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen> {
   List<Widget> _buildActivitiesSlivers(
     BuildContext context,
     AsyncValue<CityActivitiesResult> activitiesAsyncValue,
+    AuthSessionKey ownerSession,
   ) {
     final l10n = context.l10n;
     return activitiesAsyncValue.when(
@@ -398,6 +443,7 @@ class _CityDetailScreenState extends ConsumerState<CityDetailScreen> {
               delegate: SliverChildBuilderDelegate(
                 (context, index) => EventCard(
                   activity: activities[index],
+                  ownerSession: ownerSession,
                   isCompact: true,
                   fillContainer: true,
                 ),

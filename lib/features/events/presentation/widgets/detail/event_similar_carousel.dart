@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/presentation/utils/open_event.dart';
 
@@ -20,10 +21,12 @@ class EventSimilarCarousel extends StatelessWidget {
   final VoidCallback? onViewAll;
   final String? title;
   final bool showPriceBadge;
+  final AuthSessionKey ownerSession;
 
   const EventSimilarCarousel({
     super.key,
     required this.events,
+    required this.ownerSession,
     this.currentEventId,
     this.onViewAll,
     this.title,
@@ -83,6 +86,7 @@ class EventSimilarCarousel extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: _SimilarEventCard(
                   event: filteredEvents[index],
+                  ownerSession: ownerSession,
                   index: index,
                   showPriceBadge: showPriceBadge,
                 ),
@@ -99,9 +103,11 @@ class _SimilarEventCard extends ConsumerWidget {
   final Event event;
   final int index;
   final bool showPriceBadge;
+  final AuthSessionKey ownerSession;
 
   const _SimilarEventCard({
     required this.event,
+    required this.ownerSession,
     required this.index,
     required this.showPriceBadge,
   });
@@ -124,7 +130,12 @@ class _SimilarEventCard extends ConsumerWidget {
       child: GestureDetector(
         onTap: () {
           HapticFeedback.lightImpact();
-          openEvent(context, ref, event);
+          openEvent(
+            context,
+            ref,
+            event,
+            ownerSession: ownerSession,
+          );
         },
         child: Container(
           width: 160,

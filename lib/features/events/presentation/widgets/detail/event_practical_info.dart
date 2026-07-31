@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:lehiboo/features/events/presentation/utils/event_l10n.dart';
@@ -17,10 +18,12 @@ import 'package:lehiboo/features/events/presentation/widgets/detail/practical_in
 class EventPracticalInfo extends StatefulWidget {
   final Event event;
   final LocationDetails? locationDetails;
+  final AuthSessionKey ownerSession;
 
   const EventPracticalInfo({
     super.key,
     required this.event,
+    required this.ownerSession,
     this.locationDetails,
   });
 
@@ -239,6 +242,7 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
       title: widget.event.venue ?? context.l10n.eventPlace,
       description: address,
       color: HbColors.brandPrimary,
+      ownerSession: widget.ownerSession,
       actions: [
         if (lat != null && lng != null) ...[
           PracticalInfoActions.googleMaps(
@@ -246,22 +250,29 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
             lat: lat,
             lng: lng,
             destinationLabel: mapsDestination,
+            ownerSession: widget.ownerSession,
           ),
           PracticalInfoActions.walkingDirections(
             context: context,
             lat: lat,
             lng: lng,
             destinationLabel: mapsDestination,
+            ownerSession: widget.ownerSession,
           ),
           PracticalInfoActions.publicTransport(
             context: context,
             lat: lat,
             lng: lng,
             destinationLabel: mapsDestination,
+            ownerSession: widget.ownerSession,
           ),
         ],
         if (address.isNotEmpty)
-          PracticalInfoActions.copyAddress(address: address, context: context),
+          PracticalInfoActions.copyAddress(
+            address: address,
+            context: context,
+            ownerSession: widget.ownerSession,
+          ),
       ],
     );
   }
@@ -281,6 +292,7 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
       description: parking.description,
       imageUrl: parking.imageUrl,
       color: Colors.blue,
+      ownerSession: widget.ownerSession,
       actions: lat != null && lng != null
           ? [
               PracticalInfoActions.googleMaps(
@@ -289,6 +301,7 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
                 lng: lng,
                 label: context.l10n.eventParkingDirections,
                 destinationLabel: mapsDestination,
+                ownerSession: widget.ownerSession,
               ),
             ]
           : null,
@@ -310,6 +323,7 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
       description: transport.description,
       imageUrl: transport.imageUrl,
       color: Colors.green,
+      ownerSession: widget.ownerSession,
       actions: lat != null && lng != null
           ? [
               PracticalInfoActions.publicTransport(
@@ -317,6 +331,7 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
                 lat: lat,
                 lng: lng,
                 destinationLabel: mapsDestination,
+                ownerSession: widget.ownerSession,
               ),
             ]
           : null,
@@ -334,6 +349,7 @@ class _EventPracticalInfoState extends State<EventPracticalInfo> {
       title: title,
       description: note ?? context.l10n.eventServiceDefaultDescription,
       color: HbColors.brandPrimary,
+      ownerSession: widget.ownerSession,
     );
   }
 

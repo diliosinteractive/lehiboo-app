@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:lehiboo/features/events/presentation/utils/event_l10n.dart';
 import 'package:lehiboo/features/events/presentation/widgets/detail/practical_info_card.dart';
@@ -10,9 +11,11 @@ import 'package:lehiboo/features/events/presentation/widgets/detail/practical_in
 /// Hidden entirely when no accessibility data is available.
 class EventAccessibilitySection extends StatelessWidget {
   final LocationDetails? locationDetails;
+  final AuthSessionKey ownerSession;
 
   const EventAccessibilitySection({
     super.key,
+    required this.ownerSession,
     this.locationDetails,
   });
 
@@ -96,6 +99,7 @@ class EventAccessibilitySection extends StatelessWidget {
       title: title,
       description: note ?? context.l10n.eventServiceDefaultDescription,
       color: HbColors.brandPrimary,
+      ownerSession: ownerSession,
     );
   }
 

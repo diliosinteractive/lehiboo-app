@@ -6,6 +6,7 @@ import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../../core/utils/guest_guard.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../domain/entities/event_question.dart';
 import '../providers/event_questions_providers.dart';
 import '../utils/event_l10n.dart';
@@ -18,11 +19,13 @@ import '../widgets/detail/question_card.dart';
 class EventQuestionsScreen extends ConsumerStatefulWidget {
   final String eventSlug;
   final String eventTitle;
+  final AuthSessionKey? ownerSession;
 
   const EventQuestionsScreen({
     super.key,
     required this.eventSlug,
     required this.eventTitle,
+    this.ownerSession,
   });
 
   @override
@@ -32,11 +35,33 @@ class EventQuestionsScreen extends ConsumerStatefulWidget {
 
 class _EventQuestionsScreenState extends ConsumerState<EventQuestionsScreen> {
   late final ScrollController _scrollController;
+  ProviderSubscription<AuthSessionKey>? _sessionSubscription;
+  AuthSessionKey? _routeOwnerSession;
+  bool _routePayloadInvalid = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController()..addListener(_onScroll);
+    final initialSession = ref.read(authSessionKeyProvider);
+    _routeOwnerSession = widget.ownerSession;
+    _routePayloadInvalid = _routeOwnerSession != null &&
+        !identical(initialSession, _routeOwnerSession);
+    _sessionSubscription = ref.listenManual<AuthSessionKey>(
+      authSessionKeyProvider,
+      (previous, next) {
+        if (!mounted || identical(previous, next)) return;
+        final routeOwner = _routeOwnerSession;
+        if (routeOwner == null || identical(next, routeOwner)) return;
+        if (identical(previous, routeOwner) &&
+            routeOwner.accountId == null &&
+            next.accountId != null) {
+          setState(() => _routeOwnerSession = next);
+          return;
+        }
+        setState(() => _routePayloadInvalid = true);
+      },
+    );
   }
 
   @override
@@ -44,11 +69,17 @@ class _EventQuestionsScreenState extends ConsumerState<EventQuestionsScreen> {
     _scrollController
       ..removeListener(_onScroll)
       ..dispose();
+    _sessionSubscription?.close();
     super.dispose();
   }
 
-  Future<void> _onAskQuestion() async {
+  Future<void> _onAskQuestion(AuthSessionKey renderOwner) async {
     HapticFeedback.lightImpact();
+    if (!mounted) return;
+    if (_routePayloadInvalid ||
+        !identical(ref.read(authSessionKeyProvider), renderOwner)) {
+      return;
+    }
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
@@ -56,16 +87,31 @@ class _EventQuestionsScreenState extends ConsumerState<EventQuestionsScreen> {
     );
     if (!allowed || !mounted) return;
 
+    final actionOwner = ref.read(authSessionKeyProvider);
+    if (_routePayloadInvalid ||
+        actionOwner.accountId == null ||
+        (renderOwner.accountId != null &&
+            !identical(actionOwner, renderOwner))) {
+      return;
+    }
+    final actionsProvider = eventQuestionsActionsProvider;
+    final actionsController = ref.read(actionsProvider.notifier);
+
     final outcome = await AskQuestionSheet.show(
       context,
       eventSlug: widget.eventSlug,
       eventTitle: widget.eventTitle,
+      ownerSession: actionOwner,
     );
-    if (outcome == null || !mounted) return;
+    if (outcome == null ||
+        !mounted ||
+        _routePayloadInvalid ||
+        !identical(ref.read(authSessionKeyProvider), actionOwner) ||
+        !identical(ref.read(actionsProvider.notifier), actionsController)) {
+      return;
+    }
 
-    ref
-        .read(eventQuestionsActionsProvider.notifier)
-        .refreshAll(widget.eventSlug);
+    actionsController.refreshAll(widget.eventSlug);
 
     final message = switch (outcome) {
       AskQuestionOutcome.created => context.l10n.eventQuestionSent,
@@ -97,6 +143,12 @@ class _EventQuestionsScreenState extends ConsumerState<EventQuestionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final viewSession = ref.watch(authSessionKeyProvider);
+    if (_routePayloadInvalid ||
+        (_routeOwnerSession != null &&
+            !identical(viewSession, _routeOwnerSession))) {
+      return const SizedBox.shrink();
+    }
     final listAsync =
         ref.watch(eventQuestionsListControllerProvider(widget.eventSlug));
     final myQuestionAsync = ref.watch(myQuestionProvider(widget.eventSlug));
@@ -175,6 +227,7 @@ class _EventQuestionsScreenState extends ConsumerState<EventQuestionsScreen> {
                 myQuestion: myQuestionToDisplay,
                 myQuestionLoadFailed: myQuestionAsync.hasError,
                 canAsk: canAsk,
+                ownerSession: viewSession,
                 eventSlug: widget.eventSlug,
                 eventTitle: widget.eventTitle,
               ),
@@ -186,7 +239,7 @@ class _EventQuestionsScreenState extends ConsumerState<EventQuestionsScreen> {
       // (peu importe si elle est publique ou non — il ne peut pas en reposer).
       floatingActionButton: (myQuestion == null && listAsync.hasValue)
           ? FloatingActionButton.extended(
-              onPressed: canAsk ? () => _onAskQuestion() : null,
+              onPressed: canAsk ? () => _onAskQuestion(viewSession) : null,
               backgroundColor:
                   canAsk ? HbColors.brandPrimary : HbColors.grey200,
               foregroundColor: canAsk ? HbColors.white : HbColors.grey500,
@@ -204,6 +257,7 @@ class _QuestionsList extends ConsumerWidget {
   final EventQuestion? myQuestion;
   final bool myQuestionLoadFailed;
   final bool canAsk;
+  final AuthSessionKey ownerSession;
   final String eventSlug;
   final String eventTitle;
 
@@ -213,6 +267,7 @@ class _QuestionsList extends ConsumerWidget {
     required this.myQuestion,
     required this.myQuestionLoadFailed,
     required this.canAsk,
+    required this.ownerSession,
     required this.eventSlug,
     required this.eventTitle,
   });
@@ -241,17 +296,49 @@ class _QuestionsList extends ConsumerWidget {
           _EmptyState(
             onAsk: canAsk
                 ? () async {
+                    if (!context.mounted) return;
+                    final renderOwner = ownerSession;
+                    if (!identical(
+                      ref.read(authSessionKeyProvider),
+                      renderOwner,
+                    )) {
+                      return;
+                    }
                     final allowed = await GuestGuard.check(
                       context: context,
                       ref: ref,
                       featureName: context.l10n.guestFeatureAskQuestion,
                     );
                     if (!allowed || !context.mounted) return;
-                    await AskQuestionSheet.show(
+
+                    final actionOwner = ref.read(authSessionKeyProvider);
+                    if (actionOwner.accountId == null ||
+                        (renderOwner.accountId != null &&
+                            !identical(actionOwner, renderOwner))) {
+                      return;
+                    }
+                    final actionsProvider = eventQuestionsActionsProvider;
+                    final actionsController =
+                        ref.read(actionsProvider.notifier);
+                    final outcome = await AskQuestionSheet.show(
                       context,
                       eventSlug: eventSlug,
                       eventTitle: eventTitle,
+                      ownerSession: actionOwner,
                     );
+                    if (outcome == null ||
+                        !context.mounted ||
+                        !identical(
+                          ref.read(authSessionKeyProvider),
+                          actionOwner,
+                        ) ||
+                        !identical(
+                          ref.read(actionsProvider.notifier),
+                          actionsController,
+                        )) {
+                      return;
+                    }
+                    actionsController.refreshAll(eventSlug);
                   }
                 : null,
           ),
@@ -295,6 +382,7 @@ class _QuestionsList extends ConsumerWidget {
                     context,
                     ref,
                     items[i],
+                    ownerSession,
                   ),
                 ),
             ],
@@ -345,23 +433,39 @@ class _QuestionsList extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     EventQuestion q,
+    AuthSessionKey renderOwner,
   ) async {
+    if (!context.mounted) return;
+    if (!identical(ref.read(authSessionKeyProvider), renderOwner)) return;
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
       featureName: context.l10n.guestFeatureVoteQuestion,
     );
-    if (!allowed) return;
-    final controller = ref.read(
-      eventQuestionsListControllerProvider(eventSlug).notifier,
+    if (!allowed || !context.mounted) return;
+
+    final actionOwner = ref.read(authSessionKeyProvider);
+    if (actionOwner.accountId == null ||
+        (renderOwner.accountId != null &&
+            !identical(actionOwner, renderOwner))) {
+      return;
+    }
+    final listProvider = eventQuestionsListControllerProvider(eventSlug);
+    final listController = ref.read(listProvider.notifier);
+    final actionsProvider = eventQuestionsActionsProvider;
+    final actionsController = ref.read(actionsProvider.notifier);
+    final ok = await actionsController.toggleHelpful(
+      eventSlug: eventSlug,
+      question: q,
+      listController: listController,
     );
-    final ok =
-        await ref.read(eventQuestionsActionsProvider.notifier).toggleHelpful(
-              eventSlug: eventSlug,
-              question: q,
-              listController: controller,
-            );
-    if (!ok && context.mounted) {
+    if (!context.mounted ||
+        !identical(ref.read(authSessionKeyProvider), actionOwner) ||
+        !identical(ref.read(actionsProvider.notifier), actionsController) ||
+        !identical(ref.read(listProvider.notifier), listController)) {
+      return;
+    }
+    if (!ok) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(context.l10n.eventVoteUnavailable),

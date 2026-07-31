@@ -21,6 +21,8 @@ import 'package:lehiboo/features/search/presentation/providers/filter_provider.d
 import 'package:lehiboo/features/events/presentation/widgets/map_event_card.dart';
 import 'package:lehiboo/features/search/presentation/widgets/filter_bottom_sheet.dart'; // Import filter sheet
 import 'package:lehiboo/domain/entities/activity.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
+import 'package:lehiboo/features/auth/presentation/widgets/account_bound_route_guard.dart';
 import 'package:lehiboo/features/search/domain/models/event_filter.dart';
 import 'package:lehiboo/features/search/presentation/utils/search_l10n.dart';
 // Note: MapTheme is no longer needed for styling as we use a specific tile provider
@@ -176,7 +178,11 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
     _locateMe();
   }
 
-  List<Marker> _buildMarkers(BuildContext context, List<Event> events) {
+  List<Marker> _buildMarkers(
+    BuildContext context,
+    List<Event> events,
+    AuthSessionKey ownerSession,
+  ) {
     // Debug: log coordinates
     if (kDebugMode) {
       debugPrint(
@@ -246,6 +252,12 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
         alignment: Alignment.topCenter,
         child: GestureDetector(
           onTap: () {
+            if (!identical(
+              ref.read(authSessionKeyProvider),
+              ownerSession,
+            )) {
+              return;
+            }
             ref.read(analyticsServiceProvider).logEvent(
               AnalyticsEvent.mapPinTapped,
               params: {
@@ -261,7 +273,7 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
               );
               setState(() => _selectedIndex = displayEntry.key);
             } else {
-              _showMultiEventList(context, group);
+              _showMultiEventList(context, group, ownerSession);
             }
           },
           child: Stack(
@@ -345,79 +357,95 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
   }
 
   void _showMultiEventList(
-      BuildContext context, List<MapEntry<int, Event>> group) {
-    showModalBottomSheet(
+    BuildContext context,
+    List<MapEntry<int, Event>> group,
+    AuthSessionKey ownerSessionKey,
+  ) {
+    showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.only(top: 16, bottom: 24),
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.5,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      context.eventMapEventsHere(group.length),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => context.pop(),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(),
-              Expanded(
-                child: ListView.separated(
-                  itemCount: group.length,
+        return AccountBoundRouteGuard<void>(
+          ownerAccountId: ownerSessionKey.accountId,
+          ownerSession: ownerSessionKey,
+          builder: (context) => Container(
+            padding: const EdgeInsets.only(top: 16, bottom: 24),
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.5,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  separatorBuilder: (context, index) =>
-                      const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final entry = group[index];
-                    final event = entry.value;
-                    final isSelected = entry.key == _selectedIndex;
-
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        event.title,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        context.eventMapEventsHere(group.length),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      subtitle: Text(
-                        "${context.appDateFormat('dd MMM HH:mm', enPattern: 'MMM d, HH:mm').format(event.startDate)} • ${_formatEventPrice(context, event)}",
-                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => context.pop(),
                       ),
-                      trailing: isSelected
-                          ? const Icon(Icons.check_circle,
-                              color: Color(0xFFFF601F))
-                          : const Icon(Icons.arrow_forward_ios,
-                              size: 16, color: Colors.grey),
-                      onTap: () {
-                        context.pop();
-                        _pageController.jumpToPage(entry.key);
-                        setState(() => _selectedIndex = entry.key);
-                      },
-                    );
-                  },
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                const Divider(),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: group.length,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    separatorBuilder: (context, index) =>
+                        const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final entry = group[index];
+                      final event = entry.value;
+                      final isSelected = entry.key == _selectedIndex;
+
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          event.title,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          "${context.appDateFormat('dd MMM HH:mm', enPattern: 'MMM d, HH:mm').format(event.startDate)} • ${_formatEventPrice(context, event)}",
+                          style:
+                              TextStyle(color: Colors.grey[600], fontSize: 13),
+                        ),
+                        trailing: isSelected
+                            ? const Icon(Icons.check_circle,
+                                color: Color(0xFFFF601F))
+                            : const Icon(Icons.arrow_forward_ios,
+                                size: 16, color: Colors.grey),
+                        onTap: () {
+                          if (!identical(
+                            ref.read(authSessionKeyProvider),
+                            ownerSessionKey,
+                          )) {
+                            Navigator.of(context).pop();
+                            return;
+                          }
+                          context.pop();
+                          if (!mounted) return;
+                          _pageController.jumpToPage(entry.key);
+                          setState(() => _selectedIndex = entry.key);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -444,6 +472,7 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
   @override
   Widget build(BuildContext context) {
     final eventsAsync = ref.watch(eventsProvider);
+    final renderedEventsSession = ref.watch(authSessionKeyProvider);
     final filter = ref.watch(eventFilterProvider);
     final isLoading = eventsAsync.isLoading || eventsAsync.isRefreshing;
 
@@ -476,8 +505,11 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                 builder: (context) {
                   if (eventsAsync.hasValue) {
                     return MarkerLayer(
-                      markers:
-                          _buildMarkers(context, eventsAsync.value!.events),
+                      markers: _buildMarkers(
+                        context,
+                        eventsAsync.value!.events,
+                        renderedEventsSession,
+                      ),
                     );
                   }
                   return const MarkerLayer(markers: []);
@@ -745,8 +777,10 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child:
-                              MapEventCard(activity: _eventToActivity(event)),
+                          child: MapEventCard(
+                            activity: _eventToActivity(event),
+                            ownerSession: renderedEventsSession,
+                          ),
                         ),
                       );
                     },

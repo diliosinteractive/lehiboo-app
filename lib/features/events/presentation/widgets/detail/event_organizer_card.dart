@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/messages/presentation/widgets/new_conversation_form.dart';
 
@@ -20,11 +21,13 @@ import 'package:lehiboo/features/messages/presentation/widgets/new_conversation_
 /// and "Source infos : {originalOrganizerName}" when available.
 class EventOrganizerCard extends StatelessWidget {
   final Event event;
+  final AuthSessionKey ownerSession;
   final VoidCallback? onOrganizerTap;
 
   const EventOrganizerCard({
     super.key,
     required this.event,
+    required this.ownerSession,
     this.onOrganizerTap,
   });
 
@@ -50,6 +53,7 @@ class EventOrganizerCard extends StatelessWidget {
               ? _PlatformOrganizerCard(event: event)
               : _VendorOrganizerCard(
                   event: event,
+                  ownerSession: ownerSession,
                   onOrganizerTap: onOrganizerTap,
                 ),
         ],
@@ -64,9 +68,14 @@ class EventOrganizerCard extends StatelessWidget {
 
 class _VendorOrganizerCard extends ConsumerWidget {
   final Event event;
+  final AuthSessionKey ownerSession;
   final VoidCallback? onOrganizerTap;
 
-  const _VendorOrganizerCard({required this.event, this.onOrganizerTap});
+  const _VendorOrganizerCard({
+    required this.event,
+    required this.ownerSession,
+    this.onOrganizerTap,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -85,6 +94,12 @@ class _VendorOrganizerCard extends ConsumerWidget {
       ),
       child: InkWell(
         onTap: () {
+          if (!identical(
+            ref.read(authSessionKeyProvider),
+            ownerSession,
+          )) {
+            return;
+          }
           HapticFeedback.lightImpact();
           if (onOrganizerTap != null) {
             onOrganizerTap!();
@@ -294,14 +309,28 @@ class _VendorOrganizerCard extends ConsumerWidget {
           child: ElevatedButton.icon(
             onPressed: () async {
               HapticFeedback.lightImpact();
+              if (!identical(
+                ref.read(authSessionKeyProvider),
+                ownerSession,
+              )) {
+                return;
+              }
               final allowed = await GuestGuard.check(
                 context: context,
                 ref: ref,
                 featureName: context.l10n.guestFeatureContactOrganizer,
               );
-              if (!allowed || !context.mounted) return;
+              if (!allowed ||
+                  !context.mounted ||
+                  !identical(
+                    ref.read(authSessionKeyProvider),
+                    ownerSession,
+                  )) {
+                return;
+              }
               NewConversationForm.show(
                 context,
+                ownerSession: ownerSession,
                 conversationContext: FromOrganizerConversationContext(
                   organizationUuid: event.organizerId,
                   organizationName: event.organizerName,
@@ -328,6 +357,12 @@ class _VendorOrganizerCard extends ConsumerWidget {
         Expanded(
           child: TextButton(
             onPressed: () {
+              if (!identical(
+                ref.read(authSessionKeyProvider),
+                ownerSession,
+              )) {
+                return;
+              }
               HapticFeedback.lightImpact();
               context.push('/partner/${event.organizerId}');
             },

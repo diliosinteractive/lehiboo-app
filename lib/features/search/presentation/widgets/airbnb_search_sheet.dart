@@ -15,6 +15,8 @@ import '../../domain/models/event_filter.dart';
 import '../../../events/data/models/event_reference_data_dto.dart';
 import '../../../events/data/models/search_suggestions_dto.dart';
 import '../../../home/presentation/providers/home_providers.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import 'category_cascade.dart';
 import 'filter_shared_components.dart';
 
@@ -104,21 +106,40 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
 
   late AnimationController _animationController;
   bool _isLoadingLocation = false;
+  late final String? _ownerSessionId;
+  int _locationGeneration = 0;
+  bool _sessionInvalidated = false;
 
   @override
   void initState() {
     super.initState();
+    _ownerSessionId = ref.read(authSessionUserIdProvider);
     _searchController.text = ref.read(eventFilterProvider).searchQuery;
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 350),
       vsync: this,
     );
     _animationController.forward();
+    ref.listenManual<AuthState>(authProvider, (_, next) {
+      final userId = next.isAuthenticated ? next.user?.id.trim() : null;
+      final nextSessionId = userId == null || userId.isEmpty ? null : userId;
+      if (nextSessionId == _ownerSessionId) return;
+      _sessionInvalidated = true;
+      _locationGeneration++;
+      _searchController.clear();
+      if (mounted && _isLoadingLocation) {
+        setState(() => _isLoadingLocation = false);
+      }
+    });
   }
 
   /// Wrapper de [widget.onSearch] qui loggue le submit avant la navigation
   /// vers `/search`. Lit l'état du filtre courant pour enrichir l'event.
   void _handleSearch() {
+    if (_sessionInvalidated ||
+        ref.read(authSessionUserIdProvider) != _ownerSessionId) {
+      return;
+    }
     final filter = ref.read(eventFilterProvider);
     final analytics = ref.read(analyticsServiceProvider);
     analytics.logEvent(
@@ -192,6 +213,17 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
   }
 
   Future<void> _getCurrentLocation() async {
+    final ownerNotifier = ref.read(eventFilterProvider.notifier);
+    final operationGeneration = ++_locationGeneration;
+
+    bool ownsOperation() {
+      return mounted &&
+          !_sessionInvalidated &&
+          operationGeneration == _locationGeneration &&
+          ref.read(authSessionUserIdProvider) == _ownerSessionId &&
+          identical(ref.read(eventFilterProvider.notifier), ownerNotifier);
+    }
+
     setState(() => _isLoadingLocation = true);
     final locationDisabled = context.l10n.searchLocationDisabled;
     final permissionDenied = context.l10n.searchPermissionDenied;
@@ -201,14 +233,17 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
 
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!ownsOperation()) return;
       if (!serviceEnabled) {
         _showError(locationDisabled);
         return;
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
+      if (!ownsOperation()) return;
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
+        if (!ownsOperation()) return;
         if (permission == LocationPermission.denied) {
           _showError(permissionDenied);
           return;
@@ -225,14 +260,14 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
           accuracy: LocationAccuracy.medium,
         ),
       );
+      if (!ownsOperation()) return;
 
-      final filterNotifier = ref.read(eventFilterProvider.notifier);
-      filterNotifier.setLocation(position.latitude, position.longitude, 20);
-      filterNotifier.clearCity();
+      ownerNotifier.setLocation(position.latitude, position.longitude, 20);
+      ownerNotifier.clearCity();
     } catch (e) {
-      _showError(locationNotFound);
+      if (ownsOperation()) _showError(locationNotFound);
     } finally {
-      setState(() => _isLoadingLocation = false);
+      if (ownsOperation()) setState(() => _isLoadingLocation = false);
     }
   }
 
@@ -258,156 +293,159 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final topPadding = MediaQuery.of(context).padding.top;
 
-    return Scaffold(
-      backgroundColor: HbColors.surfaceLight,
-      body: Stack(
-        children: [
-          // Scrollable content with accordion panels
-          Positioned.fill(
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              physics: const BouncingScrollPhysics(),
-              child: Column(
-                children: [
-                  // Header
-                  _buildHeader(topPadding),
+    return AccountBoundRouteGuard<void>(
+      ownerAccountId: _ownerSessionId,
+      builder: (_) => Scaffold(
+        backgroundColor: HbColors.surfaceLight,
+        body: Stack(
+          children: [
+            // Scrollable content with accordion panels
+            Positioned.fill(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  children: [
+                    // Header
+                    _buildHeader(topPadding),
 
-                  // Accordion panels
-                  Padding(
-                    padding:
-                        EdgeInsets.fromLTRB(16, 8, 16, 120 + bottomPadding),
-                    child: Column(
-                      children: [
-                        // Panel 0: Où ?
-                        _AccordionPanel(
-                          key: _panelKeys[_wherePanel],
-                          title: context.l10n.homeSearchWhere,
-                          subtitle: _getWhereSubtitle(filter),
-                          icon: Icons.location_on,
-                          isExpanded: _expandedPanel == _wherePanel,
-                          onTap: () => _expandPanel(_wherePanel),
-                          child: _WhereContent(
-                            filter: filter,
-                            isLoadingLocation: _isLoadingLocation,
-                            onLocationTap: _getCurrentLocation,
+                    // Accordion panels
+                    Padding(
+                      padding:
+                          EdgeInsets.fromLTRB(16, 8, 16, 120 + bottomPadding),
+                      child: Column(
+                        children: [
+                          // Panel 0: Où ?
+                          _AccordionPanel(
+                            key: _panelKeys[_wherePanel],
+                            title: context.l10n.homeSearchWhere,
+                            subtitle: _getWhereSubtitle(filter),
+                            icon: Icons.location_on,
+                            isExpanded: _expandedPanel == _wherePanel,
+                            onTap: () => _expandPanel(_wherePanel),
+                            child: _WhereContent(
+                              filter: filter,
+                              isLoadingLocation: _isLoadingLocation,
+                              onLocationTap: _getCurrentLocation,
+                            ),
                           ),
-                        ),
 
-                        const SizedBox(height: 12),
+                          const SizedBox(height: 12),
 
-                        // Panel 1: Quand ?
-                        _AccordionPanel(
-                          key: _panelKeys[_whenPanel],
-                          title: context.l10n.homeSearchWhen,
-                          subtitle: _getWhenSubtitle(filter),
-                          icon: Icons.calendar_today,
-                          isExpanded: _expandedPanel == _whenPanel,
-                          onTap: () => _expandPanel(_whenPanel),
-                          child: _WhenContent(filter: filter),
-                        ),
+                          // Panel 1: Quand ?
+                          _AccordionPanel(
+                            key: _panelKeys[_whenPanel],
+                            title: context.l10n.homeSearchWhen,
+                            subtitle: _getWhenSubtitle(filter),
+                            icon: Icons.calendar_today,
+                            isExpanded: _expandedPanel == _whenPanel,
+                            onTap: () => _expandPanel(_whenPanel),
+                            child: _WhenContent(filter: filter),
+                          ),
 
-                        const SizedBox(height: 12),
+                          const SizedBox(height: 12),
 
-                        // Panel 2: Quoi ?
-                        _AccordionPanel(
-                          key: _panelKeys[_whatPanel],
-                          title: context.l10n.homeSearchWhat,
-                          subtitle: _getWhatSubtitle(filter),
-                          icon: Icons.category,
-                          isExpanded: _expandedPanel == _whatPanel,
-                          onTap: () => _expandPanel(_whatPanel),
-                          child: _WhatContent(filter: filter),
-                        ),
+                          // Panel 2: Quoi ?
+                          _AccordionPanel(
+                            key: _panelKeys[_whatPanel],
+                            title: context.l10n.homeSearchWhat,
+                            subtitle: _getWhatSubtitle(filter),
+                            icon: Icons.category,
+                            isExpanded: _expandedPanel == _whatPanel,
+                            onTap: () => _expandPanel(_whatPanel),
+                            child: _WhatContent(filter: filter),
+                          ),
 
-                        const SizedBox(height: 12),
+                          const SizedBox(height: 12),
 
-                        _AccordionPanel(
-                          key: _panelKeys[_searchPanel],
-                          title: context.l10n.searchTitle,
-                          subtitle: _getSearchSubtitle(filter),
-                          icon: Icons.search,
-                          isExpanded: _expandedPanel == _searchPanel,
-                          onTap: () => _expandPanel(_searchPanel),
-                          child: _buildSearchInput(filter, filterNotifier),
-                        ),
+                          _AccordionPanel(
+                            key: _panelKeys[_searchPanel],
+                            title: context.l10n.searchTitle,
+                            subtitle: _getSearchSubtitle(filter),
+                            icon: Icons.search,
+                            isExpanded: _expandedPanel == _searchPanel,
+                            onTap: () => _expandPanel(_searchPanel),
+                            child: _buildSearchInput(filter, filterNotifier),
+                          ),
 
-                        const SizedBox(height: 12),
+                          const SizedBox(height: 12),
 
-                        _AccordionPanel(
-                          key: _panelKeys[_audiencePanel],
-                          title: context.l10n.searchForWhom,
-                          subtitle: _getAudienceSubtitle(filter),
-                          icon: Icons.people,
-                          isExpanded: _expandedPanel == _audiencePanel,
-                          onTap: () => _expandPanel(_audiencePanel),
-                          child: _AudienceContent(filter: filter),
-                        ),
+                          _AccordionPanel(
+                            key: _panelKeys[_audiencePanel],
+                            title: context.l10n.searchForWhom,
+                            subtitle: _getAudienceSubtitle(filter),
+                            icon: Icons.people,
+                            isExpanded: _expandedPanel == _audiencePanel,
+                            onTap: () => _expandPanel(_audiencePanel),
+                            child: _AudienceContent(filter: filter),
+                          ),
 
-                        const SizedBox(height: 12),
+                          const SizedBox(height: 12),
 
-                        _AccordionPanel(
-                          key: _panelKeys[_pricePanel],
-                          title: context.l10n.searchSectionBudget,
-                          subtitle: _getPriceSubtitle(filter),
-                          icon: Icons.euro,
-                          isExpanded: _expandedPanel == _pricePanel,
-                          onTap: () => _expandPanel(_pricePanel),
-                          child: _PriceContent(filter: filter),
-                        ),
+                          _AccordionPanel(
+                            key: _panelKeys[_pricePanel],
+                            title: context.l10n.searchSectionBudget,
+                            subtitle: _getPriceSubtitle(filter),
+                            icon: Icons.euro,
+                            isExpanded: _expandedPanel == _pricePanel,
+                            onTap: () => _expandPanel(_pricePanel),
+                            child: _PriceContent(filter: filter),
+                          ),
 
-                        const SizedBox(height: 12),
+                          const SizedBox(height: 12),
 
-                        _AccordionPanel(
-                          key: _panelKeys[_availabilityPanel],
-                          title: context.l10n.searchAvailabilityPanelTitle,
-                          subtitle: filter.availableOnly
-                              ? context.l10n.searchAvailablePlaces
-                              : context.l10n.searchAllActivities,
-                          icon: Icons.event_available,
-                          isExpanded: _expandedPanel == _availabilityPanel,
-                          onTap: () => _expandPanel(_availabilityPanel),
-                          child: _AvailabilityContent(filter: filter),
-                        ),
+                          _AccordionPanel(
+                            key: _panelKeys[_availabilityPanel],
+                            title: context.l10n.searchAvailabilityPanelTitle,
+                            subtitle: filter.availableOnly
+                                ? context.l10n.searchAvailablePlaces
+                                : context.l10n.searchAllActivities,
+                            icon: Icons.event_available,
+                            isExpanded: _expandedPanel == _availabilityPanel,
+                            onTap: () => _expandPanel(_availabilityPanel),
+                            child: _AvailabilityContent(filter: filter),
+                          ),
 
-                        const SizedBox(height: 12),
+                          const SizedBox(height: 12),
 
-                        _AccordionPanel(
-                          key: _panelKeys[_refinePanel],
-                          title: context.l10n.searchRefineTitle,
-                          subtitle: _getRefineSubtitle(filter),
-                          icon: Icons.tune,
-                          isExpanded: _expandedPanel == _refinePanel,
-                          onTap: () => _expandPanel(_refinePanel),
-                          child: _RefineContent(filter: filter),
-                        ),
-                      ],
+                          _AccordionPanel(
+                            key: _panelKeys[_refinePanel],
+                            title: context.l10n.searchRefineTitle,
+                            subtitle: _getRefineSubtitle(filter),
+                            icon: Icons.tune,
+                            isExpanded: _expandedPanel == _refinePanel,
+                            onTap: () => _expandPanel(_refinePanel),
+                            child: _RefineContent(filter: filter),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
 
-          // Fixed footer
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: FilterFooterWithClear(
-              buttonText: context.l10n.searchAction,
-              buttonIcon: Icons.search,
-              activeFilterCount: _activeFilterCount,
-              hasFilters: filter.hasActiveFilters,
-              bottomPadding: bottomPadding,
-              onPressed: _handleSearch,
-              onClear: () {
-                filterNotifier.resetAll();
-                _searchController.clear();
-                setState(() {});
-              },
+            // Fixed footer
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: FilterFooterWithClear(
+                buttonText: context.l10n.searchAction,
+                buttonIcon: Icons.search,
+                activeFilterCount: _activeFilterCount,
+                hasFilters: filter.hasActiveFilters,
+                bottomPadding: bottomPadding,
+                onPressed: _handleSearch,
+                onClear: () {
+                  filterNotifier.resetAll();
+                  _searchController.clear();
+                  setState(() {});
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

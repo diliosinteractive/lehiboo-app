@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/events/domain/entities/event_question.dart';
 import 'package:lehiboo/features/events/domain/repositories/event_questions_repository.dart';
 import 'package:lehiboo/features/events/presentation/providers/event_questions_providers.dart';
@@ -34,9 +36,14 @@ void main() {
       (ref) => EventQuestionsActionsController(
         const _ServerCountQuestionsRepository(),
         ref,
+        ownerSession: ref.watch(authSessionKeyProvider),
       ),
     );
-    final container = ProviderContainer();
+    final container = ProviderContainer(
+      overrides: [
+        authSessionUserIdProvider.overrideWithValue('user-1'),
+      ],
+    );
     addTearDown(container.dispose);
 
     final updated = await container.read(provider.notifier).toggleHelpful(

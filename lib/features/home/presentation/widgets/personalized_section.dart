@@ -9,6 +9,7 @@ import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 import 'package:lehiboo/features/home/presentation/providers/user_location_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 // Note: Import commenté car la fonctionnalité favoris n'est pas encore utilisée dans le scoring
 // import 'package:lehiboo/features/favorites/presentation/providers/favorites_provider.dart';
 
@@ -67,81 +68,84 @@ class CategoryHistoryNotifier extends StateNotifier<Map<String, int>> {
 }
 
 /// Provider pour les activités personnalisées avec scoring
-final personalizedActivitiesProvider = AutoDisposeAsyncNotifierProvider<
-    PersonalizedActivitiesNotifier, List<ScoredActivity>>(
-  PersonalizedActivitiesNotifier.new,
-);
-
-class PersonalizedActivitiesNotifier
-    extends AutoDisposeAsyncNotifier<List<ScoredActivity>> {
-  @override
-  Future<List<ScoredActivity>> build() async {
-    final allActivities = await ref.watch(homeActivitiesProvider.future);
-    final todayActivities = await ref.watch(homeTodayActivitiesProvider.future);
-    final tomorrowActivities =
-        await ref.watch(homeTomorrowActivitiesProvider.future);
-
-    // Combine all activities
-    final activities = <Activity>{
-      ...allActivities,
-      ...todayActivities,
-      ...tomorrowActivities,
-    }.toList();
-
-    if (activities.isEmpty) return [];
-
-    // Get scoring factors
-    final categoryHistory = ref.watch(categoryHistoryProvider);
-    final userLocation = ref.watch(userLocationProvider).valueOrNull;
-
-    // Score each activity
-    final scored = activities.map((activity) {
-      double score = 0;
-
-      // +3 points if category was previously viewed
-      if (activity.category != null) {
-        final categoryScore = categoryHistory[activity.category!.slug] ?? 0;
-        score += (categoryScore * 0.3).clamp(0, 3);
-      }
-
-      // +2 points if within 10km (when location available)
-      if (userLocation != null && activity.city != null) {
-        if (activity.city!.name.toLowerCase() ==
-            userLocation.cityName?.toLowerCase()) {
-          score += 2;
-        }
-      }
-
-      // +0.5 point for free activities (user preference for deals)
-      if (activity.isAuthoritativelyFree) {
-        score += 0.5;
-      }
-
-      // +1 point if activity is today or tomorrow
-      if (activity.nextSlot != null) {
-        final now = DateTime.now();
-        final diff = activity.nextSlot!.startDateTime.difference(now);
-        if (diff.inDays <= 1 && diff.inHours > 0) {
-          score += 1;
-        }
-      }
-
-      return ScoredActivity(activity: activity, score: score);
-    }).toList();
-
-    // Sort by score descending
-    scored.sort((a, b) => b.score.compareTo(a.score));
-
-    // Return top 10
-    ref.keepAlive();
-    return scored.take(10).toList();
+final personalizedActivitiesProvider =
+    Provider.autoDispose<AsyncValue<List<ScoredActivity>>>((ref) {
+  final activityStates = [
+    ref.watch(homeActivitiesProvider),
+    ref.watch(homeTodayActivitiesProvider),
+    ref.watch(homeTomorrowActivitiesProvider),
+  ];
+  for (final activityState in activityStates) {
+    if (activityState.hasError) {
+      return AsyncError(
+        activityState.error!,
+        activityState.stackTrace ?? StackTrace.current,
+      );
+    }
+  }
+  if (activityStates.any((activityState) => !activityState.hasValue)) {
+    return const AsyncLoading();
   }
 
-  Future<void> refresh() async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() => build());
-  }
-}
+  final allActivities = activityStates[0].requireValue;
+  final todayActivities = activityStates[1].requireValue;
+  final tomorrowActivities = activityStates[2].requireValue;
+
+  // Combine all activities
+  final activities = <Activity>{
+    ...allActivities,
+    ...todayActivities,
+    ...tomorrowActivities,
+  }.toList();
+
+  if (activities.isEmpty) return const AsyncData([]);
+
+  // Get scoring factors
+  final categoryHistory = ref.watch(categoryHistoryProvider);
+  final userLocation = ref.watch(userLocationProvider).valueOrNull;
+
+  // Score each activity
+  final scored = activities.map((activity) {
+    double score = 0;
+
+    // +3 points if category was previously viewed
+    if (activity.category != null) {
+      final categoryScore = categoryHistory[activity.category!.slug] ?? 0;
+      score += (categoryScore * 0.3).clamp(0, 3);
+    }
+
+    // +2 points if within 10km (when location available)
+    if (userLocation != null && activity.city != null) {
+      if (activity.city!.name.toLowerCase() ==
+          userLocation.cityName?.toLowerCase()) {
+        score += 2;
+      }
+    }
+
+    // +0.5 point for free activities (user preference for deals)
+    if (activity.isAuthoritativelyFree) {
+      score += 0.5;
+    }
+
+    // +1 point if activity is today or tomorrow
+    if (activity.nextSlot != null) {
+      final now = DateTime.now();
+      final diff = activity.nextSlot!.startDateTime.difference(now);
+      if (diff.inDays <= 1 && diff.inHours > 0) {
+        score += 1;
+      }
+    }
+
+    return ScoredActivity(activity: activity, score: score);
+  }).toList();
+
+  // Sort by score descending
+  scored.sort((a, b) => b.score.compareTo(a.score));
+
+  // Return top 10
+  ref.keepAlive();
+  return AsyncData(scored.take(10).toList());
+});
 
 /// Activity with a personalization score
 class ScoredActivity {
@@ -214,7 +218,7 @@ class PersonalizedSection extends ConsumerWidget {
                     onPressed: () => context.push('/search'),
                     child: Text(
                       context.l10n.homeViewAll,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Color(0xFFFF601F),
                         fontSize: 14,
                       ),
@@ -241,6 +245,7 @@ class PersonalizedSection extends ConsumerWidget {
 
   Widget _buildPersonalizedGrid(
       List<ScoredActivity> activities, WidgetRef ref) {
+    final renderedEventsSession = ref.watch(authSessionKeyProvider);
     // Take first 4 for the grid
     final gridActivities = activities.take(4).toList();
 
@@ -267,6 +272,7 @@ class PersonalizedSection extends ConsumerWidget {
           },
           child: EventCard(
             activity: scored.activity,
+            ownerSession: renderedEventsSession,
             heroTagPrefix: 'personalized',
           ),
         );

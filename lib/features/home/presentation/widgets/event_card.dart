@@ -6,10 +6,12 @@ import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/favorites/presentation/widgets/favorite_button.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/home/presentation/utils/home_l10n_formatters.dart';
 
 class EventCard extends ConsumerWidget {
   final Activity activity;
+  final AuthSessionKey ownerSession;
   final bool isCompact;
   final bool isToday;
   final bool isTomorrow;
@@ -39,6 +41,7 @@ class EventCard extends ConsumerWidget {
   const EventCard({
     super.key,
     required this.activity,
+    required this.ownerSession,
     this.isCompact = false,
     this.isToday = false,
     this.isTomorrow = false,
@@ -53,6 +56,7 @@ class EventCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: () {
+        if (!identical(ref.read(authSessionKeyProvider), ownerSession)) return;
         debugPrint('Tapped activity: ${activity.id} - ${activity.title}');
         // Activity-based surface: password gate handled by detail screen's
         // locked-state fallback (no isPasswordProtected on Activity).
@@ -130,6 +134,7 @@ class EventCard extends ConsumerWidget {
           right: 12,
           child: FavoriteButton(
             event: _activityToEvent(),
+            ownerSession: ownerSession,
             iconSize: 18,
             containerSize: 32,
             forceFilled: forceFavoriteFilled,

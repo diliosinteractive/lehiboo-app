@@ -8,6 +8,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../../core/l10n/l10n.dart';
 import '../../../../../core/themes/colors.dart';
+import '../../../../auth/presentation/providers/auth_session_key_provider.dart';
+import '../../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../../../memberships/domain/exceptions/members_only_exception.dart';
 import '../../../../petit_boo/presentation/widgets/animated_toast.dart';
 import '../../../domain/entities/event.dart';
@@ -30,20 +32,27 @@ class EventPasswordSheet extends ConsumerStatefulWidget {
     BuildContext context, {
     required String identifier,
     required Future<Event> Function(String password) onSubmit,
+    required AuthSessionKey ownerSession,
     String? eventTitle,
   }) {
     return showModalBottomSheet<Event>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => AnimatedPadding(
-        duration: const Duration(milliseconds: 150),
-        curve: Curves.easeOut,
-        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
-        child: EventPasswordSheet(
-          identifier: identifier,
-          onSubmit: onSubmit,
-          eventTitle: eventTitle,
+      builder: (ctx) => AccountBoundRouteGuard<Event>(
+        ownerAccountId: ownerSession.accountId,
+        ownerSession: ownerSession,
+        builder: (guardedContext) => AnimatedPadding(
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOut,
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(guardedContext).bottom,
+          ),
+          child: EventPasswordSheet(
+            identifier: identifier,
+            onSubmit: onSubmit,
+            eventTitle: eventTitle,
+          ),
         ),
       ),
     );

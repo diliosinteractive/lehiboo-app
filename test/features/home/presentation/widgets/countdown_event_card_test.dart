@@ -13,15 +13,6 @@ class _FakeFavoritesRepository implements FavoritesRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class _FakeHomeTodayActivitiesNotifier extends HomeTodayActivitiesNotifier {
-  _FakeHomeTodayActivitiesNotifier(this.activities);
-
-  final List<Activity> activities;
-
-  @override
-  Future<List<Activity>> build() async => activities;
-}
-
 Activity _urgentDiscoveryActivity({
   required String id,
   required DiscoveryPricingType pricingType,
@@ -70,11 +61,12 @@ void main() {
         ProviderScope(
           overrides: [
             isAuthenticatedProvider.overrideWithValue(false),
+            authSessionUserIdProvider.overrideWithValue(null),
             favoritesRepositoryProvider.overrideWithValue(
               _FakeFavoritesRepository(),
             ),
             homeTodayActivitiesProvider.overrideWith(
-              () => _FakeHomeTodayActivitiesNotifier(activities),
+              (ref) => AsyncData(activities),
             ),
           ],
           child: MaterialApp(
@@ -117,12 +109,13 @@ void main() {
       ProviderScope(
         overrides: [
           isAuthenticatedProvider.overrideWithValue(false),
+          authSessionUserIdProvider.overrideWithValue(null),
           favoritesRepositoryProvider.overrideWithValue(
             _FakeFavoritesRepository(),
           ),
           homeNowProvider.overrideWithValue(() => now),
           homeTodayActivitiesProvider.overrideWith(
-            () => _FakeHomeTodayActivitiesNotifier([activity]),
+            (ref) => AsyncData([activity]),
           ),
         ],
         child: MaterialApp(

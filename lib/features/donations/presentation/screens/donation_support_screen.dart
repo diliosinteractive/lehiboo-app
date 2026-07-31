@@ -43,20 +43,71 @@ class _DonationSupportScreenState extends ConsumerState<DonationSupportScreen> {
   String? _errorMessage;
 
   late final ConfettiController _confettiController;
+  late String? _sessionAccountId;
+
+  /// Monotonic token preventing an older async flow from becoming current
+  /// again after an A -> B -> A session sequence.
+  int _operationGeneration = 0;
 
   @override
   void initState() {
     super.initState();
     _confettiController =
         ConfettiController(duration: const Duration(seconds: 3));
-    final user = ref.read(authProvider).user;
-    if (user != null) {
-      _emailController.text = user.email;
-      final displayName = user.displayName.trim();
-      if (displayName.isNotEmpty) {
-        _nameController.text = displayName;
-      }
+    _sessionAccountId = ref.read(authSessionUserIdProvider);
+    _prefillContactForSession(_sessionAccountId);
+
+    ref.listenManual<String?>(authSessionUserIdProvider, (_, next) {
+      if (next == _sessionAccountId) return;
+
+      _sessionAccountId = next;
+      _operationGeneration++;
+      _confettiController.stop();
+      FocusManager.instance.primaryFocus?.unfocus();
+
+      // Every draft and result on this public route belongs to the exact
+      // nullable session that created it. A guest therefore gets a clean
+      // form, while a newly authenticated account gets only its own contact
+      // details.
+      _emailController.clear();
+      _nameController.clear();
+      _customAmountController.clear();
+      _prefillContactForSession(next);
+
+      if (!mounted) return;
+      setState(() {
+        _amount = 2;
+        _isProcessing = false;
+        _success = false;
+        _completedAmount = 0;
+        _errorMessage = null;
+      });
+    });
+  }
+
+  void _prefillContactForSession(String? accountId) {
+    if (accountId == null) return;
+
+    final auth = ref.read(authProvider);
+    final user = auth.isAuthenticated && auth.user?.id.trim() == accountId
+        ? auth.user
+        : null;
+    if (user == null) return;
+
+    _emailController.text = user.email;
+    final displayName = user.displayName.trim();
+    if (displayName.isNotEmpty) {
+      _nameController.text = displayName;
     }
+  }
+
+  int _beginOperation() => ++_operationGeneration;
+
+  bool _ownsOperation(String? accountId, int generation) {
+    return mounted &&
+        generation == _operationGeneration &&
+        accountId == _sessionAccountId &&
+        ref.read(authSessionUserIdProvider) == accountId;
   }
 
   @override
@@ -113,22 +164,31 @@ class _DonationSupportScreenState extends ConsumerState<DonationSupportScreen> {
       return;
     }
 
+    // Capture every value before the first await. Text controllers and
+    // inherited localization/context state may already belong to another
+    // account when a network response completes.
+    final nameValue = _nameController.text.trim();
+    final name = nameValue.isEmpty ? null : nameValue;
+    final locale = context.appLanguageCode;
+    final l10n = context.l10n;
+    final accountId = _sessionAccountId;
+    final generation = _beginOperation();
+    final repo = ref.read(donationsRepositoryProvider);
+
     setState(() {
       _isProcessing = true;
       _errorMessage = null;
     });
 
     try {
-      final repo = ref.read(donationsRepositoryProvider);
       final checkout = await repo.createDonation(
         amount: amount,
         email: email,
-        name: _nameController.text.trim().isEmpty
-            ? null
-            : _nameController.text.trim(),
-        locale: context.appLanguageCode,
+        name: name,
+        locale: locale,
         sourceScreen: 'settings',
       );
+      if (!_ownsOperation(accountId, generation)) return;
 
       final ps = checkout.paymentSheet;
       await Stripe.instance.initPaymentSheet(
@@ -139,14 +199,17 @@ class _DonationSupportScreenState extends ConsumerState<DonationSupportScreen> {
           customerEphemeralKeySecret: ps.hasCustomer ? ps.ephemeralKey : null,
         ),
       );
+      if (!_ownsOperation(accountId, generation)) return;
 
       // iOS : laisser l'UI se stabiliser avant que Stripe ne parcoure la
       // hiérarchie de vues (même précaution que le checkout booking).
       await Future<void>.delayed(const Duration(milliseconds: 500));
+      if (!_ownsOperation(accountId, generation)) return;
       await WidgetsBinding.instance.endOfFrame;
-      if (!mounted) return;
+      if (!_ownsOperation(accountId, generation)) return;
 
       await Stripe.instance.presentPaymentSheet();
+      if (!_ownsOperation(accountId, generation)) return;
 
       // Paiement accepté côté Stripe. Le webhook fait foi ; on force juste une
       // réconciliation immédiate en best-effort (sans bloquer le succès).
@@ -162,7 +225,7 @@ class _DonationSupportScreenState extends ConsumerState<DonationSupportScreen> {
         }
       }
 
-      if (!mounted) return;
+      if (!_ownsOperation(accountId, generation)) return;
       HapticFeedback.heavyImpact();
       setState(() {
         _isProcessing = false;
@@ -171,21 +234,21 @@ class _DonationSupportScreenState extends ConsumerState<DonationSupportScreen> {
       });
       _confettiController.play();
     } on StripeException catch (e) {
-      if (!mounted) return;
+      if (!_ownsOperation(accountId, generation)) return;
       setState(() {
         _isProcessing = false;
         _errorMessage = OrderCheckoutErrorMapper.stripeUserMessage(
           e,
-          context.l10n,
+          l10n,
         );
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!_ownsOperation(accountId, generation)) return;
       setState(() {
         _isProcessing = false;
         _errorMessage = ApiResponseHandler.extractError(
           e,
-          fallback: context.l10n.donationsCheckoutFailed,
+          fallback: l10n.donationsCheckoutFailed,
         );
       });
     }
@@ -312,6 +375,7 @@ class _DonationSupportScreenState extends ConsumerState<DonationSupportScreen> {
           ),
           const SizedBox(height: 16),
           TextField(
+            key: const ValueKey('donation-custom-amount-field'),
             controller: _customAmountController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [
@@ -405,12 +469,14 @@ class _DonationSupportScreenState extends ConsumerState<DonationSupportScreen> {
           ),
           const SizedBox(height: 16),
           TextField(
+            key: const ValueKey('donation-email-field'),
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             decoration: _inputDecoration(context.l10n.donationsEmailLabel),
           ),
           const SizedBox(height: 12),
           TextField(
+            key: const ValueKey('donation-name-field'),
             controller: _nameController,
             textCapitalization: TextCapitalization.words,
             decoration: _inputDecoration(context.l10n.donationsNameLabel),
@@ -442,6 +508,7 @@ class _DonationSupportScreenState extends ConsumerState<DonationSupportScreen> {
 
   Widget _buildError(BuildContext context, String message) {
     return Container(
+      key: const ValueKey('donation-error'),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.red.withValues(alpha: 0.1),
@@ -487,6 +554,7 @@ class _DonationSupportScreenState extends ConsumerState<DonationSupportScreen> {
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton(
+              key: const ValueKey('donation-submit'),
               onPressed: _isProcessing ? null : _onDonatePressed,
               style: ElevatedButton.styleFrom(
                 backgroundColor: HbColors.brandPrimary,
@@ -531,6 +599,7 @@ class _DonationSupportScreenState extends ConsumerState<DonationSupportScreen> {
 
   Widget _buildSuccessView(BuildContext context) {
     return Stack(
+      key: const ValueKey('donation-success'),
       children: [
         SafeArea(
           child: Padding(

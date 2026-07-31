@@ -12,6 +12,8 @@ import 'package:lehiboo/features/petit_boo/presentation/providers/engagement_pro
 import 'package:lehiboo/features/petit_boo/presentation/widgets/animated_toast.dart';
 import 'package:lehiboo/features/gamification/data/datasources/gamification_api_datasource.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import '../providers/filter_provider.dart';
 import '../../domain/models/event_filter.dart';
 import '../widgets/airbnb_search_bar.dart';
@@ -45,6 +47,9 @@ class SearchScreen extends ConsumerStatefulWidget {
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   final ScrollController _scrollController = ScrollController();
+  late String? _lastAuthAccountId;
+  int _authIdentityGeneration = 0;
+  late final ProviderSubscription<AuthState> _authSubscription;
 
   /// Signature du dernier filtre pour lequel `search_no_results` a été loggué,
   /// pour ne pas refire l'event à chaque rebuild tant que le filtre est inchangé.
@@ -73,9 +78,24 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _lastAuthAccountId = _authenticatedAccountId(ref.read(authProvider));
+    _authSubscription = ref.listenManual<AuthState>(
+      authProvider,
+      (_, next) {
+        final nextAccountId = _authenticatedAccountId(next);
+        if (nextAccountId == _lastAuthAccountId) return;
+        _lastAuthAccountId = nextAccountId;
+        _authIdentityGeneration++;
+        _loggedNoResultsKey = null;
+      },
+    );
+    final initialSessionGeneration = _authIdentityGeneration;
 
     // Initialize filters if provided
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || initialSessionGeneration != _authIdentityGeneration) {
+        return;
+      }
       final filterNotifier = ref.read(eventFilterProvider.notifier);
       if (widget.initialFilter != null) {
         filterNotifier.applyFilters(widget.initialFilter!);
@@ -127,8 +147,20 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   void dispose() {
+    _authSubscription.close();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  String? _authenticatedAccountId(AuthState auth) {
+    if (!auth.isAuthenticated) return null;
+    final accountId = auth.user?.id.trim();
+    return accountId == null || accountId.isEmpty ? null : accountId;
+  }
+
+  bool _ownsAuthGeneration(String ownerAccountId, int generation) {
+    return _authIdentityGeneration == generation &&
+        ref.read(authSessionUserIdProvider) == ownerAccountId;
   }
 
   /// Crédite l'user (20 H, 1×/catégorie/lifetime, cap 5/jour) à la 1ère
@@ -172,6 +204,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   Future<void> _saveCurrentSearch(BuildContext context,
       {bool isAlert = false}) async {
+    final initiatingAccountId = ref.read(authSessionUserIdProvider);
+    final initiatingGeneration = _authIdentityGeneration;
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
@@ -180,6 +214,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (!allowed) return;
     if (!context.mounted) return;
 
+    final ownerAccountId = ref.read(authSessionUserIdProvider);
+    if (ownerAccountId == null ||
+        (initiatingAccountId != null &&
+            initiatingAccountId != ownerAccountId) ||
+        (initiatingAccountId == null
+            ? _authIdentityGeneration != initiatingGeneration + 1
+            : _authIdentityGeneration != initiatingGeneration)) {
+      return;
+    }
+    final ownerGeneration = _authIdentityGeneration;
+
     final filter = ref.read(eventFilterProvider);
     final alertsNotifier = ref.read(alertsProvider.notifier);
 
@@ -187,10 +232,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final result = await SaveSearchSheet.show(
       context,
       filter: filter,
+      ownerAccountId: ownerAccountId,
       isNameAlreadyUsed: alertsNotifier.isNameAlreadyUsed,
     );
 
-    if (result == null) return; // User cancelled
+    if (result == null ||
+        !context.mounted ||
+        !_ownsAuthGeneration(ownerAccountId, ownerGeneration) ||
+        !identical(ref.read(alertsProvider.notifier), alertsNotifier)) {
+      return;
+    }
 
     // Call API via provider with explicit push/email params. The notifier
     // rethrows failures so success feedback is only shown after persistence.
@@ -202,7 +253,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         enableEmail: result.enableEmail,
       );
     } catch (error) {
-      if (!context.mounted) return;
+      if (!context.mounted ||
+          !_ownsAuthGeneration(ownerAccountId, ownerGeneration) ||
+          !identical(ref.read(alertsProvider.notifier), alertsNotifier)) {
+        return;
+      }
       PetitBooToast.error(
         context,
         ApiResponseHandler.extractError(
@@ -213,7 +268,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       return;
     }
 
-    if (!context.mounted) return;
+    if (!context.mounted ||
+        !_ownsAuthGeneration(ownerAccountId, ownerGeneration) ||
+        !identical(ref.read(alertsProvider.notifier), alertsNotifier)) {
+      return;
+    }
 
     final hasNotifications = result.enablePush || result.enableEmail;
     PetitBooToast.success(
@@ -233,6 +292,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget build(BuildContext context) {
     final filteredEvents = ref.watch(filteredEventsProvider);
     final filter = ref.watch(eventFilterProvider);
+    final renderedEventsSession = ref.watch(authSessionKeyProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -425,6 +485,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     filter: filter,
                     context: context,
                     ref: ref,
+                    ownerSession: renderedEventsSession,
                   ),
                 );
               },
@@ -450,6 +511,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       filter: filter,
                       context: context,
                       ref: ref,
+                      ownerSession: renderedEventsSession,
                     ),
                   );
                 }
@@ -500,6 +562,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     required EventFilter filter,
     required BuildContext context,
     required WidgetRef ref,
+    required AuthSessionKey ownerSession,
   }) {
     final displayCount = totalItems > 0 ? totalItems : activities.length;
     return [
@@ -563,6 +626,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           delegate: SliverChildBuilderDelegate(
             (context, index) => EventCard(
               activity: activities[index],
+              ownerSession: ownerSession,
               isCompact: true,
               fillContainer: true,
             ),

@@ -28,6 +28,7 @@ import 'package:lehiboo/features/gamification/presentation/providers/gamificatio
 import 'package:lehiboo/features/gamification/presentation/widgets/hibon_counter_widget.dart';
 import 'package:lehiboo/features/booking/presentation/providers/order_cart_provider.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 
@@ -229,7 +230,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ),
       _safeRefresh(
         'personalized feed',
-        () => ref.refresh(personalizedFeedProvider.future).then<void>((_) {}),
+        () => ref.read(personalizedFeedProvider.notifier).refresh(),
       ),
       _safeRefresh(
         'alerts',
@@ -238,9 +239,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       _safeRefresh(
         'Hibons',
         () async {
+          final ownerSession = ref.read(gamificationSessionProvider);
+          if (ownerSession == null) return;
           await Future.wait<void>([
-            ref.read(gamificationNotifierProvider.notifier).refresh(),
-            ref.refresh(hibonsBalanceProvider.future).then<void>((_) {}),
+            ref
+                .read(gamificationNotifierProvider(ownerSession).notifier)
+                .refresh(expectedSession: ownerSession),
+            ref
+                .refresh(hibonsBalanceProvider(ownerSession).future)
+                .then<void>((_) {}),
           ]);
         },
       ),
@@ -622,6 +629,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     bool isTomorrow = false,
     bool classifyBySlotDate = false,
   }) {
+    final renderedEventsSession = ref.watch(authSessionKeyProvider);
     return activitiesAsyncValue.when(
       skipError: true,
       data: (activities) {
@@ -654,6 +662,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 margin: const EdgeInsets.only(right: 16),
                 child: EventCard(
                   activity: activity,
+                  ownerSession: renderedEventsSession,
                   isCompact: true,
                   isToday: cardIsToday,
                   isTomorrow: cardIsTomorrow,

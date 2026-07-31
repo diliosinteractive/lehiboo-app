@@ -7,12 +7,22 @@ import 'package:lehiboo/core/analytics/analytics_provider.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/gamification/data/datasources/gamification_api_datasource.dart';
 import 'package:share_plus/share_plus.dart';
 
+typedef EventShareLauncher = Future<ShareResult> Function(ShareParams params);
+
+/// Test seam around the native share UI, whose result can arrive long after
+/// the event page's authenticated owner has changed.
+final eventShareLauncherProvider = Provider<EventShareLauncher>((ref) {
+  return SharePlus.instance.share;
+});
+
 class ShareButton extends ConsumerWidget {
   final Event event;
+  final AuthSessionKey ownerSession;
   final String? shareUrl;
   final Color? backgroundColor;
   final Color? iconColor;
@@ -20,6 +30,7 @@ class ShareButton extends ConsumerWidget {
   const ShareButton({
     super.key,
     required this.event,
+    required this.ownerSession,
     this.shareUrl,
     this.backgroundColor,
     this.iconColor,
@@ -41,12 +52,17 @@ class ShareButton extends ConsumerWidget {
   }
 
   Future<void> _handleShare(BuildContext context, WidgetRef ref) async {
+    // The button may still be mounted for one frame after an account switch.
+    // Never open a user-owned action from an event rendered for another exact
+    // auth session (including a rapid A -> B -> A replacement).
+    if (!identical(ref.read(authSessionKeyProvider), ownerSession)) return;
+
     HapticFeedback.lightImpact();
 
     final text = _buildShareText(context, ref);
     late final ShareResult shareResult;
     try {
-      shareResult = await SharePlus.instance.share(
+      shareResult = await ref.read(eventShareLauncherProvider)(
         ShareParams(text: text, subject: event.title),
       );
     } catch (_) {
@@ -58,6 +74,9 @@ class ShareButton extends ConsumerWidget {
     }
 
     if (!context.mounted) return;
+    // Native share UIs are unbounded async work. If auth changed while one was
+    // open, its analytics and Hibons reward still belong to the old session.
+    if (!identical(ref.read(authSessionKeyProvider), ownerSession)) return;
     if (shareResult.status == ShareResultStatus.dismissed) return;
     ref.read(analyticsServiceProvider).logEvent(
       AnalyticsEvent.eventShared,

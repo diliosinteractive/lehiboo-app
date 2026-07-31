@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/shared/widgets/animations/pulse_animation.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -20,10 +22,12 @@ class EventLocationMap extends StatefulWidget {
   final double? userLatitude;
   final double? userLongitude;
   final bool expandable;
+  final AuthSessionKey ownerSession;
 
   const EventLocationMap({
     super.key,
     required this.event,
+    required this.ownerSession,
     this.userLatitude,
     this.userLongitude,
     this.expandable = true,
@@ -384,6 +388,7 @@ class _EventLocationMapState extends State<EventLocationMap> {
   }
 
   void _toggleExpand() {
+    if (!_ownsSession()) return;
     HapticFeedback.lightImpact();
     setState(() {
       _isExpanded = !_isExpanded;
@@ -391,7 +396,7 @@ class _EventLocationMapState extends State<EventLocationMap> {
   }
 
   Future<void> _openMaps() async {
-    if (!_hasCoordinates) return;
+    if (!_hasCoordinates || !_ownsSession()) return;
 
     final url = Uri.https(
       'www.google.com',
@@ -401,8 +406,23 @@ class _EventLocationMapState extends State<EventLocationMap> {
         'query': _buildMapsQuery(),
       },
     );
-    if (await canLaunchUrl(url)) {
+    final canLaunch = await canLaunchUrl(url);
+    if (!mounted || !_ownsSession()) return;
+    if (canLaunch) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  bool _ownsSession() {
+    if (!mounted) return false;
+    try {
+      return identical(
+        ProviderScope.containerOf(context, listen: false)
+            .read(authSessionKeyProvider),
+        widget.ownerSession,
+      );
+    } catch (_) {
+      return false;
     }
   }
 }

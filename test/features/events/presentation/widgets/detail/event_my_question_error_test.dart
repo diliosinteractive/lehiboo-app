@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/events/domain/entities/event_question.dart';
 import 'package:lehiboo/features/events/domain/repositories/event_questions_repository.dart';
 import 'package:lehiboo/features/events/presentation/providers/event_questions_providers.dart';
@@ -21,10 +22,13 @@ void main() {
             if (attempts == 1) throw StateError('status unavailable');
             return null;
           }),
-          child: const Scaffold(
-            body: EventQASection(
-              eventSlug: 'event',
-              eventTitle: 'Event',
+          child: Consumer(
+            builder: (context, ref, _) => Scaffold(
+              body: EventQASection(
+                eventSlug: 'event',
+                eventTitle: 'Event',
+                ownerSession: ref.watch(authSessionKeyProvider),
+              ),
             ),
           ),
         ),
@@ -128,14 +132,9 @@ List<Override> _overrides(
 ) {
   return <Override>[
     isAuthenticatedProvider.overrideWithValue(true),
+    authSessionUserIdProvider.overrideWithValue('user-1'),
     eventQuestionsRepositoryProvider.overrideWithValue(
-      const _EmptyQuestionsRepository(),
-    ),
-    eventQuestionsPreviewProvider.overrideWith(
-      (ref, eventSlug) async => const QuestionsPage(),
-    ),
-    myQuestionProvider.overrideWith(
-      (ref, eventSlug) => loadMyQuestion(),
+      _EmptyQuestionsRepository(loadMyQuestion),
     ),
   ];
 }
@@ -156,7 +155,9 @@ Widget _localizedApp({
 }
 
 class _EmptyQuestionsRepository implements EventQuestionsRepository {
-  const _EmptyQuestionsRepository();
+  const _EmptyQuestionsRepository(this._loadMyQuestion);
+
+  final Future<EventQuestion?> Function() _loadMyQuestion;
 
   @override
   Future<QuestionsPage> getQuestions(
@@ -166,6 +167,9 @@ class _EmptyQuestionsRepository implements EventQuestionsRepository {
   }) async {
     return const QuestionsPage();
   }
+
+  @override
+  Future<EventQuestion?> getMyQuestion(String eventSlug) => _loadMyQuestion();
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

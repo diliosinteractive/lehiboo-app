@@ -20,7 +20,7 @@ import 'user_location_provider.dart';
 import '../../../../features/events/data/models/home_feed_response_dto.dart'
     show HomeFeedDataDto;
 import '../../../events/data/mappers/event_mapper.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 
 /// Maximum age of Home data while the provider remains cached.
 ///
@@ -76,181 +76,250 @@ mixin _RefreshableHomeProvider<T> on AutoDisposeAsyncNotifier<T> {
   }
 }
 
+typedef _OwnedHomeLoader<T> = Future<T> Function(
+  bool Function() ownsRequest,
+);
+
+/// A fresh controller is constructed synchronously at every opaque session
+/// boundary. This gives auth-optional event lists a truly blank loading state
+/// while the new account is fetched, rather than exposing AsyncNotifier's
+/// previous value during dependency-driven recomputation.
+abstract class HomeAsyncController<T> extends StateNotifier<AsyncValue<T>> {
+  HomeAsyncController(super.state);
+
+  Future<void> waitForInitialLoad();
+
+  Future<void> refresh();
+}
+
+class _SessionBoundHomeController<T> extends HomeAsyncController<T> {
+  _SessionBoundHomeController({
+    required _OwnedHomeLoader<T> load,
+    required DateTime Function() now,
+    required KeepAliveLink cacheLink,
+    required VoidCallback invalidate,
+  })  : _loadActivities = load,
+        _now = now,
+        _cacheLink = cacheLink,
+        _invalidate = invalidate,
+        super(const AsyncLoading()) {
+    _initialLoad = _load();
+    unawaited(_initialLoad);
+  }
+
+  final _OwnedHomeLoader<T> _loadActivities;
+  final DateTime Function() _now;
+  final KeepAliveLink _cacheLink;
+  final VoidCallback _invalidate;
+  late final Future<void> _initialLoad;
+  Future<void>? _refreshInFlight;
+  Timer? _freshnessTimer;
+  int _requestGeneration = 0;
+
+  @override
+  Future<void> waitForInitialLoad() => _initialLoad;
+
+  bool _owns(int generation) => mounted && generation == _requestGeneration;
+
+  void _scheduleFreshnessExpiry() {
+    final now = _now();
+    final nextDay = DateTime(now.year, now.month, now.day + 1);
+    final untilNextDay = nextDay.difference(now);
+    final delay =
+        untilNextDay < homeDataFreshness ? untilNextDay : homeDataFreshness;
+    _freshnessTimer?.cancel();
+    _freshnessTimer = Timer(delay, () {
+      if (!mounted) return;
+      _cacheLink.close();
+      _invalidate();
+    });
+  }
+
+  Future<void> _load({
+    bool preservePrevious = false,
+    bool rethrowFailure = false,
+  }) async {
+    if (!mounted) return;
+    final requestGeneration = ++_requestGeneration;
+    final previous = state;
+    _scheduleFreshnessExpiry();
+    state = preservePrevious
+        ? AsyncLoading<T>().copyWithPrevious(previous)
+        : AsyncLoading<T>();
+    try {
+      final activities = await _loadActivities(
+        () => _owns(requestGeneration),
+      );
+      if (!_owns(requestGeneration)) return;
+      state = AsyncData(activities);
+    } catch (error, stackTrace) {
+      if (!_owns(requestGeneration)) return;
+      state = preservePrevious
+          ? AsyncError<T>(
+              error,
+              stackTrace,
+            ).copyWithPrevious(previous)
+          : AsyncError<T>(error, stackTrace);
+      if (rethrowFailure) {
+        Error.throwWithStackTrace(error, stackTrace);
+      }
+    }
+  }
+
+  @override
+  Future<void> refresh() {
+    return _refreshInFlight ??= _load(
+      preservePrevious: true,
+      rethrowFailure: true,
+    ).whenComplete(() {
+      _refreshInFlight = null;
+    });
+  }
+
+  @override
+  void dispose() {
+    _requestGeneration++;
+    _freshnessTimer?.cancel();
+    _cacheLink.close();
+    super.dispose();
+  }
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Home Feed
 // ──────────────────────────────────────────────────────────────────────────────
 
-final homeFeedProvider =
-    AutoDisposeAsyncNotifierProvider<HomeFeedNotifier, HomeFeedDataDto>(
-  HomeFeedNotifier.new,
-);
-
-class HomeFeedNotifier extends AutoDisposeAsyncNotifier<HomeFeedDataDto>
-    with _RefreshableHomeProvider<HomeFeedDataDto> {
-  @override
-  Future<HomeFeedDataDto> build() async {
-    // The endpoint is auth-optional and can include member-only activities.
-    // Key the cache by identity so logout/account switching immediately drops
-    // the previous account's feed and Riverpod discards any late response.
-    ref.watch(
-      authProvider.select(
-        (state) => state.isAuthenticated ? state.user?.id : null,
-      ),
-    );
-    final eventRepository = ref.watch(eventRepositoryProvider);
-    final userLocationAsync = ref.watch(userLocationProvider);
-    final userLocation = userLocationAsync.valueOrNull;
-    final now = ref.watch(homeNowProvider)();
-
-    scheduleBoundedRefresh(now: now, refreshAtMidnight: true);
-    return eventRepository.getHomeFeed(
-      lat: userLocation?.lat,
-      lng: userLocation?.lng,
-      radius: userLocation != null ? 30 : null,
-      limit: 10,
-    );
-  }
-
-  Future<void> refresh() => reload();
-}
+final homeFeedProvider = StateNotifierProvider.autoDispose<
+    HomeAsyncController<HomeFeedDataDto>, AsyncValue<HomeFeedDataDto>>((ref) {
+  // The endpoint is auth-optional and can include member-only activities.
+  // Reconstructing this controller synchronously prevents account A's feed
+  // from remaining visible while account B is loading.
+  ref.watch(authSessionKeyProvider);
+  final eventRepository = ref.watch(eventRepositoryProvider);
+  final userLocation = ref.watch(userLocationProvider).valueOrNull;
+  final now = ref.watch(homeNowProvider);
+  return _SessionBoundHomeController<HomeFeedDataDto>(
+    now: now,
+    cacheLink: ref.keepAlive(),
+    invalidate: ref.invalidateSelf,
+    load: (ownsRequest) async {
+      final feed = await eventRepository.getHomeFeed(
+        lat: userLocation?.lat,
+        lng: userLocation?.lng,
+        radius: userLocation != null ? 30 : null,
+        limit: 10,
+      );
+      return feed;
+    },
+  );
+});
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Today's Activities (derived from Feed)
 // ──────────────────────────────────────────────────────────────────────────────
 
-final homeTodayActivitiesProvider = AutoDisposeAsyncNotifierProvider<
-    HomeTodayActivitiesNotifier, List<Activity>>(
-  HomeTodayActivitiesNotifier.new,
-);
-
-class HomeTodayActivitiesNotifier
-    extends AutoDisposeAsyncNotifier<List<Activity>>
-    with _RefreshableHomeProvider<List<Activity>> {
-  @override
-  Future<List<Activity>> build() async {
-    final now = ref.watch(homeNowProvider)();
-    scheduleBoundedRefresh(now: now, refreshAtMidnight: true);
-    final feed = await ref.watch(homeFeedProvider.future);
-
-    if (feed.today.isEmpty) return [];
-
+final homeTodayActivitiesProvider =
+    Provider.autoDispose<AsyncValue<List<Activity>>>((ref) {
+  return ref.watch(homeFeedProvider).whenData((feed) {
+    if (feed.today.isEmpty) return const <Activity>[];
     final events = feed.today.map(EventMapper.toEvent).toList();
-    final activities = EventToActivityMapper.toActivities(events);
-    return sortActivitiesChronologically(activities);
-  }
-
-  Future<void> refresh() => reload();
-}
+    return sortActivitiesChronologically(
+      EventToActivityMapper.toActivities(events),
+    );
+  });
+});
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Tomorrow's Activities (derived from Feed)
 // ──────────────────────────────────────────────────────────────────────────────
 
-final homeTomorrowActivitiesProvider = AutoDisposeAsyncNotifierProvider<
-    HomeTomorrowActivitiesNotifier, List<Activity>>(
-  HomeTomorrowActivitiesNotifier.new,
-);
-
-class HomeTomorrowActivitiesNotifier
-    extends AutoDisposeAsyncNotifier<List<Activity>>
-    with _RefreshableHomeProvider<List<Activity>> {
-  @override
-  Future<List<Activity>> build() async {
-    final now = ref.watch(homeNowProvider)();
-    scheduleBoundedRefresh(now: now, refreshAtMidnight: true);
-    final feed = await ref.watch(homeFeedProvider.future);
-
-    if (feed.tomorrow.isEmpty) return [];
-
+final homeTomorrowActivitiesProvider =
+    Provider.autoDispose<AsyncValue<List<Activity>>>((ref) {
+  return ref.watch(homeFeedProvider).whenData((feed) {
+    if (feed.tomorrow.isEmpty) return const <Activity>[];
     final events = feed.tomorrow.map(EventMapper.toEvent).toList();
-    final activities = EventToActivityMapper.toActivities(events);
-    return sortActivitiesChronologically(activities);
-  }
-
-  Future<void> refresh() => reload();
-}
+    return sortActivitiesChronologically(
+      EventToActivityMapper.toActivities(events),
+    );
+  });
+});
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Nearby Available Activities (location-aware, sorted by next slot)
 // ──────────────────────────────────────────────────────────────────────────────
 
-final homeNearbyAvailableActivitiesProvider = AutoDisposeAsyncNotifierProvider<
-    HomeNearbyAvailableActivitiesNotifier, List<Activity>>(
-  HomeNearbyAvailableActivitiesNotifier.new,
-);
-
-class HomeNearbyAvailableActivitiesNotifier
-    extends AutoDisposeAsyncNotifier<List<Activity>>
-    with _RefreshableHomeProvider<List<Activity>> {
-  static const int _querySize = 50;
-  static const int _maxCards = 10;
-  static const int _nearbyRadiusKm = 30;
-
-  @override
-  Future<List<Activity>> build() async {
-    final eventRepository = ref.watch(eventRepositoryProvider);
-    final userLocation = ref.watch(userLocationProvider).valueOrNull;
-    final now = ref.watch(homeNowProvider)();
-    scheduleBoundedRefresh(now: now, refreshAtMidnight: true);
-
-    if (userLocation != null) {
-      try {
-        final nearbyActivities = await _fetchAvailableActivities(
-          eventRepository,
-          now,
-          lat: userLocation.lat,
-          lng: userLocation.lng,
-          radius: _nearbyRadiusKm,
-        );
-
-        if (nearbyActivities.isNotEmpty) return nearbyActivities;
-      } catch (e) {
-        debugPrint('Nearby activities lookup failed, falling back: $e');
+final homeNearbyAvailableActivitiesProvider = StateNotifierProvider.autoDispose<
+    _SessionBoundHomeController<List<Activity>>,
+    AsyncValue<List<Activity>>>((ref) {
+  const nearbyRadiusKm = 30;
+  ref.watch(authSessionKeyProvider);
+  final eventRepository = ref.watch(eventRepositoryProvider);
+  final userLocation = ref.watch(userLocationProvider).valueOrNull;
+  final now = ref.watch(homeNowProvider);
+  return _SessionBoundHomeController<List<Activity>>(
+    now: now,
+    cacheLink: ref.keepAlive(),
+    invalidate: ref.invalidateSelf,
+    load: (ownsRequest) async {
+      final requestNow = now();
+      if (userLocation != null) {
+        try {
+          final nearbyActivities = await _fetchAvailableActivities(
+            eventRepository,
+            requestNow,
+            lat: userLocation.lat,
+            lng: userLocation.lng,
+            radius: nearbyRadiusKm,
+          );
+          if (!ownsRequest()) return const <Activity>[];
+          if (nearbyActivities.isNotEmpty) return nearbyActivities;
+        } catch (error) {
+          if (!ownsRequest()) return const <Activity>[];
+          debugPrint('Nearby activities lookup failed, falling back: $error');
+        }
       }
-    }
+      if (!ownsRequest()) return const <Activity>[];
+      return _fetchAvailableActivities(eventRepository, requestNow);
+    },
+  );
+});
 
-    final activities = await _fetchAvailableActivities(eventRepository, now);
+Future<List<Activity>> _fetchAvailableActivities(
+  EventRepository eventRepository,
+  DateTime now, {
+  double? lat,
+  double? lng,
+  int? radius,
+}) async {
+  const querySize = 50;
+  const maxCards = 10;
+  // Note: do NOT pass `availableOnly: true` — on prod, crawler-imported
+  // discovery events all have `available_capacity: 0`, which the backend
+  // treats as unavailable. We filter client-side via _isAvailableForHome
+  // so discovery events still surface here.
+  final result = await eventRepository.getEvents(
+    page: 1,
+    perPage: querySize,
+    lat: lat,
+    lng: lng,
+    radius: radius,
+    sort: 'date_asc',
+  );
 
-    return activities;
+  final seenEventIds = <String>{};
+  final activities = <Activity>[];
+
+  for (final event in result.events) {
+    if (!seenEventIds.add(event.id)) continue;
+
+    final activity = _activityWithNearestAvailableSlot(event, now);
+    if (activity == null || activity.nextSlot == null) continue;
+
+    activities.add(activity);
   }
 
-  Future<List<Activity>> _fetchAvailableActivities(
-    EventRepository eventRepository,
-    DateTime now, {
-    double? lat,
-    double? lng,
-    int? radius,
-  }) async {
-    // Note: do NOT pass `availableOnly: true` — on prod, crawler-imported
-    // discovery events all have `available_capacity: 0`, which the backend
-    // treats as unavailable. We filter client-side via _isAvailableForHome
-    // so discovery events still surface here.
-    final result = await eventRepository.getEvents(
-      page: 1,
-      perPage: _querySize,
-      lat: lat,
-      lng: lng,
-      radius: radius,
-      sort: 'date_asc',
-    );
-
-    final seenEventIds = <String>{};
-    final activities = <Activity>[];
-
-    for (final event in result.events) {
-      if (!seenEventIds.add(event.id)) continue;
-
-      final activity = _activityWithNearestAvailableSlot(event, now);
-      if (activity == null || activity.nextSlot == null) continue;
-
-      activities.add(activity);
-    }
-
-    activities.sort((a, b) => _slotStart(a).compareTo(_slotStart(b)));
-    return activities.take(_maxCards).toList();
-  }
-
-  Future<void> refresh() => reload();
+  activities.sort((a, b) => _slotStart(a).compareTo(_slotStart(b)));
+  return activities.take(maxCards).toList();
 }
 
 Activity? _activityWithNearestAvailableSlot(Event event, DateTime now) {
@@ -809,73 +878,59 @@ final savedSearchesProvider =
 // New Activities (recently published events)
 // ──────────────────────────────────────────────────────────────────────────────
 
-final homeNewActivitiesProvider =
-    AutoDisposeAsyncNotifierProvider<HomeNewActivitiesNotifier, List<Activity>>(
-  HomeNewActivitiesNotifier.new,
-);
+final homeNewActivitiesProvider = StateNotifierProvider.autoDispose<
+    _SessionBoundHomeController<List<Activity>>,
+    AsyncValue<List<Activity>>>((ref) {
+  const querySize = 50;
+  const maxCards = 10;
+  ref.watch(authSessionKeyProvider);
+  final eventRepository = ref.watch(eventRepositoryProvider);
+  final now = ref.watch(homeNowProvider);
+  return _SessionBoundHomeController<List<Activity>>(
+    now: now,
+    cacheLink: ref.keepAlive(),
+    invalidate: ref.invalidateSelf,
+    load: (ownsRequest) async {
+      final requestNow = now();
+      // See _isAvailableForHome — same rationale as
+      // homeNearbyAvailableActivitiesProvider.
+      final result = await eventRepository.getEvents(
+        page: 1,
+        perPage: querySize,
+        sort: 'published_at',
+        order: 'desc',
+      );
+      if (!ownsRequest()) return const <Activity>[];
 
-class HomeNewActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>>
-    with _RefreshableHomeProvider<List<Activity>> {
-  static const int _querySize = 50;
-  static const int _maxCards = 10;
+      final seenEventIds = <String>{};
+      final activities = <Activity>[];
+      for (final event in result.events) {
+        if (!seenEventIds.add(event.id)) continue;
+        final activity = _activityWithNearestAvailableSlot(event, requestNow);
+        if (activity == null || activity.nextSlot == null) continue;
+        activities.add(activity);
+      }
 
-  @override
-  Future<List<Activity>> build() async {
-    final eventRepository = ref.watch(eventRepositoryProvider);
-    final now = ref.watch(homeNowProvider)();
-    scheduleBoundedRefresh(now: now, refreshAtMidnight: true);
-    // See _isAvailableForHome — same rationale as homeNearbyAvailableActivitiesProvider.
-    final result = await eventRepository.getEvents(
-      page: 1,
-      perPage: _querySize,
-      sort: 'published_at',
-      order: 'desc',
-    );
-
-    final seenEventIds = <String>{};
-    final activities = <Activity>[];
-
-    for (final event in result.events) {
-      if (!seenEventIds.add(event.id)) continue;
-
-      final activity = _activityWithNearestAvailableSlot(event, now);
-      if (activity == null || activity.nextSlot == null) continue;
-
-      activities.add(activity);
-    }
-
-    return activities.take(_maxCards).toList();
-  }
-
-  Future<void> refresh() => reload();
-}
+      if (!ownsRequest()) return const <Activity>[];
+      return activities.take(maxCards).toList();
+    },
+  );
+});
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Recommended Activities (derived from Feed)
 // ──────────────────────────────────────────────────────────────────────────────
 
 final homeActivitiesProvider =
-    AutoDisposeAsyncNotifierProvider<HomeActivitiesNotifier, List<Activity>>(
-  HomeActivitiesNotifier.new,
-);
-
-class HomeActivitiesNotifier extends AutoDisposeAsyncNotifier<List<Activity>>
-    with _RefreshableHomeProvider<List<Activity>> {
-  @override
-  Future<List<Activity>> build() async {
-    final now = ref.watch(homeNowProvider)();
-    scheduleBoundedRefresh(now: now, refreshAtMidnight: true);
-    final feed = await ref.watch(homeFeedProvider.future);
-
-    if (feed.recommended.isEmpty) return [];
-
+    Provider.autoDispose<AsyncValue<List<Activity>>>((ref) {
+  return ref.watch(homeFeedProvider).whenData((feed) {
+    if (feed.recommended.isEmpty) return const <Activity>[];
     final events = feed.recommended.map(EventMapper.toEvent).toList();
-    final activities = EventToActivityMapper.toActivities(events);
-    return sortActivitiesChronologically(activities);
-  }
-
-  Future<void> refresh() => reload();
-}
+    return sortActivitiesChronologically(
+      EventToActivityMapper.toActivities(events),
+    );
+  });
+});
 
 @visibleForTesting
 List<Activity> sortActivitiesChronologically(List<Activity> activities) {

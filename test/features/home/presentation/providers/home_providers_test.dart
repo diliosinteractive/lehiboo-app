@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/domain/entities/city.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/events/data/models/event_dto.dart';
 import 'package:lehiboo/features/events/data/models/event_reference_data_dto.dart';
 import 'package:lehiboo/features/events/data/models/home_feed_response_dto.dart';
@@ -34,13 +35,15 @@ void main() {
       );
       final container = ProviderContainer(
         overrides: [
-          homeFeedProvider.overrideWith(() => _FakeHomeFeedNotifier(feed)),
+          homeFeedProvider.overrideWith(
+            (ref) => _FakeHomeFeedNotifier(feed),
+          ),
         ],
       );
       addTearDown(container.dispose);
 
       final activities =
-          await container.read(homeTodayActivitiesProvider.future);
+          container.read(homeTodayActivitiesProvider).requireValue;
 
       expect(activities.map((activity) => activity.slug), [
         'la-nuit-inoubliable',
@@ -75,13 +78,15 @@ void main() {
       );
       final container = ProviderContainer(
         overrides: [
-          homeFeedProvider.overrideWith(() => _FakeHomeFeedNotifier(feed)),
+          homeFeedProvider.overrideWith(
+            (ref) => _FakeHomeFeedNotifier(feed),
+          ),
         ],
       );
       addTearDown(container.dispose);
 
       final activities =
-          await container.read(homeTomorrowActivitiesProvider.future);
+          container.read(homeTomorrowActivitiesProvider).requireValue;
 
       expect(activities.map((activity) => activity.slug), [
         'tomorrow-early',
@@ -105,6 +110,7 @@ void main() {
       );
       final container = ProviderContainer(
         overrides: [
+          authSessionUserIdProvider.overrideWithValue(null),
           eventRepositoryProvider.overrideWithValue(repository),
         ],
       );
@@ -141,12 +147,16 @@ void main() {
       ]);
       final container = ProviderContainer(
         overrides: [
+          authSessionUserIdProvider.overrideWithValue(null),
           eventRepositoryProvider.overrideWithValue(repository),
         ],
       );
       addTearDown(container.dispose);
 
-      final activities = await container.read(homeNewActivitiesProvider.future);
+      await container
+          .read(homeNewActivitiesProvider.notifier)
+          .waitForInitialLoad();
+      final activities = container.read(homeNewActivitiesProvider).requireValue;
 
       expect(activities.map((activity) => activity.id), [
         'latest-future-long-way-out',
@@ -265,13 +275,14 @@ EventDto _feedEvent({
   );
 }
 
-class _FakeHomeFeedNotifier extends HomeFeedNotifier {
-  _FakeHomeFeedNotifier(this.feed);
-
-  final HomeFeedDataDto feed;
+class _FakeHomeFeedNotifier extends HomeAsyncController<HomeFeedDataDto> {
+  _FakeHomeFeedNotifier(HomeFeedDataDto feed) : super(AsyncData(feed));
 
   @override
-  Future<HomeFeedDataDto> build() async => feed;
+  Future<void> refresh() => Future.value();
+
+  @override
+  Future<void> waitForInitialLoad() => Future.value();
 }
 
 class _FakeEventRepository implements EventRepository {

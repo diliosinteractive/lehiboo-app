@@ -10,6 +10,7 @@ import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/favorites/presentation/widgets/favorite_button.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 import 'package:lehiboo/features/home/presentation/utils/home_l10n_formatters.dart';
 import 'package:lehiboo/features/home/presentation/widgets/home_section_title.dart';
@@ -51,6 +52,7 @@ Widget _buildActivityPrice(
 /// Affiche un timer en temps réel jusqu'à la date de l'événement ou la deadline de réservation
 class CountdownEventCard extends ConsumerStatefulWidget {
   final Activity activity;
+  final AuthSessionKey ownerSession;
 
   /// Date limite pour le countdown (deadline booking ou début de l'événement)
   final DateTime? deadline;
@@ -64,6 +66,7 @@ class CountdownEventCard extends ConsumerStatefulWidget {
   const CountdownEventCard({
     super.key,
     required this.activity,
+    required this.ownerSession,
     this.deadline,
     this.remainingSpots,
     this.urgencyMessage,
@@ -127,8 +130,15 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () =>
-          context.push('/event/${widget.activity.id}', extra: widget.activity),
+      onTap: () {
+        if (!identical(
+          ref.read(authSessionKeyProvider),
+          widget.ownerSession,
+        )) {
+          return;
+        }
+        context.push('/event/${widget.activity.id}', extra: widget.activity);
+      },
       child: Container(
         width: double.infinity,
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -338,6 +348,7 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
                   right: 12,
                   child: FavoriteButton(
                     event: _activityToEvent(),
+                    ownerSession: widget.ownerSession,
                     iconSize: 20,
                     containerSize: 36,
                   ),
@@ -551,18 +562,20 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
 }
 
 /// Card avec design complet + countdown pour carousel horizontal
-class _FullCountdownCard extends StatefulWidget {
+class _FullCountdownCard extends ConsumerStatefulWidget {
   final Activity activity;
+  final AuthSessionKey ownerSession;
 
   const _FullCountdownCard({
     required this.activity,
+    required this.ownerSession,
   });
 
   @override
-  State<_FullCountdownCard> createState() => _FullCountdownCardState();
+  ConsumerState<_FullCountdownCard> createState() => _FullCountdownCardState();
 }
 
-class _FullCountdownCardState extends State<_FullCountdownCard> {
+class _FullCountdownCardState extends ConsumerState<_FullCountdownCard> {
   late Timer _timer;
   Duration _remaining = Duration.zero;
 
@@ -607,8 +620,15 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () =>
-          context.push('/event/${widget.activity.id}', extra: widget.activity),
+      onTap: () {
+        if (!identical(
+          ref.read(authSessionKeyProvider),
+          widget.ownerSession,
+        )) {
+          return;
+        }
+        context.push('/event/${widget.activity.id}', extra: widget.activity);
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -670,8 +690,17 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                     bottom: 10,
                     left: 10,
                     child: GestureDetector(
-                      onTap: () => context.push(
-                          '/search?categorySlug=${widget.activity.category!.slug}'),
+                      onTap: () {
+                        if (!identical(
+                          ref.read(authSessionKeyProvider),
+                          widget.ownerSession,
+                        )) {
+                          return;
+                        }
+                        context.push(
+                          '/search?categorySlug=${widget.activity.category!.slug}',
+                        );
+                      },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 5),
@@ -699,6 +728,7 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
                   right: 10,
                   child: FavoriteButton(
                     event: _activityToEvent(),
+                    ownerSession: widget.ownerSession,
                     iconSize: 18,
                     containerSize: 32,
                   ),
@@ -898,18 +928,21 @@ class _FullCountdownCardState extends State<_FullCountdownCard> {
 }
 
 /// Card compacte pour carousel horizontal (legacy)
-class _CompactCountdownCard extends StatefulWidget {
+class _CompactCountdownCard extends ConsumerStatefulWidget {
   final Activity activity;
+  final AuthSessionKey ownerSession;
 
   const _CompactCountdownCard({
     required this.activity,
+    required this.ownerSession,
   });
 
   @override
-  State<_CompactCountdownCard> createState() => _CompactCountdownCardState();
+  ConsumerState<_CompactCountdownCard> createState() =>
+      _CompactCountdownCardState();
 }
 
-class _CompactCountdownCardState extends State<_CompactCountdownCard> {
+class _CompactCountdownCardState extends ConsumerState<_CompactCountdownCard> {
   late Timer _timer;
   Duration _remaining = Duration.zero;
 
@@ -950,8 +983,15 @@ class _CompactCountdownCardState extends State<_CompactCountdownCard> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () =>
-          context.push('/event/${widget.activity.id}', extra: widget.activity),
+      onTap: () {
+        if (!identical(
+          ref.read(authSessionKeyProvider),
+          widget.ownerSession,
+        )) {
+          return;
+        }
+        context.push('/event/${widget.activity.id}', extra: widget.activity);
+      },
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -1112,6 +1152,7 @@ class _UrgencySectionState extends ConsumerState<UrgencySection> {
   @override
   Widget build(BuildContext context) {
     final activitiesAsync = ref.watch(homeTodayActivitiesProvider);
+    final renderedEventsSession = ref.watch(authSessionKeyProvider);
     final now = ref.watch(homeNowProvider)();
 
     return activitiesAsync.when(
@@ -1157,6 +1198,7 @@ class _UrgencySectionState extends ConsumerState<UrgencySection> {
                     width: 200,
                     child: _FullCountdownCard(
                       activity: activity,
+                      ownerSession: renderedEventsSession,
                     ),
                   );
                 },

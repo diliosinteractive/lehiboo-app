@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
+import 'package:lehiboo/features/auth/presentation/widgets/account_bound_route_guard.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Viewer fullscreen pour la galerie d'images
@@ -34,17 +36,22 @@ class EventGalleryFullscreen extends StatefulWidget {
     int initialIndex = 0,
     String? eventTitle,
     String? shareUrl,
+    required AuthSessionKey ownerSession,
   }) {
     return Navigator.of(context).push(
       PageRouteBuilder(
         opaque: false,
         barrierColor: Colors.black,
         pageBuilder: (context, animation, secondaryAnimation) {
-          return EventGalleryFullscreen(
-            images: images,
-            initialIndex: initialIndex,
-            eventTitle: eventTitle,
-            shareUrl: shareUrl,
+          return AccountBoundRouteGuard<void>(
+            ownerAccountId: ownerSession.accountId,
+            ownerSession: ownerSession,
+            builder: (_) => EventGalleryFullscreen(
+              images: images,
+              initialIndex: initialIndex,
+              eventTitle: eventTitle,
+              shareUrl: shareUrl,
+            ),
           );
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {

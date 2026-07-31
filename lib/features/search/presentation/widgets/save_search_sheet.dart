@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../domain/models/event_filter.dart';
 import '../utils/search_l10n.dart';
 
@@ -34,15 +35,19 @@ class SaveSearchSheet extends StatefulWidget {
   static Future<SaveSearchResult?> show(
     BuildContext context, {
     required EventFilter filter,
+    required String ownerAccountId,
     bool Function(String name)? isNameAlreadyUsed,
   }) {
     return showModalBottomSheet<SaveSearchResult>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => SaveSearchSheet(
-        filter: filter,
-        isNameAlreadyUsed: isNameAlreadyUsed,
+      builder: (context) => AccountBoundRouteGuard<SaveSearchResult>(
+        ownerAccountId: ownerAccountId,
+        builder: (_) => SaveSearchSheet(
+          filter: filter,
+          isNameAlreadyUsed: isNameAlreadyUsed,
+        ),
       ),
     );
   }

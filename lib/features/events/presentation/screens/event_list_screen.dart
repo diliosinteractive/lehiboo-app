@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
@@ -14,61 +16,99 @@ import 'package:lehiboo/features/alerts/presentation/providers/alerts_provider.d
 import 'package:lehiboo/features/search/domain/models/event_filter.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
 import 'package:lehiboo/features/search/presentation/widgets/save_search_sheet.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 
 /// Provider for events list from real API
-final eventsListProvider =
-    FutureProvider.family<List<Activity>, EventsListParams>(
-        (ref, params) async {
-  final eventRepository = ref.watch(eventRepositoryProvider);
+final eventsListProvider = StateNotifierProvider.family<_EventsListController,
+    AsyncValue<List<Activity>>, EventsListParams>((ref, params) {
+  // `GET /events` is auth-optional and can return member-only events. The
+  // opaque key forces a fresh, blank controller for every session boundary,
+  // including a rapid A -> B -> A transition.
+  ref.watch(authSessionKeyProvider);
+  final repository = ref.watch(eventRepositoryProvider);
+  return _EventsListController(repository, params);
+});
 
-  debugPrint('=== eventsListProvider called ===');
-  debugPrint('Params: page=${params.page}, perPage=${params.perPage}');
-  debugPrint(
-      'Search: ${params.search}, categorySlug: ${params.categorySlug}, city: ${params.city}');
-  debugPrint('DateFilter: ${params.dateFilter}, OnlyFree: ${params.onlyFree}');
+class _EventsListController extends StateNotifier<AsyncValue<List<Activity>>> {
+  _EventsListController(this._eventRepository, this._params)
+      : super(const AsyncValue.loading()) {
+    _initialLoad = _load();
+    unawaited(_initialLoad);
+  }
 
-  try {
-    debugPrint('Calling eventRepository.getEvents...');
-    final result = await eventRepository.getEvents(
-      page: params.page,
-      perPage: params.perPage,
-      search: params.search,
-      categorySlug: params.categorySlug,
-      city: params.city,
-      orderBy: params.orderBy ?? 'date',
-      order: params.order ?? 'asc',
+  final EventRepository _eventRepository;
+  final EventsListParams _params;
+  late final Future<void> _initialLoad;
+  int _requestGeneration = 0;
+
+  Future<void> waitForInitialLoad() => _initialLoad;
+
+  Future<void> _load() async {
+    if (!mounted) return;
+    final requestGeneration = ++_requestGeneration;
+    state = const AsyncValue.loading();
+
+    debugPrint('=== eventsListProvider called ===');
+    debugPrint('Params: page=${_params.page}, perPage=${_params.perPage}');
+    debugPrint(
+      'Search: ${_params.search}, categorySlug: ${_params.categorySlug}, '
+      'city: ${_params.city}',
+    );
+    debugPrint(
+      'DateFilter: ${_params.dateFilter}, OnlyFree: ${_params.onlyFree}',
     );
 
-    debugPrint('Got ${result.events.length} events from API');
-    debugPrint(
-        'Pagination: page ${result.currentPage}/${result.totalPages}, total: ${result.totalItems}');
+    try {
+      debugPrint('Calling eventRepository.getEvents...');
+      final result = await _eventRepository.getEvents(
+        page: _params.page,
+        perPage: _params.perPage,
+        search: _params.search,
+        categorySlug: _params.categorySlug,
+        city: _params.city,
+        orderBy: _params.orderBy ?? 'date',
+        order: _params.order ?? 'asc',
+      );
+      if (!mounted || requestGeneration != _requestGeneration) return;
 
-    if (result.events.isNotEmpty) {
-      debugPrint('First event: ${result.events.first.title}');
-    }
-
-    var activities = EventToActivityMapper.toActivities(result.events);
-    debugPrint('Mapped to ${activities.length} activities');
-
-    // Apply client-side filters
-    if (params.dateFilter != null) {
-      activities = _filterByDate(activities, params.dateFilter!);
+      debugPrint('Got ${result.events.length} events from API');
       debugPrint(
-          'After date filter (${params.dateFilter}): ${activities.length} activities');
-    }
+        'Pagination: page ${result.currentPage}/${result.totalPages}, '
+        'total: ${result.totalItems}',
+      );
 
-    if (params.onlyFree) {
-      activities = activities.where((a) => a.isAuthoritativelyFree).toList();
-      debugPrint('After free filter: ${activities.length} activities');
-    }
+      if (result.events.isNotEmpty) {
+        debugPrint('First event: ${result.events.first.title}');
+      }
 
-    return activities;
-  } catch (e, stackTrace) {
-    debugPrint('Error fetching events: $e');
-    debugPrint('Stack trace: $stackTrace');
-    rethrow;
+      var activities = EventToActivityMapper.toActivities(result.events);
+      debugPrint('Mapped to ${activities.length} activities');
+
+      // Apply client-side filters
+      if (_params.dateFilter != null) {
+        activities = _filterByDate(activities, _params.dateFilter!);
+        debugPrint(
+          'After date filter (${_params.dateFilter}): '
+          '${activities.length} activities',
+        );
+      }
+
+      if (_params.onlyFree) {
+        activities = activities.where((a) => a.isAuthoritativelyFree).toList();
+        debugPrint('After free filter: ${activities.length} activities');
+      }
+
+      if (!mounted || requestGeneration != _requestGeneration) return;
+      state = AsyncValue.data(activities);
+    } catch (error, stackTrace) {
+      if (!mounted || requestGeneration != _requestGeneration) return;
+      debugPrint('Error fetching events: $error');
+      debugPrint('Stack trace: $stackTrace');
+      state = AsyncValue.error(error, stackTrace);
+    }
   }
-});
+}
 
 /// Filter activities by date
 List<Activity> _filterByDate(List<Activity> activities, String dateFilter) {
@@ -188,14 +228,32 @@ class EventListScreen extends ConsumerStatefulWidget {
 class _EventListScreenState extends ConsumerState<EventListScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  late String? _lastAuthAccountId;
+  int _authIdentityGeneration = 0;
+  late final ProviderSubscription<AuthState> _authSubscription;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _lastAuthAccountId = _authenticatedAccountId(ref.read(authProvider));
+    _authSubscription = ref.listenManual<AuthState>(
+      authProvider,
+      (_, next) {
+        final nextAccountId = _authenticatedAccountId(next);
+        if (nextAccountId == _lastAuthAccountId) return;
+        _lastAuthAccountId = nextAccountId;
+        _authIdentityGeneration++;
+        _searchController.clear();
+      },
+    );
+    final initialSessionGeneration = _authIdentityGeneration;
 
     // Initialize category filter from widget parameter if provided
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || initialSessionGeneration != _authIdentityGeneration) {
+        return;
+      }
       final filterNotifier = ref.read(eventFilterProvider.notifier);
 
       // If passing specific filters via navigation, reset previous state
@@ -217,9 +275,21 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
 
   @override
   void dispose() {
+    _authSubscription.close();
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  String? _authenticatedAccountId(AuthState auth) {
+    if (!auth.isAuthenticated) return null;
+    final accountId = auth.user?.id.trim();
+    return accountId == null || accountId.isEmpty ? null : accountId;
+  }
+
+  bool _ownsAuthGeneration(String ownerAccountId, int generation) {
+    return _authIdentityGeneration == generation &&
+        ref.read(authSessionUserIdProvider) == ownerAccountId;
   }
 
   void _onScroll() {
@@ -240,6 +310,7 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
     final filter = ref.watch(eventFilterProvider);
     final filterNotifier = ref.read(eventFilterProvider.notifier);
     final eventsAsync = ref.watch(filteredEventsProvider);
+    final renderedEventsSession = ref.watch(authSessionKeyProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -477,7 +548,10 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: EventCard(activity: activities[index]),
+                        child: EventCard(
+                          activity: activities[index],
+                          ownerSession: renderedEventsSession,
+                        ),
                       );
                     },
                   ),
@@ -505,7 +579,10 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
                       }
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: EventCard(activity: activities[index]),
+                        child: EventCard(
+                          activity: activities[index],
+                          ownerSession: renderedEventsSession,
+                        ),
                       );
                     },
                   );
@@ -528,6 +605,8 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
 
   Future<void> _saveCurrentSearch(BuildContext context,
       {bool isAlert = false}) async {
+    final initiatingAccountId = ref.read(authSessionUserIdProvider);
+    final initiatingGeneration = _authIdentityGeneration;
     final allowed = await GuestGuard.check(
       context: context,
       ref: ref,
@@ -536,6 +615,17 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
     if (!allowed) return;
     if (!context.mounted) return;
 
+    final ownerAccountId = ref.read(authSessionUserIdProvider);
+    if (ownerAccountId == null ||
+        (initiatingAccountId != null &&
+            initiatingAccountId != ownerAccountId) ||
+        (initiatingAccountId == null
+            ? _authIdentityGeneration != initiatingGeneration + 1
+            : _authIdentityGeneration != initiatingGeneration)) {
+      return;
+    }
+    final ownerGeneration = _authIdentityGeneration;
+
     final filter = ref.read(eventFilterProvider);
     final alertsNotifier = ref.read(alertsProvider.notifier);
 
@@ -543,10 +633,16 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
     final result = await SaveSearchSheet.show(
       context,
       filter: filter,
+      ownerAccountId: ownerAccountId,
       isNameAlreadyUsed: alertsNotifier.isNameAlreadyUsed,
     );
 
-    if (result == null) return; // User cancelled
+    if (result == null ||
+        !context.mounted ||
+        !_ownsAuthGeneration(ownerAccountId, ownerGeneration) ||
+        !identical(ref.read(alertsProvider.notifier), alertsNotifier)) {
+      return;
+    }
 
     try {
       await alertsNotifier.createAlert(
@@ -556,7 +652,11 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
         enableEmail: result.enableEmail,
       );
     } catch (error) {
-      if (!context.mounted) return;
+      if (!context.mounted ||
+          !_ownsAuthGeneration(ownerAccountId, ownerGeneration) ||
+          !identical(ref.read(alertsProvider.notifier), alertsNotifier)) {
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -575,7 +675,11 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
       return;
     }
 
-    if (!context.mounted) return;
+    if (!context.mounted ||
+        !_ownsAuthGeneration(ownerAccountId, ownerGeneration) ||
+        !identical(ref.read(alertsProvider.notifier), alertsNotifier)) {
+      return;
+    }
     final hasNotifications = result.enablePush || result.enableEmail;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
