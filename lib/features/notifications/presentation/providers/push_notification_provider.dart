@@ -1,10 +1,11 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../../core/services/push_notification_service.dart';
-import '../../../../domain/entities/user.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/datasources/device_token_datasource.dart';
 
@@ -66,67 +67,169 @@ final pushNotificationProvider =
 /// Notifier that handles push notification lifecycle
 class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
   final Ref _ref;
+  int _generation = 0;
+  bool _disposed = false;
+  bool _hasObservedAuth = false;
+  _PushAccount? _account;
+  Future<void> _identityTail = Future<void>.value();
+  final Set<CancelToken> _activeTokenRequests = {};
+  final Set<Future<bool>> _activeRegistrationTasks = {};
+  final Map<String, Future<bool>> _registrationTasks = {};
+  String? _lastSuccessfulRegistration;
 
   PushNotificationNotifier(this._ref) : super(const PushNotificationState()) {
-    // Listen to auth state changes
-    _ref.listen<AuthState>(authProvider, (previous, next) {
-      _handleAuthStateChange(previous, next);
+    final service = _ref.read(pushNotificationServiceProvider);
+    _ref.onDispose(() {
+      _disposed = true;
+      _generation++;
+      _cancelTokenRequests();
+      service.onSubscriptionReceived = null;
+      service.onSubscriptionRemoved = null;
     });
-
-    // Check initial auth state — covers the resume case where the app starts
-    // with a session already loaded from storage.
-    final authState = _ref.read(authProvider);
-    if (authState.isAuthenticated) {
-      _bindOneSignalIfPossible(authState.user);
-      initialize();
-    }
+    _ref.listen<AuthState>(authProvider, (_, next) => _replaceAccount(next));
+    _replaceAccount(_ref.read(authProvider));
   }
 
-  /// Handle auth state changes
-  void _handleAuthStateChange(AuthState? previous, AuthState next) {
-    // User just logged in
-    if (previous?.status != AuthStatus.authenticated &&
-        next.status == AuthStatus.authenticated) {
-      debugPrint('PushNotification: User logged in, initializing');
-      _bindOneSignalIfPossible(next.user);
-      initialize();
+  void _replaceAccount(AuthState auth) {
+    final next = _PushAccount.fromAuth(auth);
+    final service = _ref.read(pushNotificationServiceProvider);
+    service.updateActiveRecipient(next?.recipientIdentity);
+    if (_hasObservedAuth && next == _account) return;
+    _hasObservedAuth = true;
+
+    final generation = ++_generation;
+    _account = next;
+    _lastSuccessfulRegistration = null;
+    final supersededRegistrations = List<Future<bool>>.of(
+      _activeRegistrationTasks,
+    );
+    _registrationTasks.clear();
+    _cancelTokenRequests();
+    state = const PushNotificationState();
+
+    service.onSubscriptionReceived = null;
+    service.onSubscriptionRemoved = null;
+
+    final previousIdentityWork = _identityTail;
+    Future<void> applyIdentity() async {
+      // Every identity transition starts with logout. If an older login was
+      // already in flight, this serialized logout runs after it and guarantees
+      // that account A cannot remain bound when B becomes active.
+      await service.unbindUser();
+      await Future.wait<void>(
+        supersededRegistrations.map(
+          (task) => task.then<void>((_) {}, onError: (_) {}),
+        ),
+      );
+      if (!_isCurrent(next, generation)) return;
+
+      final externalId = next?.externalId;
+      if (externalId != null) {
+        await service.bindUser(externalId);
+      } else if (next != null) {
+        debugPrint(
+          'PushNotification: user ${next.accountId} has no OneSignal external id',
+        );
+      }
     }
 
-    // User just logged out
-    if (previous?.status == AuthStatus.authenticated &&
-        next.status != AuthStatus.authenticated) {
-      debugPrint('PushNotification: User logged out, unregistering');
-      unregister();
-    }
+    final identityReady = previousIdentityWork.then<void>(
+      (_) => applyIdentity(),
+      onError: (_) => applyIdentity(),
+    );
+    _identityTail = identityReady;
+
+    if (next == null) return;
+    _configureCallbacks(service, next, generation, identityReady);
+    unawaited(identityReady.then<void>(
+      (_) async {
+        if (_isCurrent(next, generation)) {
+          await _initializeFor(next, generation);
+        }
+      },
+      onError: (error) {
+        if (_isCurrent(next, generation)) {
+          debugPrint('PushNotification: identity binding failed - $error');
+          state = const PushNotificationState(
+            status: PushNotificationStatus.error,
+            failureReason: PushNotificationFailureReason.unexpected,
+          );
+        }
+      },
+    ));
   }
 
-  /// Bind the device to the user's OneSignal external id, when available.
-  ///
-  /// The backend exposes `users.onesignal_id` (nullable). Legacy users may
-  /// not have one yet — in that case we skip the binding and the device
-  /// will only receive broadcasts, not user-targeted notifications.
-  void _bindOneSignalIfPossible(HbUser? user) {
-    final onesignalId = user?.onesignalId;
-    if (user == null) {
-      debugPrint('PushNotification: bind skipped — no user');
-      return;
+  bool _isCurrent(_PushAccount? expected, int generation) {
+    if (_disposed || generation != _generation || _account != expected) {
+      return false;
     }
-    if (onesignalId == null || onesignalId.isEmpty) {
-      debugPrint('PushNotification: bind skipped — user.onesignal_id is null '
-          '(user.id=${user.id}). User-targeted pushes will not route until '
-          'the backend assigns one.');
-      return;
-    }
-    debugPrint('PushNotification: binding OneSignal external_id=$onesignalId '
-        '(user.id=${user.id})');
-    _ref.read(pushNotificationServiceProvider).bindUser(onesignalId);
+    return _PushAccount.fromAuth(_ref.read(authProvider)) == expected;
   }
 
-  /// Initialize push notifications
+  void _cancelTokenRequests() {
+    for (final token in _activeTokenRequests) {
+      if (!token.isCancelled) token.cancel('Authentication account changed');
+    }
+    _activeTokenRequests.clear();
+  }
+
+  void _configureCallbacks(
+    PushNotificationService service,
+    _PushAccount account,
+    int generation,
+    Future<void> identityReady,
+  ) {
+    service.onSubscriptionReceived = (subscriptionId) async {
+      await identityReady;
+      if (!_isCurrent(account, generation)) return;
+      await _registerTokenWithBackend(
+        subscriptionId,
+        service,
+        account,
+        generation,
+      );
+    };
+
+    service.onSubscriptionRemoved = (subscriptionId) async {
+      await identityReady;
+      if (!_isCurrent(account, generation)) return;
+      final cancelToken = CancelToken();
+      _activeTokenRequests.add(cancelToken);
+      try {
+        if (!_isCurrent(account, generation)) return;
+        await _ref.read(deviceTokenDataSourceProvider).unregisterToken(
+              subscriptionId,
+              cancelToken: cancelToken,
+            );
+      } on DioException catch (error) {
+        if (!CancelToken.isCancel(error)) {
+          debugPrint('PushNotification: token unregister failed - $error');
+        }
+      } finally {
+        _activeTokenRequests.remove(cancelToken);
+      }
+    };
+  }
+
+  /// Initialize push notifications for the exact account that requested it.
   Future<void> initialize() async {
+    final account = _account;
+    final generation = _generation;
+    final identityReady = _identityTail;
+    if (account == null || !_isCurrent(account, generation)) return;
+    await identityReady;
+    if (_isCurrent(account, generation)) {
+      await _initializeFor(account, generation);
+    }
+  }
+
+  Future<void> _initializeFor(
+    _PushAccount account,
+    int generation,
+  ) async {
+    if (!_isCurrent(account, generation)) return;
     if (!isOneSignalConfigured) {
-      debugPrint('PushNotification: SDK not configured — staying disabled');
-      state = state.copyWith(
+      state = const PushNotificationState(
         status: PushNotificationStatus.disabled,
         failureReason: PushNotificationFailureReason.serviceUnavailable,
       );
@@ -134,28 +237,22 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
     }
     if (state.status == PushNotificationStatus.initializing ||
         state.status == PushNotificationStatus.initialized) {
-      debugPrint('PushNotification: Already initialized or initializing');
       return;
     }
 
-    state = state.copyWith(status: PushNotificationStatus.initializing);
-
+    state = const PushNotificationState(
+      status: PushNotificationStatus.initializing,
+    );
     try {
-      final pushService = _ref.read(pushNotificationServiceProvider);
-      final tokenDataSource = _ref.read(deviceTokenDataSourceProvider);
+      final service = _ref.read(pushNotificationServiceProvider);
+      await service.initialize();
+      if (!_isCurrent(account, generation)) return;
 
-      _configureCallbacks(pushService, tokenDataSource);
-
-      // Initialize the push service
-      await pushService.initialize();
-
-      if (pushService.subscriptionId == null) {
-        // OS prompt is now deferred to the post-signup notifications screen
-        // (or the Settings toggle), so a null subscription at this point just
-        // means "push isn't active yet" — not an error.
-        state = state.copyWith(
+      final subscriptionId = service.subscriptionId;
+      if (subscriptionId == null) {
+        state = PushNotificationState(
           status: PushNotificationStatus.disabled,
-          failureReason: pushService.permissionDenied
+          failureReason: service.permissionDenied
               ? PushNotificationFailureReason.permissionDenied
               : null,
         );
@@ -163,27 +260,28 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
       }
 
       final registered = await _registerTokenWithBackend(
-        pushService.subscriptionId!,
-        pushService,
-        tokenDataSource,
+        subscriptionId,
+        service,
+        account,
+        generation,
       );
+      if (!_isCurrent(account, generation)) return;
       if (!registered) {
-        state = state.copyWith(
+        state = const PushNotificationState(
           status: PushNotificationStatus.error,
           failureReason: PushNotificationFailureReason.backendSyncFailed,
         );
         return;
       }
 
-      state = state.copyWith(
+      state = PushNotificationState(
         status: PushNotificationStatus.initialized,
-        subscriptionId: pushService.subscriptionId,
+        subscriptionId: subscriptionId,
       );
-
-      debugPrint('PushNotification: Initialized successfully');
-    } catch (e) {
-      debugPrint('PushNotification: Failed to initialize - $e');
-      state = state.copyWith(
+    } catch (error) {
+      if (!_isCurrent(account, generation)) return;
+      debugPrint('PushNotification: Failed to initialize - $error');
+      state = const PushNotificationState(
         status: PushNotificationStatus.error,
         failureReason: PushNotificationFailureReason.unexpected,
       );
@@ -191,34 +289,41 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
   }
 
   /// Force a fresh backend registration for the current subscription.
-  ///
-  /// Used after the user enables push in settings. Login normally initializes
-  /// the service, but this closes the gap where permission/subscription id
-  /// was not available during the earlier attempt.
   Future<bool> syncTokenWithBackend() async {
-    if (state.status == PushNotificationStatus.initializing) {
+    final account = _account;
+    final generation = _generation;
+    final identityReady = _identityTail;
+    if (account == null || !_isCurrent(account, generation)) return false;
+    if (state.status == PushNotificationStatus.initializing) return false;
+    if (!isOneSignalConfigured) {
+      state = const PushNotificationState(
+        status: PushNotificationStatus.disabled,
+        failureReason: PushNotificationFailureReason.serviceUnavailable,
+      );
       return false;
     }
 
-    state = state.copyWith(status: PushNotificationStatus.initializing);
-
+    state = const PushNotificationState(
+      status: PushNotificationStatus.initializing,
+    );
     try {
-      final pushService = _ref.read(pushNotificationServiceProvider);
-      final tokenDataSource = _ref.read(deviceTokenDataSourceProvider);
-      _configureCallbacks(pushService, tokenDataSource);
-
-      if (!pushService.isInitialized) {
-        await pushService.initialize();
+      await identityReady;
+      if (!_isCurrent(account, generation)) return false;
+      final service = _ref.read(pushNotificationServiceProvider);
+      if (!service.isInitialized) {
+        await service.initialize();
       } else {
-        await pushService.ensureSubscriptionId();
+        await service.ensureSubscriptionId();
       }
+      if (!_isCurrent(account, generation)) return false;
 
-      if (pushService.subscriptionId == null) {
-        state = state.copyWith(
-          status: pushService.permissionDenied
+      final subscriptionId = service.subscriptionId;
+      if (subscriptionId == null) {
+        state = PushNotificationState(
+          status: service.permissionDenied
               ? PushNotificationStatus.disabled
               : PushNotificationStatus.error,
-          failureReason: pushService.permissionDenied
+          failureReason: service.permissionDenied
               ? PushNotificationFailureReason.permissionDenied
               : PushNotificationFailureReason.subscriptionUnavailable,
         );
@@ -226,26 +331,27 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
       }
 
       final registered = await _registerTokenWithBackend(
-        pushService.subscriptionId!,
-        pushService,
-        tokenDataSource,
+        subscriptionId,
+        service,
+        account,
+        generation,
+        force: true,
       );
-      if (!registered) {
-        state = state.copyWith(
-          status: PushNotificationStatus.error,
-          failureReason: PushNotificationFailureReason.backendSyncFailed,
-        );
-        return false;
-      }
-
-      state = state.copyWith(
-        status: PushNotificationStatus.initialized,
-        subscriptionId: pushService.subscriptionId,
-      );
-      return true;
-    } catch (e) {
-      debugPrint('PushNotification: Failed to sync subscription - $e');
-      state = state.copyWith(
+      if (!_isCurrent(account, generation)) return false;
+      state = registered
+          ? PushNotificationState(
+              status: PushNotificationStatus.initialized,
+              subscriptionId: subscriptionId,
+            )
+          : const PushNotificationState(
+              status: PushNotificationStatus.error,
+              failureReason: PushNotificationFailureReason.backendSyncFailed,
+            );
+      return registered;
+    } catch (error) {
+      if (!_isCurrent(account, generation)) return false;
+      debugPrint('PushNotification: Failed to sync subscription - $error');
+      state = const PushNotificationState(
         status: PushNotificationStatus.error,
         failureReason: PushNotificationFailureReason.unexpected,
       );
@@ -253,156 +359,211 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
     }
   }
 
-  void _configureCallbacks(
-    PushNotificationService pushService,
-    DeviceTokenDataSource tokenDataSource,
-  ) {
-    pushService.onSubscriptionReceived = (subscriptionId) async {
-      await _registerTokenWithBackend(
-          subscriptionId, pushService, tokenDataSource);
-    };
-
-    pushService.onSubscriptionRemoved = (subscriptionId) async {
-      await tokenDataSource.unregisterToken(subscriptionId);
-    };
-  }
-
-  /// Register subscription id with backend, with exponential backoff on 5xx.
   Future<bool> _registerTokenWithBackend(
     String subscriptionId,
-    PushNotificationService pushService,
-    DeviceTokenDataSource tokenDataSource,
+    PushNotificationService service,
+    _PushAccount account,
+    int generation, {
+    bool force = false,
+  }) {
+    final registrationKey = '$generation:${account.accountId}:$subscriptionId';
+    if (!force && _lastSuccessfulRegistration == registrationKey) {
+      return Future<bool>.value(true);
+    }
+    final existing = _registrationTasks[registrationKey];
+    if (!force && existing != null) return existing;
+
+    final task = _performTokenRegistration(
+      subscriptionId,
+      service,
+      account,
+      generation,
+    );
+    _activeRegistrationTasks.add(task);
+    if (!force) _registrationTasks[registrationKey] = task;
+    void removeCompletedTask() {
+      _activeRegistrationTasks.remove(task);
+      if (_registrationTasks[registrationKey] == task) {
+        _registrationTasks.remove(registrationKey);
+      }
+    }
+
+    unawaited(task.then<void>(
+      (_) => removeCompletedTask(),
+      onError: (_) => removeCompletedTask(),
+    ));
+    return task;
+  }
+
+  Future<bool> _performTokenRegistration(
+    String subscriptionId,
+    PushNotificationService service,
+    _PushAccount account,
+    int generation,
   ) async {
+    if (!_isCurrent(account, generation)) return false;
     String appVersion = '1.0.0';
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       appVersion = packageInfo.version;
     } catch (_) {}
+    if (!_isCurrent(account, generation)) return false;
 
-    // `external_user_id` is the OneSignal external id assigned by the backend.
-    // It can be null for legacy users — the field is then omitted from the
-    // payload and the backend just won't be able to fan out by external id.
-    final user = _ref.read(authProvider).user;
-    final externalUserId = user?.onesignalId;
-    final deviceId = await pushService.getDeviceId();
-    final deviceName = await pushService.getDeviceName();
-    final platform = pushService.getPlatform();
+    late final String deviceId;
+    late final String deviceName;
+    late final String platform;
+    try {
+      deviceId = await service.getDeviceId();
+      if (!_isCurrent(account, generation)) return false;
+      deviceName = await service.getDeviceName();
+      if (!_isCurrent(account, generation)) return false;
+      platform = service.getPlatform();
+    } catch (error) {
+      if (_isCurrent(account, generation)) {
+        debugPrint('PushNotification: Failed to read device metadata - $error');
+      }
+      return false;
+    }
 
     debugPrint('PushNotification → POST /auth/device-tokens payload: '
         'provider=$_oneSignalProvider, platform=$platform, '
         'subscription_id=$subscriptionId, '
-        'external_user_id=${externalUserId ?? "<null>"}, '
-        'user.id=${user?.id ?? "<null>"}, '
-        'device_id=$deviceId, device_name=$deviceName, app_version=$appVersion');
+        'external_user_id=${account.externalId ?? "<null>"}, '
+        'user.id=${account.accountId}, device_id=$deviceId, '
+        'device_name=$deviceName, app_version=$appVersion');
 
     const maxAttempts = 3;
     for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      if (!_isCurrent(account, generation)) return false;
+      final cancelToken = CancelToken();
+      _activeTokenRequests.add(cancelToken);
       try {
-        final result = await tokenDataSource.registerToken(
-          token: subscriptionId,
-          provider: _oneSignalProvider,
-          platform: platform,
-          subscriptionId: subscriptionId,
-          externalUserId: externalUserId,
-          deviceId: deviceId,
-          deviceName: deviceName,
-          appVersion: appVersion,
-        );
+        final result =
+            await _ref.read(deviceTokenDataSourceProvider).registerToken(
+                  token: subscriptionId,
+                  provider: _oneSignalProvider,
+                  platform: platform,
+                  subscriptionId: subscriptionId,
+                  externalUserId: account.externalId,
+                  deviceId: deviceId,
+                  deviceName: deviceName,
+                  appVersion: appVersion,
+                  cancelToken: cancelToken,
+                );
+        if (!_isCurrent(account, generation)) return false;
+        _lastSuccessfulRegistration =
+            '$generation:${account.accountId}:$subscriptionId';
         debugPrint(
-            'PushNotification: Token registered (server uuid=${result.uuid}, active=${result.isActive})');
+          'PushNotification: Token registered '
+          '(server uuid=${result.uuid}, active=${result.isActive})',
+        );
         return true;
-      } on DioException catch (e) {
-        final status = e.response?.statusCode ?? 0;
+      } on DioException catch (error) {
+        if (CancelToken.isCancel(error) || !_isCurrent(account, generation)) {
+          return false;
+        }
+        final status = error.response?.statusCode ?? 0;
         final retryable = status >= 500 && status < 600;
         if (retryable && attempt < maxAttempts) {
-          final delay = Duration(seconds: 1 << (attempt - 1)); // 1s / 2s / 4s
-          debugPrint(
-              'PushNotification: 5xx on register (status=$status), retry $attempt/$maxAttempts after ${delay.inSeconds}s');
+          final delay = Duration(seconds: 1 << (attempt - 1));
           await Future<void>.delayed(delay);
           continue;
         }
         debugPrint(
-            'PushNotification: Failed to register token with backend (status=$status, body=${e.response?.data}) - $e');
+          'PushNotification: Failed to register token with backend '
+          '(status=$status, body=${error.response?.data}) - $error',
+        );
         return false;
-      } catch (e) {
+      } catch (error) {
+        if (!_isCurrent(account, generation)) return false;
         debugPrint(
-            'PushNotification: Failed to register token with backend - $e');
+          'PushNotification: Failed to register token with backend - $error',
+        );
         return false;
+      } finally {
+        _activeTokenRequests.remove(cancelToken);
       }
     }
     return false;
   }
 
-  /// Unregister push notifications (on logout).
-  ///
-  /// Order matters: the auth provider has already DELETEd /auth/device-tokens
-  /// while the bearer was still valid. We just drop the local subscription
-  /// state and call OneSignal.logout().
+  /// Immediately detaches callbacks/state, then serially logs out of OneSignal.
   Future<void> unregister() async {
-    try {
-      final pushService = _ref.read(pushNotificationServiceProvider);
-      await pushService.unregister();
-      await pushService.unbindUser();
-
-      state = const PushNotificationState(
-        status: PushNotificationStatus.uninitialized,
+    final generation = ++_generation;
+    _account = null;
+    _lastSuccessfulRegistration = null;
+    final supersededRegistrations = List<Future<bool>>.of(
+      _activeRegistrationTasks,
+    );
+    _registrationTasks.clear();
+    _cancelTokenRequests();
+    state = const PushNotificationState();
+    final service = _ref.read(pushNotificationServiceProvider);
+    service.onSubscriptionReceived = null;
+    service.onSubscriptionRemoved = null;
+    final previousIdentityWork = _identityTail;
+    Future<void> detachIdentity() async {
+      await service.unbindUser();
+      await Future.wait<void>(
+        supersededRegistrations.map(
+          (task) => task.then<void>((_) {}, onError: (_) {}),
+        ),
       );
+    }
 
+    _identityTail = previousIdentityWork.then<void>(
+      (_) => detachIdentity(),
+      onError: (_) => detachIdentity(),
+    );
+    await _identityTail;
+    if (!_disposed && generation == _generation) {
       debugPrint('PushNotification: Unregistered');
-    } catch (e) {
-      debugPrint('PushNotification: Failed to unregister - $e');
     }
   }
 
-  /// Check if push notifications are enabled
   bool get isEnabled => state.status == PushNotificationStatus.initialized;
 
-  /// Trigger the OS notification prompt and, on grant, register the
-  /// subscription with the backend. Called from the post-signup notifications
-  /// screen and from the Settings "enable push" toggle.
-  ///
-  /// Returns true when permission was granted AND the backend registration
-  /// succeeded; false otherwise. Safe to call from any non-`initialized` state.
+  /// Ask for OS permission and register only for the initiating account.
   Future<bool> requestPermission() async {
-    if (state.status == PushNotificationStatus.initialized) {
-      return true;
-    }
-    if (state.status == PushNotificationStatus.initializing) {
-      return false;
-    }
-
+    final account = _account;
+    final generation = _generation;
+    final identityReady = _identityTail;
+    if (account == null || !_isCurrent(account, generation)) return false;
+    if (state.status == PushNotificationStatus.initialized) return true;
+    if (state.status == PushNotificationStatus.initializing) return false;
     if (!isOneSignalConfigured) {
-      state = state.copyWith(
+      state = const PushNotificationState(
         status: PushNotificationStatus.disabled,
         failureReason: PushNotificationFailureReason.serviceUnavailable,
       );
       return false;
     }
 
-    state = state.copyWith(status: PushNotificationStatus.initializing);
-
+    state = const PushNotificationState(
+      status: PushNotificationStatus.initializing,
+    );
     try {
-      final pushService = _ref.read(pushNotificationServiceProvider);
-      final tokenDataSource = _ref.read(deviceTokenDataSourceProvider);
-      _configureCallbacks(pushService, tokenDataSource);
+      await identityReady;
+      if (!_isCurrent(account, generation)) return false;
+      final service = _ref.read(pushNotificationServiceProvider);
+      if (!service.isInitialized) await service.initialize();
+      if (!_isCurrent(account, generation)) return false;
 
-      if (!pushService.isInitialized) {
-        await pushService.initialize();
-      }
-
-      final granted = await pushService.promptUserForPermission();
+      final granted = await service.promptUserForPermission();
+      if (!_isCurrent(account, generation)) return false;
       if (!granted) {
-        state = state.copyWith(
+        state = PushNotificationState(
           status: PushNotificationStatus.disabled,
-          failureReason: pushService.permissionDenied
+          failureReason: service.permissionDenied
               ? PushNotificationFailureReason.permissionDenied
               : PushNotificationFailureReason.unexpected,
         );
         return false;
       }
 
-      if (pushService.subscriptionId == null) {
-        state = state.copyWith(
+      final subscriptionId = service.subscriptionId;
+      if (subscriptionId == null) {
+        state = const PushNotificationState(
           status: PushNotificationStatus.disabled,
           failureReason: PushNotificationFailureReason.subscriptionUnavailable,
         );
@@ -410,32 +571,64 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
       }
 
       final registered = await _registerTokenWithBackend(
-        pushService.subscriptionId!,
-        pushService,
-        tokenDataSource,
+        subscriptionId,
+        service,
+        account,
+        generation,
       );
-      if (!registered) {
-        state = state.copyWith(
-          status: PushNotificationStatus.error,
-          failureReason: PushNotificationFailureReason.backendSyncFailed,
-        );
-        return false;
-      }
-
-      state = state.copyWith(
-        status: PushNotificationStatus.initialized,
-        subscriptionId: pushService.subscriptionId,
-      );
-      return true;
-    } catch (e) {
-      debugPrint('PushNotification: Failed to request permission - $e');
-      state = state.copyWith(
+      if (!_isCurrent(account, generation)) return false;
+      state = registered
+          ? PushNotificationState(
+              status: PushNotificationStatus.initialized,
+              subscriptionId: subscriptionId,
+            )
+          : const PushNotificationState(
+              status: PushNotificationStatus.error,
+              failureReason: PushNotificationFailureReason.backendSyncFailed,
+            );
+      return registered;
+    } catch (error) {
+      if (!_isCurrent(account, generation)) return false;
+      debugPrint('PushNotification: Failed to request permission - $error');
+      state = const PushNotificationState(
         status: PushNotificationStatus.error,
         failureReason: PushNotificationFailureReason.unexpected,
       );
       return false;
     }
   }
+}
+
+class _PushAccount {
+  const _PushAccount(this.accountId, this.externalId);
+
+  static _PushAccount? fromAuth(AuthState auth) {
+    if (!auth.isAuthenticated) return null;
+    final accountId = auth.user?.id.trim();
+    if (accountId == null || accountId.isEmpty) return null;
+    final externalId = auth.user?.onesignalId?.trim();
+    return _PushAccount(
+      accountId,
+      externalId == null || externalId.isEmpty ? null : externalId,
+    );
+  }
+
+  final String accountId;
+  final String? externalId;
+
+  PushRecipientIdentity get recipientIdentity => PushRecipientIdentity(
+        accountId: accountId,
+        externalId: externalId,
+      );
+
+  @override
+  bool operator ==(Object other) =>
+      other is _PushAccount &&
+      other.accountId == accountId &&
+      other.externalId == externalId;
+
+  @override
+  int get hashCode => Object.hash(accountId, externalId);
 }
 
 /// Provider to check if push notifications are enabled

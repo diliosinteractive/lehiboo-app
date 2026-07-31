@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../domain/entities/user.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../domain/entities/in_app_notification.dart';
 import '../../domain/repositories/in_app_notifications_repository.dart';
 
@@ -12,9 +13,13 @@ const _notificationStateNotProvided = Object();
 final inAppNotificationsProvider =
     StateNotifierProvider<InAppNotificationsNotifier, InAppNotificationsState>(
         (ref) {
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  final accountId = ref.watch(authSessionUserIdProvider);
   return InAppNotificationsNotifier(
     repository: ref.watch(inAppNotificationsRepositoryProvider),
     ref: ref,
+    accountId: accountId,
+    ownerSession: ownerSession,
   );
 });
 
@@ -81,12 +86,22 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
     with WidgetsBindingObserver {
   final InAppNotificationsRepository _repository;
   final Ref _ref;
+  final String? _accountId;
+  final AuthSessionKey _ownerSession;
+
+  int _inboxRequestGeneration = 0;
+  int _unreadRequestGeneration = 0;
+  int _mutationGeneration = 0;
 
   InAppNotificationsNotifier({
     required InAppNotificationsRepository repository,
     required Ref ref,
+    required String? accountId,
+    required AuthSessionKey ownerSession,
   })  : _repository = repository,
         _ref = ref,
+        _accountId = accountId,
+        _ownerSession = ownerSession,
         super(const InAppNotificationsState()) {
     WidgetsBinding.instance.addObserver(this);
     _bootstrapAuthListener();
@@ -94,16 +109,25 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
 
   void _bootstrapAuthListener() {
     final authState = _ref.read(authProvider);
-    if (authState.isAuthenticated) {
+    if (_isCurrentAccount) {
       state = state.copyWith(context: _contextFor(authState));
       refreshUnreadCount();
     }
 
     _ref.listen<AuthState>(authProvider, (previous, next) {
-      if (next.isAuthenticated) {
+      // Account changes recreate this provider because its factory watches
+      // authSessionUserIdProvider. This listener only handles a role/context
+      // change for the same authenticated account.
+      final previousAccountId =
+          previous?.isAuthenticated == true ? previous?.user?.id.trim() : null;
+      final nextAccountId = next.isAuthenticated ? next.user?.id.trim() : null;
+      final isSameAccountUpdate =
+          previousAccountId == _accountId && nextAccountId == _accountId;
+      if (_isCurrentAccount && isSameAccountUpdate) {
         final nextContext = _contextFor(next);
         final contextChanged = state.context != nextContext;
         if (contextChanged) {
+          _invalidateRequests();
           state = state.copyWith(
             context: nextContext,
             notifications: const AsyncValue.data([]),
@@ -117,10 +141,44 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
         if (state.hasLoadedInbox && !contextChanged) {
           load(refresh: true);
         }
-      } else if (next.status == AuthStatus.unauthenticated) {
-        state = const InAppNotificationsState();
       }
     });
+  }
+
+  bool get _isCurrentAccount {
+    if (!mounted || _accountId == null) return false;
+    return identical(_ref.read(authSessionKeyProvider), _ownerSession) &&
+        _ref.read(authSessionUserIdProvider) == _accountId;
+  }
+
+  bool _isCurrentInboxRequest({
+    required int generation,
+    required String context,
+    required String? organizationId,
+    required bool unreadOnly,
+  }) {
+    return _isCurrentAccount &&
+        generation == _inboxRequestGeneration &&
+        state.context == context &&
+        state.organizationId == organizationId &&
+        state.unreadOnly == unreadOnly;
+  }
+
+  bool _isCurrentUnreadRequest({
+    required int generation,
+    required String context,
+    required String? organizationId,
+  }) {
+    return _isCurrentAccount &&
+        generation == _unreadRequestGeneration &&
+        state.context == context &&
+        state.organizationId == organizationId;
+  }
+
+  void _invalidateRequests() {
+    _inboxRequestGeneration++;
+    _unreadRequestGeneration++;
+    _mutationGeneration++;
   }
 
   String _contextFor(AuthState authState) {
@@ -134,7 +192,7 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
-    if (!_ref.read(authProvider).isAuthenticated) return;
+    if (!_isCurrentAccount) return;
 
     refreshUnreadCount();
     if (this.state.hasLoadedInbox) {
@@ -143,17 +201,24 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
   }
 
   Future<void> refreshUnreadCount() async {
-    if (!_ref.read(authProvider).isAuthenticated) {
-      state = state.copyWith(unreadCount: 0);
-      return;
-    }
+    if (!_isCurrentAccount) return;
+
+    final generation = ++_unreadRequestGeneration;
+    final requestContext = state.context;
+    final requestOrganizationId = state.organizationId;
 
     try {
       final count = await _repository.getUnreadCount(
-        context: state.context,
-        organizationId: state.organizationId,
+        context: requestContext,
+        organizationId: requestOrganizationId,
       );
-      if (!mounted) return;
+      if (!_isCurrentUnreadRequest(
+        generation: generation,
+        context: requestContext,
+        organizationId: requestOrganizationId,
+      )) {
+        return;
+      }
       state = state.copyWith(unreadCount: count);
     } catch (_) {
       // Badge refresh is best-effort; list screens surface explicit errors.
@@ -165,20 +230,7 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
     bool? unreadOnly,
   }) async {
     final nextUnreadOnly = unreadOnly ?? state.unreadOnly;
-    if (!_ref.read(authProvider).isAuthenticated) {
-      state = state.copyWith(
-        notifications: const AsyncValue.data([]),
-        currentPage: AppConstants.initialPage,
-        hasMore: false,
-        isLoadingMore: false,
-        loadMoreError: null,
-        unreadOnly: nextUnreadOnly,
-        unreadCount: 0,
-        hasLoadedInbox: false,
-        clearOrganizationId: true,
-      );
-      return;
-    }
+    if (!_isCurrentAccount) return;
 
     final current = state.notifications.valueOrNull;
 
@@ -198,29 +250,61 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
       );
     }
 
+    final generation = ++_inboxRequestGeneration;
+    final unreadGeneration = ++_unreadRequestGeneration;
+    final requestContext = state.context;
+    final requestOrganizationId = state.organizationId;
+
     try {
       final page = await _repository.getNotifications(
         page: AppConstants.initialPage,
         perPage: AppConstants.itemsPerPage,
         unreadOnly: nextUnreadOnly,
-        context: state.context,
-        organizationId: state.organizationId,
+        context: requestContext,
+        organizationId: requestOrganizationId,
       );
+      if (!_isCurrentInboxRequest(
+        generation: generation,
+        context: requestContext,
+        organizationId: requestOrganizationId,
+        unreadOnly: nextUnreadOnly,
+      )) {
+        return;
+      }
       final unreadCount = await _repository.getUnreadCount(
-        context: state.context,
-        organizationId: state.organizationId,
+        context: requestContext,
+        organizationId: requestOrganizationId,
       );
-      if (!mounted) return;
+      if (!_isCurrentInboxRequest(
+        generation: generation,
+        context: requestContext,
+        organizationId: requestOrganizationId,
+        unreadOnly: nextUnreadOnly,
+      )) {
+        return;
+      }
+      final canApplyUnreadCount = _isCurrentUnreadRequest(
+        generation: unreadGeneration,
+        context: requestContext,
+        organizationId: requestOrganizationId,
+      );
       state = state.copyWith(
         notifications: AsyncValue.data(_sort(page.notifications)),
         currentPage: page.currentPage,
         hasMore: page.hasMore,
         unreadOnly: nextUnreadOnly,
-        unreadCount: unreadCount,
+        unreadCount: canApplyUnreadCount ? unreadCount : state.unreadCount,
         hasLoadedInbox: true,
       );
     } catch (error, stackTrace) {
-      if (!mounted) return;
+      if (!_isCurrentInboxRequest(
+        generation: generation,
+        context: requestContext,
+        organizationId: requestOrganizationId,
+        unreadOnly: nextUnreadOnly,
+      )) {
+        return;
+      }
       state = state.copyWith(
         notifications: AsyncValue.error(error, stackTrace),
         unreadOnly: nextUnreadOnly,
@@ -230,33 +314,53 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
   }
 
   Future<void> loadMore() async {
-    if (!_ref.read(authProvider).isAuthenticated) return;
+    if (!_isCurrentAccount) return;
     if (state.isLoadingMore || !state.hasMore || state.loadMoreError != null) {
       return;
     }
     final current = state.notifications.valueOrNull;
     if (current == null) return;
 
+    final generation = ++_inboxRequestGeneration;
+    final requestPage = state.currentPage + 1;
+    final requestUnreadOnly = state.unreadOnly;
+    final requestContext = state.context;
+    final requestOrganizationId = state.organizationId;
     state = state.copyWith(isLoadingMore: true, loadMoreError: null);
     try {
       final page = await _repository.getNotifications(
-        page: state.currentPage + 1,
+        page: requestPage,
         perPage: AppConstants.itemsPerPage,
-        unreadOnly: state.unreadOnly,
-        context: state.context,
-        organizationId: state.organizationId,
+        unreadOnly: requestUnreadOnly,
+        context: requestContext,
+        organizationId: requestOrganizationId,
       );
-      if (!mounted) return;
+      if (!_isCurrentInboxRequest(
+        generation: generation,
+        context: requestContext,
+        organizationId: requestOrganizationId,
+        unreadOnly: requestUnreadOnly,
+      )) {
+        return;
+      }
+      final latest = state.notifications.valueOrNull ?? current;
       state = state.copyWith(
         notifications:
-            AsyncValue.data(_sort([...current, ...page.notifications])),
+            AsyncValue.data(_sort([...latest, ...page.notifications])),
         currentPage: page.currentPage,
         hasMore: page.hasMore,
         isLoadingMore: false,
         loadMoreError: null,
       );
     } catch (error) {
-      if (!mounted) return;
+      if (!_isCurrentInboxRequest(
+        generation: generation,
+        context: requestContext,
+        organizationId: requestOrganizationId,
+        unreadOnly: requestUnreadOnly,
+      )) {
+        return;
+      }
       state = state.copyWith(
         isLoadingMore: false,
         loadMoreError: error,
@@ -283,6 +387,7 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
     InAppNotification notification, {
     int? unreadCount,
   }) {
+    if (!_isCurrentAccount) return;
     if (!_matchesCurrentContext(notification)) {
       refreshUnreadCount();
       return;
@@ -290,6 +395,7 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
 
     final current = state.notifications.valueOrNull;
     final nextUnreadCount = unreadCount ?? state.unreadCount + 1;
+    _unreadRequestGeneration++;
 
     if (current == null || !state.hasLoadedInbox) {
       state = state.copyWith(unreadCount: nextUnreadCount);
@@ -313,12 +419,15 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
   }
 
   Future<void> markAsRead(String id) async {
+    if (!_isCurrentAccount) return;
     final current = state.notifications.valueOrNull;
     if (current == null) return;
     final index = current.indexWhere((item) => item.id == id);
     if (index == -1 || current[index].isRead) return;
 
     final previous = state;
+    final generation = ++_mutationGeneration;
+    _unreadRequestGeneration++;
     final updated = [...current];
     updated[index] = current[index].copyWith(
       isRead: true,
@@ -337,15 +446,22 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
     try {
       await _repository.markAsRead(id);
     } catch (_) {
-      if (mounted) state = previous;
+      if (_isCurrentAccount && generation == _mutationGeneration) {
+        state = previous;
+      }
       rethrow;
     }
   }
 
   Future<void> markAllAsRead() async {
+    if (!_isCurrentAccount) return;
     final current =
         state.notifications.valueOrNull ?? const <InAppNotification>[];
     final previous = state;
+    final generation = ++_mutationGeneration;
+    final requestContext = state.context;
+    final requestOrganizationId = state.organizationId;
+    _unreadRequestGeneration++;
 
     state = state.copyWith(
       notifications: AsyncValue.data(
@@ -362,23 +478,29 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
 
     try {
       await _repository.markAllAsRead(
-        context: state.context,
-        organizationId: state.organizationId,
+        context: requestContext,
+        organizationId: requestOrganizationId,
       );
+      if (!_isCurrentAccount || generation != _mutationGeneration) return;
       await refresh();
     } catch (_) {
-      if (mounted) state = previous;
+      if (_isCurrentAccount && generation == _mutationGeneration) {
+        state = previous;
+      }
       rethrow;
     }
   }
 
   Future<void> deleteNotification(String id) async {
+    if (!_isCurrentAccount) return;
     final current = state.notifications.valueOrNull;
     if (current == null) return;
     final target = current.where((item) => item.id == id).firstOrNull;
     if (target == null) return;
 
     final previous = state;
+    final generation = ++_mutationGeneration;
+    _unreadRequestGeneration++;
     state = state.copyWith(
       notifications: AsyncValue.data(
         current.where((item) => item.id != id).toList(),
@@ -389,7 +511,9 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
     try {
       await _repository.deleteNotification(id);
     } catch (_) {
-      if (mounted) state = previous;
+      if (_isCurrentAccount && generation == _mutationGeneration) {
+        state = previous;
+      }
       rethrow;
     }
   }
@@ -434,6 +558,7 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
 
   @override
   void dispose() {
+    _invalidateRequests();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

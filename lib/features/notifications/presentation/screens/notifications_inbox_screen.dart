@@ -8,9 +8,15 @@ import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../../booking/presentation/widgets/filter_tabs_row.dart';
 import '../../domain/entities/in_app_notification.dart';
 import '../providers/in_app_notifications_provider.dart';
+
+typedef _NotificationOwner = ({
+  String accountId,
+  InAppNotificationsNotifier notifier,
+});
 
 class NotificationsInboxScreen extends ConsumerStatefulWidget {
   const NotificationsInboxScreen({super.key});
@@ -51,8 +57,15 @@ class _NotificationsInboxScreenState
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final accountId = ref.watch(authSessionUserIdProvider);
     final state = ref.watch(inAppNotificationsProvider);
     final l10n = context.l10n;
+    final owner = accountId == null
+        ? null
+        : (
+            accountId: accountId,
+            notifier: ref.read(inAppNotificationsProvider.notifier),
+          );
 
     return Scaffold(
       backgroundColor: HbColors.orangePastel,
@@ -67,7 +80,9 @@ class _NotificationsInboxScreenState
         actions: [
           IconButton(
             tooltip: l10n.notificationsMarkAllRead,
-            onPressed: state.unreadCount > 0 ? _markAllAsRead : null,
+            onPressed: state.unreadCount > 0 && owner != null
+                ? () => _markAllAsRead(owner)
+                : null,
             icon: Badge(
               isLabelVisible: state.unreadCount > 0,
               label: Text('${state.unreadCount}'),
@@ -76,13 +91,16 @@ class _NotificationsInboxScreenState
           ),
         ],
       ),
-      body: authState.isAuthenticated
-          ? _buildAuthenticatedBody(state)
+      body: authState.isAuthenticated && owner != null
+          ? _buildAuthenticatedBody(state, owner)
           : _buildGuestState(context),
     );
   }
 
-  Widget _buildAuthenticatedBody(InAppNotificationsState state) {
+  Widget _buildAuthenticatedBody(
+    InAppNotificationsState state,
+    _NotificationOwner owner,
+  ) {
     final tabs = [
       FilterTab(
         id: 'all',
@@ -107,10 +125,9 @@ class _NotificationsInboxScreenState
             tabs: tabs,
             selectedTabId: state.unreadOnly ? 'unread' : 'all',
             onTabSelected: (id) {
+              if (!_owns(owner)) return;
               HapticFeedback.selectionClick();
-              ref
-                  .read(inAppNotificationsProvider.notifier)
-                  .setUnreadOnly(id == 'unread');
+              owner.notifier.setUnreadOnly(id == 'unread');
             },
           ),
         ),
@@ -127,7 +144,7 @@ class _NotificationsInboxScreenState
               }
               if (notifications.isEmpty) {
                 return RefreshIndicator(
-                  onRefresh: _refresh,
+                  onRefresh: () => _refresh(owner),
                   color: HbColors.brandPrimary,
                   child: ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -140,7 +157,7 @@ class _NotificationsInboxScreenState
                 );
               }
               return RefreshIndicator(
-                onRefresh: _refresh,
+                onRefresh: () => _refresh(owner),
                 color: HbColors.brandPrimary,
                 child: ListView.separated(
                   controller: _scrollController,
@@ -188,11 +205,14 @@ class _NotificationsInboxScreenState
                     }
                     return _NotificationTile(
                       notification: notifications[index],
-                      onTap: () => _openNotification(notifications[index]),
-                      onDelete: () => _deleteNotification(notifications[index]),
+                      ownerAccountId: owner.accountId,
+                      onTap: () =>
+                          _openNotification(notifications[index], owner),
+                      onDelete: () =>
+                          _deleteNotification(notifications[index], owner),
                       onMarkRead: notifications[index].isRead
                           ? null
-                          : () => _markAsRead(notifications[index]),
+                          : () => _markAsRead(notifications[index], owner),
                     );
                   },
                 ),
@@ -268,25 +288,39 @@ class _NotificationsInboxScreenState
     );
   }
 
-  Future<void> _refresh() {
-    return ref.read(inAppNotificationsProvider.notifier).refresh();
+  bool _owns(_NotificationOwner owner) {
+    return mounted &&
+        ref.read(authSessionUserIdProvider) == owner.accountId &&
+        identical(
+          ref.read(inAppNotificationsProvider.notifier),
+          owner.notifier,
+        );
   }
 
-  Future<void> _openNotification(InAppNotification notification) async {
+  Future<void> _refresh(_NotificationOwner owner) async {
+    if (!_owns(owner)) return;
+    await owner.notifier.refresh();
+  }
+
+  Future<void> _openNotification(
+    InAppNotification notification,
+    _NotificationOwner owner,
+  ) async {
+    if (!_owns(owner)) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final readSyncError = context.l10n.notificationsReadSyncError;
     try {
       if (!notification.isRead) {
-        await ref
-            .read(inAppNotificationsProvider.notifier)
-            .markAsRead(notification.id);
+        await owner.notifier.markAsRead(notification.id);
       }
     } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (_owns(owner)) {
+        messenger.showSnackBar(
           SnackBar(
             content: Text(
               ApiResponseHandler.extractError(
                 error,
-                fallback: context.l10n.notificationsReadSyncError,
+                fallback: readSyncError,
               ),
             ),
           ),
@@ -294,7 +328,7 @@ class _NotificationsInboxScreenState
       }
     }
 
-    if (!mounted) return;
+    if (!_owns(owner)) return;
     ref.read(deepLinkServiceProvider).navigateFromNotification(
           actionUrl: notification.actionUrl,
           type: notification.type,
@@ -302,19 +336,23 @@ class _NotificationsInboxScreenState
         );
   }
 
-  Future<void> _markAsRead(InAppNotification notification) async {
+  Future<void> _markAsRead(
+    InAppNotification notification,
+    _NotificationOwner owner,
+  ) async {
+    if (!_owns(owner)) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final markReadError = context.l10n.notificationsMarkReadError;
     try {
-      await ref
-          .read(inAppNotificationsProvider.notifier)
-          .markAsRead(notification.id);
+      await owner.notifier.markAsRead(notification.id);
     } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      if (!_owns(owner)) return;
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
             ApiResponseHandler.extractError(
               error,
-              fallback: context.l10n.notificationsMarkReadError,
+              fallback: markReadError,
             ),
           ),
         ),
@@ -322,21 +360,25 @@ class _NotificationsInboxScreenState
     }
   }
 
-  Future<void> _markAllAsRead() async {
+  Future<void> _markAllAsRead(_NotificationOwner owner) async {
+    if (!_owns(owner)) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final markedAllRead = context.l10n.notificationsMarkedAllRead;
+    final markAllReadError = context.l10n.notificationsMarkAllReadError;
     try {
-      await ref.read(inAppNotificationsProvider.notifier).markAllAsRead();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.notificationsMarkedAllRead)),
+      await owner.notifier.markAllAsRead();
+      if (!_owns(owner)) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text(markedAllRead)),
       );
     } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      if (!_owns(owner)) return;
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
             ApiResponseHandler.extractError(
               error,
-              fallback: context.l10n.notificationsMarkAllReadError,
+              fallback: markAllReadError,
             ),
           ),
         ),
@@ -344,23 +386,28 @@ class _NotificationsInboxScreenState
     }
   }
 
-  Future<void> _deleteNotification(InAppNotification notification) async {
+  Future<void> _deleteNotification(
+    InAppNotification notification,
+    _NotificationOwner owner,
+  ) async {
+    if (!_owns(owner)) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final deleted = context.l10n.notificationsDeleted;
+    final deleteError = context.l10n.notificationsDeleteError;
     try {
-      await ref
-          .read(inAppNotificationsProvider.notifier)
-          .deleteNotification(notification.id);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.notificationsDeleted)),
+      await owner.notifier.deleteNotification(notification.id);
+      if (!_owns(owner)) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text(deleted)),
       );
     } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      if (!_owns(owner)) return;
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
             ApiResponseHandler.extractError(
               error,
-              fallback: context.l10n.notificationsDeleteError,
+              fallback: deleteError,
             ),
           ),
         ),
@@ -371,12 +418,14 @@ class _NotificationsInboxScreenState
 
 class _NotificationTile extends StatelessWidget {
   final InAppNotification notification;
+  final String ownerAccountId;
   final VoidCallback onTap;
   final VoidCallback onDelete;
   final VoidCallback? onMarkRead;
 
   const _NotificationTile({
     required this.notification,
+    required this.ownerAccountId,
     required this.onTap,
     required this.onDelete,
     this.onMarkRead,
@@ -550,20 +599,24 @@ class _NotificationTile extends StatelessWidget {
     return showDialog<bool>(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(context.l10n.notificationsDeleteTitle),
-          content: Text(context.l10n.notificationsDeleteBody),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(context.l10n.commonCancel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              style: TextButton.styleFrom(foregroundColor: HbColors.error),
-              child: Text(context.l10n.messagesDeleteAction),
-            ),
-          ],
+        return AccountBoundRouteGuard<bool>(
+          ownerAccountId: ownerAccountId,
+          invalidResult: false,
+          builder: (_) => AlertDialog(
+            title: Text(context.l10n.notificationsDeleteTitle),
+            content: Text(context.l10n.notificationsDeleteBody),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(context.l10n.commonCancel),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                style: TextButton.styleFrom(foregroundColor: HbColors.error),
+                child: Text(context.l10n.messagesDeleteAction),
+              ),
+            ],
+          ),
         );
       },
     );

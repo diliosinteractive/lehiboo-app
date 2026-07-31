@@ -98,6 +98,7 @@ class DeviceTokenDataSource {
     String? deviceId,
     String? deviceName,
     String? appVersion,
+    CancelToken? cancelToken,
   }) async {
     final response = await _dio.post(
       '/auth/device-tokens',
@@ -111,6 +112,7 @@ class DeviceTokenDataSource {
         if (deviceName != null) 'device_name': deviceName,
         if (appVersion != null) 'app_version': appVersion,
       },
+      cancelToken: cancelToken,
     );
 
     final payload = ApiResponseHandler.extractObject(response.data);
@@ -119,9 +121,16 @@ class DeviceTokenDataSource {
 
   /// Unregister a device token by its value.
   /// Call this when user logs out to stop receiving notifications.
-  Future<bool> unregisterToken(String token) async {
+  Future<bool> unregisterToken(
+    String token, {
+    CancelToken? cancelToken,
+  }) async {
     try {
-      await _dio.delete('/auth/device-tokens', data: {'token': token});
+      await _dio.delete(
+        '/auth/device-tokens',
+        data: {'token': token},
+        cancelToken: cancelToken,
+      );
       return true;
     } catch (e) {
       debugPrint('Failed to unregister device token: $e');
@@ -145,7 +154,9 @@ class DeviceTokenDataSource {
     try {
       final response = await _dio.get('/auth/device-tokens');
       final list = ApiResponseHandler.extractList(response.data);
-      return list.map((item) => DeviceTokenData.fromJson(item as Map<String, dynamic>)).toList();
+      return list
+          .map((item) => DeviceTokenData.fromJson(item as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       debugPrint('Failed to list device tokens: $e');
       return [];

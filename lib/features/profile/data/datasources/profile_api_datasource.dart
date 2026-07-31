@@ -29,7 +29,8 @@ class UserStatsDto {
       bookingsCount: json['bookings_count'] ?? json['bookingsCount'] ?? 0,
       favoritesCount: json['favorites_count'] ?? json['favoritesCount'] ?? 0,
       reviewsCount: json['reviews_count'] ?? json['reviewsCount'] ?? 0,
-      upcomingEventsCount: json['upcoming_events_count'] ?? json['upcomingEventsCount'] ?? 0,
+      upcomingEventsCount:
+          json['upcoming_events_count'] ?? json['upcomingEventsCount'] ?? 0,
     );
   }
 }
@@ -43,7 +44,8 @@ class ProfileApiDataSource {
   Future<UserDto> getProfile() async {
     final response = await _dio.get('/auth/me');
     // /auth/me returns { "user": {...} } at root level
-    final payload = ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
+    final payload =
+        ApiResponseHandler.extractObject(response.data, unwrapRoot: true);
     final userData = payload['user'] ?? payload;
     return _parseUserDto(userData is Map<String, dynamic> ? userData : payload);
   }
@@ -60,6 +62,7 @@ class ProfileApiDataSource {
     bool? pushNotificationsEnabled,
     bool clearBirthDate = false,
     bool clearMembershipCity = false,
+    CancelToken? cancelToken,
   }) async {
     final response = await _dio.patch(
       '/auth/me',
@@ -76,6 +79,7 @@ class ProfileApiDataSource {
         if (pushNotificationsEnabled != null)
           'push_notifications_enabled': pushNotificationsEnabled,
       },
+      cancelToken: cancelToken,
     );
 
     final payload = ApiResponseHandler.extractObject(response.data);
@@ -83,7 +87,10 @@ class ProfileApiDataSource {
   }
 
   /// Upload avatar
-  Future<UserDto> uploadAvatar(File imageFile) async {
+  Future<UserDto> uploadAvatar(
+    File imageFile, {
+    CancelToken? cancelToken,
+  }) async {
     final formData = FormData.fromMap({
       'avatar': await MultipartFile.fromFile(
         imageFile.path,
@@ -94,6 +101,7 @@ class ProfileApiDataSource {
     final response = await _dio.post(
       '/auth/me/avatar',
       data: formData,
+      cancelToken: cancelToken,
       options: Options(
         contentType: 'multipart/form-data',
       ),
@@ -115,6 +123,7 @@ class ProfileApiDataSource {
     required String currentPassword,
     required String newPassword,
     required String confirmPassword,
+    CancelToken? cancelToken,
   }) async {
     await _dio.post(
       '/account/password',
@@ -123,20 +132,25 @@ class ProfileApiDataSource {
         'password': newPassword,
         'password_confirmation': confirmPassword,
       },
+      cancelToken: cancelToken,
     );
   }
 
   UserDto _parseUserDto(Map<String, dynamic> userData) {
     return UserDto(
-      id: userData['id'] is int ? userData['id'] : int.tryParse(userData['id'].toString()) ?? 0,
+      id: userData['id'] is int
+          ? userData['id']
+          : int.tryParse(userData['id'].toString()) ?? 0,
       email: userData['email']?.toString() ?? '',
       displayName: userData['name']?.toString() ?? '',
       firstName: userData['first_name']?.toString(),
       lastName: userData['last_name']?.toString(),
       phone: userData['phone']?.toString(),
       avatarUrl: (userData['avatar'] ?? userData['avatar_url'])?.toString(),
-      birthDate: userData['birthDate']?.toString() ?? userData['birth_date']?.toString(),
-      membershipCity: userData['membershipCity']?.toString() ?? userData['membership_city']?.toString(),
+      birthDate: userData['birthDate']?.toString() ??
+          userData['birth_date']?.toString(),
+      membershipCity: userData['membershipCity']?.toString() ??
+          userData['membership_city']?.toString(),
       role: userData['role']?.toString() ?? 'customer',
       registeredAt: userData['created_at']?.toString(),
       isVerified: userData['is_email_verified'] == true,
