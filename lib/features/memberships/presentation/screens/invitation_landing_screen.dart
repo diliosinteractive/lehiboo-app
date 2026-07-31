@@ -11,6 +11,7 @@ import '../../data/models/invitation_dto.dart';
 import '../../data/models/membership_dto.dart';
 import '../providers/invitation_peek_provider.dart';
 import '../providers/memberships_screen_providers.dart';
+import '../utils/membership_error_mapper.dart';
 import '../widgets/_status_chip.dart';
 
 /// Deep-link landing for `/invitations/:token` — spec §14.3.
@@ -50,7 +51,17 @@ class InvitationLandingScreen extends ConsumerWidget {
         loading: () => const Center(
           child: CircularProgressIndicator(color: HbColors.brandPrimary),
         ),
-        error: (e, _) => _NotFoundState(),
+        error: (e, _) {
+          final kind = MembershipErrorMapper.invitationPreviewKind(e);
+          if (kind == InvitationPreviewErrorKind.notFound) {
+            return _NotFoundState();
+          }
+          return _PreviewErrorState(
+            error: e,
+            kind: kind,
+            onRetry: () => ref.invalidate(invitationPeekProvider(token)),
+          );
+        },
         data: (preview) {
           final invitation = preview.data;
           if (invitation == null) {
@@ -87,7 +98,8 @@ class _Body extends ConsumerWidget {
     final orgName = org?.name ?? '—';
     final isExpiredOrAccepted = invitation.isExpired || invitation.isAccepted;
     final action = ref.watch(invitationActionControllerProvider(token));
-    final isInFlight = action.valueOrNull?.isInFlight ?? false;
+    final isInFlight =
+        action.isLoading || (action.valueOrNull?.isInFlight ?? false);
 
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -201,9 +213,11 @@ class _Body extends ConsumerWidget {
     WidgetRef ref,
     String orgName,
   ) async {
-    final ok = await ref
-        .read(invitationActionControllerProvider(token).notifier)
-        .accept();
+    final provider = invitationActionControllerProvider(token);
+    final fallback = context.l10n.membershipInvitationAcceptFailed;
+    final ok = await ref.read(provider.notifier).accept(
+          fallbackMessage: fallback,
+        );
     if (!context.mounted) return;
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -215,7 +229,8 @@ class _Body extends ConsumerWidget {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(context.l10n.membershipInvitationAcceptFailed),
+          content: Text(ref.read(provider).valueOrNull?.error ?? fallback),
+          backgroundColor: HbColors.error,
         ),
       );
     }
@@ -247,15 +262,24 @@ class _Body extends ConsumerWidget {
       ),
     );
     if (confirmed != true || !context.mounted) return;
-    final ok = await ref
-        .read(invitationActionControllerProvider(token).notifier)
-        .decline();
+    final provider = invitationActionControllerProvider(token);
+    final fallback = context.l10n.membershipInvitationDeclineFailed;
+    final ok = await ref.read(provider.notifier).decline(
+          fallbackMessage: fallback,
+        );
     if (!context.mounted) return;
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.membershipInvitationDeclined)),
       );
       context.go('/me/memberships');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(ref.read(provider).valueOrNull?.error ?? fallback),
+          backgroundColor: HbColors.error,
+        ),
+      );
     }
   }
 }
@@ -424,6 +448,74 @@ class _NotFoundState extends StatelessWidget {
               style: GoogleFonts.figtree(
                 fontSize: 13,
                 color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PreviewErrorState extends StatelessWidget {
+  final Object error;
+  final InvitationPreviewErrorKind kind;
+  final VoidCallback onRetry;
+
+  const _PreviewErrorState({
+    required this.error,
+    required this.kind,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isNetwork = kind == InvitationPreviewErrorKind.network;
+    final fallback = context.l10n.membershipInvitationLoadFailedBody;
+    final message = isNetwork
+        ? context.l10n.commonCheckConnectionRetry
+        : MembershipErrorMapper.actionMessage(error, fallback: fallback);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isNetwork ? Icons.wifi_off_rounded : Icons.sync_problem_rounded,
+              size: 56,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              isNetwork
+                  ? context.l10n.commonNoInternetTitle
+                  : context.l10n.membershipInvitationLoadFailedTitle,
+              style: GoogleFonts.figtree(
+                fontSize: 16,
+                color: Colors.grey[700],
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.figtree(
+                fontSize: 13,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(context.l10n.commonRetry),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: HbColors.brandPrimary,
+                foregroundColor: Colors.white,
               ),
             ),
           ],

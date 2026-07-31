@@ -30,7 +30,8 @@ class MembershipCard extends ConsumerWidget {
     final orgUuid = org?.uuid ?? '';
 
     final action = ref.watch(membershipActionControllerProvider(orgUuid));
-    final isInFlight = action.valueOrNull?.isInFlight ?? false;
+    final isInFlight =
+        action.isLoading || (action.valueOrNull?.isInFlight ?? false);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),

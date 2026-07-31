@@ -11,17 +11,21 @@ final privateEventsSearchProvider = StateProvider<String>((ref) => '');
 /// Selected organization filter. Null = all active orgs.
 final privateEventsOrgFilterProvider = StateProvider<String?>((ref) => null);
 
+const Object _privateEventsLoadMoreErrorUnset = Object();
+
 class PrivateEventsState {
   final List<EventDto> events;
   final int page;
   final int lastPage;
   final bool isLoadingMore;
+  final Object? loadMoreError;
 
   const PrivateEventsState({
     required this.events,
     required this.page,
     required this.lastPage,
     required this.isLoadingMore,
+    this.loadMoreError,
   });
 
   bool get hasMore => page < lastPage;
@@ -31,12 +35,17 @@ class PrivateEventsState {
     int? page,
     int? lastPage,
     bool? isLoadingMore,
+    Object? loadMoreError = _privateEventsLoadMoreErrorUnset,
   }) =>
       PrivateEventsState(
         events: events ?? this.events,
         page: page ?? this.page,
         lastPage: lastPage ?? this.lastPage,
         isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+        loadMoreError:
+            identical(loadMoreError, _privateEventsLoadMoreErrorUnset)
+                ? this.loadMoreError
+                : loadMoreError,
       );
 }
 
@@ -73,9 +82,16 @@ class PrivateEventsController extends AsyncNotifier<PrivateEventsState> {
 
   Future<void> loadMore() async {
     final current = state.valueOrNull;
-    if (current == null || !current.hasMore || current.isLoadingMore) return;
+    if (current == null ||
+        !current.hasMore ||
+        current.isLoadingMore ||
+        current.loadMoreError != null) {
+      return;
+    }
 
-    state = AsyncData(current.copyWith(isLoadingMore: true));
+    state = AsyncData(
+      current.copyWith(isLoadingMore: true, loadMoreError: null),
+    );
 
     try {
       final next = await _fetch(
@@ -89,14 +105,24 @@ class PrivateEventsController extends AsyncNotifier<PrivateEventsState> {
           page: next.page,
           lastPage: next.lastPage,
           isLoadingMore: false,
+          loadMoreError: null,
         ),
       );
     } catch (e, st) {
-      state = AsyncData(current.copyWith(isLoadingMore: false));
+      state = AsyncData(
+        current.copyWith(isLoadingMore: false, loadMoreError: e),
+      );
       if (kDebugMode) {
         debugPrint('PrivateEventsController.loadMore failed: $e\n$st');
       }
     }
+  }
+
+  Future<void> retryLoadMore() async {
+    final current = state.valueOrNull;
+    if (current == null || current.isLoadingMore) return;
+    state = AsyncData(current.copyWith(loadMoreError: null));
+    await loadMore();
   }
 
   Future<void> refresh() async {

@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/analytics/analytics_event.dart';
 import '../../../../core/analytics/analytics_provider.dart';
-import '../../../../core/utils/api_response_handler.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/models/invitation_dto.dart';
 import '../../domain/repositories/memberships_repository.dart';
+import '../utils/membership_error_mapper.dart';
 import 'membership_state_providers.dart';
 import 'personalized_feed_provider.dart';
 
@@ -48,7 +48,7 @@ class InvitationActionController
   /// membership exists. Per spec §8.1 the response shape doesn't match
   /// `MembershipDto` — invalidate both lists and let the next fetch
   /// reconcile from the server.
-  Future<bool> accept() async {
+  Future<bool> accept({required String fallbackMessage}) async {
     final current = state.valueOrNull;
     if (current == null || current.isInFlight) return false;
     state = const AsyncData(InvitationAction(isInFlight: true));
@@ -65,7 +65,14 @@ class InvitationActionController
           );
       return true;
     } catch (e, st) {
-      state = AsyncData(InvitationAction(error: _humanReadable(e)));
+      state = AsyncData(
+        InvitationAction(
+          error: MembershipErrorMapper.actionMessage(
+            e,
+            fallback: fallbackMessage,
+          ),
+        ),
+      );
       if (kDebugMode) {
         debugPrint('InvitationActionController.accept failed: $e\n$st');
       }
@@ -74,7 +81,7 @@ class InvitationActionController
   }
 
   /// Decline — spec §9. Silent operation; vendor is notified separately.
-  Future<bool> decline() async {
+  Future<bool> decline({required String fallbackMessage}) async {
     final current = state.valueOrNull;
     if (current == null || current.isInFlight) return false;
     state = const AsyncData(InvitationAction(isInFlight: true));
@@ -87,17 +94,19 @@ class InvitationActionController
       state = const AsyncData(InvitationAction());
       return true;
     } catch (e, st) {
-      state = AsyncData(InvitationAction(error: _humanReadable(e)));
+      state = AsyncData(
+        InvitationAction(
+          error: MembershipErrorMapper.actionMessage(
+            e,
+            fallback: fallbackMessage,
+          ),
+        ),
+      );
       if (kDebugMode) {
         debugPrint('InvitationActionController.decline failed: $e\n$st');
       }
       return false;
     }
-  }
-
-  String _humanReadable(Object e) {
-    final message = ApiResponseHandler.extractError(e);
-    return message.length > 200 ? message.substring(0, 200) : message;
   }
 }
 

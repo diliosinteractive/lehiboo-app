@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../memberships/data/models/membership_dto.dart';
 import '../../../memberships/presentation/providers/membership_state_providers.dart';
 import '../../domain/entities/active_organization.dart';
@@ -39,6 +40,10 @@ class _OrgPickerSheet extends ConsumerWidget {
     final memberships = ref.watch(vendorMembershipsProvider);
     final asyncList = ref.watch(myMembershipsListProvider);
     final l10n = context.l10n;
+    final loadError = asyncList.maybeWhen<Object?>(
+      error: (error, _) => error,
+      orElse: () => null,
+    );
 
     return SafeArea(
       child: Padding(
@@ -80,6 +85,15 @@ class _OrgPickerSheet extends ConsumerWidget {
                 padding: EdgeInsets.symmetric(vertical: 24),
                 child: Center(child: CircularProgressIndicator()),
               )
+            else if (loadError != null && memberships.isEmpty)
+              _LoadErrorState(
+                message: ApiResponseHandler.extractError(
+                  loadError,
+                  fallback: l10n.membershipLoadError,
+                ),
+                refresh: () =>
+                    ref.read(myMembershipsListProvider.notifier).refresh(),
+              )
             else if (memberships.isEmpty)
               _EmptyState(refresh: () async {
                 ref.read(myMembershipsListProvider.notifier).refresh();
@@ -115,6 +129,55 @@ class _OrgPickerSheet extends ConsumerWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _LoadErrorState extends StatelessWidget {
+  const _LoadErrorState({required this.message, required this.refresh});
+
+  final String message;
+  final Future<void> Function() refresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.cloud_off_outlined,
+            size: 40,
+            color: HbColors.textSecondary,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            l10n.membershipLoadError,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: HbColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 13,
+              color: HbColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton(
+            onPressed: refresh,
+            child: Text(l10n.checkinRefresh),
+          ),
+        ],
       ),
     );
   }

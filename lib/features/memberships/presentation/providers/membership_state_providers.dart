@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/analytics/analytics_event.dart';
 import '../../../../core/analytics/analytics_provider.dart';
-import '../../../../core/utils/api_response_handler.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/models/membership_dto.dart';
 import '../../domain/repositories/memberships_repository.dart';
+import '../utils/membership_error_mapper.dart';
 import 'personalized_feed_provider.dart';
 
 /// One fetch of `/me/memberships` covering all statuses; downstream selectors
@@ -73,9 +73,9 @@ class MembershipActionController
 
   /// `POST /organizations/{uuid}/membership-request` — used for both initial
   /// join requests and re-applications after rejection.
-  Future<void> requestJoin() async {
+  Future<bool> requestJoin({required String fallbackMessage}) async {
     final current = state.valueOrNull;
-    if (current == null || current.isInFlight) return;
+    if (current == null || current.isInFlight) return false;
     state = const AsyncData(MembershipAction(isInFlight: true));
 
     ref.read(analyticsServiceProvider).logEvent(
@@ -93,23 +93,32 @@ class MembershipActionController
         AnalyticsEvent.membershipJoinCompleted,
         params: {AnalyticsParam.organizationId: arg},
       );
+      return true;
     } catch (e, st) {
-      state = AsyncData(MembershipAction(error: _humanReadable(e)));
+      state = AsyncData(
+        MembershipAction(
+          error: MembershipErrorMapper.actionMessage(
+            e,
+            fallback: fallbackMessage,
+          ),
+        ),
+      );
       if (kDebugMode) {
         debugPrint('MembershipActionController.requestJoin failed: $e\n$st');
       }
       // 422 = "already pending or active" → we re-fetch so the UI reflects
       // the actual server state instead of showing a stale error.
       ref.invalidate(myMembershipsListProvider);
+      return false;
     }
   }
 
   /// `DELETE /organizations/{uuid}/membership-request` — covers cancel
   /// (when pending) and leave (when active). The server picks the right
   /// transition based on the current row state.
-  Future<void> cancelOrLeave() async {
+  Future<bool> cancelOrLeave({required String fallbackMessage}) async {
     final current = state.valueOrNull;
-    if (current == null || current.isInFlight) return;
+    if (current == null || current.isInFlight) return false;
     state = const AsyncData(MembershipAction(isInFlight: true));
 
     try {
@@ -120,17 +129,21 @@ class MembershipActionController
       // Membership signal changed — drop the personalized feed (spec §7).
       ref.invalidate(personalizedFeedProvider);
       state = const AsyncData(MembershipAction());
+      return true;
     } catch (e, st) {
-      state = AsyncData(MembershipAction(error: _humanReadable(e)));
+      state = AsyncData(
+        MembershipAction(
+          error: MembershipErrorMapper.actionMessage(
+            e,
+            fallback: fallbackMessage,
+          ),
+        ),
+      );
       if (kDebugMode) {
         debugPrint('MembershipActionController.cancelOrLeave failed: $e\n$st');
       }
+      return false;
     }
-  }
-
-  String _humanReadable(Object e) {
-    final message = ApiResponseHandler.extractError(e);
-    return message.length > 200 ? message.substring(0, 200) : message;
   }
 }
 

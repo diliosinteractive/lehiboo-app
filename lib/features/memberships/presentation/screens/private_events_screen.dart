@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../events/data/mappers/event_mapper.dart';
 import '../../../events/domain/entities/event.dart';
 import '../../../events/presentation/utils/open_event.dart';
@@ -145,11 +146,14 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
               loading: () => const Center(
                 child: CircularProgressIndicator(color: HbColors.brandPrimary),
               ),
-              error: (e, _) => Center(
-                child: Text(
-                  l10n.privateEventsLoadError,
-                  style: TextStyle(color: Colors.grey[700]),
+              error: (e, _) => _PrivateEventsLoadError(
+                message: ApiResponseHandler.extractError(
+                  e,
+                  fallback: l10n.privateEventsLoadError,
                 ),
+                onRetry: () => ref
+                    .read(privateEventsControllerProvider.notifier)
+                    .refresh(),
               ),
               data: (state) {
                 if (state.events.isEmpty) {
@@ -169,8 +173,10 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
                     controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount:
-                        state.events.length + (state.isLoadingMore ? 1 : 0),
+                    itemCount: state.events.length +
+                        (state.isLoadingMore || state.loadMoreError != null
+                            ? 1
+                            : 0),
                     separatorBuilder: (_, __) => Divider(
                       height: 1,
                       thickness: 1,
@@ -180,6 +186,19 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
                     ),
                     itemBuilder: (context, index) {
                       if (index == state.events.length) {
+                        if (state.loadMoreError != null) {
+                          return _PrivateEventsLoadMoreError(
+                            message: ApiResponseHandler.extractError(
+                              state.loadMoreError,
+                              fallback: l10n.privateEventsLoadMoreError,
+                            ),
+                            onRetry: () => ref
+                                .read(
+                                  privateEventsControllerProvider.notifier,
+                                )
+                                .retryLoadMore(),
+                          );
+                        }
                         return const Padding(
                           padding: EdgeInsets.symmetric(vertical: 16),
                           child: Center(
@@ -196,6 +215,75 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
                 );
               },
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PrivateEventsLoadError extends StatelessWidget {
+  const _PrivateEventsLoadError({
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          children: [
+            const Icon(Icons.cloud_off_outlined,
+                size: 48, color: HbColors.textSecondary),
+            const SizedBox(height: 12),
+            Text(
+              context.l10n.privateEventsLoadError,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: HbColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: onRetry,
+              child: Text(context.l10n.commonRetry),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PrivateEventsLoadMoreError extends StatelessWidget {
+  const _PrivateEventsLoadMoreError({
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      child: Column(
+        children: [
+          Text(message, textAlign: TextAlign.center),
+          const SizedBox(height: 6),
+          TextButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh, size: 18),
+            label: Text(context.l10n.commonRetry),
           ),
         ],
       ),

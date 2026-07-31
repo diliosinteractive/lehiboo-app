@@ -27,7 +27,8 @@ class InvitationCard extends ConsumerWidget {
     final orgName = org?.name ?? '—';
     final token = invitation.token ?? '';
     final action = ref.watch(invitationActionControllerProvider(token));
-    final isInFlight = action.valueOrNull?.isInFlight ?? false;
+    final isInFlight =
+        action.isLoading || (action.valueOrNull?.isInFlight ?? false);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -158,9 +159,11 @@ class InvitationCard extends ConsumerWidget {
     String token,
     String orgName,
   ) async {
-    final ok = await ref
-        .read(invitationActionControllerProvider(token).notifier)
-        .accept();
+    final provider = invitationActionControllerProvider(token);
+    final fallback = context.l10n.membershipInvitationAcceptFailed;
+    final ok = await ref.read(provider.notifier).accept(
+          fallbackMessage: fallback,
+        );
     if (!context.mounted) return;
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -172,7 +175,8 @@ class InvitationCard extends ConsumerWidget {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(context.l10n.membershipInvitationAcceptFailed),
+          content: Text(ref.read(provider).valueOrNull?.error ?? fallback),
+          backgroundColor: HbColors.error,
         ),
       );
     }
@@ -205,9 +209,22 @@ class InvitationCard extends ConsumerWidget {
       ),
     );
     if (confirmed != true || !context.mounted) return;
-    await ref
-        .read(invitationActionControllerProvider(token).notifier)
-        .decline();
+    final provider = invitationActionControllerProvider(token);
+    final fallback = context.l10n.membershipInvitationDeclineFailed;
+    final ok = await ref.read(provider.notifier).decline(
+          fallbackMessage: fallback,
+        );
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? context.l10n.membershipInvitationDeclined
+              : ref.read(provider).valueOrNull?.error ?? fallback,
+        ),
+        backgroundColor: ok ? null : HbColors.error,
+      ),
+    );
   }
 }
 

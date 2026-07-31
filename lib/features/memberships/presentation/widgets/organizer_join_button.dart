@@ -29,7 +29,8 @@ class OrganizerJoinButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final membership = ref.watch(myMembershipForOrgProvider(organizerUuid));
     final action = ref.watch(membershipActionControllerProvider(organizerUuid));
-    final isInFlight = action.valueOrNull?.isInFlight ?? false;
+    final isInFlight =
+        action.isLoading || (action.valueOrNull?.isInFlight ?? false);
 
     final spec = _specFor(context, membership);
 
@@ -164,10 +165,17 @@ Future<void> confirmAndCancelMembership(
       ],
     ),
   );
-  if (confirmed != true) return;
-  await ref
-      .read(membershipActionControllerProvider(organizerUuid).notifier)
-      .cancelOrLeave();
+  if (confirmed != true || !context.mounted) return;
+  final provider = membershipActionControllerProvider(organizerUuid);
+  final fallback = context.l10n.membershipCancelRequestFailed;
+  final succeeded = await ref.read(provider.notifier).cancelOrLeave(
+        fallbackMessage: fallback,
+      );
+  if (succeeded || !context.mounted) return;
+  _showMembershipActionError(
+    context,
+    ref.read(provider).valueOrNull?.error ?? fallback,
+  );
 }
 
 /// Confirm-and-leave an active membership. Reused by the join button and
@@ -198,10 +206,17 @@ Future<void> confirmAndLeaveMembership(
       ],
     ),
   );
-  if (confirmed != true) return;
-  await ref
-      .read(membershipActionControllerProvider(organizerUuid).notifier)
-      .cancelOrLeave();
+  if (confirmed != true || !context.mounted) return;
+  final provider = membershipActionControllerProvider(organizerUuid);
+  final fallback = context.l10n.membershipLeaveFailed;
+  final succeeded = await ref.read(provider.notifier).cancelOrLeave(
+        fallbackMessage: fallback,
+      );
+  if (succeeded || !context.mounted) return;
+  _showMembershipActionError(
+    context,
+    ref.read(provider).valueOrNull?.error ?? fallback,
+  );
 }
 
 /// Top-level helper so the auth-replay listener in `OrganizerActionBar` can
@@ -234,11 +249,27 @@ Future<void> confirmAndJoin(
       ],
     ),
   );
-  if (confirmed != true) return;
+  if (confirmed != true || !context.mounted) return;
 
-  await ref
-      .read(membershipActionControllerProvider(organizerUuid).notifier)
-      .requestJoin();
+  final provider = membershipActionControllerProvider(organizerUuid);
+  final fallback = context.l10n.membershipJoinFailed;
+  final succeeded = await ref.read(provider.notifier).requestJoin(
+        fallbackMessage: fallback,
+      );
+  if (succeeded || !context.mounted) return;
+  _showMembershipActionError(
+    context,
+    ref.read(provider).valueOrNull?.error ?? fallback,
+  );
+}
+
+void _showMembershipActionError(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(message),
+      backgroundColor: HbColors.error,
+    ),
+  );
 }
 
 class _ButtonSpec {
