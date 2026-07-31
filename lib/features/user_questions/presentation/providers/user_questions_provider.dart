@@ -10,13 +10,9 @@ class UserQuestionsListController
     extends StateNotifier<AsyncValue<QuestionsPage>> {
   final UserQuestionsRepository _repo;
 
-  UserQuestionsListController(this._repo)
-      : super(const AsyncValue.loading()) {
+  UserQuestionsListController(this._repo) : super(const AsyncValue.loading()) {
     _loadFirstPage();
   }
-
-  bool _isLoadingMore = false;
-  bool get isLoadingMore => _isLoadingMore;
 
   Future<void> _loadFirstPage() async {
     state = const AsyncValue.loading();
@@ -46,10 +42,16 @@ class UserQuestionsListController
 
   Future<void> loadMore() async {
     final current = state.valueOrNull;
-    if (current == null || !current.hasMore) return;
-    if (_isLoadingMore) return;
+    if (current == null ||
+        !current.hasMore ||
+        current.isLoadingMore ||
+        current.loadMoreError != null) {
+      return;
+    }
 
-    _isLoadingMore = true;
+    state = AsyncValue.data(
+      current.copyWith(isLoadingMore: true, loadMoreError: null),
+    );
     try {
       final next = await _repo.getMyQuestions(
         page: current.currentPage + 1,
@@ -61,13 +63,25 @@ class UserQuestionsListController
           currentPage: next.currentPage,
           lastPage: next.lastPage,
           total: next.total,
+          isLoadingMore: false,
+          loadMoreError: null,
         ),
       );
-    } catch (_) {
-      // Silent fail — l'utilisateur peut retenter en scrollant.
-    } finally {
-      _isLoadingMore = false;
+    } catch (error) {
+      // Preserve the questions already loaded while notifying the UI so the
+      // pagination error and its retry action can be displayed.
+      state = AsyncValue.data(
+        current.copyWith(isLoadingMore: false, loadMoreError: error),
+      );
     }
+  }
+
+  Future<void> retryLoadMore() async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+
+    state = AsyncValue.data(current.copyWith(loadMoreError: null));
+    await loadMore();
   }
 }
 

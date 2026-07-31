@@ -44,9 +44,21 @@ class ShareButton extends ConsumerWidget {
     HapticFeedback.lightImpact();
 
     final text = _buildShareText(context, ref);
-    await SharePlus.instance.share(
-      ShareParams(text: text, subject: event.title),
-    );
+    late final ShareResult shareResult;
+    try {
+      shareResult = await SharePlus.instance.share(
+        ShareParams(text: text, subject: event.title),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.commonShareFailed)),
+      );
+      return;
+    }
+
+    if (!context.mounted) return;
+    if (shareResult.status == ShareResultStatus.dismissed) return;
     ref.read(analyticsServiceProvider).logEvent(
       AnalyticsEvent.eventShared,
       params: {
@@ -62,10 +74,14 @@ class ShareButton extends ConsumerWidget {
         AnalyticsParam.itemId: event.id,
       },
     );
-    await ref.read(gamificationApiDataSourceProvider).trackEventShare(
-          event.slug,
-          'native',
-        );
+    try {
+      await ref.read(gamificationApiDataSourceProvider).trackEventShare(
+            event.slug,
+            'native',
+          );
+    } catch (error) {
+      debugPrint('Event share reward tracking failed: $error');
+    }
   }
 
   @override

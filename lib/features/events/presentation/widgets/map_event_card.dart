@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/favorites/presentation/providers/favorites_provider.dart';
+import 'package:lehiboo/features/favorites/presentation/widgets/favorite_button.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart'
     show Event, EventCategory, EventStatus, PriceType;
 
@@ -223,77 +224,51 @@ class MapEventCard extends ConsumerWidget {
             Positioned(
               top: 8,
               right: 8,
-              child: GestureDetector(
-                onTap: () {
-                  final event = Event(
-                      id: activity.id,
-                      slug: activity.slug,
-                      title: activity.title,
-                      description: '',
-                      shortDescription: '',
-                      category: EventCategory.other,
-                      targetAudiences: [],
-                      startDate:
-                          activity.nextSlot?.startDateTime ?? DateTime.now(),
-                      endDate: activity.nextSlot?.endDateTime ?? DateTime.now(),
-                      venue: activity.city?.name ?? '',
-                      address: '',
-                      city: activity.city?.name ?? '',
-                      postalCode: '',
-                      latitude: 0,
-                      longitude: 0,
-                      images:
-                          activity.imageUrl != null ? [activity.imageUrl!] : [],
-                      coverImage: activity.imageUrl,
-                      priceType: activity.isAuthoritativelyFree
-                          ? PriceType.free
-                          : PriceType.paid,
-                      minPrice: activity.priceMin,
-                      maxPrice: activity.priceMax,
-                      isIndoor: false,
-                      isOutdoor: false,
-                      tags: [],
-                      organizerId: '',
-                      organizerName: '',
-                      isFavorite: isFavorite,
-                      isFeatured: false,
-                      isRecommended: false,
-                      status: EventStatus.upcoming,
-                      hasDirectBooking: activity.isBookingActivity,
-                      discoveryPricingType: activity.discoveryPricingType?.name,
-                      createdAt: DateTime.now(),
-                      updatedAt: DateTime.now(),
-                      views: 0);
-                  ref.read(favoritesProvider.notifier).toggleFavorite(event);
-                },
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    isFavorite ? Icons.favorite : Icons.favorite_border,
-                    size: 18,
-                    color: isFavorite
-                        ? const Color(0xFFFF601F)
-                        : Colors.grey[
-                            400], // Using brand Orange for fav or Red? EventCard uses Red. Let's check.
-                    // EventCard used Colors.red for favorite, Colors.grey for border.
-                    // I'll stick to what EventCard had: color: isFavorite ? Colors.red : Colors.grey
-                    // But wait, the standard usually is brand color.
-                    // Let's re-read EventCard code...
-                    // line 167: color: isFavorite ? Colors.red : Colors.grey,
-                  ),
-                ),
+              child: FavoriteButton(
+                event: Event(
+                    id: activity.id,
+                    slug: activity.slug,
+                    title: activity.title,
+                    description: '',
+                    shortDescription: '',
+                    category: EventCategory.other,
+                    targetAudiences: [],
+                    startDate:
+                        activity.nextSlot?.startDateTime ?? DateTime.now(),
+                    endDate: activity.nextSlot?.endDateTime ?? DateTime.now(),
+                    venue: activity.city?.name ?? '',
+                    address: '',
+                    city: activity.city?.name ?? '',
+                    postalCode: '',
+                    latitude: 0,
+                    longitude: 0,
+                    images:
+                        activity.imageUrl != null ? [activity.imageUrl!] : [],
+                    coverImage: activity.imageUrl,
+                    priceType: activity.isAuthoritativelyFree
+                        ? PriceType.free
+                        : PriceType.paid,
+                    minPrice: activity.priceMin,
+                    maxPrice: activity.priceMax,
+                    isIndoor: false,
+                    isOutdoor: false,
+                    tags: [],
+                    organizerId: '',
+                    organizerName: '',
+                    isFavorite: isFavorite,
+                    isFeatured: false,
+                    isRecommended: false,
+                    status: EventStatus.upcoming,
+                    hasDirectBooking: activity.isBookingActivity,
+                    discoveryPricingType: activity.discoveryPricingType?.name,
+                    createdAt: DateTime.now(),
+                    updatedAt: DateTime.now(),
+                    views: 0),
+                iconSize: 18,
+                containerSize: 32,
+                forceFilled: isFavorite,
+                chooseListOnAdd: false,
+                enableLongPress: false,
               ),
             ),
           ],

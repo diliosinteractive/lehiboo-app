@@ -763,7 +763,55 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           '⚠️ eventAvailabilityProvider error: '
           '${ApiResponseHandler.extractError(error)}',
         );
-        return _buildDateSelectorFromEvent(event);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: HbColors.error.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: HbColors.error.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.l10n.eventAvailabilityLoadError,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: HbColors.error,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    ApiResponseHandler.extractError(
+                      error,
+                      fallback: context.l10n.eventAvailabilityLoadError,
+                    ),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: HbColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    onPressed: () => ref.invalidate(
+                      eventAvailabilityProvider(availabilityId),
+                    ),
+                    icon: const Icon(Icons.refresh, size: 18),
+                    label: Text(context.l10n.commonRetry),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildDateSelectorFromEvent(event),
+          ],
+        );
       },
       data: (availability) {
         // Convertir les slots API en CalendarDateSlot
@@ -817,6 +865,18 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
   Widget _buildDateSelectorFromEvent(Event event) {
     final slots = event.calendar?.dateSlots ?? [];
 
+    // The fallback is authoritative while live availability is unavailable.
+    // Clear stale API slots as well when the event payload has no fallback.
+    if (!_sameSlots(_availableSlots, slots)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _replaceAvailableSlots(slots);
+          });
+        }
+      });
+    }
+
     // Si pas de slots ET pas de récurrence, afficher un message d'aide
     if (slots.isEmpty && event.recurrence == null) {
       return Padding(
@@ -845,17 +905,6 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
           ),
         ),
       );
-    }
-
-    // Stocker les slots pour pouvoir obtenir le label de date
-    if (!_sameSlots(_availableSlots, slots)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {
-            _replaceAvailableSlots(slots);
-          });
-        }
-      });
     }
 
     return _buildDateSelectorWidget(event, slots);
@@ -909,9 +958,14 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
       ref.invalidate(personalizedFeedProvider);
     } catch (e) {
       if (mounted) {
+        final fallback = isCurrentlyReminded
+            ? context.l10n.eventReminderRemoveFailed
+            : context.l10n.eventReminderCreateFailed;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(ApiResponseHandler.extractError(e)),
+            content: Text(
+              ApiResponseHandler.extractError(e, fallback: fallback),
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -1292,7 +1346,23 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     if (externalUrl != null && externalUrl.isNotEmpty) {
       final uri = Uri.tryParse(externalUrl);
       if (uri != null) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        try {
+          final opened = await launchUrl(
+            uri,
+            mode: LaunchMode.externalApplication,
+          );
+          if (opened) return;
+        } catch (error) {
+          debugPrint('Unable to open external booking link: $error');
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.l10n.eventOpenBookingLinkError),
+              backgroundColor: HbColors.error,
+            ),
+          );
+        }
         return;
       }
       if (mounted) {

@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../../core/utils/guest_guard.dart';
 import '../../../../core/widgets/feedback/hb_feedback.dart';
 import '../../domain/entities/can_review_result.dart';
+import '../../domain/entities/paginated_reviews.dart';
 import '../../domain/entities/review.dart';
 // review_enums.dart fournit ReviewSortBy + CanReviewReason
 import '../../domain/entities/review_enums.dart';
@@ -46,6 +48,8 @@ class _EventReviewsFullScreenState
   bool _isLoadingMore = false;
   bool _hasMore = true;
   String? _error;
+  String? _loadMoreError;
+  final Set<String> _pendingVoteUuids = <String>{};
 
   @override
   void initState() {
@@ -72,6 +76,7 @@ class _EventReviewsFullScreenState
     setState(() {
       _isLoading = true;
       _error = null;
+      _loadMoreError = null;
     });
     try {
       final repo = ref.read(reviewsRepositoryProvider);
@@ -98,8 +103,13 @@ class _EventReviewsFullScreenState
   }
 
   Future<void> _loadMore() async {
-    if (_isLoadingMore || !_hasMore || _isLoading) return;
-    setState(() => _isLoadingMore = true);
+    if (_isLoadingMore || !_hasMore || _isLoading || _loadMoreError != null) {
+      return;
+    }
+    setState(() {
+      _isLoadingMore = true;
+      _loadMoreError = null;
+    });
     try {
       final repo = ref.read(reviewsRepositoryProvider);
       final next = await repo.getEventReviews(
@@ -112,10 +122,17 @@ class _EventReviewsFullScreenState
         _query = _query.copyWith(page: next.meta.currentPage);
         _hasMore = next.meta.hasMore;
         _isLoadingMore = false;
+        _loadMoreError = null;
       });
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
-      setState(() => _isLoadingMore = false);
+      setState(() {
+        _isLoadingMore = false;
+        _loadMoreError = ApiResponseHandler.extractError(
+          error,
+          fallback: context.l10n.reviewsUserLoadMoreError,
+        );
+      });
     }
   }
 
@@ -150,63 +167,65 @@ class _EventReviewsFullScreenState
   }
 
   Future<void> _handleVote(String uuid, bool isHelpful) async {
+    if (_pendingVoteUuids.contains(uuid)) return;
+
     final reviewIndex = _items.indexWhere((r) => r.uuid == uuid);
     if (reviewIndex == -1) return;
 
     final original = _items[reviewIndex];
+    // ReviewCard intentionally locks an existing vote. Keep this guard at the
+    // mutation boundary too, so stale/double callbacks cannot issue a second
+    // request.
+    if (original.userVote != null) return;
 
-    // Optimistic update
-    int helpful = original.helpfulCount;
-    int notHelpful = original.notHelpfulCount;
-    if (original.userVote == isHelpful) {
-      // Same vote → unvote
-      if (isHelpful) {
-        helpful = (helpful - 1).clamp(0, helpful);
-      } else {
-        notHelpful = (notHelpful - 1).clamp(0, notHelpful);
-      }
-      setState(() {
-        _items[reviewIndex] = original.copyWith(
-          helpfulCount: helpful,
-          notHelpfulCount: notHelpful,
-          userVote: null,
-        );
-      });
-      await ref.read(reviewsActionsProvider.notifier).unvoteReview(
-            reviewUuid: uuid,
-            eventSlug: widget.eventSlug,
-          );
-    } else {
-      // Switch or new vote
-      if (original.userVote == true) {
-        helpful = (helpful - 1).clamp(0, helpful);
-      } else if (original.userVote == false) {
-        notHelpful = (notHelpful - 1).clamp(0, notHelpful);
-      }
-      if (isHelpful) {
-        helpful++;
-      } else {
-        notHelpful++;
-      }
-      setState(() {
-        _items[reviewIndex] = original.copyWith(
-          helpfulCount: helpful,
-          notHelpfulCount: notHelpful,
-          userVote: isHelpful,
-        );
-      });
-      // If switching, unvote first
-      if (original.userVote != null) {
-        await ref.read(reviewsActionsProvider.notifier).unvoteReview(
-              reviewUuid: uuid,
-              eventSlug: widget.eventSlug,
-            );
-      }
-      await ref.read(reviewsActionsProvider.notifier).voteReview(
+    setState(() {
+      _pendingVoteUuids.add(uuid);
+      _items[reviewIndex] = original.copyWith(
+        helpfulCount: original.helpfulCount + (isHelpful ? 1 : 0),
+        notHelpfulCount: original.notHelpfulCount + (isHelpful ? 0 : 1),
+        userVote: isHelpful,
+      );
+    });
+
+    final voteFailureFallback = context.l10n.reviewsVoteFailed;
+    ReviewActionResult<VoteCounts> result;
+    try {
+      result = await ref.read(reviewsActionsProvider.notifier).voteReview(
             reviewUuid: uuid,
             isHelpful: isHelpful,
             eventSlug: widget.eventSlug,
           );
+    } catch (error) {
+      result = ReviewActionFailure(
+        ApiResponseHandler.extractError(
+          error,
+          fallback: voteFailureFallback,
+        ),
+        error,
+      );
+    }
+
+    if (!mounted) return;
+    final currentIndex = _items.indexWhere((review) => review.uuid == uuid);
+    setState(() {
+      _pendingVoteUuids.remove(uuid);
+      if (currentIndex == -1) return;
+      switch (result) {
+        case ReviewActionSuccess(value: final counts):
+          _items[currentIndex] = _items[currentIndex].copyWith(
+            helpfulCount: counts.helpfulCount,
+            notHelpfulCount: counts.notHelpfulCount,
+            userVote: isHelpful,
+          );
+        case ReviewActionFailure():
+          _items[currentIndex] = original;
+      }
+    });
+
+    if (result case ReviewActionFailure(message: final message)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: HbColors.error),
+      );
     }
   }
 
@@ -214,13 +233,18 @@ class _EventReviewsFullScreenState
   Widget build(BuildContext context) {
     final statsAsync = ref.watch(eventReviewStatsProvider(widget.eventSlug));
     final canReviewAsync = ref.watch(canReviewProvider(widget.eventSlug));
+    final explicitCanReview = !canReviewAsync.isLoading &&
+            !canReviewAsync.hasError &&
+            canReviewAsync.hasValue
+        ? canReviewAsync.valueOrNull
+        : null;
+    final canWriteReview = explicitCanReview is CanReviewAllowed;
 
     // Avis utilisateur déjà laissé : on l'affiche en tête, sauf s'il est déjà
     // dans la liste publique (status approved → doublon).
-    final myReview = canReviewAsync.maybeWhen(
-      data: (r) => r is CanReviewDenied ? r.existingReview : null,
-      orElse: () => null,
-    );
+    final myReview = explicitCanReview is CanReviewDenied
+        ? explicitCanReview.existingReview
+        : null;
     final myInList =
         myReview != null && _items.any((r) => r.uuid == myReview.uuid);
     final myReviewToShow = myInList ? null : myReview;
@@ -233,12 +257,10 @@ class _EventReviewsFullScreenState
         elevation: 0,
         foregroundColor: HbColors.textPrimary,
       ),
-      // Pattern Q&A : FAB toujours visible, sauf si l'utilisateur a déjà
-      // un avis (entry-point d'édition dans le bloc "Votre avis"). Le tap
-      // est protégé par GuestGuard côté _handleWriteReview.
-      floatingActionButton: myReview != null
-          ? null
-          : FloatingActionButton.extended(
+      // Eligibility must be explicit. Loading/error/denied states never expose
+      // a write action because they do not prove that no review exists.
+      floatingActionButton: canWriteReview
+          ? FloatingActionButton.extended(
               onPressed: () {
                 HapticFeedback.lightImpact();
                 _handleWriteReview();
@@ -249,7 +271,8 @@ class _EventReviewsFullScreenState
                 context.l10n.reviewsWriteReviewAction,
                 style: const TextStyle(color: Colors.white),
               ),
-            ),
+            )
+          : null,
       body: RefreshIndicator(
         color: HbColors.brandPrimary,
         onRefresh: _loadFirstPage,
@@ -289,7 +312,32 @@ class _EventReviewsFullScreenState
                 ),
               ),
             SliverToBoxAdapter(
-              child: canReviewAsync.maybeWhen(
+              child: canReviewAsync.when(
+                skipLoadingOnRefresh: false,
+                skipLoadingOnReload: false,
+                loading: () => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(context.l10n.reviewsEligibilityChecking),
+                    ],
+                  ),
+                ),
+                error: (error, _) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: CanReviewLoadError(
+                    error: error,
+                    onRetry: () => ref.invalidate(
+                      canReviewProvider(widget.eventSlug),
+                    ),
+                  ),
+                ),
                 data: (r) {
                   // Si on affiche déjà le bloc "Votre avis", ne pas redire
                   // "vous avez déjà laissé un avis" en dessous.
@@ -302,7 +350,6 @@ class _EventReviewsFullScreenState
                   }
                   return const SizedBox.shrink();
                 },
-                orElse: () => const SizedBox.shrink(),
               ),
             ),
             SliverToBoxAdapter(child: _buildFiltersBar()),
@@ -423,6 +470,27 @@ class _EventReviewsFullScreenState
         delegate: SliverChildBuilderDelegate(
           (context, index) {
             if (index >= _items.length) {
+              if (_loadMoreError != null) {
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Text(
+                        _loadMoreError!,
+                        textAlign: TextAlign.center,
+                      ),
+                      TextButton.icon(
+                        onPressed: () {
+                          setState(() => _loadMoreError = null);
+                          _loadMore();
+                        },
+                        icon: const Icon(Icons.refresh),
+                        label: Text(context.l10n.commonRetry),
+                      ),
+                    ],
+                  ),
+                );
+              }
               return const Padding(
                 padding: EdgeInsets.all(16),
                 child: Center(
@@ -437,10 +505,12 @@ class _EventReviewsFullScreenState
                 review: _items[index],
                 onVote: _handleVote,
                 onReport: () => _handleReport(_items[index]),
+                isVotePending: _pendingVoteUuids.contains(_items[index].uuid),
               ),
             );
           },
-          childCount: _items.length + (_isLoadingMore ? 1 : 0),
+          childCount: _items.length +
+              (_isLoadingMore || _loadMoreError != null ? 1 : 0),
         ),
       ),
     );

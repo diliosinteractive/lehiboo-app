@@ -1,7 +1,7 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../domain/entities/paginated_reviews.dart';
 import '../../domain/entities/review.dart';
@@ -84,7 +84,10 @@ class ReviewsActionsNotifier extends StateNotifier<AsyncValue<void>> {
       return ReviewActionSuccess(review);
     } catch (e, st) {
       _setState(AsyncValue.error(e, st));
-      return ReviewActionFailure(_messageFor(e), e);
+      return ReviewActionFailure(
+        _messageFor(e, cachedAppLocalizations().reviewsCreateFailed),
+        e,
+      );
     }
   }
 
@@ -108,7 +111,10 @@ class ReviewsActionsNotifier extends StateNotifier<AsyncValue<void>> {
       return ReviewActionSuccess(review);
     } catch (e, st) {
       _setState(AsyncValue.error(e, st));
-      return ReviewActionFailure(_messageFor(e), e);
+      return ReviewActionFailure(
+        _messageFor(e, cachedAppLocalizations().reviewsUpdateFailed),
+        e,
+      );
     }
   }
 
@@ -121,7 +127,10 @@ class ReviewsActionsNotifier extends StateNotifier<AsyncValue<void>> {
       _invalidateAfterMutation(eventSlug: eventSlug);
       return const ReviewActionSuccess(null);
     } catch (e) {
-      return ReviewActionFailure(_messageFor(e), e);
+      return ReviewActionFailure(
+        _messageFor(e, cachedAppLocalizations().reviewsDeleteFailed),
+        e,
+      );
     }
   }
 
@@ -135,12 +144,15 @@ class ReviewsActionsNotifier extends StateNotifier<AsyncValue<void>> {
         reviewUuid,
         isHelpful: isHelpful,
       );
-      if (mounted && eventSlug != null) {
-        _ref.invalidate(eventReviewsProvider);
-      }
+      // Vote callers apply these server-authoritative counters immediately.
+      // Invalidating here would dispose their optimistic card before they can
+      // reconcile or roll it back.
       return ReviewActionSuccess(counts);
     } catch (e) {
-      return ReviewActionFailure(_messageFor(e), e);
+      return ReviewActionFailure(
+        _messageFor(e, cachedAppLocalizations().reviewsVoteFailed),
+        e,
+      );
     }
   }
 
@@ -150,12 +162,12 @@ class ReviewsActionsNotifier extends StateNotifier<AsyncValue<void>> {
   }) async {
     try {
       final counts = await _repo.unvoteReview(reviewUuid);
-      if (mounted && eventSlug != null) {
-        _ref.invalidate(eventReviewsProvider);
-      }
       return ReviewActionSuccess(counts);
     } catch (e) {
-      return ReviewActionFailure(_messageFor(e), e);
+      return ReviewActionFailure(
+        _messageFor(e, cachedAppLocalizations().reviewsVoteFailed),
+        e,
+      );
     }
   }
 
@@ -172,16 +184,16 @@ class ReviewsActionsNotifier extends StateNotifier<AsyncValue<void>> {
       );
       return const ReviewActionSuccess(null);
     } catch (e) {
-      return ReviewActionFailure(_messageFor(e), e);
+      return ReviewActionFailure(
+        _messageFor(e, cachedAppLocalizations().reviewsReportFailed),
+        e,
+      );
     }
   }
 
-  String _messageFor(Object error) {
+  String _messageFor(Object error, String fallback) {
     debugPrint('ReviewsActionsNotifier error: $error');
-    if (error is DioException) {
-      return ApiResponseHandler.extractError(error);
-    }
-    return ApiResponseHandler.extractError(error);
+    return ApiResponseHandler.extractError(error, fallback: fallback);
   }
 }
 

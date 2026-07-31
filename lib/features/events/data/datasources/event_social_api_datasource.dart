@@ -1,10 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../../config/dio_client.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../models/event_question_dto.dart';
 
-final eventSocialApiDataSourceProvider = Provider<EventSocialApiDataSource>((ref) {
+final eventSocialApiDataSourceProvider =
+    Provider<EventSocialApiDataSource>((ref) {
   final dio = ref.read(dioProvider);
   return EventSocialApiDataSource(dio);
 });
@@ -45,21 +48,12 @@ class EventSocialApiDataSource {
     );
 
     final data = response.data;
+    final questions = ApiResponseHandler.extractList(data)
+        .map(_parseQuestionItem)
+        .toList(growable: false);
+    final meta = _parseQuestionsMeta(data);
 
-    if (data is Map<String, dynamic>) {
-      final questions = (data['data'] as List<dynamic>?)
-          ?.map((e) => EventQuestionDto.fromJson(e as Map<String, dynamic>))
-          .toList() ?? [];
-
-      MetaPaginationDto? meta;
-      if (data['meta'] != null) {
-        meta = MetaPaginationDto.fromJson(data['meta'] as Map<String, dynamic>);
-      }
-
-      return EventQuestionsResponseDto(data: questions, meta: meta);
-    }
-
-    return const EventQuestionsResponseDto();
+    return EventQuestionsResponseDto(data: questions, meta: meta);
   }
 
   /// Pose une nouvelle question (authentification optionnelle)
@@ -87,8 +81,8 @@ class EventSocialApiDataSource {
     // Spec §2.1 : la réponse est `{ message, question: {...} }`.
     // Fallback sur `data` ou la racine pour robustesse si le backend change.
     final data = response.data as Map<String, dynamic>;
-    final questionData = (data['question'] ?? data['data'] ?? data)
-        as Map<String, dynamic>;
+    final questionData =
+        (data['question'] ?? data['data'] ?? data) as Map<String, dynamic>;
     return EventQuestionDto.fromJson(questionData);
   }
 
@@ -111,27 +105,93 @@ class EventSocialApiDataSource {
   }
 
   static int _parseHelpfulCount(dynamic data) {
-    if (data is! Map) return 0;
-    final raw = data['helpful_count'] ?? data['helpfulCount'];
+    final payload = ApiResponseHandler.extractObject(data, unwrapRoot: true);
+    return _readRequiredInt(
+      payload,
+      const ['helpful_count', 'helpfulCount'],
+      fieldDescription: 'question helpful count',
+    );
+  }
+
+  static EventQuestionDto _parseQuestionItem(dynamic item) {
+    if (item is! Map<String, dynamic>) {
+      throw ApiFormatException('Expected question item to be a Map', item);
+    }
+    try {
+      return EventQuestionDto.fromJson(item);
+    } catch (_) {
+      throw ApiFormatException('Invalid question item payload', item);
+    }
+  }
+
+  static MetaPaginationDto? _parseQuestionsMeta(dynamic data) {
+    if (data is! Map<String, dynamic> || !data.containsKey('meta')) return null;
+    final meta = data['meta'];
+    if (meta == null) return null;
+    if (meta is! Map<String, dynamic>) {
+      throw ApiFormatException(
+          'Expected question pagination meta to be a Map', meta);
+    }
+    return MetaPaginationDto.fromJson(meta);
+  }
+
+  static int _readRequiredInt(
+    Map<String, dynamic> payload,
+    List<String> keys, {
+    required String fieldDescription,
+  }) {
+    int? firstValue;
+    var found = false;
+
+    for (final key in keys) {
+      if (!payload.containsKey(key)) continue;
+      found = true;
+      final value = _parseStrictInt(payload[key], fieldDescription);
+      firstValue ??= value;
+    }
+
+    if (!found) {
+      throw ApiFormatException('Missing $fieldDescription', payload);
+    }
+    return firstValue!;
+  }
+
+  static int _parseStrictInt(dynamic raw, String fieldDescription) {
     if (raw is int) return raw;
-    if (raw is String) return int.tryParse(raw) ?? 0;
-    if (raw is double) return raw.toInt();
-    return 0;
+    if (raw is double && raw.isFinite && raw == raw.truncateToDouble()) {
+      return raw.toInt();
+    }
+    if (raw is String) {
+      final value = int.tryParse(raw.trim());
+      if (value != null) return value;
+    }
+    throw ApiFormatException('Invalid $fieldDescription', raw);
   }
 
   /// Récupère la question de l'utilisateur connecté pour un événement
   Future<EventQuestionDto?> getMyQuestion(String eventSlug) async {
     try {
       final response = await _dio.get('/events/$eventSlug/my-question');
-      final data = response.data;
-
-      if (data['data'] != null) {
-        return EventQuestionDto.fromJson(data['data'] as Map<String, dynamic>);
+      if (response.statusCode == 204 || response.statusCode == 404) {
+        return null;
       }
-      return null;
-    } catch (e) {
-      debugPrint('Error getting myQuestion: $e');
-      return null;
+
+      final data = response.data;
+      if (data is Map<String, dynamic> &&
+          data.containsKey('data') &&
+          data['data'] == null) {
+        return null;
+      }
+
+      final payload = ApiResponseHandler.extractObject(data);
+      return EventQuestionDto.fromJson(payload);
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404 ||
+          error.response?.statusCode == 204) {
+        return null;
+      }
+      debugPrint('Error getting myQuestion: $error');
+      rethrow;
     }
   }
 }

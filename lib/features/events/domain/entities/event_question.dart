@@ -156,16 +156,22 @@ class EventQuestion extends Equatable {
 }
 
 class QuestionsPage extends Equatable {
+  static const Object _loadMoreErrorUnset = Object();
+
   final List<EventQuestion> items;
   final int currentPage;
   final int lastPage;
   final int total;
+  final bool isLoadingMore;
+  final Object? loadMoreError;
 
   const QuestionsPage({
     this.items = const [],
     this.currentPage = 1,
     this.lastPage = 1,
     this.total = 0,
+    this.isLoadingMore = false,
+    this.loadMoreError,
   });
 
   bool get hasMore => currentPage < lastPage;
@@ -175,15 +181,28 @@ class QuestionsPage extends Equatable {
     int? currentPage,
     int? lastPage,
     int? total,
+    bool? isLoadingMore,
+    Object? loadMoreError = _loadMoreErrorUnset,
   }) {
     return QuestionsPage(
       items: items ?? this.items,
       currentPage: currentPage ?? this.currentPage,
       lastPage: lastPage ?? this.lastPage,
       total: total ?? this.total,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      loadMoreError: identical(loadMoreError, _loadMoreErrorUnset)
+          ? this.loadMoreError
+          : loadMoreError,
     );
   }
 
   @override
-  List<Object?> get props => [items, currentPage, lastPage, total];
+  List<Object?> get props => [
+        items,
+        currentPage,
+        lastPage,
+        total,
+        isLoadingMore,
+        loadMoreError,
+      ];
 }

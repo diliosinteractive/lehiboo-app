@@ -12,6 +12,7 @@ import '../../../../memberships/domain/exceptions/members_only_exception.dart';
 import '../../../../petit_boo/presentation/widgets/animated_toast.dart';
 import '../../../domain/entities/event.dart';
 import '../../../domain/exceptions/event_password_exceptions.dart';
+import '../../utils/event_password_error_message.dart';
 
 class EventPasswordSheet extends ConsumerStatefulWidget {
   final String identifier;
@@ -166,11 +167,11 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
       if (!mounted) return;
       Navigator.of(context).pop(null);
       PetitBooToast.error(context, context.l10n.eventPrivateNotFound);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         _submitting = false;
-        _error = context.l10n.eventPasswordNetworkError;
+        _error = eventPasswordErrorMessage(context.l10n, e);
       });
     }
   }

@@ -177,7 +177,9 @@ class EventsApiDataSource {
         // Old format: { success: true, data: { events: [...], pagination: {...} } }
         eventsData = innerData;
       } else {
-        throw Exception('Unexpected data format in events response');
+        throw const ApiFormatException(
+          'Unexpected data format in events response',
+        );
       }
     } else if (data is Map<String, dynamic> && data['data'] != null) {
       // Format without 'success' key (standard Laravel pagination)
@@ -198,7 +200,10 @@ class EventsApiDataSource {
         eventsData = data['data'];
       }
     } else {
-      throw Exception(data['message'] ?? 'Failed to load events');
+      final responseMessage =
+          ApiResponseHandler.safeUserMessage(data['message']);
+      if (responseMessage != null) throw Exception(responseMessage);
+      throw const ApiFormatException('Failed to load events');
     }
 
     // Handle "lightweight" response structure (pins vs events)
@@ -216,8 +221,8 @@ class EventsApiDataSource {
       // Map pins to EventDto structure
       final mappedEvents = pins.map<Map<String, dynamic>>((pin) {
         final bookingMode = pin['booking_mode'] ?? pin['bookingMode'];
-        final discoveryPricingType = pin['discovery_pricing_type'] ??
-            pin['discoveryPricingType'];
+        final discoveryPricingType =
+            pin['discovery_pricing_type'] ?? pin['discoveryPricingType'];
         final isDiscovery = pin['is_discovery'] ??
             pin['isDiscovery'] ??
             (bookingMode == 'discovery' ||

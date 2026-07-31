@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/analytics/analytics_event.dart';
 import 'package:lehiboo/core/analytics/analytics_provider.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
+import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
 import 'package:lehiboo/features/events/presentation/utils/event_l10n.dart';
@@ -749,6 +750,48 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                         ),
                       );
                     },
+                  );
+                }
+
+                if (eventsAsync.hasError) {
+                  return Center(
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.12),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.cloud_off_outlined,
+                            color: Color(0xFFFF601F),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              ApiResponseHandler.extractError(
+                                eventsAsync.error,
+                                fallback: context.l10n.eventLoadError,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          TextButton(
+                            onPressed: () => ref.invalidate(eventsProvider),
+                            child: Text(context.l10n.commonRetry),
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 }
 

@@ -13,6 +13,7 @@ class ReviewCard extends StatelessWidget {
   final void Function(String reviewUuid, bool isHelpful)? onVote;
   final VoidCallback? onReport;
   final bool showFull;
+  final bool isVotePending;
 
   const ReviewCard({
     super.key,
@@ -20,6 +21,7 @@ class ReviewCard extends StatelessWidget {
     this.onVote,
     this.onReport,
     this.showFull = false,
+    this.isVotePending = false,
   });
 
   @override
@@ -225,7 +227,7 @@ class ReviewCard extends StatelessWidget {
             activeIcon: Icons.thumb_up,
             count: review.helpfulCount,
             isActive: review.userVote == true,
-            enabled: !hasVoted,
+            enabled: !hasVoted && !isVotePending,
             onTap: () => onVote!(review.uuid, true),
           ),
           const SizedBox(width: 16),
@@ -234,9 +236,17 @@ class ReviewCard extends StatelessWidget {
             activeIcon: Icons.thumb_down,
             count: review.notHelpfulCount,
             isActive: review.userVote == false,
-            enabled: !hasVoted,
+            enabled: !hasVoted && !isVotePending,
             onTap: () => onVote!(review.uuid, false),
           ),
+          if (isVotePending) ...[
+            const SizedBox(width: 12),
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ],
         ],
         const Spacer(),
         if (onReport != null)

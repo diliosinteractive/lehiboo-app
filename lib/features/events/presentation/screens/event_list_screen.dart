@@ -66,7 +66,7 @@ final eventsListProvider =
   } catch (e, stackTrace) {
     debugPrint('Error fetching events: $e');
     debugPrint('Stack trace: $stackTrace');
-    return [];
+    rethrow;
   }
 });
 
@@ -548,12 +548,32 @@ class _EventListScreenState extends ConsumerState<EventListScreen> {
 
     if (result == null) return; // User cancelled
 
-    await alertsNotifier.createAlert(
-      name: result.name,
-      filter: filter,
-      enablePush: result.enablePush,
-      enableEmail: result.enableEmail,
-    );
+    try {
+      await alertsNotifier.createAlert(
+        name: result.name,
+        filter: filter,
+        enablePush: result.enablePush,
+        enableEmail: result.enableEmail,
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ApiResponseHandler.extractError(
+              error,
+              fallback: context.l10n.searchSaveFailed,
+            ),
+          ),
+          backgroundColor: HbColors.error,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      return;
+    }
 
     if (!context.mounted) return;
     final hasNotifications = result.enablePush || result.enableEmail;

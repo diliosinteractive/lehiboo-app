@@ -101,6 +101,8 @@ class _EventQuestionsScreenState extends ConsumerState<EventQuestionsScreen> {
         ref.watch(eventQuestionsListControllerProvider(widget.eventSlug));
     final myQuestionAsync = ref.watch(myQuestionProvider(widget.eventSlug));
     final myQuestion = myQuestionAsync.valueOrNull;
+    final canAsk =
+        myQuestionAsync is AsyncData<EventQuestion?> && myQuestion == null;
 
     // Si la question de l'user est déjà dans la liste publique
     // (status approved/answered), on la laisse dans la liste (avec ses
@@ -156,7 +158,10 @@ class _EventQuestionsScreenState extends ConsumerState<EventQuestionsScreen> {
             return listAsync.when(
               loading: () => const _LoadingList(),
               error: (e, _) => _ErrorList(
-                message: ApiResponseHandler.extractError(e),
+                message: ApiResponseHandler.extractError(
+                  e,
+                  fallback: context.l10n.eventQuestionsLoadError,
+                ),
                 onRetry: () => ref.invalidate(
                   eventQuestionsListControllerProvider(widget.eventSlug),
                 ),
@@ -168,6 +173,8 @@ class _EventQuestionsScreenState extends ConsumerState<EventQuestionsScreen> {
                 // → aucun dedupe, la question reste affichée avec ses boutons
                 // (Utile, etc.) et pas de bloc "Votre question" en double au top.
                 myQuestion: myQuestionToDisplay,
+                myQuestionLoadFailed: myQuestionAsync.hasError,
+                canAsk: canAsk,
                 eventSlug: widget.eventSlug,
                 eventTitle: widget.eventTitle,
               ),
@@ -179,9 +186,10 @@ class _EventQuestionsScreenState extends ConsumerState<EventQuestionsScreen> {
       // (peu importe si elle est publique ou non — il ne peut pas en reposer).
       floatingActionButton: (myQuestion == null && listAsync.hasValue)
           ? FloatingActionButton.extended(
-              onPressed: () => _onAskQuestion(),
-              backgroundColor: HbColors.brandPrimary,
-              foregroundColor: HbColors.white,
+              onPressed: canAsk ? () => _onAskQuestion() : null,
+              backgroundColor:
+                  canAsk ? HbColors.brandPrimary : HbColors.grey200,
+              foregroundColor: canAsk ? HbColors.white : HbColors.grey500,
               icon: const Icon(Icons.add_comment_outlined),
               label: Text(context.l10n.eventAskQuestion),
             )
@@ -194,6 +202,8 @@ class _QuestionsList extends ConsumerWidget {
   final ScrollController scrollController;
   final QuestionsPage page;
   final EventQuestion? myQuestion;
+  final bool myQuestionLoadFailed;
+  final bool canAsk;
   final String eventSlug;
   final String eventTitle;
 
@@ -201,6 +211,8 @@ class _QuestionsList extends ConsumerWidget {
     required this.scrollController,
     required this.page,
     required this.myQuestion,
+    required this.myQuestionLoadFailed,
+    required this.canAsk,
     required this.eventSlug,
     required this.eventTitle,
   });
@@ -215,21 +227,33 @@ class _QuestionsList extends ConsumerWidget {
         controller: scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
-          const SizedBox(height: 80),
+          const SizedBox(height: 32),
+          if (myQuestionLoadFailed) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _MyQuestionStatusError(
+                onRetry: () => ref.invalidate(myQuestionProvider(eventSlug)),
+              ),
+            ),
+            const SizedBox(height: 32),
+          ] else
+            const SizedBox(height: 48),
           _EmptyState(
-            onAsk: () async {
-              final allowed = await GuestGuard.check(
-                context: context,
-                ref: ref,
-                featureName: context.l10n.guestFeatureAskQuestion,
-              );
-              if (!allowed || !context.mounted) return;
-              await AskQuestionSheet.show(
-                context,
-                eventSlug: eventSlug,
-                eventTitle: eventTitle,
-              );
-            },
+            onAsk: canAsk
+                ? () async {
+                    final allowed = await GuestGuard.check(
+                      context: context,
+                      ref: ref,
+                      featureName: context.l10n.guestFeatureAskQuestion,
+                    );
+                    if (!allowed || !context.mounted) return;
+                    await AskQuestionSheet.show(
+                      context,
+                      eventSlug: eventSlug,
+                      eventTitle: eventTitle,
+                    );
+                  }
+                : null,
           ),
         ],
       );
@@ -242,6 +266,12 @@ class _QuestionsList extends ConsumerWidget {
       children: [
         const SizedBox(height: 16),
         _TotalRow(total: page.total),
+        if (myQuestionLoadFailed) ...[
+          const SizedBox(height: 12),
+          _MyQuestionStatusError(
+            onRetry: () => ref.invalidate(myQuestionProvider(eventSlug)),
+          ),
+        ],
         if (myQuestion != null) ...[
           const SizedBox(height: 12),
           _MyQuestionCard(myQuestion: myQuestion!),
@@ -271,7 +301,19 @@ class _QuestionsList extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 16),
-        if (page.hasMore)
+        if (page.loadMoreError != null)
+          _QuestionsLoadMoreError(
+            message: ApiResponseHandler.extractError(
+              page.loadMoreError,
+              fallback: context.l10n.eventQuestionsLoadMoreError,
+            ),
+            onRetry: () => ref
+                .read(
+                  eventQuestionsListControllerProvider(eventSlug).notifier,
+                )
+                .retryLoadMore(),
+          )
+        else if (page.isLoadingMore)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
             child: Center(
@@ -342,6 +384,38 @@ class _TotalRow extends StatelessWidget {
         fontSize: 13,
         fontWeight: FontWeight.w500,
         color: HbColors.grey500,
+      ),
+    );
+  }
+}
+
+class _QuestionsLoadMoreError extends StatelessWidget {
+  const _QuestionsLoadMoreError({
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Column(
+        children: [
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 13, color: HbColors.grey500),
+          ),
+          const SizedBox(height: 6),
+          TextButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh, size: 18),
+            label: Text(context.l10n.commonRetry),
+          ),
+        ],
       ),
     );
   }
@@ -486,8 +560,58 @@ class _MyQuestionCard extends StatelessWidget {
   }
 }
 
+class _MyQuestionStatusError extends StatelessWidget {
+  const _MyQuestionStatusError({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: HbColors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: HbColors.grey200),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.error_outline, color: HbColors.error, size: 28),
+          const SizedBox(height: 8),
+          Text(
+            context.l10n.eventMyQuestionLoadErrorTitle,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: HbColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            context.l10n.eventMyQuestionLoadErrorBody,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 13,
+              color: HbColors.grey500,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh, size: 18),
+            label: Text(context.l10n.commonRetry),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _EmptyState extends StatelessWidget {
-  final VoidCallback onAsk;
+  final VoidCallback? onAsk;
 
   const _EmptyState({required this.onAsk});
 
@@ -538,6 +662,8 @@ class _EmptyState extends StatelessWidget {
             style: FilledButton.styleFrom(
               backgroundColor: HbColors.brandPrimary,
               foregroundColor: HbColors.white,
+              disabledBackgroundColor: HbColors.grey200,
+              disabledForegroundColor: HbColors.grey500,
               padding: const EdgeInsets.symmetric(
                 horizontal: 20,
                 vertical: 14,

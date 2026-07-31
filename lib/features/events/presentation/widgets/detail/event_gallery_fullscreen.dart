@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -106,14 +107,21 @@ class _EventGalleryFullscreenState extends State<EventGalleryFullscreen> {
     );
   }
 
-  void _share() async {
+  Future<void> _share() async {
     HapticFeedback.lightImpact();
     final text = widget.eventTitle != null
         ? '${widget.eventTitle}\n${widget.shareUrl ?? widget.images[_currentIndex]}'
         : widget.shareUrl ?? widget.images[_currentIndex];
-    await SharePlus.instance.share(
-      ShareParams(text: text),
-    );
+    try {
+      await SharePlus.instance.share(
+        ShareParams(text: text),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.commonShareFailed)),
+      );
+    }
   }
 
   @override
@@ -217,7 +225,8 @@ class _EventGalleryFullscreenState extends State<EventGalleryFullscreen> {
                 ),
                 // Bouton partager
                 IconButton(
-                  icon: const Icon(Icons.share_outlined, color: Colors.white, size: 24),
+                  icon: const Icon(Icons.share_outlined,
+                      color: Colors.white, size: 24),
                   onPressed: _share,
                 ),
               ],
@@ -294,7 +303,9 @@ class _EventGalleryFullscreenState extends State<EventGalleryFullscreen> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: isSelected ? HbColors.brandPrimary : Colors.transparent,
+                        color: isSelected
+                            ? HbColors.brandPrimary
+                            : Colors.transparent,
                         width: 2,
                       ),
                     ),

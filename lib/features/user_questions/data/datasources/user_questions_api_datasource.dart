@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/dio_client.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../events/data/models/event_question_dto.dart';
 
 final userQuestionsApiDataSourceProvider =
@@ -36,21 +37,35 @@ class UserQuestionsApiDataSource {
     );
 
     final data = response.data;
+    final questions = ApiResponseHandler.extractList(data)
+        .map(_parseQuestionItem)
+        .toList(growable: false);
+    final meta = _parseQuestionsMeta(data);
 
-    if (data is Map<String, dynamic>) {
-      final questions = (data['data'] as List<dynamic>?)
-              ?.map((e) => EventQuestionDto.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [];
+    return EventQuestionsResponseDto(data: questions, meta: meta);
+  }
 
-      MetaPaginationDto? meta;
-      if (data['meta'] != null) {
-        meta = MetaPaginationDto.fromJson(data['meta'] as Map<String, dynamic>);
-      }
-
-      return EventQuestionsResponseDto(data: questions, meta: meta);
+  static EventQuestionDto _parseQuestionItem(dynamic item) {
+    if (item is! Map<String, dynamic>) {
+      throw ApiFormatException('Expected user question item to be a Map', item);
     }
+    try {
+      return EventQuestionDto.fromJson(item);
+    } catch (_) {
+      throw ApiFormatException('Invalid user question item payload', item);
+    }
+  }
 
-    return const EventQuestionsResponseDto();
+  static MetaPaginationDto? _parseQuestionsMeta(dynamic data) {
+    if (data is! Map<String, dynamic> || !data.containsKey('meta')) return null;
+    final meta = data['meta'];
+    if (meta == null) return null;
+    if (meta is! Map<String, dynamic>) {
+      throw ApiFormatException(
+        'Expected user question pagination meta to be a Map',
+        meta,
+      );
+    }
+    return MetaPaginationDto.fromJson(meta);
   }
 }

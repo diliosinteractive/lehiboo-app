@@ -6,11 +6,14 @@ import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../domain/entities/can_review_result.dart';
+import '../../domain/entities/paginated_reviews.dart';
 import '../../domain/entities/review.dart';
+import '../../domain/entities/review_enums.dart';
 import '../../domain/entities/review_stats.dart';
 import '../../domain/repositories/reviews_repository.dart';
 import '../providers/reviews_actions_provider.dart';
 import '../providers/reviews_providers.dart';
+import 'can_review_message.dart';
 import 'my_review_block.dart';
 import 'rating_stars.dart';
 import 'review_card.dart';
@@ -43,23 +46,67 @@ class EventReviewsSection extends ConsumerWidget {
       )),
     );
     final canReviewAsync = ref.watch(canReviewProvider(eventSlug));
+    final explicitCanReview = !canReviewAsync.isLoading &&
+            !canReviewAsync.hasError &&
+            canReviewAsync.hasValue
+        ? canReviewAsync.valueOrNull
+        : null;
+    final canWriteReview = explicitCanReview is CanReviewAllowed;
     // Si l'utilisateur a déjà laissé un avis, on récupère son existingReview
     // depuis can-review pour l'afficher en tête de section (pattern Q&A
     // "Votre question").
-    final myReview = canReviewAsync.maybeWhen(
-      data: (r) => r is CanReviewDenied ? r.existingReview : null,
-      orElse: () => null,
-    );
+    final myReview = explicitCanReview is CanReviewDenied
+        ? explicitCanReview.existingReview
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Pattern Q&A : le bouton "Écrire" est toujours visible, sauf si
-        // l'utilisateur a déjà un avis (entry-point d'édition dans le bloc
-        // "Votre avis"). Le tap est protégé par GuestGuard côté parent —
-        // les non-authentifiés sont invités à se connecter.
-        _buildHeader(context, statsAsync, hasMyReview: myReview != null),
+        _buildHeader(
+          context,
+          statsAsync,
+          canWriteReview: canWriteReview,
+        ),
         const SizedBox(height: 16),
+        canReviewAsync.when(
+          skipLoadingOnRefresh: false,
+          skipLoadingOnReload: false,
+          loading: () => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(context.l10n.reviewsEligibilityChecking),
+                ),
+              ],
+            ),
+          ),
+          error: (error, _) => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: CanReviewLoadError(
+              error: error,
+              onRetry: () => ref.invalidate(canReviewProvider(eventSlug)),
+            ),
+          ),
+          data: (result) => result is CanReviewDenied &&
+                  result.reason != CanReviewReason.alreadyReviewed
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: CanReviewMessage(denied: result),
+                )
+              : const SizedBox.shrink(),
+        ),
+        if (canReviewAsync.isLoading ||
+            canReviewAsync.hasError ||
+            (explicitCanReview is CanReviewDenied &&
+                explicitCanReview.reason != CanReviewReason.alreadyReviewed))
+          const SizedBox(height: 16),
         statsAsync.when(
           loading: _buildLoading,
           error: (e, _) => _buildError(
@@ -81,7 +128,10 @@ class EventReviewsSection extends ConsumerWidget {
                 final myReviewToShow = myInList ? null : myReview;
 
                 if (!stats.hasReviews && myReviewToShow == null) {
-                  return _buildEmpty(context);
+                  return _buildEmpty(
+                    context,
+                    canWriteReview: canWriteReview,
+                  );
                 }
                 return _buildContent(
                   context,
@@ -101,15 +151,14 @@ class EventReviewsSection extends ConsumerWidget {
   Widget _buildHeader(
     BuildContext context,
     AsyncValue<ReviewStats> statsAsync, {
-    bool hasMyReview = false,
+    required bool canWriteReview,
   }) {
     final hasReviews = statsAsync.maybeWhen(
       data: (s) => s.hasReviews,
       orElse: () => true,
     );
-    // Pas besoin du bouton "Écrire" en header quand l'utilisateur a déjà
-    // son bloc "Votre avis" en haut de la section (qui contient déjà Modifier).
-    final showWriteButton = onWriteReview != null && hasReviews && !hasMyReview;
+    final showWriteButton =
+        onWriteReview != null && hasReviews && canWriteReview;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -133,7 +182,9 @@ class EventReviewsSection extends ConsumerWidget {
                     padding: const EdgeInsets.only(left: 8),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: HbColors.brandPrimary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
@@ -213,7 +264,10 @@ class EventReviewsSection extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmpty(BuildContext context) {
+  Widget _buildEmpty(
+    BuildContext context, {
+    required bool canWriteReview,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
@@ -258,7 +312,7 @@ class EventReviewsSection extends ConsumerWidget {
                 height: 1.4,
               ),
             ),
-            if (onWriteReview != null) ...[
+            if (onWriteReview != null && canWriteReview) ...[
               const SizedBox(height: 20),
               FilledButton.icon(
                 icon: const Icon(Icons.edit_outlined, size: 18),
@@ -308,15 +362,9 @@ class EventReviewsSection extends ConsumerWidget {
           ...reviews.take(3).map((review) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: ReviewCard(
+              child: _EventSectionReviewCard(
                 review: review,
-                onVote: (uuid, isHelpful) {
-                  ref.read(reviewsActionsProvider.notifier).voteReview(
-                        reviewUuid: uuid,
-                        isHelpful: isHelpful,
-                        eventSlug: eventSlug,
-                      );
-                },
+                eventSlug: eventSlug,
               ),
             );
           }),
@@ -345,6 +393,95 @@ class EventReviewsSection extends ConsumerWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _EventSectionReviewCard extends ConsumerStatefulWidget {
+  final Review review;
+  final String eventSlug;
+
+  const _EventSectionReviewCard({
+    required this.review,
+    required this.eventSlug,
+  });
+
+  @override
+  ConsumerState<_EventSectionReviewCard> createState() =>
+      _EventSectionReviewCardState();
+}
+
+class _EventSectionReviewCardState
+    extends ConsumerState<_EventSectionReviewCard> {
+  late Review _review = widget.review;
+  bool _isVoting = false;
+
+  @override
+  void didUpdateWidget(covariant _EventSectionReviewCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_isVoting && oldWidget.review != widget.review) {
+      _review = widget.review;
+    }
+  }
+
+  Future<void> _vote(String uuid, bool isHelpful) async {
+    if (_isVoting || _review.userVote != null) return;
+    final original = _review;
+    setState(() {
+      _isVoting = true;
+      _review = original.copyWith(
+        helpfulCount: original.helpfulCount + (isHelpful ? 1 : 0),
+        notHelpfulCount: original.notHelpfulCount + (isHelpful ? 0 : 1),
+        userVote: isHelpful,
+      );
+    });
+
+    final voteFailureFallback = context.l10n.reviewsVoteFailed;
+    ReviewActionResult<VoteCounts> result;
+    try {
+      result = await ref.read(reviewsActionsProvider.notifier).voteReview(
+            reviewUuid: uuid,
+            isHelpful: isHelpful,
+            eventSlug: widget.eventSlug,
+          );
+    } catch (error) {
+      result = ReviewActionFailure(
+        ApiResponseHandler.extractError(
+          error,
+          fallback: voteFailureFallback,
+        ),
+        error,
+      );
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _isVoting = false;
+      switch (result) {
+        case ReviewActionSuccess(value: final counts):
+          _review = _review.copyWith(
+            helpfulCount: counts.helpfulCount,
+            notHelpfulCount: counts.notHelpfulCount,
+            userVote: isHelpful,
+          );
+        case ReviewActionFailure():
+          _review = original;
+      }
+    });
+
+    if (result case ReviewActionFailure(message: final message)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: HbColors.error),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ReviewCard(
+      review: _review,
+      onVote: _vote,
+      isVotePending: _isVoting,
     );
   }
 }

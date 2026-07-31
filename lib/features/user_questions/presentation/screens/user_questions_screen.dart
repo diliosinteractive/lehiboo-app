@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../../core/widgets/feedback/hb_feedback.dart';
 import '../providers/user_questions_provider.dart';
 import '../widgets/user_question_card.dart';
@@ -59,9 +60,12 @@ class _UserQuestionsScreenState extends ConsumerState<UserQuestionsScreen> {
       ),
       body: asyncPage.when(
         loading: () => const _LoadingList(),
-        error: (_, __) => HbErrorView(
+        error: (error, _) => HbErrorView(
           title: l10n.commonErrorTitle,
-          message: l10n.userQuestionsLoadError,
+          message: ApiResponseHandler.extractError(
+            error,
+            fallback: l10n.userQuestionsLoadError,
+          ),
           onRetry: _onRefresh,
         ),
         data: (page) {
@@ -102,19 +106,41 @@ class _UserQuestionsScreenState extends ConsumerState<UserQuestionsScreen> {
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 if (index == page.items.length) {
+                  if (page.loadMoreError != null) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Column(
+                        children: [
+                          Text(
+                            ApiResponseHandler.extractError(
+                              page.loadMoreError,
+                              fallback: l10n.userQuestionsLoadMoreError,
+                            ),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.red.shade700),
+                          ),
+                          TextButton.icon(
+                            onPressed: controller.retryLoadMore,
+                            icon: const Icon(Icons.refresh),
+                            label: Text(l10n.commonRetry),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Center(
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: controller.isLoadingMore
-                              ? HbColors.brandPrimary
-                              : Colors.grey[300],
-                        ),
-                      ),
+                      child: page.isLoadingMore
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: HbColors.brandPrimary,
+                              ),
+                            )
+                          : const SizedBox(height: 24),
                     ),
                   );
                 }

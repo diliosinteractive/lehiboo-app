@@ -15,6 +15,7 @@ class UserReviewsState {
   final bool hasMore;
   final int currentPage;
   final String? error;
+  final String? loadMoreError;
 
   const UserReviewsState({
     this.items = const [],
@@ -23,6 +24,7 @@ class UserReviewsState {
     this.hasMore = true,
     this.currentPage = 0,
     this.error,
+    this.loadMoreError,
   });
 
   bool get isEmpty => items.isEmpty && !isLoading && error == null;
@@ -34,6 +36,7 @@ class UserReviewsState {
     bool? hasMore,
     int? currentPage,
     Object? error = _sentinel,
+    Object? loadMoreError = _sentinel,
   }) {
     return UserReviewsState(
       items: items ?? this.items,
@@ -42,6 +45,9 @@ class UserReviewsState {
       hasMore: hasMore ?? this.hasMore,
       currentPage: currentPage ?? this.currentPage,
       error: identical(error, _sentinel) ? this.error : error as String?,
+      loadMoreError: identical(loadMoreError, _sentinel)
+          ? this.loadMoreError
+          : loadMoreError as String?,
     );
   }
 }
@@ -72,7 +78,11 @@ class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
   }
 
   Future<void> refresh() async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(
+      isLoading: true,
+      error: null,
+      loadMoreError: null,
+    );
     try {
       final page = await _repo.getUserReviews(page: 1, perPage: _perPage);
       state = state.copyWith(
@@ -91,8 +101,13 @@ class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
   }
 
   Future<void> loadMore() async {
-    if (state.isLoadingMore || !state.hasMore || state.isLoading) return;
-    state = state.copyWith(isLoadingMore: true);
+    if (state.isLoadingMore ||
+        !state.hasMore ||
+        state.isLoading ||
+        state.loadMoreError != null) {
+      return;
+    }
+    state = state.copyWith(isLoadingMore: true, loadMoreError: null);
     try {
       final next = await _repo.getUserReviews(
         page: state.currentPage + 1,
@@ -103,14 +118,20 @@ class UserReviewsNotifier extends StateNotifier<UserReviewsState> {
         isLoadingMore: false,
         currentPage: next.meta.currentPage,
         hasMore: next.meta.hasMore,
+        loadMoreError: null,
       );
     } catch (e) {
       debugPrint('UserReviewsNotifier.loadMore error: $e');
       state = state.copyWith(
         isLoadingMore: false,
-        error: cachedAppLocalizations().reviewsUserLoadMoreError,
+        loadMoreError: cachedAppLocalizations().reviewsUserLoadMoreError,
       );
     }
+  }
+
+  Future<void> retryLoadMore() async {
+    state = state.copyWith(loadMoreError: null);
+    await loadMore();
   }
 
   /// Optimistic remove (utilisé après suppression confirmée d'un avis).

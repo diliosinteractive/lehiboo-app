@@ -172,9 +172,32 @@ class _MyReviewsScreenState extends ConsumerState<MyReviewsScreen> {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(16),
-      itemCount: items.length + (state.hasMore || state.isLoadingMore ? 1 : 0),
+      itemCount: items.length +
+          (state.hasMore || state.isLoadingMore || state.loadMoreError != null
+              ? 1
+              : 0),
       itemBuilder: (context, index) {
         if (index >= items.length) {
+          if (state.loadMoreError != null) {
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Text(
+                    state.loadMoreError!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.red.shade700),
+                  ),
+                  TextButton.icon(
+                    onPressed: () =>
+                        ref.read(userReviewsProvider.notifier).retryLoadMore(),
+                    icon: const Icon(Icons.refresh),
+                    label: Text(context.l10n.commonRetry),
+                  ),
+                ],
+              ),
+            );
+          }
           return const Padding(
             padding: EdgeInsets.all(16),
             child: Center(

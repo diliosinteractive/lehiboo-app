@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/dio_client.dart';
@@ -51,29 +50,26 @@ class ReviewsApiDataSource {
     );
 
     final data = response.data;
-    if (data is Map<String, dynamic>) {
-      final reviews = (data['data'] as List<dynamic>?)
-              ?.map((e) => ReviewDto.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [];
-      PaginationMetaDto? meta;
-      if (data['meta'] is Map<String, dynamic>) {
-        meta = PaginationMetaDto.fromJson(data['meta'] as Map<String, dynamic>);
-      }
-      return ReviewsResponseDto(data: reviews, meta: meta);
-    }
-    return const ReviewsResponseDto();
+    final reviews = ApiResponseHandler.extractList(data)
+        .map(_parseReviewItem)
+        .toList(growable: false);
+    final meta = _parsePaginationMeta(data, context: 'event reviews');
+    return ReviewsResponseDto(data: reviews, meta: meta);
   }
 
   /// GET /events/{slug}/reviews/stats
   Future<ReviewStatsDto> getEventReviewStats(String eventSlug) async {
     final response = await _dio.get('/events/$eventSlug/reviews/stats');
-    final data = response.data;
-    if (data is Map<String, dynamic>) {
-      final statsData = data['data'] ?? data;
-      return ReviewStatsDto.fromJson(statsData as Map<String, dynamic>);
+    final payload = ApiResponseHandler.extractObject(
+      response.data,
+      unwrapRoot: true,
+    );
+    _validateReviewStats(payload);
+    try {
+      return ReviewStatsDto.fromJson(payload);
+    } catch (_) {
+      throw ApiFormatException('Invalid review stats payload', payload);
     }
-    return const ReviewStatsDto();
   }
 
   // ---------------------------------------------------------------------------
@@ -182,32 +178,25 @@ class ReviewsApiDataSource {
       queryParameters: {'page': page, 'per_page': perPage},
     );
     final data = response.data;
-    if (data is Map<String, dynamic>) {
-      final reviews = (data['data'] as List<dynamic>?)
-              ?.map((e) => UserReviewDto.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [];
-      PaginationMetaDto? meta;
-      if (data['meta'] is Map<String, dynamic>) {
-        meta = PaginationMetaDto.fromJson(data['meta'] as Map<String, dynamic>);
-      }
-      return UserReviewsResponseDto(data: reviews, meta: meta);
-    }
-    return const UserReviewsResponseDto();
+    final reviews = ApiResponseHandler.extractList(data)
+        .map(_parseUserReviewItem)
+        .toList(growable: false);
+    final meta = _parsePaginationMeta(data, context: 'user reviews');
+    return UserReviewsResponseDto(data: reviews, meta: meta);
   }
 
   /// GET /user/reviews/pending-count
   Future<int> getPendingCount() async {
     final response = await _dio.get('/user/reviews/pending-count');
-    final data = response.data;
-    if (data is Map<String, dynamic>) {
-      // Spec : `{ "count": N, "pendingCount": N }`
-      final count = data['count'] ?? data['pendingCount'] ?? data['pending_count'];
-      if (count is int) return count;
-      if (count is String) return int.tryParse(count) ?? 0;
-      if (count is double) return count.toInt();
-    }
-    return 0;
+    final payload = ApiResponseHandler.extractObject(
+      response.data,
+      unwrapRoot: true,
+    );
+    return _readRequiredInt(
+      payload,
+      const ['count', 'pendingCount', 'pending_count'],
+      fieldDescription: 'pending review count',
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -220,19 +209,170 @@ class ReviewsApiDataSource {
     if (data is! Map<String, dynamic>) {
       throw const ApiFormatException('Expected Map for review response');
     }
-    final reviewJson = (data['review'] ?? data['data'] ?? data)
-        as Map<String, dynamic>;
+    final reviewJson =
+        (data['review'] ?? data['data'] ?? data) as Map<String, dynamic>;
     return ReviewDto.fromJson(reviewJson);
   }
 
   VoteCountsDto _readVoteCounts(dynamic data) {
-    if (data is Map<String, dynamic>) {
-      try {
-        return VoteCountsDto.fromJson(data);
-      } catch (e) {
-        debugPrint('VoteCountsDto.fromJson failed, returning zeros: $e');
+    final payload = ApiResponseHandler.extractObject(data, unwrapRoot: true);
+    _validateRequiredIntAliases(
+      payload,
+      const ['helpful_count', 'helpfulCount'],
+      fieldDescription: 'helpful review vote count',
+    );
+    _validateRequiredIntAliases(
+      payload,
+      const ['not_helpful_count', 'notHelpfulCount'],
+      fieldDescription: 'not-helpful review vote count',
+    );
+    try {
+      return VoteCountsDto.fromJson(payload);
+    } catch (_) {
+      throw ApiFormatException('Invalid review vote count payload', payload);
+    }
+  }
+
+  static ReviewDto _parseReviewItem(dynamic item) {
+    if (item is! Map<String, dynamic>) {
+      throw ApiFormatException('Expected event review item to be a Map', item);
+    }
+    try {
+      return ReviewDto.fromJson(item);
+    } catch (_) {
+      throw ApiFormatException('Invalid event review item payload', item);
+    }
+  }
+
+  static UserReviewDto _parseUserReviewItem(dynamic item) {
+    if (item is! Map<String, dynamic>) {
+      throw ApiFormatException('Expected user review item to be a Map', item);
+    }
+    try {
+      return UserReviewDto.fromJson(item);
+    } catch (_) {
+      throw ApiFormatException('Invalid user review item payload', item);
+    }
+  }
+
+  static PaginationMetaDto? _parsePaginationMeta(
+    dynamic data, {
+    required String context,
+  }) {
+    if (data is! Map<String, dynamic> || !data.containsKey('meta')) return null;
+    final meta = data['meta'];
+    if (meta == null) return null;
+    if (meta is! Map<String, dynamic>) {
+      throw ApiFormatException(
+          'Expected $context pagination meta to be a Map', meta);
+    }
+    return PaginationMetaDto.fromJson(meta);
+  }
+
+  static void _validateReviewStats(Map<String, dynamic> payload) {
+    _validateRequiredIntAliases(
+      payload,
+      const ['total_reviews', 'totalReviews'],
+      fieldDescription: 'total review count',
+    );
+    _validateRequiredNumberAliases(
+      payload,
+      const ['average_rating', 'averageRating'],
+      fieldDescription: 'average review rating',
+    );
+    _validateRequiredIntAliases(
+      payload,
+      const ['verified_count', 'verifiedCount'],
+      fieldDescription: 'verified review count',
+    );
+    _validateRequiredNumericMap(payload, 'distribution');
+    _validateRequiredNumericMap(payload, 'percentages');
+  }
+
+  static int _readRequiredInt(
+    Map<String, dynamic> payload,
+    List<String> keys, {
+    required String fieldDescription,
+  }) {
+    int? firstValue;
+    var found = false;
+    for (final key in keys) {
+      if (!payload.containsKey(key)) continue;
+      found = true;
+      final value = _parseStrictInt(payload[key], fieldDescription);
+      firstValue ??= value;
+    }
+    if (!found) {
+      throw ApiFormatException('Missing $fieldDescription', payload);
+    }
+    return firstValue!;
+  }
+
+  static void _validateRequiredIntAliases(
+    Map<String, dynamic> payload,
+    List<String> keys, {
+    required String fieldDescription,
+  }) {
+    _readRequiredInt(
+      payload,
+      keys,
+      fieldDescription: fieldDescription,
+    );
+  }
+
+  static void _validateRequiredNumberAliases(
+    Map<String, dynamic> payload,
+    List<String> keys, {
+    required String fieldDescription,
+  }) {
+    var found = false;
+    for (final key in keys) {
+      if (!payload.containsKey(key)) continue;
+      found = true;
+      _parseStrictNumber(payload[key], fieldDescription);
+    }
+    if (!found) {
+      throw ApiFormatException('Missing $fieldDescription', payload);
+    }
+  }
+
+  static void _validateRequiredNumericMap(
+    Map<String, dynamic> payload,
+    String key,
+  ) {
+    if (!payload.containsKey(key)) {
+      throw ApiFormatException('Missing review stats $key', payload);
+    }
+    final raw = payload[key];
+    if (raw is! Map<String, dynamic>) {
+      throw ApiFormatException('Invalid review stats $key', raw);
+    }
+    for (final value in raw.values) {
+      final parsed = _parseStrictNumber(value, 'review stats $key value');
+      if (parsed != parsed.truncateToDouble()) {
+        throw ApiFormatException('Invalid review stats $key value', value);
       }
     }
-    return const VoteCountsDto();
+  }
+
+  static int _parseStrictInt(dynamic raw, String fieldDescription) {
+    if (raw is int) return raw;
+    if (raw is double && raw.isFinite && raw == raw.truncateToDouble()) {
+      return raw.toInt();
+    }
+    if (raw is String) {
+      final value = int.tryParse(raw.trim());
+      if (value != null) return value;
+    }
+    throw ApiFormatException('Invalid $fieldDescription', raw);
+  }
+
+  static double _parseStrictNumber(dynamic raw, String fieldDescription) {
+    if (raw is num && raw.isFinite) return raw.toDouble();
+    if (raw is String) {
+      final value = double.tryParse(raw.trim());
+      if (value != null && value.isFinite) return value;
+    }
+    throw ApiFormatException('Invalid $fieldDescription', raw);
   }
 }

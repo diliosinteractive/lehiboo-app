@@ -35,6 +35,8 @@ class EventQASection extends ConsumerWidget {
     ref.watch(isAuthenticatedProvider);
     final myQuestionAsync = ref.watch(myQuestionProvider(eventSlug));
     final myQuestion = myQuestionAsync.valueOrNull;
+    final canAsk =
+        myQuestionAsync is AsyncData<EventQuestion?> && myQuestion == null;
 
     // Si la question de l'user est déjà présente dans la liste publique
     // (status approved/answered), on la laisse dans la liste (avec toutes
@@ -60,27 +62,34 @@ class EventQASection extends ConsumerWidget {
               data: (page) => page.total,
               orElse: () => null,
             ),
-            // Le CTA "Poser" reste caché dès que l'user a déjà une question
-            // (peu importe son status) — il ne peut pas en poser une autre.
-            // Pendant le chargement, on masque aussi le bouton pour éviter
-            // qu'il flashe entre deux états.
-            showAsk: !isLoading &&
-                myQuestionAsync.maybeWhen(
-                  data: (q) => q == null,
-                  orElse: () => false,
-                ),
+            // Tant que le statut de la question utilisateur n'est pas connu,
+            // le CTA reste visible mais désactivé pour éviter un doublon.
+            showAsk: myQuestion == null,
+            askEnabled: canAsk,
             onAsk: () => _handleAsk(context, ref),
           ),
           const SizedBox(height: 12),
           if (isLoading)
             const _LoadingPlaceholder()
           else ...[
+            if (myQuestionAsync.hasError) ...[
+              _ErrorBlock(
+                title: context.l10n.eventMyQuestionLoadErrorTitle,
+                message: context.l10n.eventMyQuestionLoadErrorBody,
+                onRetry: () => ref.invalidate(myQuestionProvider(eventSlug)),
+              ),
+              const SizedBox(height: 12),
+            ],
             _MyQuestionBlock(myQuestion: myQuestionToDisplay),
             previewAsync.when(
               // isLoading est déjà traité au-dessus
               loading: () => const SizedBox.shrink(),
               error: (e, _) => _ErrorBlock(
-                message: ApiResponseHandler.extractError(e),
+                title: context.l10n.eventQuestionsLoadError,
+                message: ApiResponseHandler.extractError(
+                  e,
+                  fallback: context.l10n.eventQuestionsLoadError,
+                ),
                 onRetry: () =>
                     ref.invalidate(eventQuestionsPreviewProvider(eventSlug)),
               ),
@@ -92,6 +101,7 @@ class EventQASection extends ConsumerWidget {
                 // comme ça le dedupe ne retire rien → la question reste visible
                 // avec ses boutons (Utile, etc.) dans la liste.
                 myQuestion: myQuestionToDisplay,
+                canAsk: canAsk,
                 onAsk: () => _handleAsk(context, ref),
               ),
             ),
@@ -140,11 +150,13 @@ class EventQASection extends ConsumerWidget {
 class _Header extends StatelessWidget {
   final int? total;
   final bool showAsk;
+  final bool askEnabled;
   final VoidCallback onAsk;
 
   const _Header({
     required this.total,
     required this.showAsk,
+    required this.askEnabled,
     required this.onAsk,
   });
 
@@ -181,7 +193,7 @@ class _Header extends StatelessWidget {
         const Spacer(),
         if (showAsk)
           TextButton.icon(
-            onPressed: onAsk,
+            onPressed: askEnabled ? onAsk : null,
             icon: const Icon(Icons.add_comment_outlined, size: 18),
             label: Text(context.l10n.eventAsk),
             style: TextButton.styleFrom(
@@ -302,6 +314,7 @@ class _Content extends ConsumerWidget {
   final String eventTitle;
   final QuestionsPage page;
   final EventQuestion? myQuestion;
+  final bool canAsk;
   final VoidCallback onAsk;
 
   const _Content({
@@ -309,6 +322,7 @@ class _Content extends ConsumerWidget {
     required this.eventTitle,
     required this.page,
     required this.myQuestion,
+    required this.canAsk,
     required this.onAsk,
   });
 
@@ -321,7 +335,7 @@ class _Content extends ConsumerWidget {
         .toList(growable: false);
 
     if (visible.isEmpty && myQuestion == null) {
-      return _EmptyBlock(onAsk: onAsk);
+      return _EmptyBlock(onAsk: canAsk ? onAsk : null);
     }
 
     final remaining = page.total - visible.length;
@@ -381,15 +395,23 @@ class _Content extends ConsumerWidget {
       featureName: context.l10n.guestFeatureVoteQuestion,
     );
     if (!allowed) return;
-    await ref
+    final updated = await ref
         .read(eventQuestionsActionsProvider.notifier)
         .toggleHelpful(eventSlug: eventSlug, question: q);
     // Preview invalidée dans le controller si aucun listController fourni.
+    if (!updated && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.eventVoteUnavailable),
+          backgroundColor: HbColors.error,
+        ),
+      );
+    }
   }
 }
 
 class _EmptyBlock extends StatelessWidget {
-  final VoidCallback onAsk;
+  final VoidCallback? onAsk;
   const _EmptyBlock({required this.onAsk});
 
   @override
@@ -444,6 +466,8 @@ class _EmptyBlock extends StatelessWidget {
             style: FilledButton.styleFrom(
               backgroundColor: HbColors.brandPrimary,
               foregroundColor: HbColors.white,
+              disabledBackgroundColor: HbColors.grey200,
+              disabledForegroundColor: HbColors.grey500,
               padding: const EdgeInsets.symmetric(
                 horizontal: 20,
                 vertical: 12,
@@ -520,9 +544,11 @@ class _LoadingPlaceholder extends StatelessWidget {
 }
 
 class _ErrorBlock extends StatelessWidget {
+  final String title;
   final String message;
   final VoidCallback onRetry;
   const _ErrorBlock({
+    required this.title,
     required this.message,
     required this.onRetry,
   });
@@ -546,7 +572,7 @@ class _ErrorBlock extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            context.l10n.eventQuestionsLoadError,
+            title,
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,

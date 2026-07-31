@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10n.dart';
+import '../../../../core/utils/api_response_handler.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/datasources/event_social_api_datasource.dart';
 import '../../data/repositories/event_questions_repository_impl.dart';
@@ -94,10 +95,16 @@ class EventQuestionsListController
 
   Future<void> loadMore() async {
     final current = state.valueOrNull;
-    if (current == null || !current.hasMore) return;
-    if (_isLoadingMore) return;
+    if (current == null ||
+        !current.hasMore ||
+        current.isLoadingMore ||
+        current.loadMoreError != null) {
+      return;
+    }
 
-    _isLoadingMore = true;
+    state = AsyncValue.data(
+      current.copyWith(isLoadingMore: true, loadMoreError: null),
+    );
     try {
       final next = await _repo.getQuestions(
         _eventSlug,
@@ -110,18 +117,23 @@ class EventQuestionsListController
           currentPage: next.currentPage,
           lastPage: next.lastPage,
           total: next.total,
+          isLoadingMore: false,
+          loadMoreError: null,
         ),
       );
-    } catch (_) {
-      // Silent fail pour loadMore — on garde la page déjà affichée.
-      // L'utilisateur peut retenter en scrollant de nouveau.
-    } finally {
-      _isLoadingMore = false;
+    } catch (error) {
+      state = AsyncValue.data(
+        current.copyWith(isLoadingMore: false, loadMoreError: error),
+      );
     }
   }
 
-  bool _isLoadingMore = false;
-  bool get isLoadingMore => _isLoadingMore;
+  Future<void> retryLoadMore() async {
+    final current = state.valueOrNull;
+    if (current == null || current.isLoadingMore) return;
+    state = AsyncValue.data(current.copyWith(loadMoreError: null));
+    await loadMore();
+  }
 
   /// Mutation locale (appelée par l'actions controller après un toggle).
   void applyVoteUpdate(String uuid, int helpfulCount, bool userVoted) {
@@ -219,7 +231,12 @@ class EventQuestionsActionsController extends StateNotifier<AsyncValue<void>> {
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       debugPrint('[QA] createQuestion FAILED: $e');
-      return CreateQuestionFailure(l10n.commonGenericRetryError);
+      return CreateQuestionFailure(
+        ApiResponseHandler.extractError(
+          e,
+          fallback: l10n.eventQuestionSubmitFailed,
+        ),
+      );
     }
   }
 
@@ -248,7 +265,9 @@ class EventQuestionsActionsController extends StateNotifier<AsyncValue<void>> {
     required EventQuestion question,
     EventQuestionsListController? listController,
   }) async {
-    if (_inFlightVotes.contains(question.uuid)) return false;
+    // A second tap while the same vote is already syncing is not a failure;
+    // silently coalesce it instead of showing a misleading error toast.
+    if (_inFlightVotes.contains(question.uuid)) return true;
 
     final wasVoted = question.userVoted;
     final oldCount = question.helpfulCount;
@@ -285,13 +304,12 @@ class EventQuestionsActionsController extends StateNotifier<AsyncValue<void>> {
           e.serverCount!,
           !wasVoted, // Le serveur a accepté le nouvel état, on le garde
         );
-      } else {
-        listController?.applyVoteUpdate(
-          question.uuid,
-          oldCount,
-          wasVoted,
-        );
+        if (listController == null) {
+          _ref.invalidate(eventQuestionsPreviewProvider(eventSlug));
+        }
+        return true;
       }
+      listController?.applyVoteUpdate(question.uuid, oldCount, wasVoted);
       return false;
     } catch (_) {
       listController?.applyVoteUpdate(question.uuid, oldCount, wasVoted);
