@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/dio_client.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/l10n/app_locale.dart';
+import '../../../../core/network/auth_session_ownership.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../models/conversation_dto.dart';
@@ -28,27 +29,25 @@ final petitBooApiDataSourceProvider = Provider<PetitBooApiDataSource>((ref) {
       },
     ),
   );
+  final invocationStampBinding = bindAuthSessionInvocationStamp(dio);
+  ref.onDispose(() {
+    invocationStampBinding.close();
+    dio.close(force: true);
+  });
 
-  // Add auth interceptor to automatically include JWT token
-  dio.interceptors.add(
-    InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        final storage = SharedSecureStorage.instance;
-        final token = await storage.read(key: AppConstants.keyAuthToken);
-        if (token != null && token.isNotEmpty) {
-          options.headers['Authorization'] = 'Bearer $token';
-          if (kDebugMode) {
-            debugPrint('🤖 PetitBoo: Adding auth token to request');
-          }
-        } else {
-          if (kDebugMode) {
-            debugPrint('🤖 PetitBoo: No auth token found');
-          }
-        }
-        handler.next(options);
-      },
+  // Petit Boo owns a dedicated Dio instance, so it must reproduce the exact
+  // auth-epoch boundary installed on the application's main client. The
+  // BaseOptions.extra is synchronously copied when Dio.request() is invoked;
+  // the first interceptor materializes that invocation stamp before storage
+  // I/O, and the bearer interceptor rejects stale requests/responses.
+  dio.interceptors.addAll([
+    AuthSessionOwnershipInterceptor(),
+    PetitBooSessionAuthInterceptor(
+      readToken: () => SharedSecureStorage.instance.read(
+        key: AppConstants.keyAuthToken,
+      ),
     ),
-  );
+  ]);
 
   return PetitBooApiDataSource(dio);
 });
@@ -62,6 +61,96 @@ class PetitBooApiException implements Exception {
 
   @override
   String toString() => 'PetitBooApiException: $message (status: $statusCode)';
+}
+
+typedef PetitBooTokenReader = Future<String?> Function();
+
+/// Binds every request made by Petit Boo's dedicated Dio client to the exact
+/// authentication epoch that initiated it.
+///
+/// This is deliberately public for deterministic transport regression tests.
+/// Production installs [AuthSessionOwnershipInterceptor] immediately before
+/// it so even requests queued behind an asynchronous token read retain their
+/// original owner.
+class PetitBooSessionAuthInterceptor extends Interceptor {
+  PetitBooSessionAuthInterceptor({
+    required PetitBooTokenReader readToken,
+    AuthSessionOwnership? authSessions,
+  })  : _readToken = readToken,
+        _authSessions = authSessions ?? AuthSessionOwnershipRegistry.instance;
+
+  final PetitBooTokenReader _readToken;
+  final AuthSessionOwnership _authSessions;
+
+  AuthRequestSession _requestSession(RequestOptions options) {
+    return ensureAuthRequestSession(_authSessions, options);
+  }
+
+  bool _isCurrent(AuthRequestSession session) =>
+      session.isAuthenticated && _authSessions.isCurrent(session);
+
+  @override
+  Future<void> onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
+    final session = _requestSession(options);
+    if (!_isCurrent(session)) {
+      handler.reject(staleAuthSessionException(options));
+      return;
+    }
+
+    final token = await _readToken();
+    if (!_isCurrent(session)) {
+      handler.reject(staleAuthSessionException(options));
+      return;
+    }
+    if (token == null || token.isEmpty) {
+      options.headers.remove('Authorization');
+      if (kDebugMode) {
+        debugPrint('🤖 PetitBoo: No auth token found');
+      }
+    } else {
+      options.headers['Authorization'] = 'Bearer $token';
+      if (kDebugMode) {
+        debugPrint('🤖 PetitBoo: Adding auth token to request');
+      }
+    }
+    handler.next(options);
+  }
+
+  @override
+  void onResponse(
+    Response<dynamic> response,
+    ResponseInterceptorHandler handler,
+  ) {
+    final session = _requestSession(response.requestOptions);
+    if (!_isCurrent(session)) {
+      handler.reject(
+        staleAuthSessionException(
+          response.requestOptions,
+          response: response,
+        ),
+      );
+      return;
+    }
+    handler.next(response);
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    final session = _requestSession(err.requestOptions);
+    if (!_isCurrent(session)) {
+      handler.reject(
+        staleAuthSessionException(
+          err.requestOptions,
+          response: err.response,
+        ),
+      );
+      return;
+    }
+    handler.next(err);
+  }
 }
 
 String _petitBooApiFallback() =>

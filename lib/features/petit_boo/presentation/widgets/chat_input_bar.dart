@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
@@ -6,13 +8,21 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/petit_boo_theme.dart';
 import '../../../../core/utils/speech_recognition_error_message.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/petit_boo_chat_provider.dart';
 import 'animated_toast.dart';
 
 /// Modern input bar for Petit Boo chat - Style Web 2026
 /// Inspiré du design assistant web avec ombre, disclaimer et bouton intégré
 class ChatInputBar extends ConsumerStatefulWidget {
-  const ChatInputBar({super.key});
+  const ChatInputBar({
+    super.key,
+    this.initializeSpeechOnMount = true,
+  });
+
+  /// Exposed so widget tests can exercise draft lifecycle without invoking
+  /// platform permission channels. Production callers keep the default.
+  final bool initializeSpeechOnMount;
 
   @override
   ConsumerState<ChatInputBar> createState() => _ChatInputBarState();
@@ -28,6 +38,18 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
   late stt.SpeechToText _speech;
   bool _isListening = false;
   bool _speechEnabled = false;
+  late String _draftOwnerKey;
+  int _sessionEpoch = 0;
+
+  String _ownerKey(String? accountId) =>
+      accountId == null ? 'anonymous' : 'account:$accountId';
+
+  bool _ownsSession(int epoch, String ownerKey) {
+    return mounted &&
+        epoch == _sessionEpoch &&
+        ownerKey == _draftOwnerKey &&
+        _ownerKey(ref.read(authSessionUserIdProvider)) == ownerKey;
+  }
 
   @override
   void initState() {
@@ -35,29 +57,78 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
     _controller.addListener(_onTextChanged);
     _focusNode.addListener(_onFocusChanged);
     _speech = stt.SpeechToText();
-    _initSpeech();
+    _draftOwnerKey = _ownerKey(ref.read(authSessionUserIdProvider));
+    ref.listenManual<String?>(authSessionUserIdProvider, (previous, next) {
+      final nextOwnerKey = _ownerKey(next);
+      if (nextOwnerKey != _draftOwnerKey) {
+        _resetDraftForOwner(nextOwnerKey);
+      }
+    });
+    if (widget.initializeSpeechOnMount) {
+      unawaited(_initSpeech());
+    }
   }
 
   @override
   void dispose() {
+    _sessionEpoch++;
     _controller.removeListener(_onTextChanged);
     _focusNode.removeListener(_onFocusChanged);
+    unawaited(_cancelSpeechSilently());
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
   }
 
   void _onFocusChanged() {
+    if (!mounted) return;
     setState(() => _isFocused = _focusNode.hasFocus);
   }
 
+  void _resetDraftForOwner(String nextOwnerKey) {
+    _sessionEpoch++;
+    _draftOwnerKey = nextOwnerKey;
+
+    _controller.removeListener(_onTextChanged);
+    _focusNode.removeListener(_onFocusChanged);
+    _controller.clear();
+    _focusNode.unfocus();
+    _controller.addListener(_onTextChanged);
+    _focusNode.addListener(_onFocusChanged);
+
+    unawaited(_cancelSpeechSilently());
+    if (!mounted) return;
+    setState(() {
+      _hasText = false;
+      _isFocused = false;
+      _isListening = false;
+      _speechEnabled = false;
+    });
+  }
+
+  Future<void> _cancelSpeechSilently() async {
+    try {
+      await _speech.cancel();
+    } catch (_) {
+      // The platform channel may already be gone during widget disposal.
+    }
+  }
+
   Future<void> _initSpeech() async {
+    final epoch = _sessionEpoch;
+    final ownerKey = _draftOwnerKey;
     try {
       var micStatus = await Permission.microphone.status;
+      if (!_ownsSession(epoch, ownerKey)) return;
       if (!micStatus.isGranted) {
         micStatus = await Permission.microphone.request();
+        if (!_ownsSession(epoch, ownerKey)) return;
         if (!micStatus.isGranted) {
-          _showSpeechError('error_permission');
+          _showSpeechError(
+            'error_permission',
+            epoch: epoch,
+            ownerKey: ownerKey,
+          );
           if (micStatus.isPermanentlyDenied) {
             await openAppSettings();
           }
@@ -66,10 +137,16 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
       }
 
       var speechStatus = await Permission.speech.status;
+      if (!_ownsSession(epoch, ownerKey)) return;
       if (!speechStatus.isGranted) {
         speechStatus = await Permission.speech.request();
+        if (!_ownsSession(epoch, ownerKey)) return;
         if (!speechStatus.isGranted) {
-          _showSpeechError('error_permission');
+          _showSpeechError(
+            'error_permission',
+            epoch: epoch,
+            ownerKey: ownerKey,
+          );
           if (speechStatus.isPermanentlyDenied) {
             await openAppSettings();
           }
@@ -79,25 +156,36 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
 
       final enabled = await _speech.initialize(
         onStatus: (status) {
+          if (!_ownsSession(epoch, ownerKey)) return;
           if (status == 'notListening' || status == 'done') {
-            if (mounted) setState(() => _isListening = false);
+            setState(() => _isListening = false);
           }
         },
         onError: (errorNotification) {
-          _showSpeechError(errorNotification.errorMsg);
+          _showSpeechError(
+            errorNotification.errorMsg,
+            epoch: epoch,
+            ownerKey: ownerKey,
+          );
         },
       );
-      if (!mounted) return;
+      if (!_ownsSession(epoch, ownerKey)) return;
       setState(() => _speechEnabled = enabled);
-      if (!enabled) _showSpeechError(null);
+      if (!enabled) {
+        _showSpeechError(null, epoch: epoch, ownerKey: ownerKey);
+      }
     } catch (e) {
       debugPrint('Speech init error: $e');
-      _showSpeechError(e);
+      _showSpeechError(e, epoch: epoch, ownerKey: ownerKey);
     }
   }
 
-  void _showSpeechError(Object? code) {
-    if (!mounted) return;
+  void _showSpeechError(
+    Object? code, {
+    required int epoch,
+    required String ownerKey,
+  }) {
+    if (!_ownsSession(epoch, ownerKey)) return;
     setState(() => _isListening = false);
     PetitBooToast.error(
       context,
@@ -106,13 +194,17 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
   }
 
   Future<void> _startListening() async {
+    final epoch = _sessionEpoch;
+    final ownerKey = _draftOwnerKey;
+    final localeId = context.appLocaleName;
+    if (!_ownsSession(epoch, ownerKey)) return;
     if (!_speechEnabled) {
       await _initSpeech();
-      if (!mounted || !_speechEnabled) return;
+      if (!_ownsSession(epoch, ownerKey) || !_speechEnabled) return;
     }
 
     if (_isListening) {
-      _stopListening();
+      unawaited(_stopListening());
       return;
     }
 
@@ -120,7 +212,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
     try {
       final started = await _speech.listen(
         onResult: (result) {
-          if (!mounted || !_isListening) return;
+          if (!_ownsSession(epoch, ownerKey) || !_isListening) return;
 
           setState(() {
             _controller.text = result.recognizedWords;
@@ -132,26 +224,34 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
             }
           });
         },
-        localeId: context.appLocaleName,
+        localeId: localeId,
       );
-      if (!started) _showSpeechError(null);
+      if (!_ownsSession(epoch, ownerKey)) return;
+      if (!started) {
+        _showSpeechError(null, epoch: epoch, ownerKey: ownerKey);
+      }
     } catch (e) {
       debugPrint('Speech listen error: $e');
-      _showSpeechError(e);
+      _showSpeechError(e, epoch: epoch, ownerKey: ownerKey);
     }
   }
 
   Future<void> _stopListening() async {
-    if (mounted) setState(() => _isListening = false);
+    final epoch = _sessionEpoch;
+    final ownerKey = _draftOwnerKey;
+    if (_ownsSession(epoch, ownerKey)) {
+      setState(() => _isListening = false);
+    }
     try {
       await _speech.stop();
     } catch (e) {
       debugPrint('Speech stop error: $e');
-      _showSpeechError(e);
+      _showSpeechError(e, epoch: epoch, ownerKey: ownerKey);
     }
   }
 
   void _onTextChanged() {
+    if (!mounted) return;
     final hasText = _controller.text.trim().isNotEmpty;
     if (hasText != _hasText) {
       setState(() => _hasText = hasText);
@@ -159,10 +259,13 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
   }
 
   void _sendMessage() {
+    if (_ownerKey(ref.read(authSessionUserIdProvider)) != _draftOwnerKey) {
+      return;
+    }
     if (!ref.read(petitBooChatProvider).canSendMessage) return;
 
     if (_isListening) {
-      _stopListening();
+      unawaited(_stopListening());
     }
 
     final message = _controller.text.trim();
@@ -227,6 +330,7 @@ class _ChatInputBarState extends ConsumerState<ChatInputBar> {
                   // Text input
                   Expanded(
                     child: TextField(
+                      key: const ValueKey('petit-boo-chat-input'),
                       controller: _controller,
                       focusNode: _focusNode,
                       maxLines: 1,

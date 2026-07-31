@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../core/l10n/l10n.dart';
@@ -8,11 +9,12 @@ import '../../../../../domain/entities/city.dart';
 import '../../../../../domain/entities/partner.dart';
 import '../../../../../domain/entities/taxonomy.dart';
 import '../../../../home/presentation/widgets/event_card.dart' as home;
+import '../../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../../data/models/tool_schema_dto.dart';
 import 'dynamic_tool_result_card.dart';
 
 /// Card displaying a horizontal list of events (favorites, search results)
-class EventListCard extends StatelessWidget {
+class EventListCard extends ConsumerWidget {
   final ToolSchemaDto schema;
   final Map<String, dynamic> data;
 
@@ -23,7 +25,8 @@ class EventListCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final renderedEventsSession = ref.watch(authSessionKeyProvider);
     final l10n = context.l10n;
     final responseSchema = schema.responseSchema;
     final itemsKey = responseSchema?.itemsKey ?? 'events';
@@ -114,6 +117,7 @@ class EventListCard extends StatelessWidget {
                   ),
                   child: _EventItemCard(
                     item: item,
+                    ownerSession: renderedEventsSession,
                     isFavoriteList: schema.name == 'getMyFavorites',
                   ),
                 );
@@ -230,10 +234,12 @@ class EventListCard extends StatelessWidget {
 
 class _EventItemCard extends StatelessWidget {
   final Map<String, dynamic> item;
+  final AuthSessionKey ownerSession;
   final bool isFavoriteList;
 
   const _EventItemCard({
     required this.item,
+    required this.ownerSession,
     this.isFavoriteList = false,
   });
 
@@ -245,6 +251,7 @@ class _EventItemCard extends StatelessWidget {
       width: 200,
       child: home.EventCard(
         activity: activity,
+        ownerSession: ownerSession,
         heroTagPrefix: 'petit_boo',
         isCompact: true,
         forceFavoriteFilled: isFavoriteList || item['is_favorite'] == true,

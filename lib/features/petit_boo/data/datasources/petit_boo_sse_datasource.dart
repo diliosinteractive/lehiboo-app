@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 
 import '../../../../config/dio_client.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/network/auth_session_ownership.dart';
 import '../models/petit_boo_event_dto.dart';
 
 /// Provider for the SSE datasource
@@ -14,6 +15,7 @@ final petitBooSseDataSourceProvider = Provider<PetitBooSseDataSource>((ref) {
   return PetitBooSseDataSource(
     baseUrl: AppConstants.petitBooBaseUrl,
     storage: SharedSecureStorage.instance,
+    authSessions: AuthSessionOwnershipRegistry.instance,
   );
 });
 
@@ -82,11 +84,26 @@ _PetitBooHttpError _parsePetitBooHttpError(String body, int statusCode) {
 class PetitBooSseDataSource {
   final String baseUrl;
   final dynamic storage; // FlutterSecureStorage
+  final AuthSessionOwnership authSessions;
+  final http.Client Function() clientFactory;
 
   PetitBooSseDataSource({
     required this.baseUrl,
     required this.storage,
-  });
+    AuthSessionOwnership? authSessions,
+    http.Client Function()? clientFactory,
+  })  : authSessions = authSessions ?? AuthSessionOwnershipRegistry.instance,
+        clientFactory = clientFactory ?? http.Client.new;
+
+  bool _isCurrentAuthenticated(AuthRequestSession session) =>
+      session.isAuthenticated && authSessions.isCurrent(session);
+
+  Never _throwStaleSession() {
+    throw PetitBooSseException(
+      'Authentication changed while the request was in progress',
+      code: 'session_changed',
+    );
+  }
 
   /// Send a message and receive streaming response via SSE
   ///
@@ -101,9 +118,31 @@ class PetitBooSseDataSource {
     String? sessionUuid,
     required String message,
     required bool memoryEnabled,
+  }) {
+    // Capture at method invocation, not inside an `async*` body. Dart starts an
+    // async generator only when it is listened to, leaving a gap in which an
+    // account-A stream could otherwise begin as account B.
+    final requestSession = authSessions.capture();
+    return _sendMessageOwned(
+      requestSession: requestSession,
+      sessionUuid: sessionUuid,
+      message: message,
+      memoryEnabled: memoryEnabled,
+    );
+  }
+
+  Stream<PetitBooEventDto> _sendMessageOwned({
+    required AuthRequestSession requestSession,
+    String? sessionUuid,
+    required String message,
+    required bool memoryEnabled,
   }) async* {
+    if (!_isCurrentAuthenticated(requestSession)) _throwStaleSession();
+
     // Get auth token from secure storage
     final token = await storage.read(key: AppConstants.keyAuthToken);
+
+    if (!_isCurrentAuthenticated(requestSession)) _throwStaleSession();
 
     if (token == null || token.isEmpty) {
       throw PetitBooSseException('Not authenticated', code: 'auth_required');
@@ -133,7 +172,8 @@ class PetitBooSseDataSource {
     }
 
     try {
-      final client = http.Client();
+      if (!_isCurrentAuthenticated(requestSession)) _throwStaleSession();
+      final client = clientFactory();
       final streamedResponse = await client.send(request).timeout(
         AppConstants.petitBooStreamTimeout,
         onTimeout: () {
@@ -141,6 +181,11 @@ class PetitBooSseDataSource {
           throw TimeoutException('SSE connection timeout');
         },
       );
+
+      if (!_isCurrentAuthenticated(requestSession)) {
+        client.close();
+        _throwStaleSession();
+      }
 
       if (streamedResponse.statusCode != 200) {
         final body =
@@ -160,6 +205,10 @@ class PetitBooSseDataSource {
 
       await for (final chunk
           in streamedResponse.stream.transform(utf8.decoder)) {
+        if (!_isCurrentAuthenticated(requestSession)) {
+          client.close();
+          _throwStaleSession();
+        }
         buffer += chunk;
 
         // Process complete lines

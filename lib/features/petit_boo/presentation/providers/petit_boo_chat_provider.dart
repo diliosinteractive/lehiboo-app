@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
@@ -12,6 +13,7 @@ import '../../../../core/l10n/app_locale.dart';
 import '../../../../core/providers/shared_preferences_provider.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../data/datasources/petit_boo_context_storage.dart';
 import '../../data/datasources/petit_boo_sse_datasource.dart';
 import '../../data/models/chat_message_dto.dart';
@@ -157,9 +159,21 @@ class PetitBooChatState {
 final petitBooChatProvider =
     StateNotifierProvider<PetitBooChatNotifier, PetitBooChatState>(
   (ref) {
+    final ownerSession = ref.watch(authSessionKeyProvider);
+    final accountId = ref.watch(authSessionUserIdProvider);
+    final authStatus = ref.watch(authProvider.select((state) => state.status));
+    final scopeKey = accountId ??
+        (authStatus == AuthStatus.unauthenticated ? 'anonymous' : null);
     final repository = ref.watch(petitBooRepositoryProvider);
     final contextStorage = ref.watch(petitBooContextStorageProvider);
-    return PetitBooChatNotifier(repository, contextStorage, ref);
+    return PetitBooChatNotifier(
+      repository,
+      contextStorage,
+      ref,
+      accountId: accountId,
+      scopeKey: scopeKey,
+      ownerSession: ownerSession,
+    );
   },
 );
 
@@ -168,46 +182,79 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
   final PetitBooRepository _repository;
   final PetitBooContextStorage _contextStorage;
   final Ref _ref;
+  final String? _accountId;
+  final String? _scopeKey;
+  final AuthSessionKey _ownerSession;
   StreamSubscription? _streamSubscription;
   String? _pendingMessage; // For auto-send after limit unlock
   String? _activeMessage; // Message currently being streamed
   bool _isInitialized = false;
 
-  PetitBooChatNotifier(this._repository, this._contextStorage, this._ref)
-      : super(const PetitBooChatState(isLoading: true)) {
-    _initialize();
-    // Petit Boo holds the user's name, kids' ages, and chat history in
-    // memory. Persisted copies are wiped by AuthNotifier._clearPersistedUserData
-    // — we still need to drop the in-memory mirror so the previous user's
-    // messages don't render until next pull.
-    _ref.listen<AuthStatus>(
-      authProvider.select((s) => s.status),
-      (previous, next) {
-        final loggedOut = didTransitionToUnauthenticated(previous, next);
-        final loggedIn = next == AuthStatus.authenticated &&
-            previous != AuthStatus.authenticated &&
-            previous != AuthStatus.initial;
-        if (loggedOut) {
-          _streamSubscription?.cancel();
-          _pendingMessage = null;
-          _activeMessage = null;
-          _isInitialized = false;
-          state = const PetitBooChatState();
-        } else if (loggedIn) {
-          _isInitialized = false;
-          _initialize();
-        }
-      },
-    );
+  int _initializationGeneration = 0;
+  int _serviceGeneration = 0;
+  int _quotaGeneration = 0;
+  int _sessionGeneration = 0;
+  int _streamGeneration = 0;
+  int _confirmationGeneration = 0;
+
+  PetitBooChatNotifier(
+    this._repository,
+    this._contextStorage,
+    this._ref, {
+    required String? accountId,
+    required String? scopeKey,
+    required AuthSessionKey ownerSession,
+  })  : _accountId = accountId,
+        _scopeKey = scopeKey,
+        _ownerSession = ownerSession,
+        super(PetitBooChatState(isLoading: scopeKey != null)) {
+    if (scopeKey != null) {
+      _initialize();
+    }
+  }
+
+  bool get _isCurrentAccount {
+    if (!mounted || _scopeKey == null) return false;
+    if (!identical(_ref.read(authSessionKeyProvider), _ownerSession)) {
+      return false;
+    }
+    if (_accountId != null) {
+      return _ref.read(authSessionUserIdProvider) == _accountId;
+    }
+    return _ref.read(authSessionUserIdProvider) == null &&
+        _ref.read(authProvider).status == AuthStatus.unauthenticated;
+  }
+
+  bool _isCurrentInitialization(int generation) =>
+      _isCurrentAccount && generation == _initializationGeneration;
+
+  bool _isCurrentSessionRequest(int generation) =>
+      _isCurrentAccount && generation == _sessionGeneration;
+
+  bool _isCurrentStream(int generation) =>
+      _isCurrentAccount && generation == _streamGeneration;
+
+  void _invalidateAsyncWork() {
+    _initializationGeneration++;
+    _serviceGeneration++;
+    _quotaGeneration++;
+    _sessionGeneration++;
+    _streamGeneration++;
+    _confirmationGeneration++;
   }
 
   // ==================== Getters for Brain Screen ====================
 
   /// Get user context for display in Brain screen
-  Map<String, dynamic> get userContext => _contextStorage.getContext();
+  Map<String, dynamic> get userContext =>
+      _isCurrentAccount && _accountId != null
+          ? _contextStorage.getContext(accountId: _accountId)
+          : const {};
 
   /// Check if memory is enabled
-  bool get isMemoryEnabled => _contextStorage.getMemoryEnabled();
+  bool get isMemoryEnabled => _isCurrentAccount && _accountId != null
+      ? _contextStorage.getMemoryEnabled(accountId: _accountId)
+      : true;
 
   AppLocalizations get _l10n => lookupAppLocalizations(
         Locale(AppLocaleCache.languageCode),
@@ -217,54 +264,88 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
   /// Update a single context key
   Future<void> updateContextKey(String key, dynamic value) async {
-    if (!_contextStorage.getMemoryEnabled()) return;
-    await _contextStorage.updateContextKey(key, value);
-    state = state.copyWith(userContext: _contextStorage.getContext());
+    if (!_isCurrentAccount ||
+        _accountId == null ||
+        !_contextStorage.getMemoryEnabled(accountId: _accountId)) {
+      return;
+    }
+    await _contextStorage.updateContextKey(
+      key,
+      value,
+      accountId: _accountId,
+    );
+    if (!_isCurrentAccount) return;
+    state = state.copyWith(
+      userContext: _contextStorage.getContext(accountId: _accountId),
+    );
   }
 
   /// Remove a context key
   Future<void> removeContextKey(String key) async {
-    await _contextStorage.removeContextKey(key);
-    state = state.copyWith(userContext: _contextStorage.getContext());
+    if (!_isCurrentAccount || _accountId == null) return;
+    await _contextStorage.removeContextKey(key, accountId: _accountId);
+    if (!_isCurrentAccount) return;
+    state = state.copyWith(
+      userContext: _contextStorage.getContext(accountId: _accountId),
+    );
   }
 
   /// Toggle memory on/off
   Future<void> toggleMemory(bool enabled) async {
-    await _contextStorage.setMemoryEnabled(enabled);
+    if (!_isCurrentAccount || _accountId == null) return;
+    await _contextStorage.setMemoryEnabled(enabled, accountId: _accountId);
+    if (!_isCurrentAccount) return;
     state = state.copyWith(isMemoryEnabled: enabled);
   }
 
   /// Clear all user context
   Future<void> clearContext() async {
-    await _contextStorage.clearContext();
+    if (!_isCurrentAccount || _accountId == null) return;
+    await _contextStorage.clearContext(accountId: _accountId);
+    if (!_isCurrentAccount) return;
     state = state.copyWith(userContext: {});
   }
 
   // ==================== Initialization ====================
 
   Future<void> _initialize() async {
-    // Load context from storage
-    final context = _contextStorage.getContext();
-    final memoryEnabled = _contextStorage.getMemoryEnabled();
+    if (!_isCurrentAccount) return;
+    final generation = ++_initializationGeneration;
 
+    // Load context from storage
+    final context = _accountId == null
+        ? const <String, dynamic>{}
+        : _contextStorage.getContext(accountId: _accountId);
+    final memoryEnabled = _accountId == null
+        ? true
+        : _contextStorage.getMemoryEnabled(accountId: _accountId);
+
+    if (!_isCurrentInitialization(generation)) return;
     state = state.copyWith(
       userContext: context,
       isMemoryEnabled: memoryEnabled,
+      isLoading: true,
     );
 
-    // Load saved session UUID FIRST (critical for session continuity)
-    const storage = SharedSecureStorage.instance;
-    final savedSessionUuid = await storage.read(
-      key: AppConstants.keyPetitBooSessionUuid,
-    );
+    String? sessionUuid;
+    if (_accountId != null) {
+      // Only authenticated, account-owned sessions may be restored.
+      const storage = SharedSecureStorage.instance;
+      final savedSessionUuid = await storage.read(
+        key: AppConstants.keyPetitBooSessionUuid,
+      );
+      if (!_isCurrentInitialization(generation)) return;
+      sessionUuid = _sessionUuidForCurrentAccount(savedSessionUuid);
+    }
 
     if (kDebugMode) {
       debugPrint(
-          '🤖 PetitBoo: Loaded session UUID from storage: $savedSessionUuid');
+        '🤖 PetitBoo: Loaded account-owned session UUID: $sessionUuid',
+      );
     }
 
-    if (savedSessionUuid != null && savedSessionUuid.isNotEmpty) {
-      state = state.copyWith(sessionUuid: savedSessionUuid);
+    if (sessionUuid != null) {
+      state = state.copyWith(sessionUuid: sessionUuid);
     }
 
     // Mark as initialized BEFORE other async calls
@@ -272,9 +353,11 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
     // Check service availability
     await checkServiceAvailability();
+    if (!_isCurrentInitialization(generation)) return;
 
     // Load quota
     await checkQuota();
+    if (!_isCurrentInitialization(generation)) return;
 
     // Remove loading state
     state = state.copyWith(isLoading: false);
@@ -282,18 +365,20 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
   /// Check if Petit Boo service is available
   Future<void> checkServiceAvailability() async {
+    if (!_isCurrentAccount) return;
+    final generation = ++_serviceGeneration;
     state = state.copyWith(serviceStatus: PetitBooServiceStatus.checking);
 
     try {
       final isAvailable = await _repository.isServiceAvailable();
-      if (!mounted) return;
+      if (!_isCurrentAccount || generation != _serviceGeneration) return;
       state = state.copyWith(
         serviceStatus: isAvailable
             ? PetitBooServiceStatus.available
             : PetitBooServiceStatus.unavailable,
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!_isCurrentAccount || generation != _serviceGeneration) return;
       state = state.copyWith(
         serviceStatus: PetitBooServiceStatus.checkFailed,
       );
@@ -305,13 +390,17 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
   /// Check user's chat quota
   Future<void> checkQuota() async {
+    if (!_isCurrentAccount) return;
+    final generation = ++_quotaGeneration;
     try {
       final quota = await _repository.getQuota();
+      if (!_isCurrentAccount || generation != _quotaGeneration) return;
       state = state.copyWith(
         quota: quota,
         isLimitReached: quota.isExhausted,
       );
     } catch (e) {
+      if (!_isCurrentAccount || generation != _quotaGeneration) return;
       if (kDebugMode) {
         debugPrint('🤖 PetitBoo: Failed to load quota: $e');
       }
@@ -320,6 +409,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
   /// Send a message and process streaming response
   Future<void> sendMessage(String message) async {
+    if (!_isCurrentAccount) return;
     final trimmedMessage = message.trim();
     if (trimmedMessage.isEmpty) {
       return;
@@ -334,12 +424,17 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
     // We wait on both flags because _isInitialized flips to true before the
     // service/quota calls finish (isLoading stays true a bit longer).
     int waitCount = 0;
-    while ((!_isInitialized || state.isLoading) && waitCount < 20) {
+    while (_isCurrentAccount &&
+        (!_isInitialized || state.isLoading) &&
+        waitCount < 20) {
       await Future.delayed(const Duration(milliseconds: 100));
       waitCount++;
     }
 
-    if (state.isStreaming || state.isLoading || !state.isServiceAvailable) {
+    if (!_isCurrentAccount ||
+        state.isStreaming ||
+        state.isLoading ||
+        !state.isServiceAvailable) {
       return;
     }
 
@@ -367,8 +462,13 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
       debugPrint('🤖 PetitBoo: sendMessage - sessionUuid=${state.sessionUuid}');
     }
 
-    // Cancel any existing stream
+    // Invalidate callbacks before cancelling: some stream implementations
+    // synchronously invoke onDone while cancellation is in progress.
+    final streamGeneration = ++_streamGeneration;
+    _sessionGeneration++;
+    _confirmationGeneration++;
     await _streamSubscription?.cancel();
+    if (!_isCurrentStream(streamGeneration)) return;
 
     // Add user message
     final userMessage = ChatMessageDto.user(trimmedMessage);
@@ -390,19 +490,19 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
       );
 
       _streamSubscription = stream.listen(
-        _handleSseEvent,
-        onError: _handleSseError,
-        onDone: _handleSseDone,
+        (event) => _handleSseEvent(event, streamGeneration),
+        onError: (error) => _handleSseError(error, streamGeneration),
+        onDone: () => _handleSseDone(streamGeneration),
         cancelOnError: false,
       );
     } catch (e) {
-      _handleError(e);
+      _handleError(e, streamGeneration);
     }
   }
 
   /// Handle incoming SSE event
-  void _handleSseEvent(dynamic event) {
-    if (!mounted) return;
+  void _handleSseEvent(dynamic event, int generation) {
+    if (!_isCurrentStream(generation)) return;
 
     if (kDebugMode) {
       debugPrint('🤖 PetitBoo: Event type=${event.type}');
@@ -496,7 +596,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
       case 'done':
         // Stream completed
-        _finishStreaming();
+        _finishStreaming(generation);
         break;
     }
   }
@@ -521,8 +621,8 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
   }
 
   /// Handle SSE stream error
-  void _handleSseError(dynamic error) {
-    if (!mounted) return;
+  void _handleSseError(dynamic error, int generation) {
+    if (!_isCurrentStream(generation)) return;
 
     if (kDebugMode) {
       debugPrint('🤖 PetitBoo: Stream error - $error');
@@ -554,16 +654,17 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
   }
 
   /// Handle SSE stream completion
-  void _handleSseDone() {
-    if (!mounted) return;
+  void _handleSseDone(int generation) {
+    if (!_isCurrentStream(generation)) return;
 
     if (state.isStreaming) {
-      _finishStreaming();
+      _finishStreaming(generation);
     }
   }
 
   /// Finish streaming and create assistant message
-  void _finishStreaming() {
+  void _finishStreaming(int generation) {
+    if (!_isCurrentStream(generation)) return;
     if (state.currentStreamingText.isEmpty &&
         state.currentToolResults.isEmpty) {
       state = state.copyWith(isStreaming: false);
@@ -591,8 +692,8 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
   }
 
   /// Handle general error
-  void _handleError(dynamic error) {
-    if (!mounted) return;
+  void _handleError(dynamic error, int generation) {
+    if (!_isCurrentStream(generation)) return;
 
     if (kDebugMode) {
       debugPrint('🤖 PetitBoo: Error - $error');
@@ -611,10 +712,18 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
   /// Save session UUID to secure storage
   Future<void> _saveSessionUuid(String uuid) async {
+    final accountId = _accountId;
+    if (!_isCurrentAccount || accountId == null) return;
     try {
       const storage = SharedSecureStorage.instance;
       await storage.write(
-          key: AppConstants.keyPetitBooSessionUuid, value: uuid);
+        key: AppConstants.keyPetitBooSessionUuid,
+        value: jsonEncode({
+          'version': 1,
+          'account_id': accountId,
+          'session_uuid': uuid,
+        }),
+      );
     } catch (e) {
       if (kDebugMode) {
         debugPrint('🤖 PetitBoo: Failed to save session UUID: $e');
@@ -622,12 +731,38 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
     }
   }
 
+  String? _sessionUuidForCurrentAccount(String? persistedValue) {
+    if (persistedValue == null || persistedValue.isEmpty) return null;
+
+    try {
+      final decoded = jsonDecode(persistedValue);
+      if (decoded is! Map<String, dynamic> ||
+          decoded['version'] != 1 ||
+          decoded['account_id'] != _accountId) {
+        return null;
+      }
+      final uuid = decoded['session_uuid'];
+      return uuid is String && uuid.isNotEmpty ? uuid : null;
+    } catch (_) {
+      // Legacy values had no account owner. They cannot be restored safely
+      // after another user signs in, so start a fresh session instead.
+      return null;
+    }
+  }
+
   /// Load an existing conversation
   Future<void> loadSession(String uuid) async {
+    if (!_isCurrentAccount) return;
+    final generation = ++_sessionGeneration;
+    _streamGeneration++;
+    _confirmationGeneration++;
+    await _streamSubscription?.cancel();
+    if (!_isCurrentSessionRequest(generation)) return;
     state = state.copyWith(isLoading: true, error: null);
 
     try {
       final conversation = await _repository.getConversation(uuid);
+      if (!_isCurrentSessionRequest(generation)) return;
 
       state = state.copyWith(
         sessionUuid: conversation.uuid,
@@ -637,6 +772,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
       await _saveSessionUuid(uuid);
     } catch (e) {
+      if (!_isCurrentSessionRequest(generation)) return;
       state = state.copyWith(
         isLoading: false,
         error: _l10n.petitBooConversationLoadFailed,
@@ -646,7 +782,10 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
   /// Create a new conversation (clear current state)
   Future<void> createNewSession() async {
+    if (!_isCurrentAccount) return;
+    _invalidateAsyncWork();
     await _streamSubscription?.cancel();
+    if (!_isCurrentAccount) return;
 
     // Clear saved session UUID
     try {
@@ -658,7 +797,11 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
       }
     }
 
-    state = const PetitBooChatState();
+    if (!_isCurrentAccount) return;
+    _isInitialized = false;
+    _pendingMessage = null;
+    _activeMessage = null;
+    state = const PetitBooChatState(isLoading: true);
     await _initialize();
   }
 
@@ -669,13 +812,16 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
   /// Confirm the pending Petit Boo action and render its tool result.
   Future<void> confirmPendingAction() async {
+    if (!_isCurrentAccount) return;
     final pending = state.pendingConfirmation;
     if (pending == null || state.isConfirmingAction) return;
 
+    final generation = ++_confirmationGeneration;
     state = state.copyWith(isConfirmingAction: true, error: null);
 
     try {
       final response = await _repository.confirmPendingAction(pending.actionId);
+      if (!_isCurrentAccount || generation != _confirmationGeneration) return;
       final tool = response['tool'] as String? ?? pending.tool;
       final result = response['result'] as Map<String, dynamic>? ??
           <String, dynamic>{'success': false};
@@ -697,6 +843,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
       _syncBrainMemoryFromToolResult(tool, result);
     } catch (e) {
+      if (!_isCurrentAccount || generation != _confirmationGeneration) return;
       state = state.copyWith(
         error: petitBooErrorMessageForCode(
           _l10n,
@@ -710,18 +857,22 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
 
   /// Cancel the pending Petit Boo action.
   Future<void> cancelPendingAction() async {
+    if (!_isCurrentAccount) return;
     final pending = state.pendingConfirmation;
     if (pending == null || state.isConfirmingAction) return;
 
+    final generation = ++_confirmationGeneration;
     state = state.copyWith(isConfirmingAction: true, error: null);
 
     try {
       await _repository.cancelPendingAction(pending.actionId);
+      if (!_isCurrentAccount || generation != _confirmationGeneration) return;
       state = state.copyWith(
         pendingConfirmation: null,
         isConfirmingAction: false,
       );
     } catch (e) {
+      if (!_isCurrentAccount || generation != _confirmationGeneration) return;
       state = state.copyWith(
         error: petitBooErrorMessageForCode(
           _l10n,
@@ -890,6 +1041,7 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
   /// Convert brain sections (family, preferences, etc.) to flat context keys
   Future<void> _syncBrainSectionsToContext(
       Map<String, dynamic> memoryData) async {
+    if (!_isCurrentAccount || _accountId == null) return;
     final flatContext = <String, dynamic>{};
 
     // Family section
@@ -957,13 +1109,20 @@ class PetitBooChatNotifier extends StateNotifier<PetitBooChatState> {
         debugPrint(
             '🧠 PetitBoo: Saving ${flatContext.length} context keys to local storage');
       }
-      await _contextStorage.mergeContext(flatContext);
-      state = state.copyWith(userContext: _contextStorage.getContext());
+      await _contextStorage.mergeContext(
+        flatContext,
+        accountId: _accountId,
+      );
+      if (!_isCurrentAccount) return;
+      state = state.copyWith(
+        userContext: _contextStorage.getContext(accountId: _accountId),
+      );
     }
   }
 
   @override
   void dispose() {
+    _invalidateAsyncWork();
     _streamSubscription?.cancel();
     super.dispose();
   }

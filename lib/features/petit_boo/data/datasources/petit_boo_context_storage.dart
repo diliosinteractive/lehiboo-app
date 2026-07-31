@@ -11,6 +11,9 @@ class PetitBooContextStorage {
   static const String _contextKey = 'petit_boo_user_context';
   static const String _historyKey = 'petit_boo_chat_history';
   static const String _memoryEnabledKey = 'petit_boo_memory_enabled';
+  static const String _memoryOwnerKey = 'petit_boo_memory_enabled_owner';
+  static const String _ownerField = '_storage_account_id';
+  static const String _dataField = 'data';
 
   final SharedPreferences _prefs;
 
@@ -19,11 +22,25 @@ class PetitBooContextStorage {
   // ==================== Context Methods ====================
 
   /// Get stored user context or empty map
-  Map<String, dynamic> getContext() {
+  Map<String, dynamic> getContext({String? accountId}) {
     final jsonString = _prefs.getString(_contextKey);
     if (jsonString != null) {
       try {
-        return json.decode(jsonString) as Map<String, dynamic>;
+        final decoded = json.decode(jsonString);
+        if (decoded is! Map<String, dynamic>) return {};
+
+        if (decoded.containsKey(_ownerField)) {
+          if (accountId != null && decoded[_ownerField] != accountId) {
+            return {};
+          }
+          final data = decoded[_dataField];
+          return data is Map<String, dynamic> ? Map.of(data) : {};
+        }
+
+        // Legacy context did not record an owner. It remains readable for
+        // callers that do not request account isolation, but authenticated
+        // chat providers must not assume it belongs to the current account.
+        return accountId == null ? Map.of(decoded) : {};
       } catch (e) {
         // Clear corrupt data
         _prefs.remove(_contextKey);
@@ -33,41 +50,71 @@ class PetitBooContextStorage {
   }
 
   /// Save user context
-  Future<void> saveContext(Map<String, dynamic> context) async {
-    await _prefs.setString(_contextKey, json.encode(context));
+  Future<void> saveContext(
+    Map<String, dynamic> context, {
+    String? accountId,
+  }) async {
+    final value = accountId == null
+        ? context
+        : <String, dynamic>{
+            _ownerField: accountId,
+            _dataField: context,
+          };
+    await _prefs.setString(_contextKey, json.encode(value));
   }
 
   /// Update a single key in the context
-  Future<void> updateContextKey(String key, dynamic value) async {
-    final context = getContext();
+  Future<void> updateContextKey(
+    String key,
+    dynamic value, {
+    String? accountId,
+  }) async {
+    final context = getContext(accountId: accountId);
     context[key] = value;
     context['_lastUpdated'] = DateTime.now().toIso8601String();
-    await saveContext(context);
+    await saveContext(context, accountId: accountId);
   }
 
   /// Remove a single key from the context
-  Future<void> removeContextKey(String key) async {
-    final context = getContext();
+  Future<void> removeContextKey(String key, {String? accountId}) async {
+    final context = getContext(accountId: accountId);
     context.remove(key);
-    await saveContext(context);
+    await saveContext(context, accountId: accountId);
   }
 
   /// Merge new context with existing
-  Future<void> mergeContext(Map<String, dynamic> newContext) async {
-    final existingContext = getContext();
+  Future<void> mergeContext(
+    Map<String, dynamic> newContext, {
+    String? accountId,
+  }) async {
+    final existingContext = getContext(accountId: accountId);
     existingContext.addAll(newContext);
     existingContext['_lastUpdated'] = DateTime.now().toIso8601String();
-    await saveContext(existingContext);
+    await saveContext(existingContext, accountId: accountId);
   }
 
   // ==================== History Methods ====================
 
   /// Get stored chat history (local cache)
-  List<Map<String, dynamic>> getHistory() {
+  List<Map<String, dynamic>> getHistory({String? accountId}) {
     final jsonString = _prefs.getString(_historyKey);
     if (jsonString != null) {
       try {
-        final List<dynamic> list = json.decode(jsonString);
+        final decoded = json.decode(jsonString);
+        late final List<dynamic> list;
+        if (decoded is Map<String, dynamic> &&
+            decoded.containsKey(_ownerField)) {
+          if (accountId != null && decoded[_ownerField] != accountId) {
+            return [];
+          }
+          final data = decoded[_dataField];
+          if (data is! List<dynamic>) return [];
+          list = data;
+        } else if (decoded is List<dynamic> && accountId == null) {
+          list = decoded;
+        } else {
+          return [];
+        }
         return list.map((e) => e as Map<String, dynamic>).toList();
       } catch (e) {
         _prefs.remove(_historyKey);
@@ -77,38 +124,67 @@ class PetitBooContextStorage {
   }
 
   /// Save chat history (local cache)
-  Future<void> saveHistory(List<Map<String, dynamic>> history) async {
-    await _prefs.setString(_historyKey, json.encode(history));
+  Future<void> saveHistory(
+    List<Map<String, dynamic>> history, {
+    String? accountId,
+  }) async {
+    final value = accountId == null
+        ? history
+        : <String, dynamic>{
+            _ownerField: accountId,
+            _dataField: history,
+          };
+    await _prefs.setString(_historyKey, json.encode(value));
   }
 
   /// Add a message to history
-  Future<void> addToHistory(Map<String, dynamic> message) async {
-    final history = getHistory();
+  Future<void> addToHistory(
+    Map<String, dynamic> message, {
+    String? accountId,
+  }) async {
+    final history = getHistory(accountId: accountId);
     history.add(message);
-    await saveHistory(history);
+    await saveHistory(history, accountId: accountId);
   }
 
   // ==================== Memory Toggle ====================
 
   /// Check if memory/context learning is enabled
-  bool getMemoryEnabled() {
+  bool getMemoryEnabled({String? accountId}) {
+    if (accountId != null && _prefs.getString(_memoryOwnerKey) != accountId) {
+      return true;
+    }
     return _prefs.getBool(_memoryEnabledKey) ?? true;
   }
 
   /// Enable or disable memory/context learning
-  Future<void> setMemoryEnabled(bool enabled) async {
+  Future<void> setMemoryEnabled(
+    bool enabled, {
+    String? accountId,
+  }) async {
     await _prefs.setBool(_memoryEnabledKey, enabled);
+    if (accountId != null) {
+      await _prefs.setString(_memoryOwnerKey, accountId);
+    } else {
+      await _prefs.remove(_memoryOwnerKey);
+    }
   }
 
   // ==================== Clear Methods ====================
 
   /// Clear all context data
-  Future<void> clearContext() async {
+  Future<void> clearContext({String? accountId}) async {
+    if (accountId != null && !_storedMapBelongsTo(_contextKey, accountId)) {
+      return;
+    }
     await _prefs.remove(_contextKey);
   }
 
   /// Clear all history data
-  Future<void> clearHistory() async {
+  Future<void> clearHistory({String? accountId}) async {
+    if (accountId != null && !_storedMapBelongsTo(_historyKey, accountId)) {
+      return;
+    }
     await _prefs.remove(_historyKey);
   }
 
@@ -124,6 +200,19 @@ class PetitBooContextStorage {
     await _prefs.remove(_contextKey);
     await _prefs.remove(_historyKey);
     await _prefs.remove(_memoryEnabledKey);
+    await _prefs.remove(_memoryOwnerKey);
+  }
+
+  bool _storedMapBelongsTo(String key, String accountId) {
+    final raw = _prefs.getString(key);
+    if (raw == null) return true;
+    try {
+      final decoded = json.decode(raw);
+      return decoded is Map<String, dynamic> &&
+          decoded[_ownerField] == accountId;
+    } catch (_) {
+      return false;
+    }
   }
 
   // ==================== Known Context Keys ====================

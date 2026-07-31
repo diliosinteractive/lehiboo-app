@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../providers/petit_boo_chat_provider.dart';
 
 /// Screen showing Petit Boo's "brain" - the user context/memory it has learned.
@@ -152,7 +154,16 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
                 value: isMemoryEnabled,
                 activeColor: HbColors.brandPrimary,
                 onChanged: (value) async {
+                  final ownerAccountId = ref.read(authSessionUserIdProvider);
+                  if (ownerAccountId == null ||
+                      !identical(
+                        ref.read(petitBooChatProvider.notifier),
+                        notifier,
+                      )) {
+                    return;
+                  }
                   await notifier.toggleMemory(value);
+                  if (!_ownsActionAccount(ownerAccountId, notifier)) return;
                   setState(() {});
                 },
               ),
@@ -318,115 +329,133 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
     );
   }
 
-  void _showEditDialog(
+  Future<void> _showEditDialog(
     BuildContext context,
     PetitBooChatNotifier notifier,
     String key,
     dynamic currentValue,
-  ) {
-    final controller = TextEditingController(text: currentValue.toString());
-    final label = _contextKeyLabel(context, key);
+  ) async {
+    final ownerAccountId = ref.read(authSessionUserIdProvider);
+    if (ownerAccountId == null ||
+        !identical(ref.read(petitBooChatProvider.notifier), notifier)) {
+      return;
+    }
 
-    showDialog(
+    final label = _contextKeyLabel(context, key);
+    await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.l10n.petitBooMemoryEditTitle(label)),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            hintText: context.l10n.petitBooMemoryNewValueHint,
-            labelText: label,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.l10n.commonCancel),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              await notifier.updateContextKey(key, controller.text);
-              if (context.mounted) {
-                Navigator.pop(context);
-              }
-              setState(() {});
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: HbColors.brandPrimary,
-            ),
-            child: Text(
-              context.l10n.commonSave,
-              style: const TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
+      builder: (_) => _PetitBooMemoryEditDialog(
+        ownerAccountId: ownerAccountId,
+        notifier: notifier,
+        contextKey: key,
+        label: label,
+        initialValue: currentValue.toString(),
+        onSaved: () {
+          if (_ownsActionAccount(ownerAccountId, notifier)) {
+            setState(() {});
+          }
+        },
       ),
     );
   }
 
-  void _confirmDelete(
+  Future<void> _confirmDelete(
     BuildContext context,
     PetitBooChatNotifier notifier,
     String key,
-  ) {
+  ) async {
+    final ownerAccountId = ref.read(authSessionUserIdProvider);
+    if (ownerAccountId == null ||
+        !identical(ref.read(petitBooChatProvider.notifier), notifier)) {
+      return;
+    }
     final label = _contextKeyLabel(context, key);
 
-    showDialog(
+    await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.l10n.petitBooMemoryForgetTitle),
-        content: Text(context.l10n.petitBooMemoryForgetBody(label)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.l10n.petitBooMemoryNoKeep),
-          ),
-          TextButton(
-            onPressed: () async {
-              await notifier.removeContextKey(key);
-              if (context.mounted) {
-                Navigator.pop(context);
-              }
-              setState(() {});
-            },
-            child: Text(
-              context.l10n.petitBooMemoryForgetConfirm,
-              style: TextStyle(color: HbColors.error),
+      builder: (_) => AccountBoundRouteGuard<void>(
+        ownerAccountId: ownerAccountId,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(dialogContext.l10n.petitBooMemoryForgetTitle),
+          content: Text(dialogContext.l10n.petitBooMemoryForgetBody(label)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(dialogContext.l10n.petitBooMemoryNoKeep),
             ),
-          ),
-        ],
+            TextButton(
+              onPressed: () async {
+                if (!_ownsActionAccount(ownerAccountId, notifier)) return;
+                await notifier.removeContextKey(key);
+                if (!dialogContext.mounted ||
+                    !_ownsActionAccount(ownerAccountId, notifier)) {
+                  return;
+                }
+                Navigator.pop(dialogContext);
+                if (mounted) setState(() {});
+              },
+              child: Text(
+                dialogContext.l10n.petitBooMemoryForgetConfirm,
+                style: const TextStyle(color: HbColors.error),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  void _confirmClearAll(BuildContext context, PetitBooChatNotifier notifier) {
-    showDialog(
+  Future<void> _confirmClearAll(
+    BuildContext context,
+    PetitBooChatNotifier notifier,
+  ) async {
+    final ownerAccountId = ref.read(authSessionUserIdProvider);
+    if (ownerAccountId == null ||
+        !identical(ref.read(petitBooChatProvider.notifier), notifier)) {
+      return;
+    }
+
+    await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.l10n.petitBooMemoryClearAllTitle),
-        content: Text(context.l10n.petitBooMemoryClearAllBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.l10n.petitBooMemoryNoKeep),
-          ),
-          TextButton(
-            onPressed: () async {
-              await notifier.clearContext();
-              if (context.mounted) {
-                Navigator.pop(context);
-              }
-              setState(() {});
-            },
-            child: Text(
-              context.l10n.petitBooMemoryClearAllConfirm,
-              style: TextStyle(color: HbColors.error),
+      builder: (_) => AccountBoundRouteGuard<void>(
+        ownerAccountId: ownerAccountId,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(dialogContext.l10n.petitBooMemoryClearAllTitle),
+          content: Text(dialogContext.l10n.petitBooMemoryClearAllBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(dialogContext.l10n.petitBooMemoryNoKeep),
             ),
-          ),
-        ],
+            TextButton(
+              onPressed: () async {
+                if (!_ownsActionAccount(ownerAccountId, notifier)) return;
+                await notifier.clearContext();
+                if (!dialogContext.mounted ||
+                    !_ownsActionAccount(ownerAccountId, notifier)) {
+                  return;
+                }
+                Navigator.pop(dialogContext);
+                if (mounted) setState(() {});
+              },
+              child: Text(
+                dialogContext.l10n.petitBooMemoryClearAllConfirm,
+                style: const TextStyle(color: HbColors.error),
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  bool _ownsActionAccount(
+    String ownerAccountId,
+    PetitBooChatNotifier notifier,
+  ) {
+    return mounted &&
+        ref.read(authSessionUserIdProvider) == ownerAccountId &&
+        identical(ref.read(petitBooChatProvider.notifier), notifier);
   }
 
   String _contextKeyLabel(BuildContext context, String key) {
@@ -604,5 +633,103 @@ class _PetitBooBrainScreenState extends ConsumerState<PetitBooBrainScreen> {
     }
 
     return value.toString();
+  }
+}
+
+class _PetitBooMemoryEditDialog extends ConsumerStatefulWidget {
+  const _PetitBooMemoryEditDialog({
+    required this.ownerAccountId,
+    required this.notifier,
+    required this.contextKey,
+    required this.label,
+    required this.initialValue,
+    required this.onSaved,
+  });
+
+  final String ownerAccountId;
+  final PetitBooChatNotifier notifier;
+  final String contextKey;
+  final String label;
+  final String initialValue;
+  final VoidCallback onSaved;
+
+  @override
+  ConsumerState<_PetitBooMemoryEditDialog> createState() =>
+      _PetitBooMemoryEditDialogState();
+}
+
+class _PetitBooMemoryEditDialogState
+    extends ConsumerState<_PetitBooMemoryEditDialog> {
+  late final TextEditingController _controller;
+  bool _isSaving = false;
+
+  bool get _ownsCurrentAccount =>
+      mounted &&
+      ref.read(authSessionUserIdProvider) == widget.ownerAccountId &&
+      identical(
+        ref.read(petitBooChatProvider.notifier),
+        widget.notifier,
+      );
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue);
+  }
+
+  @override
+  void dispose() {
+    _controller.clear();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_isSaving || !_ownsCurrentAccount) return;
+    final nextValue = _controller.text;
+    setState(() => _isSaving = true);
+
+    await widget.notifier.updateContextKey(widget.contextKey, nextValue);
+    if (!_ownsCurrentAccount) return;
+
+    widget.onSaved();
+    if (mounted) Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AccountBoundRouteGuard<void>(
+      ownerAccountId: widget.ownerAccountId,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          dialogContext.l10n.petitBooMemoryEditTitle(widget.label),
+        ),
+        content: TextField(
+          controller: _controller,
+          enabled: !_isSaving,
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
+            hintText: dialogContext.l10n.petitBooMemoryNewValueHint,
+            labelText: widget.label,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _isSaving ? null : () => Navigator.pop(dialogContext),
+            child: Text(dialogContext.l10n.commonCancel),
+          ),
+          ElevatedButton(
+            onPressed: _isSaving ? null : _save,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: HbColors.brandPrimary,
+            ),
+            child: Text(
+              dialogContext.l10n.commonSave,
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

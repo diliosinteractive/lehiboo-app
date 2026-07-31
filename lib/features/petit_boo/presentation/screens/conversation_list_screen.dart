@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../../core/themes/petit_boo_theme.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../data/models/conversation_dto.dart';
 import '../providers/conversation_list_provider.dart';
 import '../widgets/animated_toast.dart';
@@ -89,8 +91,18 @@ class ConversationListScreen extends ConsumerWidget {
 
     return RefreshIndicator(
       onRefresh: () async {
-        await ref.read(conversationListProvider.notifier).refresh();
-        if (!context.mounted) return;
+        final ownerAccountId = ref.read(authSessionUserIdProvider);
+        if (ownerAccountId == null) return;
+        final ownerNotifier = ref.read(conversationListProvider.notifier);
+        await ownerNotifier.refresh();
+        if (!context.mounted ||
+            ref.read(authSessionUserIdProvider) != ownerAccountId ||
+            !identical(
+              ref.read(conversationListProvider.notifier),
+              ownerNotifier,
+            )) {
+          return;
+        }
 
         final refreshError = ref.read(conversationListProvider).error;
         if (refreshError != null) {
@@ -303,108 +315,133 @@ class ConversationListScreen extends ConsumerWidget {
     WidgetRef ref,
     ConversationDto conversation,
   ) async {
+    final ownerAccountId = ref.read(authSessionUserIdProvider);
+    if (ownerAccountId == null) return;
+    final ownerNotifier = ref.read(conversationListProvider.notifier);
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: PetitBooTheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: EdgeInsets.all(PetitBooTheme.spacing24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: PetitBooTheme.grey300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            SizedBox(height: PetitBooTheme.spacing24),
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: PetitBooTheme.errorLight,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.delete_outline_rounded,
-                color: PetitBooTheme.error,
-                size: 28,
-              ),
-            ),
-            SizedBox(height: PetitBooTheme.spacing16),
-            Text(
-              context.l10n.petitBooDeleteConversationTitle,
-              style: PetitBooTheme.headingSm,
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: PetitBooTheme.spacing8),
-            Text(
-              context.l10n.petitBooDeleteConversationBody,
-              style: PetitBooTheme.bodySm.copyWith(
-                color: PetitBooTheme.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: PetitBooTheme.spacing24),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: PetitBooTheme.textPrimary,
-                      padding: EdgeInsets.symmetric(
-                          vertical: PetitBooTheme.spacing14),
-                      side: BorderSide(color: PetitBooTheme.border),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(context.l10n.commonCancel),
-                  ),
+      builder: (context) => AccountBoundRouteGuard<bool>(
+        ownerAccountId: ownerAccountId,
+        invalidResult: false,
+        builder: (context) => Container(
+          decoration: BoxDecoration(
+            color: PetitBooTheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: EdgeInsets.all(PetitBooTheme.spacing24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: PetitBooTheme.grey300,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                SizedBox(width: PetitBooTheme.spacing12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: PetitBooTheme.error,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(
-                          vertical: PetitBooTheme.spacing14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(context.l10n.messagesDeleteAction),
-                  ),
+              ),
+              SizedBox(height: PetitBooTheme.spacing24),
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: PetitBooTheme.errorLight,
+                  shape: BoxShape.circle,
                 ),
-              ],
-            ),
-            SizedBox(height: PetitBooTheme.spacing8),
-          ],
+                child: Icon(
+                  Icons.delete_outline_rounded,
+                  color: PetitBooTheme.error,
+                  size: 28,
+                ),
+              ),
+              SizedBox(height: PetitBooTheme.spacing16),
+              Text(
+                context.l10n.petitBooDeleteConversationTitle,
+                style: PetitBooTheme.headingSm,
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: PetitBooTheme.spacing8),
+              Text(
+                context.l10n.petitBooDeleteConversationBody,
+                style: PetitBooTheme.bodySm.copyWith(
+                  color: PetitBooTheme.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: PetitBooTheme.spacing24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: PetitBooTheme.textPrimary,
+                        padding: EdgeInsets.symmetric(
+                            vertical: PetitBooTheme.spacing14),
+                        side: BorderSide(color: PetitBooTheme.border),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(context.l10n.commonCancel),
+                    ),
+                  ),
+                  SizedBox(width: PetitBooTheme.spacing12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: PetitBooTheme.error,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                            vertical: PetitBooTheme.spacing14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(context.l10n.messagesDeleteAction),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: PetitBooTheme.spacing8),
+            ],
+          ),
         ),
       ),
     );
 
-    if (confirmed == true && context.mounted) {
+    if (confirmed == true &&
+        context.mounted &&
+        ref.read(authSessionUserIdProvider) == ownerAccountId &&
+        identical(
+          ref.read(conversationListProvider.notifier),
+          ownerNotifier,
+        )) {
       try {
-        await ref
-            .read(conversationListProvider.notifier)
-            .deleteConversation(conversation.uuid);
-        if (!context.mounted) return;
+        await ownerNotifier.deleteConversation(conversation.uuid);
+        if (!context.mounted ||
+            ref.read(authSessionUserIdProvider) != ownerAccountId ||
+            !identical(
+              ref.read(conversationListProvider.notifier),
+              ownerNotifier,
+            )) {
+          return;
+        }
         PetitBooToast.success(
           context,
           context.l10n.petitBooConversationDeleted,
         );
       } catch (error) {
-        if (!context.mounted) return;
+        if (!context.mounted ||
+            ref.read(authSessionUserIdProvider) != ownerAccountId ||
+            !identical(
+              ref.read(conversationListProvider.notifier),
+              ownerNotifier,
+            )) {
+          return;
+        }
         PetitBooToast.error(
           context,
           ApiResponseHandler.extractError(

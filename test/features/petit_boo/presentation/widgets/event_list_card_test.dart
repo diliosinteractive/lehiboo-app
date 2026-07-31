@@ -27,6 +27,7 @@ Future<void> _pumpEvent(WidgetTester tester, Map<String, dynamic> event) {
     ProviderScope(
       overrides: [
         isAuthenticatedProvider.overrideWithValue(false),
+        authSessionUserIdProvider.overrideWithValue(null),
         favoritesRepositoryProvider.overrideWithValue(
           _FakeFavoritesRepository(),
         ),

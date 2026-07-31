@@ -1,14 +1,17 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/themes/petit_boo_theme.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../data/models/quota_dto.dart';
 
 /// Circular quota indicator - compact design for app bar
-class CircularQuotaIndicator extends StatelessWidget {
+class CircularQuotaIndicator extends ConsumerWidget {
   final QuotaDto quota;
   final double size;
 
@@ -19,12 +22,17 @@ class CircularQuotaIndicator extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final color = _getColor();
     final progress = 1 - quota.usagePercentage;
+    final ownerSession = ref.watch(authSessionKeyProvider);
 
     return GestureDetector(
-      onTap: () => QuotaExplanationSheet.show(context, quota),
+      onTap: () => QuotaExplanationSheet.show(
+        context,
+        quota,
+        ownerSession: ownerSession,
+      ),
       child: SizedBox(
         width: size,
         height: size,
@@ -73,12 +81,20 @@ class QuotaExplanationSheet extends StatelessWidget {
     required this.quota,
   });
 
-  static void show(BuildContext context, QuotaDto quota) {
-    showModalBottomSheet(
+  static Future<void> show(
+    BuildContext context,
+    QuotaDto quota, {
+    required AuthSessionKey ownerSession,
+  }) async {
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => QuotaExplanationSheet(quota: quota),
+      builder: (context) => AccountBoundRouteGuard<void>(
+        ownerAccountId: ownerSession.accountId,
+        ownerSession: ownerSession,
+        builder: (_) => QuotaExplanationSheet(quota: quota),
+      ),
     );
   }
 
@@ -90,177 +106,179 @@ class QuotaExplanationSheet extends StatelessWidget {
     final resetTime = quota.effectiveResetsAt;
 
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: PetitBooTheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle bar
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: PetitBooTheme.grey300,
-                  borderRadius: BorderRadius.circular(2),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle bar
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: PetitBooTheme.grey300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Header avec icône Petit Boo
-              Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: PetitBooTheme.primaryLight,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.chat_bubble_outline_rounded,
-                      color: PetitBooTheme.primary,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.petitBooQuotaHeaderTitle,
-                          style: PetitBooTheme.headingSm.copyWith(
-                            fontSize: 18,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          l10n.petitBooQuotaHeaderSubtitle,
-                          style: PetitBooTheme.bodySm.copyWith(
-                            color: PetitBooTheme.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 28),
-
-              // Big circular progress
-              SizedBox(
-                width: 120,
-                height: 120,
-                child: Stack(
-                  alignment: Alignment.center,
+                // Header avec icône Petit Boo
+                Row(
                   children: [
-                    CustomPaint(
-                      size: const Size(120, 120),
-                      painter: _CircularProgressPainter(
-                        progress: progress,
-                        color: color,
-                        backgroundColor: PetitBooTheme.grey200,
-                        strokeWidth: 8,
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: PetitBooTheme.primaryLight,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.chat_bubble_outline_rounded,
+                        color: PetitBooTheme.primary,
+                        size: 24,
                       ),
                     ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '${quota.remaining}',
-                          style: TextStyle(
-                            fontSize: 36,
-                            fontWeight: FontWeight.w800,
-                            color: color,
-                            height: 1,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.petitBooQuotaHeaderTitle,
+                            style: PetitBooTheme.headingSm.copyWith(
+                              fontSize: 18,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          l10n.petitBooQuotaRemainingLabel,
-                          style: PetitBooTheme.caption.copyWith(
-                            color: PetitBooTheme.textSecondary,
+                          const SizedBox(height: 2),
+                          Text(
+                            l10n.petitBooQuotaHeaderSubtitle,
+                            style: PetitBooTheme.bodySm.copyWith(
+                              color: PetitBooTheme.textSecondary,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ),
 
-              const SizedBox(height: 8),
+                const SizedBox(height: 28),
 
-              // Usage text
-              Text(
-                l10n.petitBooQuotaUsage(quota.used, quota.limit),
-                style: PetitBooTheme.bodySm.copyWith(
-                  color: PetitBooTheme.textSecondary,
+                // Big circular progress
+                SizedBox(
+                  width: 120,
+                  height: 120,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CustomPaint(
+                        size: const Size(120, 120),
+                        painter: _CircularProgressPainter(
+                          progress: progress,
+                          color: color,
+                          backgroundColor: PetitBooTheme.grey200,
+                          strokeWidth: 8,
+                        ),
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${quota.remaining}',
+                            style: TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.w800,
+                              color: color,
+                              height: 1,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            l10n.petitBooQuotaRemainingLabel,
+                            style: PetitBooTheme.caption.copyWith(
+                              color: PetitBooTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 28),
+                const SizedBox(height: 8),
 
-              // Explanation cards
-              _buildExplanationCard(
-                icon: Icons.refresh_rounded,
-                iconColor: PetitBooTheme.success,
-                title: l10n.petitBooQuotaRenewalTitle(
-                  _getPeriodText(context),
+                // Usage text
+                Text(
+                  l10n.petitBooQuotaUsage(quota.used, quota.limit),
+                  style: PetitBooTheme.bodySm.copyWith(
+                    color: PetitBooTheme.textSecondary,
+                  ),
                 ),
-                description: resetTime != null
-                    ? l10n.petitBooQuotaRenewsAt(
-                        _formatResetTime(context, resetTime),
-                      )
-                    : l10n.petitBooQuotaRenewsAutomatically,
-              ),
 
-              const SizedBox(height: 12),
+                const SizedBox(height: 28),
 
-              _buildExplanationCard(
-                icon: Icons.lightbulb_outline_rounded,
-                iconColor: PetitBooTheme.warning,
-                title: l10n.petitBooQuotaTipTitle,
-                description: l10n.petitBooQuotaTipDescription,
-              ),
+                // Explanation cards
+                _buildExplanationCard(
+                  icon: Icons.refresh_rounded,
+                  iconColor: PetitBooTheme.success,
+                  title: l10n.petitBooQuotaRenewalTitle(
+                    _getPeriodText(context),
+                  ),
+                  description: resetTime != null
+                      ? l10n.petitBooQuotaRenewsAt(
+                          _formatResetTime(context, resetTime),
+                        )
+                      : l10n.petitBooQuotaRenewsAutomatically,
+                ),
 
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-              _buildExplanationCard(
-                icon: Icons.auto_awesome_rounded,
-                iconColor: PetitBooTheme.primary,
-                title: l10n.petitBooQuotaWhyTitle,
-                description: l10n.petitBooQuotaWhyDescription,
-              ),
+                _buildExplanationCard(
+                  icon: Icons.lightbulb_outline_rounded,
+                  iconColor: PetitBooTheme.warning,
+                  title: l10n.petitBooQuotaTipTitle,
+                  description: l10n.petitBooQuotaTipDescription,
+                ),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 12),
 
-              // Close button
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: TextButton.styleFrom(
-                    backgroundColor: PetitBooTheme.grey100,
-                    foregroundColor: PetitBooTheme.textPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                _buildExplanationCard(
+                  icon: Icons.auto_awesome_rounded,
+                  iconColor: PetitBooTheme.primary,
+                  title: l10n.petitBooQuotaWhyTitle,
+                  description: l10n.petitBooQuotaWhyDescription,
+                ),
+
+                const SizedBox(height: 24),
+
+                // Close button
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: TextButton.styleFrom(
+                      backgroundColor: PetitBooTheme.grey100,
+                      foregroundColor: PetitBooTheme.textPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      l10n.petitBooQuotaUnderstood,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
-                  child: Text(
-                    l10n.petitBooQuotaUnderstood,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -492,9 +510,9 @@ class QuotaBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -555,7 +573,7 @@ class QuotaDisplay extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 context.l10n.petitBooQuotaDisplayTitle,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: HbColors.textPrimary,
@@ -588,7 +606,7 @@ class QuotaDisplay extends StatelessWidget {
               context.l10n.petitBooQuotaDisplayResets(
                 _formatResetTime(context, quota.effectiveResetsAt!),
               ),
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
                 color: HbColors.textSecondary,
               ),

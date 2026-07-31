@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../../gamification/data/models/hibons_wallet.dart';
 import '../../../gamification/presentation/providers/gamification_provider.dart';
 import '../providers/petit_boo_chat_provider.dart';
@@ -11,19 +12,37 @@ import 'animated_toast.dart';
 
 /// Dialog shown when user reaches their message limit
 class LimitReachedDialog extends ConsumerWidget {
-  const LimitReachedDialog({super.key});
+  const LimitReachedDialog({
+    super.key,
+    required this.ownerSession,
+  });
+
+  final GamificationSessionKey ownerSession;
 
   static Future<void> show(BuildContext context) {
+    final ownerSession = ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(gamificationSessionProvider);
+    if (ownerSession == null) return Future.value();
+
     return showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const LimitReachedDialog(),
+      builder: (context) => AccountBoundRouteGuard<void>(
+        ownerAccountId: ownerSession.accountId,
+        builder: (_) => LimitReachedDialog(ownerSession: ownerSession),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    final currentSession = ref.watch(gamificationSessionProvider);
+    if (!identical(currentSession, ownerSession)) {
+      return const SizedBox.shrink();
+    }
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -132,7 +151,7 @@ class LimitReachedDialog extends ConsumerWidget {
                   Consumer(
                     builder: (context, ref, child) {
                       final walletAsync =
-                          ref.watch(gamificationNotifierProvider);
+                          ref.watch(gamificationNotifierProvider(ownerSession));
 
                       return walletAsync.when(
                         loading: () => const Center(
@@ -299,29 +318,71 @@ class LimitReachedDialog extends ConsumerWidget {
   }
 
   Future<void> _spendHibons(BuildContext context, WidgetRef ref) async {
+    if (!identical(ref.read(gamificationSessionProvider), ownerSession)) return;
+    final unlockNotifier = ref.read(chatUnlockProvider.notifier);
+    final walletNotifier =
+        ref.read(gamificationNotifierProvider(ownerSession).notifier);
+    final chatNotifier = ref.read(petitBooChatProvider.notifier);
+
     try {
       // Utiliser le nouveau provider pour débloquer les messages chat
-      final success = await ref.read(chatUnlockProvider.notifier).unlock();
+      final success = await unlockNotifier.unlock(
+        expectedSession: ownerSession,
+      );
+      if (!context.mounted) return;
+      if (!_ownsAction(
+        context,
+        ref,
+        unlockNotifier: unlockNotifier,
+        walletNotifier: walletNotifier,
+        chatNotifier: chatNotifier,
+      )) {
+        return;
+      }
       if (success) {
-        await ref.read(gamificationNotifierProvider.notifier).refresh();
-        await ref.read(petitBooChatProvider.notifier).resetLimit();
-        if (context.mounted) {
-          Navigator.pop(context);
-          PetitBooToast.success(
-            context,
-            context.l10n.petitBooConversationUnlocked,
-          );
+        await walletNotifier.refresh(expectedSession: ownerSession);
+        if (!context.mounted) return;
+        if (!_ownsAction(
+          context,
+          ref,
+          unlockNotifier: unlockNotifier,
+          walletNotifier: walletNotifier,
+          chatNotifier: chatNotifier,
+        )) {
+          return;
         }
+        await chatNotifier.resetLimit();
+        if (!context.mounted) return;
+        if (!_ownsAction(
+          context,
+          ref,
+          unlockNotifier: unlockNotifier,
+          walletNotifier: walletNotifier,
+          chatNotifier: chatNotifier,
+        )) {
+          return;
+        }
+        final successMessage = context.l10n.petitBooConversationUnlocked;
+        Navigator.pop(context);
+        PetitBooToast.success(
+          context,
+          successMessage,
+        );
       } else {
-        if (context.mounted) {
-          PetitBooToast.error(
-            context,
-            context.l10n.petitBooUnlockFailed,
-          );
-        }
+        PetitBooToast.error(
+          context,
+          context.l10n.petitBooUnlockFailed,
+        );
       }
     } catch (e) {
-      if (context.mounted) {
+      if (!context.mounted) return;
+      if (_ownsAction(
+        context,
+        ref,
+        unlockNotifier: unlockNotifier,
+        walletNotifier: walletNotifier,
+        chatNotifier: chatNotifier,
+      )) {
         PetitBooToast.error(
           context,
           context.l10n.petitBooErrorWithMessage(
@@ -333,6 +394,7 @@ class LimitReachedDialog extends ConsumerWidget {
   }
 
   Future<void> _watchAd(BuildContext context, WidgetRef ref) async {
+    if (!identical(ref.read(gamificationSessionProvider), ownerSession)) return;
     // Show loading dialog (simulates ad)
     showDialog(
       context: context,
@@ -343,11 +405,29 @@ class LimitReachedDialog extends ConsumerWidget {
     // Mock ad duration (fonctionnalité non supportée par l'API)
     await Future.delayed(const Duration(seconds: 2));
 
-    if (context.mounted) {
+    if (context.mounted &&
+        identical(ref.read(gamificationSessionProvider), ownerSession)) {
       Navigator.pop(context); // Close loading
       // Note: Cette fonctionnalité n'est pas supportée côté API
       // On affiche juste un message d'information
       PetitBooToast.success(context, context.l10n.petitBooComingSoon);
     }
+  }
+
+  bool _ownsAction(
+    BuildContext context,
+    WidgetRef ref, {
+    required ChatUnlockNotifier unlockNotifier,
+    required GamificationNotifier walletNotifier,
+    required PetitBooChatNotifier chatNotifier,
+  }) {
+    return context.mounted &&
+        identical(ref.read(gamificationSessionProvider), ownerSession) &&
+        identical(ref.read(chatUnlockProvider.notifier), unlockNotifier) &&
+        identical(
+          ref.read(gamificationNotifierProvider(ownerSession).notifier),
+          walletNotifier,
+        ) &&
+        identical(ref.read(petitBooChatProvider.notifier), chatNotifier);
   }
 }

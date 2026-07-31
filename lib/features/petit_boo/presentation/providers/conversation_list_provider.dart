@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../data/models/conversation_dto.dart';
 import '../../domain/repositories/petit_boo_repository.dart';
 
@@ -62,27 +64,65 @@ class ConversationListState {
 final conversationListProvider = StateNotifierProvider.autoDispose<
     ConversationListNotifier, ConversationListState>(
   (ref) {
-    final repository = ref.watch(petitBooRepositoryProvider);
-    return ConversationListNotifier(repository);
+    final ownerSession = ref.watch(authSessionKeyProvider);
+    final accountId = ref.watch(authSessionUserIdProvider);
+    final repository =
+        accountId == null ? null : ref.watch(petitBooRepositoryProvider);
+    return ConversationListNotifier(
+      repository,
+      ref,
+      accountId: accountId,
+      ownerSession: ownerSession,
+    );
   },
 );
 
 /// StateNotifier for managing the list of conversations
 class ConversationListNotifier extends StateNotifier<ConversationListState> {
-  final PetitBooRepository _repository;
+  final PetitBooRepository? _repository;
+  final Ref _ref;
+  final String? _accountId;
+  final AuthSessionKey _ownerSession;
+  int _listRequestGeneration = 0;
 
-  ConversationListNotifier(this._repository)
-      : super(const ConversationListState()) {
-    loadConversations();
+  ConversationListNotifier(
+    this._repository,
+    this._ref, {
+    required String? accountId,
+    required AuthSessionKey ownerSession,
+  })  : _accountId = accountId,
+        _ownerSession = ownerSession,
+        super(const ConversationListState()) {
+    if (_isCurrentAccount) {
+      loadConversations();
+    }
   }
+
+  bool get _isCurrentAccount =>
+      mounted &&
+      _accountId != null &&
+      identical(_ref.read(authSessionKeyProvider), _ownerSession) &&
+      _ref.read(authSessionUserIdProvider) == _accountId;
+
+  bool _isCurrentListRequest(int generation) =>
+      _isCurrentAccount && generation == _listRequestGeneration;
 
   /// Load conversations (first page)
   Future<void> loadConversations() async {
-    if (state.isLoading) return;
+    final repository = _repository;
+    if (!_isCurrentAccount || repository == null) return;
+
+    // A refresh supersedes any older first-page or pagination response. This
+    // also makes repeated pull-to-refresh requests last-request-wins.
+    final generation = ++_listRequestGeneration;
 
     state = state.copyWith(
       isLoading: true,
+      isLoadingMore: false,
       error: null,
+      loadMoreError: null,
+      currentPage: 1,
+      hasMore: false,
     );
 
     try {
@@ -90,12 +130,12 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
         debugPrint('🦉 ConversationList: Fetching conversations...');
       }
 
-      final result = await _repository.getConversations(
+      final result = await repository.getConversations(
         page: 1,
         perPage: 20,
       );
 
-      if (!mounted) return;
+      if (!_isCurrentListRequest(generation)) return;
 
       if (kDebugMode) {
         debugPrint(
@@ -112,7 +152,7 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
         hasMore: result.hasNext,
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!_isCurrentListRequest(generation)) return;
 
       if (kDebugMode) {
         debugPrint('🦉 ConversationList: Error fetching conversations: $e');
@@ -126,22 +166,31 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
 
   /// Load more conversations (pagination)
   Future<void> loadMore() async {
-    if (state.isLoadingMore || !state.hasMore || state.loadMoreError != null) {
+    final repository = _repository;
+    if (!_isCurrentAccount ||
+        repository == null ||
+        state.isLoading ||
+        state.isLoadingMore ||
+        !state.hasMore ||
+        state.loadMoreError != null) {
       return;
     }
 
+    final generation = ++_listRequestGeneration;
+    final nextPage = state.currentPage + 1;
+    final existingConversations = state.conversations;
     state = state.copyWith(isLoadingMore: true, loadMoreError: null);
 
     try {
-      final result = await _repository.getConversations(
-        page: state.currentPage + 1,
+      final result = await repository.getConversations(
+        page: nextPage,
         perPage: 20,
       );
 
-      if (!mounted) return;
+      if (!_isCurrentListRequest(generation)) return;
 
       state = state.copyWith(
-        conversations: [...state.conversations, ...result.conversations],
+        conversations: [...existingConversations, ...result.conversations],
         isLoadingMore: false,
         currentPage: result.currentPage,
         totalPages: result.totalPages,
@@ -149,7 +198,7 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
         loadMoreError: null,
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!_isCurrentListRequest(generation)) return;
 
       state = state.copyWith(
         isLoadingMore: false,
@@ -159,27 +208,25 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
   }
 
   Future<void> retryLoadMore() async {
-    if (state.loadMoreError == null) return;
+    if (!_isCurrentAccount || state.loadMoreError == null) return;
     state = state.copyWith(loadMoreError: null);
     await loadMore();
   }
 
   /// Refresh the conversations list
   Future<void> refresh() async {
-    state = state.copyWith(
-      currentPage: 1,
-      hasMore: false,
-      loadMoreError: null,
-    );
     await loadConversations();
   }
 
   /// Delete a conversation
   Future<void> deleteConversation(String uuid) async {
-    try {
-      await _repository.deleteConversation(uuid);
+    final repository = _repository;
+    if (!_isCurrentAccount || repository == null) return;
 
-      if (!mounted) return;
+    try {
+      await repository.deleteConversation(uuid);
+
+      if (!_isCurrentAccount) return;
 
       // Remove from local list
       state = state.copyWith(
@@ -187,12 +234,14 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
             state.conversations.where((c) => c.uuid != uuid).toList(),
       );
     } catch (error, stackTrace) {
+      if (!_isCurrentAccount) return;
       Error.throwWithStackTrace(error, stackTrace);
     }
   }
 
   /// Clear error
   void clearError() {
+    if (!_isCurrentAccount) return;
     state = state.copyWith(error: null);
   }
 
@@ -204,9 +253,53 @@ class ConversationListNotifier extends StateNotifier<ConversationListState> {
   }
 }
 
-/// Provider for a single conversation detail
-final conversationDetailProvider = FutureProvider.autoDispose
-    .family<ConversationDto, String>((ref, uuid) async {
+class ConversationHistoryAuthenticationRequiredException implements Exception {
+  const ConversationHistoryAuthenticationRequiredException();
+}
+
+class ConversationHistoryAccountChangedException implements Exception {
+  const ConversationHistoryAccountChangedException();
+}
+
+typedef _ConversationDetailKey = ({AuthSessionKey ownerSession, String uuid});
+
+final _accountConversationDetailProvider = FutureProvider.autoDispose
+    .family<ConversationDto, _ConversationDetailKey>((ref, key) async {
+  if (key.ownerSession.accountId == null ||
+      !identical(ref.watch(authSessionKeyProvider), key.ownerSession)) {
+    throw const ConversationHistoryAccountChangedException();
+  }
   final repository = ref.watch(petitBooRepositoryProvider);
-  return repository.getConversation(uuid);
+  var isActive = true;
+  ref.onDispose(() => isActive = false);
+
+  final conversation = await repository.getConversation(key.uuid);
+  if (!isActive ||
+      !identical(ref.read(authSessionKeyProvider), key.ownerSession)) {
+    throw const ConversationHistoryAccountChangedException();
+  }
+  return conversation;
+});
+
+/// Provider for a single conversation detail.
+///
+/// The actual request is keyed by both UUID and account. The synchronous
+/// wrapper is important: a [FutureProvider] reload can retain its previous
+/// value, which would briefly expose the old account's conversation after a
+/// logout or account switch.
+final conversationDetailProvider = Provider.autoDispose
+    .family<AsyncValue<ConversationDto>, String>((ref, uuid) {
+  final ownerSession = ref.watch(authSessionKeyProvider);
+  if (ownerSession.accountId == null) {
+    return AsyncError(
+      const ConversationHistoryAuthenticationRequiredException(),
+      StackTrace.current,
+    );
+  }
+
+  return ref.watch(
+    _accountConversationDetailProvider(
+      (ownerSession: ownerSession, uuid: uuid),
+    ),
+  );
 });
