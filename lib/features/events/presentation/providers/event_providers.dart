@@ -84,6 +84,8 @@ class _MapEventsController extends StateNotifier<AsyncValue<EventsResult>> {
             ? _filter.categoriesSlugs.join(',')
             : null,
         location: _filter.citySlug,
+        cityRadiusKm:
+            _filter.citySlug != null ? _filter.effectiveCityRadiusKm : null,
         dateFrom: _dateParam(_filter.effectiveStartDate),
         dateTo: _dateParam(_filter.effectiveEndDate),
         priceMin: _priceMinParam(_filter),
@@ -114,7 +116,7 @@ class _MapEventsController extends StateNotifier<AsyncValue<EventsResult>> {
         southWestLat: _filter.southWestLat,
         southWestLng: _filter.southWestLng,
         lightweight: true,
-        sort: sortOptionToApiValue(_filter.sortBy),
+        sort: sortOptionToApiValue(_filter.effectiveSortBy),
       );
       if (!mounted || requestGeneration != _requestGeneration) return;
       state = AsyncValue.data(result);
