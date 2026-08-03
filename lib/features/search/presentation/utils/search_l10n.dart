@@ -1,9 +1,21 @@
 import 'package:flutter/widgets.dart';
 
 import '../../../../core/l10n/l10n.dart';
+import '../../../../core/services/location_service.dart';
 import '../../domain/models/event_filter.dart';
 
 extension SearchL10n on BuildContext {
+  String searchLocationFailureLabel(LocationFailure failure) {
+    final l10n = this.l10n;
+    return switch (failure) {
+      LocationFailure.serviceDisabled => l10n.searchLocationDisabled,
+      LocationFailure.permissionDenied => l10n.searchPermissionDenied,
+      LocationFailure.permissionDeniedForever =>
+        l10n.searchLocationSettingsRequired,
+      LocationFailure.unavailable => l10n.searchLocationNotFound,
+    };
+  }
+
   String searchDateFilterLabel(DateFilterType type) {
     final l10n = this.l10n;
     return switch (type) {

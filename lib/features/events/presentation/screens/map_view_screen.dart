@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart'; // For attribution links
 import 'package:go_router/go_router.dart';
 
 import 'package:lehiboo/core/analytics/analytics_event.dart';
 import 'package:lehiboo/core/analytics/analytics_provider.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
+import 'package:lehiboo/core/services/location_service.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
@@ -65,7 +65,6 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
       'initialLat=${widget.initialLat}, initialLng=${widget.initialLng}, '
       'initialZoom=${widget.initialZoom}',
     );
-    _checkLocationPermission();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       ref.read(analyticsServiceProvider).logEvent(
@@ -86,10 +85,6 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
     _pageController.dispose();
     _mapController.dispose();
     super.dispose();
-  }
-
-  Future<void> _checkLocationPermission() async {
-    await Geolocator.requestPermission();
   }
 
   void _onPositionChanged(MapCamera camera, bool hasGesture) {
@@ -117,15 +112,22 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
   }
 
   Future<void> _locateMe() async {
+    if (_isLocating) return;
+
     setState(() => _isLocating = true);
     final locationError = context.l10n.eventMapLocationError;
     try {
-      final position = await Geolocator.getCurrentPosition();
+      final outcome = await LocationService.currentPosition();
+      if (!mounted) return;
 
-      _mapController.move(LatLng(position.latitude, position.longitude), 15.0);
-    } catch (e) {
-      if (mounted) {
-        PetitBooToast.error(context, locationError);
+      switch (outcome) {
+        case LocationResolved(:final position):
+          _mapController.move(
+            LatLng(position.latitude, position.longitude),
+            15.0,
+          );
+        case LocationUnresolved():
+          PetitBooToast.error(context, locationError);
       }
     } finally {
       if (mounted) setState(() => _isLocating = false);
