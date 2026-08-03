@@ -6,8 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/analytics/analytics_event.dart';
 import '../../../../core/analytics/analytics_provider.dart';
 import '../../../../core/l10n/l10n.dart';
+import '../../../../core/services/location_service.dart';
 import '../../../../core/themes/colors.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import '../providers/filter_provider.dart';
 import '../utils/search_l10n.dart';
@@ -213,6 +213,10 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
   }
 
   Future<void> _getCurrentLocation() async {
+    // Un second tap pendant la résolution relancerait une demande concurrente
+    // et remettrait le spinner à zéro au retour de la première.
+    if (_isLoadingLocation) return;
+
     final ownerNotifier = ref.read(eventFilterProvider.notifier);
     final operationGeneration = ++_locationGeneration;
 
@@ -225,47 +229,20 @@ class _AirbnbSearchSheetState extends ConsumerState<AirbnbSearchSheet>
     }
 
     setState(() => _isLoadingLocation = true);
-    final locationDisabled = context.l10n.searchLocationDisabled;
-    final permissionDenied = context.l10n.searchPermissionDenied;
-    final locationSettingsRequired =
-        context.l10n.searchLocationSettingsRequired;
-    final locationNotFound = context.l10n.searchLocationNotFound;
 
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!ownsOperation()) return;
-      if (!serviceEnabled) {
-        _showError(locationDisabled);
-        return;
-      }
-
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (!ownsOperation()) return;
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (!ownsOperation()) return;
-        if (permission == LocationPermission.denied) {
-          _showError(permissionDenied);
-          return;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        _showError(locationSettingsRequired);
-        return;
-      }
-
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.medium,
-        ),
-      );
+      final outcome = await LocationService.currentPosition();
+      if (!mounted) return;
+      // La position ne doit jamais atterrir dans le filtre d'un autre compte.
       if (!ownsOperation()) return;
 
-      ownerNotifier.setLocation(position.latitude, position.longitude, 20);
-      ownerNotifier.clearCity();
-    } catch (e) {
-      if (ownsOperation()) _showError(locationNotFound);
+      switch (outcome) {
+        case LocationResolved(:final position):
+          // setLocation efface déjà la ville : les deux intentions s'excluent.
+          ownerNotifier.setLocation(position.latitude, position.longitude, 20);
+        case LocationUnresolved(:final failure):
+          _showError(context.searchLocationFailureLabel(failure));
+      }
     } finally {
       if (ownsOperation()) setState(() => _isLoadingLocation = false);
     }

@@ -257,6 +257,18 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
     );
   }
 
+  /// Applique un changement de critère de recherche.
+  ///
+  /// Toute modification des critères invalide le curseur de pagination :
+  /// [FilteredEventsNotifier] **concatène** les résultats quand `page > 1`.
+  /// Garder une page obsolète laisserait les résultats du filtre précédent en
+  /// tête de liste, ce qui donne l'impression que le nouveau filtre (ville,
+  /// position, catégorie...) est ignoré ou mis en cache.
+  void _applyFilterChange(EventFilter next, {bool persist = false}) {
+    state = next.page == 1 ? next : next.copyWith(page: 1);
+    if (persist) _persistFilters();
+  }
+
   // Reset all filters
   void resetAll() {
     _clearSelectedSearchEvent();
@@ -270,17 +282,17 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
     if (selectedEvent != null && selectedEvent.title.trim() != query.trim()) {
       _clearSelectedSearchEvent();
     }
-    state = state.copyWith(searchQuery: query, page: 1);
+    _applyFilterChange(state.copyWith(searchQuery: query));
   }
 
   void selectSearchEvent(SelectedSearchEvent event) {
     _ref?.read(selectedSearchEventProvider.notifier).state = event;
-    state = state.copyWith(searchQuery: event.title, page: 1);
+    _applyFilterChange(state.copyWith(searchQuery: event.title));
   }
 
   void clearSearchQuery() {
     _clearSelectedSearchEvent();
-    state = state.copyWith(searchQuery: '', page: 1);
+    _applyFilterChange(state.copyWith(searchQuery: ''));
   }
 
   void _clearSelectedSearchEvent() {
@@ -324,141 +336,169 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
         break;
     }
 
-    state = state.copyWith(
+    _applyFilterChange(state.copyWith(
       dateFilterType: type,
       startDate: start,
       endDate: end,
-    );
+    ));
   }
 
   void setCustomDateRange(DateTime start, DateTime end) {
-    state = state.copyWith(
+    _applyFilterChange(state.copyWith(
       dateFilterType: DateFilterType.custom,
       startDate: start,
       endDate: end,
-    );
+    ));
   }
 
   void clearDateFilter() {
-    state = state.copyWith(
+    _applyFilterChange(state.copyWith(
       dateFilterType: null,
       startDate: null,
       endDate: null,
-    );
+    ));
   }
 
   // Price filters
   void setPriceFilter(PriceFilterType type, {double? min, double? max}) {
-    state = state.copyWith(
+    _applyFilterChange(state.copyWith(
       priceFilterType: type,
       priceMin: min ?? 0,
       priceMax: max ?? _defaultPriceMax,
       onlyFree: type == PriceFilterType.free,
-    );
+    ));
   }
 
   void setOnlyFree(bool value) {
-    state = state.copyWith(
-      onlyFree: value,
-      priceFilterType: value ? PriceFilterType.free : null,
+    _applyFilterChange(
+      state.copyWith(
+        onlyFree: value,
+        priceFilterType: value ? PriceFilterType.free : null,
+      ),
+      persist: true,
     );
-    _persistFilters();
   }
 
   void setPriceRange(double min, double max) {
-    state = state.copyWith(
-      priceFilterType: PriceFilterType.range,
-      priceMin: min,
-      priceMax: max,
-      onlyFree: false,
+    _applyFilterChange(
+      state.copyWith(
+        priceFilterType: PriceFilterType.range,
+        priceMin: min,
+        priceMax: max,
+        onlyFree: false,
+      ),
+      persist: true,
     );
-    _persistFilters();
   }
 
   void clearPriceFilter() {
-    state = state.copyWith(
-      priceFilterType: null,
-      priceMin: 0,
-      priceMax: _defaultPriceMax,
-      onlyFree: false,
+    _applyFilterChange(
+      state.copyWith(
+        priceFilterType: null,
+        priceMin: 0,
+        priceMax: _defaultPriceMax,
+        onlyFree: false,
+      ),
+      persist: true,
     );
-    _persistFilters();
   }
 
   // City filter
   void setCity(String slug, String name, {double radiusKm = 10}) {
-    state = state.copyWith(
-      citySlug: slug,
-      cityName: name,
-      cityRadiusKm: radiusKm,
-      latitude: null,
-      longitude: null,
+    // Choisir une ville remplace toute autre intention de localisation :
+    // le point GPS et la zone de carte ("rechercher dans cette zone") sont
+    // envoyés en plus à l'API et écraseraient le filtre ville.
+    _applyFilterChange(
+      state.copyWith(
+        citySlug: slug,
+        cityName: name,
+        cityRadiusKm: radiusKm,
+        latitude: null,
+        longitude: null,
+        northEastLat: null,
+        northEastLng: null,
+        southWestLat: null,
+        southWestLng: null,
+      ),
+      persist: true,
     );
-    _persistFilters();
   }
 
   void clearCity() {
-    state = state.copyWith(
-      citySlug: null,
-      cityName: null,
+    _applyFilterChange(
+      state.copyWith(
+        citySlug: null,
+        cityName: null,
+      ),
+      persist: true,
     );
-    _persistFilters();
   }
 
   // Location filter (GPS)
   void setLocation(double lat, double lng, double radius) {
-    state = state.copyWith(
+    // Même règle que [setCity] : une recherche autour d'un point annule la
+    // ville et la zone de carte précédentes.
+    _applyFilterChange(state.copyWith(
       latitude: lat,
       longitude: lng,
       radiusKm: radius,
       citySlug: null,
       cityName: null,
-    );
+      northEastLat: null,
+      northEastLng: null,
+      southWestLat: null,
+      southWestLng: null,
+    ));
   }
 
   void setBoundingBox(double neLat, double neLng, double swLat, double swLng) {
-    state = state.copyWith(
+    _applyFilterChange(state.copyWith(
       northEastLat: neLat,
       northEastLng: neLng,
       southWestLat: swLat,
       southWestLng: swLng,
       latitude: null, // Clear point search if using bounds
       longitude: null,
-    );
+    ));
   }
 
   void clearBoundingBox() {
-    state = state.copyWith(
+    _applyFilterChange(state.copyWith(
       northEastLat: null,
       northEastLng: null,
       southWestLat: null,
       southWestLng: null,
-    );
+    ));
   }
 
   void clearLocation() {
-    state = state.copyWith(
+    _applyFilterChange(state.copyWith(
       latitude: null,
       longitude: null,
       radiusKm: 10,
-    );
+    ));
   }
 
   // Thematiques (multi-select)
   void addThematique(String slug) {
     if (!state.thematiquesSlugs.contains(slug)) {
-      state = state.copyWith(
-        thematiquesSlugs: [...state.thematiquesSlugs, slug],
+      _applyFilterChange(
+        state.copyWith(
+          thematiquesSlugs: [...state.thematiquesSlugs, slug],
+        ),
+        persist: true,
       );
-      _persistFilters();
     }
   }
 
   void removeThematique(String slug) {
-    state = state.copyWith(
-      thematiquesSlugs: state.thematiquesSlugs.where((s) => s != slug).toList(),
+    _applyFilterChange(
+      state.copyWith(
+        thematiquesSlugs:
+            state.thematiquesSlugs.where((s) => s != slug).toList(),
+      ),
+      persist: true,
     );
-    _persistFilters();
   }
 
   void toggleThematique(String slug) {
@@ -470,30 +510,32 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
   }
 
   void clearThematiques() {
-    state = state.copyWith(thematiquesSlugs: []);
-    _persistFilters();
+    _applyFilterChange(state.copyWith(thematiquesSlugs: []), persist: true);
   }
 
   void setThematiques(List<String> slugs) {
-    state = state.copyWith(thematiquesSlugs: slugs);
-    _persistFilters();
+    _applyFilterChange(state.copyWith(thematiquesSlugs: slugs), persist: true);
   }
 
   // Categories (multi-select)
   void addCategory(String slug) {
     if (!state.categoriesSlugs.contains(slug)) {
-      state = state.copyWith(
-        categoriesSlugs: [...state.categoriesSlugs, slug],
+      _applyFilterChange(
+        state.copyWith(
+          categoriesSlugs: [...state.categoriesSlugs, slug],
+        ),
+        persist: true,
       );
-      _persistFilters();
     }
   }
 
   void removeCategory(String slug) {
-    state = state.copyWith(
-      categoriesSlugs: state.categoriesSlugs.where((s) => s != slug).toList(),
+    _applyFilterChange(
+      state.copyWith(
+        categoriesSlugs: state.categoriesSlugs.where((s) => s != slug).toList(),
+      ),
+      persist: true,
     );
-    _persistFilters();
   }
 
   void toggleCategory(String slug) {
@@ -505,40 +547,43 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
   }
 
   void clearCategories() {
-    state = state.copyWith(categoriesSlugs: []);
-    _persistFilters();
+    _applyFilterChange(state.copyWith(categoriesSlugs: []), persist: true);
   }
 
   // Organizer
   void setOrganizer(String slug, String name) {
-    state = state.copyWith(
+    _applyFilterChange(state.copyWith(
       organizerSlug: slug,
       organizerName: name,
-    );
+    ));
   }
 
   void clearOrganizer() {
-    state = state.copyWith(
+    _applyFilterChange(state.copyWith(
       organizerSlug: null,
       organizerName: null,
-    );
+    ));
   }
 
   // Tags (multi-select)
   void addTag(String slug) {
     if (!state.tagsSlugs.contains(slug)) {
-      state = state.copyWith(
-        tagsSlugs: [...state.tagsSlugs, slug],
+      _applyFilterChange(
+        state.copyWith(
+          tagsSlugs: [...state.tagsSlugs, slug],
+        ),
+        persist: true,
       );
-      _persistFilters();
     }
   }
 
   void removeTag(String slug) {
-    state = state.copyWith(
-      tagsSlugs: state.tagsSlugs.where((s) => s != slug).toList(),
+    _applyFilterChange(
+      state.copyWith(
+        tagsSlugs: state.tagsSlugs.where((s) => s != slug).toList(),
+      ),
+      persist: true,
     );
-    _persistFilters();
   }
 
   void toggleTag(String slug) {
@@ -550,87 +595,86 @@ class EventFilterNotifier extends StateNotifier<EventFilter> {
   }
 
   void clearTags() {
-    state = state.copyWith(tagsSlugs: []);
-    _persistFilters();
+    _applyFilterChange(state.copyWith(tagsSlugs: []), persist: true);
   }
 
   void setTags(List<String> slugs) {
-    state = state.copyWith(tagsSlugs: slugs);
-    _persistFilters();
+    _applyFilterChange(state.copyWith(tagsSlugs: slugs), persist: true);
   }
 
   void setTargetAudiences(List<String> slugs) {
-    state = state.copyWith(targetAudienceSlugs: slugs);
-    _persistFilters();
+    _applyFilterChange(
+      state.copyWith(targetAudienceSlugs: slugs),
+      persist: true,
+    );
   }
 
   void setEventTag(String? slug) {
-    state = state.copyWith(eventTagSlug: slug);
-    _persistFilters();
+    _applyFilterChange(state.copyWith(eventTagSlug: slug), persist: true);
   }
 
   void setSpecialEvents(List<String> slugs) {
-    state = state.copyWith(specialEventSlugs: slugs);
-    _persistFilters();
+    _applyFilterChange(state.copyWith(specialEventSlugs: slugs), persist: true);
   }
 
   void setEmotions(List<String> slugs) {
-    state = state.copyWith(emotionSlugs: slugs);
-    _persistFilters();
+    _applyFilterChange(state.copyWith(emotionSlugs: slugs), persist: true);
   }
 
   void setAvailableOnly(bool value) {
-    state = state.copyWith(availableOnly: value);
-    _persistFilters();
+    _applyFilterChange(state.copyWith(availableOnly: value), persist: true);
   }
 
   void setLocationType(LocationTypeFilter? type) {
-    state = state.copyWith(locationType: type);
-    _persistFilters();
+    _applyFilterChange(state.copyWith(locationType: type), persist: true);
   }
 
   // Audience filters
   void setFamilyFriendly(bool value) {
-    state = state.copyWith(familyFriendly: value);
-    _persistFilters();
+    _applyFilterChange(state.copyWith(familyFriendly: value), persist: true);
   }
 
   void setAccessiblePMR(bool value) {
-    state = state.copyWith(accessiblePMR: value);
-    _persistFilters();
+    _applyFilterChange(state.copyWith(accessiblePMR: value), persist: true);
   }
 
   // Format filters
   void setOnlineOnly(bool value) {
-    state = state.copyWith(
-      onlineOnly: value,
-      inPersonOnly: value ? false : state.inPersonOnly,
+    _applyFilterChange(
+      state.copyWith(
+        onlineOnly: value,
+        inPersonOnly: value ? false : state.inPersonOnly,
+      ),
+      persist: true,
     );
-    _persistFilters();
   }
 
   void setInPersonOnly(bool value) {
-    state = state.copyWith(
-      inPersonOnly: value,
-      onlineOnly: value ? false : state.onlineOnly,
+    _applyFilterChange(
+      state.copyWith(
+        inPersonOnly: value,
+        onlineOnly: value ? false : state.onlineOnly,
+      ),
+      persist: true,
     );
-    _persistFilters();
   }
 
   // Sort
   void setSortOption(SortOption option) {
-    state = state.copyWith(sortBy: option, hasExplicitSort: true);
-    _persistFilters();
+    _applyFilterChange(
+      state.copyWith(sortBy: option, hasExplicitSort: true),
+      persist: true,
+    );
   }
 
   void resetSortToDefault({bool persist = true}) {
-    state = state.copyWith(
-      sortBy: SortOption.dateAsc,
-      hasExplicitSort: false,
+    _applyFilterChange(
+      state.copyWith(
+        sortBy: SortOption.dateAsc,
+        hasExplicitSort: false,
+      ),
+      persist: persist,
     );
-    if (persist) {
-      _persistFilters();
-    }
   }
 
   // Pagination

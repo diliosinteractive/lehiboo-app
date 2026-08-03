@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:geolocator/geolocator.dart';
 import '../../../../core/l10n/l10n.dart';
+import '../../../../core/services/location_service.dart';
 import '../../../../core/themes/colors.dart';
 import '../providers/filter_provider.dart';
 import '../utils/search_l10n.dart';
@@ -771,65 +771,40 @@ class _WhereTabState extends ConsumerState<_WhereTab> {
   final List<double> _radiusOptions = [5, 10, 20, 50, 100];
 
   Future<void> _getCurrentLocation() async {
+    // Un second tap pendant la résolution relancerait une demande concurrente
+    // et remettrait le spinner à zéro au retour de la première.
+    if (_isLoadingLocation) return;
+
     setState(() => _isLoadingLocation = true);
-    final locationDisabled = context.l10n.searchLocationDisabled;
-    final permissionDenied = context.l10n.searchPermissionDenied;
-    final locationSettingsRequired =
-        context.l10n.searchLocationSettingsRequired;
-    final locationNotFound = context.l10n.searchLocationNotFound;
 
     try {
-      // Check if location services are enabled
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        _showError(locationDisabled);
-        return;
+      final outcome = await LocationService.currentPosition();
+      if (!mounted) return;
+
+      switch (outcome) {
+        case LocationResolved(:final position):
+          // setLocation efface déjà la ville : les deux intentions s'excluent.
+          ref.read(eventFilterProvider.notifier).setLocation(
+                position.latitude,
+                position.longitude,
+                _selectedRadius,
+              );
+        case LocationUnresolved(:final failure):
+          _showError(context.searchLocationFailureLabel(failure));
       }
-
-      // Check permissions
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          _showError(permissionDenied);
-          return;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        _showError(locationSettingsRequired);
-        return;
-      }
-
-      // Get current position
-      final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.medium,
-        ),
-      );
-
-      // Update filter with location
-      final filterNotifier = ref.read(eventFilterProvider.notifier);
-      filterNotifier.setLocation(
-          position.latitude, position.longitude, _selectedRadius);
-      filterNotifier.clearCity(); // Clear city when using geolocation
-    } catch (e) {
-      _showError(locationNotFound);
     } finally {
-      setState(() => _isLoadingLocation = false);
+      if (mounted) setState(() => _isLoadingLocation = false);
     }
   }
 
   void _showError(String message) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red[400],
-        ),
-      );
-    }
-    setState(() => _isLoadingLocation = false);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red[400],
+      ),
+    );
   }
 
   void _updateRadius(double radius) {

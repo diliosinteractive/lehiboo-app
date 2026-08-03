@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
 
 import '../../../../core/l10n/l10n.dart';
+import '../../../../core/services/location_service.dart';
 
 class UserLocation {
   final double lat;
@@ -35,70 +35,57 @@ class UserLocationNotifier extends StateNotifier<AsyncValue<UserLocation?>>
 
     try {
       final l10n = cachedAppLocalizations();
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        _setErrorIfNoFallback(
-          previousLocation,
-          l10n.searchLocationDisabled,
-          StackTrace.empty,
-        );
-        return;
-      }
+      final outcome = await LocationService.currentPosition();
 
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
+      switch (outcome) {
+        case LocationUnresolved(:final failure):
           _setErrorIfNoFallback(
             previousLocation,
-            l10n.searchPermissionDenied,
+            switch (failure) {
+              LocationFailure.serviceDisabled => l10n.searchLocationDisabled,
+              LocationFailure.permissionDenied => l10n.searchPermissionDenied,
+              LocationFailure.permissionDeniedForever =>
+                l10n.searchLocationSettingsRequired,
+              LocationFailure.unavailable => l10n.searchLocationNotFound,
+            },
             StackTrace.empty,
           );
-          return;
-        }
+
+        case LocationResolved(:final position):
+          final cityName = await _resolveCityName(position);
+          if (!mounted) return;
+          _lastResolvedAt = DateTime.now();
+          state = AsyncValue.data(
+            UserLocation(
+              lat: position.latitude,
+              lng: position.longitude,
+              cityName: cityName,
+            ),
+          );
       }
-
-      if (permission == LocationPermission.deniedForever) {
-        _setErrorIfNoFallback(
-          previousLocation,
-          l10n.searchLocationSettingsRequired,
-          StackTrace.empty,
-        );
-        return;
-      }
-
-      final position = await Geolocator.getCurrentPosition();
-
-      String? cityName;
-      try {
-        final placemarks = await placemarkFromCoordinates(
-          position.latitude,
-          position.longitude,
-        );
-
-        if (placemarks.isNotEmpty) {
-          cityName = placemarks.first.locality;
-          // Some providers only expose the administrative area.
-          if (cityName == null || cityName.isEmpty) {
-            cityName = placemarks.first.subAdministrativeArea;
-          }
-        }
-      } catch (error) {
-        debugPrint('Error getting placemarks: $error');
-      }
-
-      if (!mounted) return;
-      _lastResolvedAt = DateTime.now();
-      state = AsyncValue.data(
-        UserLocation(
-          lat: position.latitude,
-          lng: position.longitude,
-          cityName: cityName,
-        ),
-      );
     } catch (error, stackTrace) {
       _setErrorIfNoFallback(previousLocation, error, stackTrace);
       Error.throwWithStackTrace(error, stackTrace);
+    }
+  }
+
+  /// Reverse-geocoding best-effort : une position sans nom de ville reste
+  /// exploitable pour le feed.
+  Future<String?> _resolveCityName(Position position) async {
+    try {
+      final placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+      if (placemarks.isEmpty) return null;
+
+      final locality = placemarks.first.locality;
+      if (locality != null && locality.isNotEmpty) return locality;
+      // Some providers only expose the administrative area.
+      return placemarks.first.subAdministrativeArea;
+    } catch (error) {
+      debugPrint('Error getting placemarks: $error');
+      return null;
     }
   }
 
