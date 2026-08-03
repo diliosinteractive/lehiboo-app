@@ -21407,7 +21407,7 @@ paths:
                       uuid: 019bd31b-513b-7197-80cc-7430230185c4
                       name: Pro
                       slug: pro
-                      description: 'Plan professionnel pour les organisateurs actifs. Commission reduite et fonctionnalites premium.'
+                      description: 'Plan professionnel pour les organisateurs actifs. Frais de service réduits et fonctionnalités premium.'
                       monthly_price: '29.00'
                       yearly_price: '278.40'
                       currency: EUR
@@ -21439,7 +21439,7 @@ paths:
                       uuid: 019bd31b-513c-7396-879c-33185c9d0d71
                       name: Enterprise
                       slug: enterprise
-                      description: 'Plan entreprise pour les grands organisateurs. Commission minimale et toutes les fonctionnalites.'
+                      description: 'Plan entreprise pour les grands organisateurs. Frais de service minimaux et toutes les fonctionnalités.'
                       monthly_price: '99.00'
                       yearly_price: '950.40'
                       currency: EUR
@@ -21507,7 +21507,7 @@ paths:
                         uuid: 019bd31b-513b-7197-80cc-7430230185c4
                         name: Pro
                         slug: pro
-                        description: 'Plan professionnel pour les organisateurs actifs. Commission reduite et fonctionnalites premium.'
+                        description: 'Plan professionnel pour les organisateurs actifs. Frais de service réduits et fonctionnalités premium.'
                         monthly_price: '29.00'
                         yearly_price: '278.40'
                         currency: EUR
@@ -21539,7 +21539,7 @@ paths:
                         uuid: 019bd31b-513c-7396-879c-33185c9d0d71
                         name: Enterprise
                         slug: enterprise
-                        description: 'Plan entreprise pour les grands organisateurs. Commission minimale et toutes les fonctionnalites.'
+                        description: 'Plan entreprise pour les grands organisateurs. Frais de service minimaux et toutes les fonctionnalités.'
                         monthly_price: '99.00'
                         yearly_price: '950.40'
                         currency: EUR
