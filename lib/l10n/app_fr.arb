@@ -38,12 +38,12 @@
   "settingsSectionAccount": "Compte",
   "settingsSectionLegal": "Informations légales",
   "settingsSectionInformation": "Informations",
-  "profileSupportTitle": "Soutenir Le Hiboo",
+  "profileSupportTitle": "Soutenir LeHiboo",
   "profileSupportSubtitle": "Faites un don volontaire à la plateforme",
   "commonShareFailed": "Impossible d'ouvrir les options de partage. Réessayez.",
-  "donationsTitle": "Soutenir Le Hiboo",
-  "donationsHeaderTitle": "Soutenez Le Hiboo",
-  "donationsHeaderSubtitle": "Votre soutien libre aide Le Hiboo à rester indépendant et à grandir.",
+  "donationsTitle": "Soutenir LeHiboo",
+  "donationsHeaderTitle": "Soutenez LeHiboo",
+  "donationsHeaderSubtitle": "Votre soutien libre aide LeHiboo à rester indépendant et à grandir.",
   "donationsAmountLabel": "Choisissez un montant",
   "donationsPresetPopular": "Populaire",
   "donationsCustomAmountLabel": "Autre montant",
@@ -67,7 +67,7 @@
   "donationsPaymentCancelled": "Paiement annulé.",
   "donationsCheckoutFailed": "Impossible de préparer ou de finaliser votre don. Réessayez.",
   "donationsSuccessTitle": "Merci pour votre soutien !",
-  "donationsSuccessSubtitle": "Votre don de {amount} aide Le Hiboo à grandir. 🧡",
+  "donationsSuccessSubtitle": "Votre don de {amount} aide LeHiboo à grandir. 🧡",
   "@donationsSuccessSubtitle": {
     "placeholders": {
       "amount": {

@@ -45,7 +45,7 @@ class DonationsRepositoryImpl implements DonationsRepository {
       donation: _mapDonation(dto.data),
       paymentSheet: DonationPaymentSheet(
         clientSecret: ps.clientSecret,
-        merchantDisplayName: ps.merchantDisplayName ?? 'Le Hiboo',
+        merchantDisplayName: ps.merchantDisplayName ?? 'LeHiboo',
         customerId: ps.customerId,
         ephemeralKey: ps.ephemeralKey,
         paymentIntentId: ps.paymentIntentId,

@@ -311,7 +311,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileSupportTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Soutenir Le Hiboo'**
+  /// **'Soutenir LeHiboo'**
   String get profileSupportTitle;
 
   /// No description provided for @profileSupportSubtitle.
@@ -329,19 +329,19 @@ abstract class AppLocalizations {
   /// No description provided for @donationsTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Soutenir Le Hiboo'**
+  /// **'Soutenir LeHiboo'**
   String get donationsTitle;
 
   /// No description provided for @donationsHeaderTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Soutenez Le Hiboo'**
+  /// **'Soutenez LeHiboo'**
   String get donationsHeaderTitle;
 
   /// No description provided for @donationsHeaderSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Votre soutien libre aide Le Hiboo à rester indépendant et à grandir.'**
+  /// **'Votre soutien libre aide LeHiboo à rester indépendant et à grandir.'**
   String get donationsHeaderSubtitle;
 
   /// No description provided for @donationsAmountLabel.
@@ -443,7 +443,7 @@ abstract class AppLocalizations {
   /// No description provided for @donationsSuccessSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Votre don de {amount} aide Le Hiboo à grandir. 🧡'**
+  /// **'Votre don de {amount} aide LeHiboo à grandir. 🧡'**
   String donationsSuccessSubtitle(String amount);
 
   /// No description provided for @settingsPushReward.

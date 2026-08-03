@@ -38,7 +38,7 @@ enum DonationStatus {
   bool get isPaid => this == DonationStatus.paid;
 }
 
-/// Un don volontaire à la plateforme Le Hiboo (sans contrepartie).
+/// Un don volontaire à la plateforme LeHiboo (sans contrepartie).
 class Donation extends Equatable {
   final String uuid;
   final double amount;

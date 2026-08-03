@@ -114,7 +114,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsSectionInformation => 'Informations';
 
   @override
-  String get profileSupportTitle => 'Soutenir Le Hiboo';
+  String get profileSupportTitle => 'Soutenir LeHiboo';
 
   @override
   String get profileSupportSubtitle =>
@@ -125,14 +125,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible d\'ouvrir les options de partage. Réessayez.';
 
   @override
-  String get donationsTitle => 'Soutenir Le Hiboo';
+  String get donationsTitle => 'Soutenir LeHiboo';
 
   @override
-  String get donationsHeaderTitle => 'Soutenez Le Hiboo';
+  String get donationsHeaderTitle => 'Soutenez LeHiboo';
 
   @override
   String get donationsHeaderSubtitle =>
-      'Votre soutien libre aide Le Hiboo à rester indépendant et à grandir.';
+      'Votre soutien libre aide LeHiboo à rester indépendant et à grandir.';
 
   @override
   String get donationsAmountLabel => 'Choisissez un montant';
@@ -189,7 +189,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String donationsSuccessSubtitle(String amount) {
-    return 'Votre don de $amount aide Le Hiboo à grandir. 🧡';
+    return 'Votre don de $amount aide LeHiboo à grandir. 🧡';
   }
 
   @override

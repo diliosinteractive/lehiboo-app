@@ -35,12 +35,12 @@
   "settingsSectionAccount": "Account",
   "settingsSectionLegal": "Legal information",
   "settingsSectionInformation": "Information",
-  "profileSupportTitle": "Support Le Hiboo",
+  "profileSupportTitle": "Support LeHiboo",
   "profileSupportSubtitle": "Make a voluntary donation to the platform",
   "commonShareFailed": "We couldn't open the sharing options. Please try again.",
-  "donationsTitle": "Support Le Hiboo",
-  "donationsHeaderTitle": "Support Le Hiboo",
-  "donationsHeaderSubtitle": "Your voluntary support helps Le Hiboo stay independent and grow.",
+  "donationsTitle": "Support LeHiboo",
+  "donationsHeaderTitle": "Support LeHiboo",
+  "donationsHeaderSubtitle": "Your voluntary support helps LeHiboo stay independent and grow.",
   "donationsAmountLabel": "Choose an amount",
   "donationsPresetPopular": "Popular",
   "donationsCustomAmountLabel": "Other amount",
@@ -64,7 +64,7 @@
   "donationsPaymentCancelled": "Payment cancelled.",
   "donationsCheckoutFailed": "We could not prepare or complete your donation. Please try again.",
   "donationsSuccessTitle": "Thank you for your support!",
-  "donationsSuccessSubtitle": "Your donation of {amount} helps Le Hiboo grow. 🧡",
+  "donationsSuccessSubtitle": "Your donation of {amount} helps LeHiboo grow. 🧡",
   "@donationsSuccessSubtitle": {
     "placeholders": {
       "amount": {

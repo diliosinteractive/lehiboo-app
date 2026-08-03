@@ -12,7 +12,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../booking/presentation/utils/order_checkout_error_mapper.dart';
 import '../../data/repositories/donations_repository_impl.dart';
 
-/// Écran « Soutenir Le Hiboo » — don volontaire seul via Stripe PaymentSheet.
+/// Écran « Soutenir LeHiboo » — don volontaire seul via Stripe PaymentSheet.
 ///
 /// Flux (cf. docs/DONATIONS_SYSTEM.md §7.1) :
 /// create (`POST /mobile/donations`) → PaymentSheet → confirm-payment.

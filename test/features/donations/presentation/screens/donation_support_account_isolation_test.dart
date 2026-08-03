@@ -232,7 +232,7 @@ void main() {
           donation: Donation(uuid: 'donation-a', amount: 2),
           paymentSheet: DonationPaymentSheet(
             clientSecret: 'pi_account_a_secret',
-            merchantDisplayName: 'Le Hiboo',
+            merchantDisplayName: 'LeHiboo',
             paymentIntentId: 'pi_account_a',
           ),
         ),
