@@ -7257,6 +7257,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get gamificationCapReached => 'Atteint';
 
   @override
+  String get gamificationChallengesComingSoonDescription =>
+      'Nous peaufinons cette expérience. Reviens bientôt pour relever des challenges et gagner des Hibons.';
+
+  @override
+  String get gamificationChallengesComingSoonTitle =>
+      'Les challenges seront bientôt disponibles';
+
+  @override
   String get gamificationChallengesTitle => 'Challenges';
 
   @override

@@ -3676,6 +3676,8 @@
   "gamificationBadgesLoadError": "Impossible de charger tes badges",
   "gamificationBoostersUtilitiesTitle": "Boosters & Utilitaires",
   "gamificationCapReached": "Atteint",
+  "gamificationChallengesComingSoonDescription": "Nous peaufinons cette expérience. Reviens bientôt pour relever des challenges et gagner des Hibons.",
+  "gamificationChallengesComingSoonTitle": "Les challenges seront bientôt disponibles",
   "gamificationChallengesTitle": "Challenges",
   "gamificationClaimDailyReward": "Réclamer ma récompense",
   "gamificationComeBackTomorrow": "Reviens demain !",

@@ -174,7 +174,7 @@ class GamificationDashboardScreen extends ConsumerWidget {
                           Colors.green.shade400,
                           Colors.green.shade700
                         ],
-                        onTap: () {}, // TODO
+                        onTap: () => context.push('/hibons/challenges'),
                       ),
                       _buildPremiumCard(
                         context,

@@ -74,6 +74,7 @@ import '../features/notifications/presentation/screens/notifications_inbox_scree
 import '../features/gamification/presentation/screens/hibons_transactions_screen.dart';
 import '../features/gamification/presentation/screens/lucky_wheel_screen.dart';
 import '../features/gamification/presentation/screens/achievements_screen.dart';
+import '../features/gamification/presentation/screens/challenges_screen.dart';
 import '../features/gamification/presentation/screens/gamification_dashboard_screen.dart';
 import '../features/gamification/presentation/screens/how_to_earn_hibons_screen.dart';
 import '../features/petit_boo/presentation/screens/petit_boo_chat_screen.dart';
@@ -218,6 +219,7 @@ const List<String> protectedRoutePrefixes = [
   '/petit-boo/history',
   '/hibons-shop',
   '/hibons/transactions',
+  '/hibons/challenges',
   '/hibons-dashboard',
   '/hibons/how-to-earn',
   '/lucky-wheel',
@@ -1028,6 +1030,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/achievements',
         name: 'achievements',
         builder: (context, state) => const AchievementsScreen(),
+      ),
+      GoRoute(
+        path: '/hibons/challenges',
+        name: 'hibons-challenges',
+        builder: (context, state) => const ChallengesScreen(),
       ),
       GoRoute(
         path: '/hibons/how-to-earn',

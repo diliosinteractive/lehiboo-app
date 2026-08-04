@@ -12345,6 +12345,18 @@ abstract class AppLocalizations {
   /// **'Atteint'**
   String get gamificationCapReached;
 
+  /// No description provided for @gamificationChallengesComingSoonDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nous peaufinons cette expérience. Reviens bientôt pour relever des challenges et gagner des Hibons.'**
+  String get gamificationChallengesComingSoonDescription;
+
+  /// No description provided for @gamificationChallengesComingSoonTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les challenges seront bientôt disponibles'**
+  String get gamificationChallengesComingSoonTitle;
+
   /// No description provided for @gamificationChallengesTitle.
   ///
   /// In fr, this message translates to:

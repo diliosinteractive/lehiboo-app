@@ -152,6 +152,7 @@ void main() {
       for (final location in [
         '/hibons-shop',
         '/hibons/transactions',
+        '/hibons/challenges',
         '/hibons-dashboard',
         '/hibons/how-to-earn',
         '/lucky-wheel',
