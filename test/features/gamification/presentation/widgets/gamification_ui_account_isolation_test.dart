@@ -38,10 +38,16 @@ class _MutableAuthNotifier extends AuthNotifier {
 }
 
 class _UiGamificationRepository implements GamificationRepository {
+  _UiGamificationRepository({this.canSpinWheel = true});
+
+  final bool canSpinWheel;
   final spinResult = Completer<WheelSpinResult>();
 
   @override
-  Future<HibonsWallet> getWallet() async => const HibonsWallet(balance: 777);
+  Future<HibonsWallet> getWallet() async => HibonsWallet(
+        balance: 777,
+        canSpinWheel: canSpinWheel,
+      );
 
   @override
   Future<WheelConfig> getWheelConfig() async => const WheelConfig(
@@ -133,6 +139,26 @@ void main() {
 
     expect(find.text('Private A spin result'), findsNothing);
     expect(find.byType(Dialog), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('disabled wheel CTA centers its wrapped label', (tester) async {
+    final repository = _UiGamificationRepository(canSpinWheel: false);
+
+    await tester.pumpWidget(_app(
+      repository: repository,
+      authBuilder: (ref) => _MutableAuthNotifier(ref, _accountA),
+      home: const LuckyWheelScreen(),
+    ));
+    await tester.pumpAndSettle();
+
+    final label = tester.widget<Text>(find.text('Come back tomorrow!'));
+    final button = tester.widget<ElevatedButton>(
+      find.widgetWithText(ElevatedButton, 'Come back tomorrow!'),
+    );
+
+    expect(label.textAlign, TextAlign.center);
+    expect(button.onPressed, isNull);
     expect(tester.takeException(), isNull);
   });
 }

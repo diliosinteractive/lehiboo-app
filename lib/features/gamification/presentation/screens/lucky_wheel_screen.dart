@@ -365,6 +365,7 @@ class _LuckyWheelScreenState extends ConsumerState<LuckyWheelScreen>
                                 canSpinWheel
                                     ? context.l10n.gamificationWheelSpinCta
                                     : context.l10n.gamificationComeBackTomorrow,
+                                textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
