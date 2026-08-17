@@ -11,7 +11,7 @@ import '../widgets/organizer_directory_tile.dart';
 import '../widgets/organizer_load_more_error.dart';
 
 /// Public organizers directory — paginated, searchable and sortable list of
-/// verified organizers (`GET /organizers`).
+/// verified vendor organizers (`GET /organizers?type=vendor`).
 ///
 /// Entry points: the bottom-nav "Organisateurs" tab for logged-out users, and
 /// a Profile menu item for authenticated users.

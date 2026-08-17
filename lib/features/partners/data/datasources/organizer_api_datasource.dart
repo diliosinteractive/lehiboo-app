@@ -238,9 +238,9 @@ class OrganizerApiDataSource {
   /// `GET /organizers` — public organizers directory.
   ///
   /// Spec: docs/organizer/ORGANIZERS_LIST_API_MOBILE.md. Public (no auth),
-  /// verified organizers only. Standard Laravel resource-collection envelope
-  /// (`data` + `meta.current_page` / `meta.last_page`). `is_followed` /
-  /// `is_owner` are always `null` on this endpoint.
+  /// verified vendor organizers only. Standard Laravel resource-collection
+  /// envelope (`data` + `meta.current_page` / `meta.last_page`). `is_followed`
+  /// / `is_owner` are always `null` on this endpoint.
   Future<OrganizersDirectoryPage> getOrganizers({
     String? search,
     String? city,
@@ -254,6 +254,7 @@ class OrganizerApiDataSource {
       queryParameters: {
         if (search != null && search.isNotEmpty) 'search': search,
         if (city != null && city.isNotEmpty) 'city': city,
+        'type': 'vendor',
         'sort_by': sortBy,
         if (sortOrder != null && sortOrder.isNotEmpty) 'sort_order': sortOrder,
         'page': page,
