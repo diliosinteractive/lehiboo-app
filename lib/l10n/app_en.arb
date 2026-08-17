@@ -1742,7 +1742,7 @@
   "authBirthDateLabel": "Date of birth",
   "authBirthDateLabelOptional": "Date of birth (optional)",
   "authBirthDateRequired": "Please enter your date of birth",
-  "authBirthDateMinimumAge": "You must be at least 15 years old",
+  "authBirthDateMinimumAge": "You must be at least 18 years old",
   "authBirthDateHelp": "Date of birth",
   "authDateHint": "MM/DD/YYYY",
   "authCityOptionalLabel": "City (optional)",

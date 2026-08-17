@@ -1,4 +1,4 @@
-const int minimumRegistrationAgeYears = 15;
+const int minimumRegistrationAgeYears = 18;
 
 DateTime latestAllowedBirthDate([DateTime? now]) {
   final today = now ?? DateTime.now();

@@ -3844,7 +3844,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get authBirthDateRequired => 'Veuillez entrer votre date de naissance';
 
   @override
-  String get authBirthDateMinimumAge => 'Vous devez avoir au moins 15 ans';
+  String get authBirthDateMinimumAge => 'Vous devez avoir au moins 18 ans';
 
   @override
   String get authBirthDateHelp => 'Date de naissance';

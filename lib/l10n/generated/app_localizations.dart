@@ -6540,7 +6540,7 @@ abstract class AppLocalizations {
   /// No description provided for @authBirthDateMinimumAge.
   ///
   /// In fr, this message translates to:
-  /// **'Vous devez avoir au moins 15 ans'**
+  /// **'Vous devez avoir au moins 18 ans'**
   String get authBirthDateMinimumAge;
 
   /// No description provided for @authBirthDateHelp.
