@@ -1,15 +1,19 @@
-const int minimumRegistrationAgeYears = 18;
+const int customerMinimumRegistrationAgeYears = 16;
+const int vendorMinimumRegistrationAgeYears = 18;
 
-DateTime latestAllowedBirthDate([DateTime? now]) {
+DateTime latestAllowedBirthDate({
+  int minimumAgeYears = vendorMinimumRegistrationAgeYears,
+  DateTime? now,
+}) {
   final today = now ?? DateTime.now();
   final latest = DateTime(
-    today.year - minimumRegistrationAgeYears,
+    today.year - minimumAgeYears,
     today.month,
     today.day,
   );
   if (latest.month != today.month) {
     return DateTime(
-      today.year - minimumRegistrationAgeYears,
+      today.year - minimumAgeYears,
       today.month + 1,
       0,
     );
@@ -17,13 +21,20 @@ DateTime latestAllowedBirthDate([DateTime? now]) {
   return latest;
 }
 
-bool meetsMinimumRegistrationAge(DateTime birthDate, [DateTime? now]) {
+bool meetsMinimumRegistrationAge(
+  DateTime birthDate, {
+  int minimumAgeYears = vendorMinimumRegistrationAgeYears,
+  DateTime? now,
+}) {
   final normalizedBirthDate = DateTime(
     birthDate.year,
     birthDate.month,
     birthDate.day,
   );
-  final latestAllowedDate = latestAllowedBirthDate(now);
+  final latestAllowedDate = latestAllowedBirthDate(
+    minimumAgeYears: minimumAgeYears,
+    now: now,
+  );
   return !normalizedBirthDate.isAfter(latestAllowedDate);
 }
 
