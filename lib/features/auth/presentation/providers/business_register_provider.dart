@@ -391,8 +391,16 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
       return false;
     }
     final birthDate = DateTime.tryParse(state.birthDate!);
-    if (birthDate == null || !meetsMinimumRegistrationAge(birthDate)) {
-      state = state.copyWith(errorMessage: l10n.authBirthDateMinimumAge);
+    if (birthDate == null ||
+        !meetsMinimumRegistrationAge(
+          birthDate,
+          minimumAgeYears: vendorMinimumRegistrationAgeYears,
+        )) {
+      state = state.copyWith(
+        errorMessage: l10n.authBirthDateMinimumAge(
+          vendorMinimumRegistrationAgeYears,
+        ),
+      );
       return false;
     }
     if (!_isValidPassword(state.password)) {

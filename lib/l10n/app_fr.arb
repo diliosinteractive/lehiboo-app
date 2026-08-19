@@ -1801,7 +1801,14 @@
   "authBirthDateLabel": "Date de naissance",
   "authBirthDateLabelOptional": "Date de naissance (optionnel)",
   "authBirthDateRequired": "Veuillez entrer votre date de naissance",
-  "authBirthDateMinimumAge": "Vous devez avoir au moins 18 ans",
+  "authBirthDateMinimumAge": "Vous devez avoir au moins {minimumAge} ans",
+  "@authBirthDateMinimumAge": {
+    "placeholders": {
+      "minimumAge": {
+        "type": "int"
+      }
+    }
+  },
   "authBirthDateHelp": "Date de naissance",
   "authDateHint": "JJ/MM/AAAA",
   "authCityOptionalLabel": "Ville (optionnel)",

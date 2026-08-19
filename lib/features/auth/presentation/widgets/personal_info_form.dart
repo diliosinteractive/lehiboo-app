@@ -210,7 +210,9 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
             // Birth date picker
             GestureDetector(
               onTap: () async {
-                final maxDate = latestAllowedBirthDate();
+                final maxDate = latestAllowedBirthDate(
+                  minimumAgeYears: vendorMinimumRegistrationAgeYears,
+                );
                 final picked = await showDatePicker(
                   context: context,
                   initialDate:
@@ -245,8 +247,13 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
                     if (_birthDate == null) {
                       return l10n.authBirthDateRequired;
                     }
-                    if (!meetsMinimumRegistrationAge(_birthDate!)) {
-                      return l10n.authBirthDateMinimumAge;
+                    if (!meetsMinimumRegistrationAge(
+                      _birthDate!,
+                      minimumAgeYears: vendorMinimumRegistrationAgeYears,
+                    )) {
+                      return l10n.authBirthDateMinimumAge(
+                        vendorMinimumRegistrationAgeYears,
+                      );
                     }
                     return null;
                   },

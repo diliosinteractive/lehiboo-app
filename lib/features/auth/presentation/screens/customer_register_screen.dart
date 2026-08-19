@@ -879,7 +879,9 @@ class _CustomerRegisterScreenState
             // Birth date picker
             GestureDetector(
               onTap: () async {
-                final maxDate = latestAllowedBirthDate();
+                final maxDate = latestAllowedBirthDate(
+                  minimumAgeYears: customerMinimumRegistrationAgeYears,
+                );
                 final picked = await showDatePicker(
                   context: context,
                   initialDate:
@@ -900,7 +902,9 @@ class _CustomerRegisterScreenState
                     label: l10n.authBirthDateLabel,
                     hint: l10n.authDateHint,
                     icon: Icons.cake_outlined,
-                    helperText: l10n.authBirthDateMinimumAge,
+                    helperText: l10n.authBirthDateMinimumAge(
+                      customerMinimumRegistrationAgeYears,
+                    ),
                   ),
                   controller: TextEditingController(
                     text: _birthDate != null
@@ -914,8 +918,13 @@ class _CustomerRegisterScreenState
                     if (_birthDate == null) {
                       return l10n.authBirthDateRequired;
                     }
-                    if (!meetsMinimumRegistrationAge(_birthDate!)) {
-                      return l10n.authBirthDateMinimumAge;
+                    if (!meetsMinimumRegistrationAge(
+                      _birthDate!,
+                      minimumAgeYears: customerMinimumRegistrationAgeYears,
+                    )) {
+                      return l10n.authBirthDateMinimumAge(
+                        customerMinimumRegistrationAgeYears,
+                      );
                     }
                     return null;
                   },
