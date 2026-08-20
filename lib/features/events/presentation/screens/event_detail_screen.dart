@@ -11,6 +11,7 @@ import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/core/utils/api_response_handler.dart';
 import 'package:lehiboo/core/utils/guest_guard.dart';
 import 'package:lehiboo/features/favorites/presentation/widgets/favorite_button.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../domain/entities/event.dart';
@@ -45,6 +46,7 @@ import '../../../memberships/presentation/providers/personalized_feed_provider.d
 import '../../../reminders/presentation/providers/reminders_provider.dart';
 import '../../../reminders/data/datasources/reminders_api_datasource.dart';
 import '../../../booking/domain/models/refund_policy.dart';
+import '../../../booking/domain/utils/booking_age_eligibility.dart';
 import '../../../booking/presentation/providers/order_cart_provider.dart';
 
 /// Provider to fetch event details by identifier (UUID or slug).
@@ -1561,6 +1563,24 @@ class _EventDetailScreenState extends ConsumerState<EventDetailScreen> {
     );
     if (!allowed) return;
     if (!mounted) return;
+
+    final birthDate = ref.read(currentUserProvider)?.birthDate;
+    if (!meetsMinimumBookingAge(birthDate)) {
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            context.l10n.eventBookingMinimumAgeRequired(
+              minimumBookingAgeYears,
+            ),
+          ),
+          backgroundColor: HbColors.error,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
 
     HapticFeedback.mediumImpact();
     final event = _currentEvent();

@@ -5350,6 +5350,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get eventBookNow => 'Réserver maintenant';
 
   @override
+  String eventBookingMinimumAgeRequired(int minimumAge) {
+    return 'Vous devez avoir au moins $minimumAge ans pour réserver des billets.';
+  }
+
+  @override
   String eventAllDatesCount(int count) {
     return 'Toutes les dates ($count)';
   }

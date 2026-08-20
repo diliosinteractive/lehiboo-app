@@ -2189,6 +2189,14 @@
   "eventView": "View",
   "eventAddToCart": "Add to cart",
   "eventBookNow": "Book now",
+  "eventBookingMinimumAgeRequired": "You must be at least {minimumAge} years old to book tickets.",
+  "@eventBookingMinimumAgeRequired": {
+    "placeholders": {
+      "minimumAge": {
+        "type": "int"
+      }
+    }
+  },
   "eventAllDatesCount": "All dates ({count})",
   "eventFull": "Full",
   "eventChoose": "Choose",

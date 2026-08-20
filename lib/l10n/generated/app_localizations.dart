@@ -9177,6 +9177,12 @@ abstract class AppLocalizations {
   /// **'Réserver maintenant'**
   String get eventBookNow;
 
+  /// No description provided for @eventBookingMinimumAgeRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous devez avoir au moins {minimumAge} ans pour réserver des billets.'**
+  String eventBookingMinimumAgeRequired(int minimumAge);
+
   /// No description provided for @eventAllDatesCount.
   ///
   /// In fr, this message translates to:

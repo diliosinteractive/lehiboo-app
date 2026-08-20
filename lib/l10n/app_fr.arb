@@ -2713,6 +2713,14 @@
   "eventView": "Voir",
   "eventAddToCart": "Ajouter au panier",
   "eventBookNow": "Réserver maintenant",
+  "eventBookingMinimumAgeRequired": "Vous devez avoir au moins {minimumAge} ans pour réserver des billets.",
+  "@eventBookingMinimumAgeRequired": {
+    "placeholders": {
+      "minimumAge": {
+        "type": "int"
+      }
+    }
+  },
   "eventAllDatesCount": "Toutes les dates ({count})",
   "@eventAllDatesCount": {
     "placeholders": {
