@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lehiboo/domain/entities/user.dart';
 import 'package:lehiboo/features/auth/data/models/auth_response_dto.dart';
@@ -86,6 +87,75 @@ class _EmptyGamificationNotifier extends GamificationNotifier {
       const HibonsWallet();
 }
 
+class _LogoutRouterHarness extends ConsumerStatefulWidget {
+  const _LogoutRouterHarness();
+
+  @override
+  ConsumerState<_LogoutRouterHarness> createState() =>
+      _LogoutRouterHarnessState();
+}
+
+class _LogoutRouterHarnessState extends ConsumerState<_LogoutRouterHarness> {
+  final _authRefresh = ChangeNotifier();
+  late final ProviderSubscription<AuthState> _authSubscription;
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    super.initState();
+    _authSubscription = ref.listenManual<AuthState>(
+      authProvider,
+      (_, __) => _authRefresh.notifyListeners(),
+    );
+    _router = GoRouter(
+      initialLocation: '/profile',
+      refreshListenable: _authRefresh,
+      redirect: (_, state) {
+        if (!ref.read(authProvider).isAuthenticated &&
+            state.matchedLocation != '/') {
+          return '/';
+        }
+        return null;
+      },
+      routes: [
+        ShellRoute(
+          builder: (_, __, child) => child,
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (_, __) => const Scaffold(
+                body: Text('Logged-out home'),
+              ),
+            ),
+            GoRoute(
+              path: '/profile',
+              builder: (_, __) => const ProfileScreen(),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    _router.dispose();
+    _authSubscription.close();
+    _authRefresh.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      locale: const Locale('en'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: _router,
+    );
+  }
+}
+
 const _emptyBalance = HibonsBalance(
   balance: 0,
   lifetimeEarned: 0,
@@ -143,6 +213,32 @@ Widget _testApp({
       supportedLocales: AppLocalizations.supportedLocales,
       home: ProfileScreen(),
     ),
+  );
+}
+
+Widget _routerTestApp({
+  required _ControlledProfileApi api,
+  required void Function(_MutableAuthNotifier notifier) captureAuth,
+}) {
+  return ProviderScope(
+    overrides: [
+      authProvider.overrideWith((ref) {
+        final notifier = _MutableAuthNotifier(ref, _accountA);
+        captureAuth(notifier);
+        return notifier;
+      }),
+      profileApiDataSourceProvider.overrideWithValue(api),
+      profileAvatarImagePickerProvider.overrideWithValue(() async => null),
+      unreadCountProvider.overrideWith(_ZeroUnreadCountNotifier.new),
+      gamificationNotifierProvider.overrideWith(
+        _EmptyGamificationNotifier.new,
+      ),
+      hibonsBalanceProvider.overrideWith(
+        (ref, ownerSession) async => _emptyBalance,
+      ),
+      pendingReviewCountProvider.overrideWith((ref, owner) async => 0),
+    ],
+    child: const _LogoutRouterHarness(),
   );
 }
 
@@ -234,5 +330,39 @@ void main() {
     expect(find.byType(AlertDialog), findsNothing);
     expect(auth.logoutCalls, 0);
     expect(auth.state.user, _accountB);
+  });
+
+  testWidgets('logout does not pop an already closing dialog route',
+      (tester) async {
+    final api = _ControlledProfileApi();
+    late _MutableAuthNotifier auth;
+    await tester.pumpWidget(
+      _routerTestApp(
+        api: api,
+        captureAuth: (notifier) => auth = notifier,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final logout = find.byKey(const ValueKey('profile-logout'));
+    await tester.scrollUntilVisible(
+      logout,
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(logout);
+    await tester.pumpAndSettle();
+
+    final confirmation = find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.byType(ElevatedButton),
+    );
+    await tester.tap(confirmation);
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(auth.logoutCalls, 1);
+    expect(find.text('Logged-out home'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

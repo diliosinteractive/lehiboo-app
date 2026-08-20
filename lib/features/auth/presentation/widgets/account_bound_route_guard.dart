@@ -90,12 +90,15 @@ class _AccountBoundRouteGuardState<T>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final guardedRoute = ModalRoute.of(context);
-      if (guardedRoute == null) return;
+      if (guardedRoute == null || !guardedRoute.isActive) return;
       final navigator = Navigator.of(context);
 
       // A guarded sheet can have a confirmation or picker above it. Close
       // those descendants first, then close the guarded route itself; simply
       // checking isCurrent once would leave the account-A modal alive forever.
+      // A route that was already popped can remain mounted during its reverse
+      // transition. Never search for that stale route with popUntil: it is no
+      // longer in Navigator history, so the search would pop every live page.
       navigator.popUntil((route) => identical(route, guardedRoute));
       if (guardedRoute.isCurrent) {
         navigator.pop<T>(widget.invalidResult);

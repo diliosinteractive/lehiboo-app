@@ -845,14 +845,10 @@ class ProfileScreen extends ConsumerWidget {
       return;
     }
 
+    // The auth-aware GoRouter redirect owns the transition back to the public
+    // root. Issuing another `go('/')` here can race that redirect while this
+    // profile route is being retired.
     await ownerAuthNotifier.logout();
-    if (!context.mounted ||
-        !identical(ref.read(authProvider.notifier), ownerAuthNotifier)) {
-      return;
-    }
-    if (ref.read(authSessionUserIdProvider) == null) {
-      context.go('/');
-    }
   }
 
   Future<void> _openFaq(BuildContext context) async {
