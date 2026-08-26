@@ -499,21 +499,6 @@ class _CustomerRegisterScreenState
           ),
           const SizedBox(height: 32),
 
-          // Business account link
-          Center(
-            child: TextButton(
-              onPressed: () => context.pushReplacement('/register/business'),
-              child: Text(
-                l10n.authCreateBusinessAccount,
-                style: const TextStyle(
-                  color: HbColors.brandPrimary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-
           // Login link
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
