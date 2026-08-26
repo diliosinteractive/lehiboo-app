@@ -277,26 +277,14 @@ class _CustomerRegisterScreenState
       if (result.authResult != null) {
         // Direct authentication (no verification needed).
         _showSuccess(context.l10n.authCustomerAccountCreated);
+        final guestGuardActive = ref.read(guestGuardActiveProvider);
+
         // If the registration was triggered from a GuestRestrictionDialog,
-        // skip the navigation reset — the dialog's auth-state listener
-        // will pop our pushed screens and the dialog itself, returning
-        // the user to the original screen so the gated action resumes.
-        // Otherwise route to the post-signup notifications screen. Location
-        // permission is now part of first-launch onboarding (shown once
-        // before the user ever reaches the login page), so we skip it here.
-        //
-        // Navigation BEFORE setAuthenticatedUser is intentional: the auth
-        // state change fires _AuthRouterRefresh which rebuilds the router
-        // and pops pushed routes, which would dispose this State and kill
-        // any deferred navigation. Replacing the stack with `go()` first
-        // means the subsequent refresh has nothing to pop.
-        if (!ref.read(guestGuardActiveProvider)) {
-          context.go('/post-signup/notifications');
-        }
-        // Listener cascade (Hibons sync, push init, messages realtime, …)
-        // may throw — particularly CircularDependencyError when a Hibons
-        // provider re-reads itself mid-build through the response
-        // interceptor. Don't bubble that to the user — they just succeeded.
+        // its auth-state listener owns navigation back to the original gated
+        // action. Otherwise authenticate before entering the protected
+        // post-signup route. Scheduling the `go()` after the auth-refresh
+        // frame prevents two router updates from competing for the same
+        // Navigator GlobalKey.
         try {
           ref
               .read(authProvider.notifier)
@@ -304,6 +292,17 @@ class _CustomerRegisterScreenState
         } catch (e, st) {
           debugPrint(
               '🚨 setAuthenticatedUser cascade error: ${e.runtimeType}: $e\n$st');
+        }
+
+        if (!guestGuardActive) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted ||
+                !ref.read(authProvider).isAuthenticated ||
+                ref.read(guestGuardActiveProvider)) {
+              return;
+            }
+            context.go('/post-signup/notifications');
+          });
         }
         return;
       } else if (result.pendingVerification) {
