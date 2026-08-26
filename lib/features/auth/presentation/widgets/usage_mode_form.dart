@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../providers/business_register_provider.dart';
 import '../utils/auth_registration_l10n.dart';
@@ -243,8 +244,7 @@ class _UsageModeFormState extends ConsumerState<UsageModeForm> {
                             .map((e) => e.trim())
                             .where((e) => e.isNotEmpty);
                         for (final email in emails) {
-                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                              .hasMatch(email)) {
+                          if (!AppConstants.isValidEmail(email)) {
                             return l10n.authInvalidEmailWithValue(email);
                           }
                         }

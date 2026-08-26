@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../../domain/entities/user.dart';
@@ -378,7 +379,7 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
       state = state.copyWith(errorMessage: l10n.authLastNameMinLength);
       return false;
     }
-    if (!_isValidEmail(state.email)) {
+    if (!AppConstants.isValidEmail(state.email)) {
       state = state.copyWith(errorMessage: l10n.authEmailInvalid);
       return false;
     }
@@ -604,7 +605,7 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
           .map((e) => e.trim())
           .where((e) => e.isNotEmpty);
       for (final email in emails) {
-        if (!_isValidEmail(email)) {
+        if (!AppConstants.isValidEmail(email)) {
           state = state.copyWith(
             errorMessage:
                 cachedAppLocalizations().authInvalidEmailWithValue(email),
@@ -736,10 +737,6 @@ class BusinessRegisterNotifier extends StateNotifier<BusinessRegisterState> {
   void reset() {
     _cooldownTimer?.cancel();
     state = const BusinessRegisterState();
-  }
-
-  bool _isValidEmail(String email) {
-    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
   }
 
   bool _isValidPhone(String phone) {

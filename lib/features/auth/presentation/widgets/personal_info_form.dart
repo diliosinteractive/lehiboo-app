@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../providers/business_register_provider.dart';
 import '../utils/birth_date_validation.dart';
@@ -173,11 +174,11 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
                 icon: Icons.email_outlined,
               ),
               validator: (value) {
-                if (value == null || value.isEmpty) {
+                final email = value?.trim() ?? '';
+                if (email.isEmpty) {
                   return l10n.authEmailRequired;
                 }
-                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                    .hasMatch(value)) {
+                if (!AppConstants.isValidEmail(email)) {
                   return l10n.authEmailInvalid;
                 }
                 return null;

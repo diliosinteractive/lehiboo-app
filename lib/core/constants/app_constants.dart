@@ -4,7 +4,8 @@ class AppConstants {
   // App Info
   static const String appName = 'Le Hiboo';
   static const String appVersion = '1.0.0';
-  static const String appDescription = 'Trouvez votre prochaine sortie près de chez vous';
+  static const String appDescription =
+      'Trouvez votre prochaine sortie près de chez vous';
 
   // API Configuration - uses EnvConfig for environment-specific values
   static String get baseUrl => EnvConfig.apiBaseUrl;
@@ -91,8 +92,13 @@ class AppConstants {
 
   // Regex Patterns
   static final RegExp emailRegex = RegExp(
-    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    r'^[a-zA-Z0-9._%-][a-zA-Z0-9._%+\-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
   );
+
+  /// Accepts email aliases such as `name+tag@example.com` while requiring
+  /// the local part to start with a non-`+` character.
+  static bool isValidEmail(String value) => emailRegex.hasMatch(value.trim());
+
   static final RegExp phoneRegex = RegExp(
     r'^\+?[0-9]{10,15}$',
   );

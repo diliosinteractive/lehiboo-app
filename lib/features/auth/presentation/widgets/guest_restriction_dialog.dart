@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../providers/auth_provider.dart';
 
@@ -353,7 +354,7 @@ class _GuestRestrictionDialogState
       validator: (value) {
         final v = value?.trim() ?? '';
         if (v.isEmpty) return context.l10n.authEmailRequiredShort;
-        if (!v.contains('@') || !v.contains('.')) {
+        if (!AppConstants.isValidEmail(v)) {
           return context.l10n.authEmailInvalidShort;
         }
         return null;
