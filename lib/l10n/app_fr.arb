@@ -255,6 +255,7 @@
   "profilePhoneLabel": "Téléphone",
   "profileBirthDateLabel": "Date de naissance",
   "profileBirthDateUnset": "Non renseigné",
+  "profileBirthDateReadOnlyHelper": "La date de naissance ne peut plus être modifiée après la création du compte",
   "profileCityLabel": "Ville",
   "profileEmailReadOnlyHelper": "L'email ne peut pas être modifié",
   "profileChangePasswordCta": "Changer mon mot de passe",

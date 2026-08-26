@@ -245,6 +245,7 @@
   "profilePhoneLabel": "Phone",
   "profileBirthDateLabel": "Birth date",
   "profileBirthDateUnset": "Not provided",
+  "profileBirthDateReadOnlyHelper": "Birth date cannot be changed after account creation",
   "profileCityLabel": "City",
   "profileEmailReadOnlyHelper": "Email cannot be changed",
   "profileChangePasswordCta": "Change my password",

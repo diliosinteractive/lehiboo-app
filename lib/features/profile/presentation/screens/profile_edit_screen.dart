@@ -313,70 +313,21 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                         keyboardType: TextInputType.phone,
                       ),
                       const SizedBox(height: 16),
-                      // Birth date
-                      GestureDetector(
-                        onTap: () async {
-                          final ownerAccountId = _ownerAccountId;
-                          final generation = _sessionGeneration;
-                          if (!_ownsSession(ownerAccountId, generation)) return;
-                          final maxDate = DateTime.now()
-                              .subtract(const Duration(days: 15 * 365));
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: _birthDate ?? maxDate,
-                            firstDate: DateTime(1920),
-                            lastDate: maxDate,
-                            helpText: context.l10n.profileBirthDateLabel,
-                            // locale: const Locale('fr'),
-                          );
-                          if (!_ownsSession(ownerAccountId, generation)) return;
-                          if (picked != null) {
-                            setState(() => _birthDate = picked);
-                          }
-                        },
-                        child: AbsorbPointer(
-                          child: TextFormField(
-                            controller: TextEditingController(
-                              text: _birthDate != null
-                                  ? context
-                                      .appDateFormat(
-                                        'dd/MM/yyyy',
-                                        enPattern: 'MM/dd/yyyy',
-                                      )
-                                      .format(_birthDate!)
-                                  : '',
-                            ),
-                            decoration: InputDecoration(
-                              labelText: context.l10n.profileBirthDateLabel,
-                              hintText: context.l10n.profileBirthDateUnset,
-                              prefixIcon: const Icon(Icons.cake_outlined,
-                                  color: HbColors.brandPrimary),
-                              suffixIcon: _birthDate != null
-                                  ? IconButton(
-                                      icon: const Icon(Icons.clear, size: 20),
-                                      onPressed: () =>
-                                          setState(() => _birthDate = null),
-                                    )
-                                  : null,
-                              filled: true,
-                              fillColor: Colors.grey.shade50,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide:
-                                    BorderSide(color: Colors.grey.shade200),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                    color: HbColors.brandPrimary, width: 2),
-                              ),
-                            ),
-                          ),
-                        ),
+                      _buildTextField(
+                        fieldKey: const ValueKey('profile-edit-birth-date'),
+                        initialValue: _birthDate != null
+                            ? context
+                                .appDateFormat(
+                                  'dd/MM/yyyy',
+                                  enPattern: 'MM/dd/yyyy',
+                                )
+                                .format(_birthDate!)
+                            : context.l10n.profileBirthDateUnset,
+                        label: context.l10n.profileBirthDateLabel,
+                        icon: Icons.cake_outlined,
+                        readOnly: true,
+                        helperText: context.l10n.profileBirthDateReadOnlyHelper,
+                        suffixIcon: const Icon(Icons.lock_outline, size: 20),
                       ),
                       const SizedBox(height: 16),
                       // Membership city
@@ -557,7 +508,9 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     required IconData icon,
     TextInputType keyboardType = TextInputType.text,
     bool enabled = true,
+    bool readOnly = false,
     String? helperText,
+    Widget? suffixIcon,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
@@ -566,13 +519,16 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       initialValue: initialValue,
       keyboardType: keyboardType,
       enabled: enabled,
+      readOnly: readOnly,
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
         helperText: helperText,
         prefixIcon: Icon(icon, color: HbColors.brandPrimary),
+        suffixIcon: suffixIcon,
         filled: true,
-        fillColor: enabled ? Colors.grey.shade50 : Colors.grey.shade100,
+        fillColor:
+            enabled && !readOnly ? Colors.grey.shade50 : Colors.grey.shade100,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -739,10 +695,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         phone: _phoneController.text.trim().isNotEmpty
             ? _phoneController.text.trim()
             : null,
-        birthDate: _birthDate != null
-            ? '${_birthDate!.year}-${_birthDate!.month.toString().padLeft(2, '0')}-${_birthDate!.day.toString().padLeft(2, '0')}'
-            : null,
-        clearBirthDate: _birthDate == null && user?.birthDate != null,
         membershipCity: _membershipCityController.text.trim().isNotEmpty
             ? _membershipCityController.text.trim()
             : null,

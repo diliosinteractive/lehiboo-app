@@ -708,6 +708,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get profileBirthDateUnset => 'Non renseigné';
 
   @override
+  String get profileBirthDateReadOnlyHelper =>
+      'La date de naissance ne peut plus être modifiée après la création du compte';
+
+  @override
   String get profileCityLabel => 'Ville';
 
   @override

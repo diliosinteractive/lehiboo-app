@@ -1382,6 +1382,12 @@ abstract class AppLocalizations {
   /// **'Non renseigné'**
   String get profileBirthDateUnset;
 
+  /// No description provided for @profileBirthDateReadOnlyHelper.
+  ///
+  /// In fr, this message translates to:
+  /// **'La date de naissance ne peut plus être modifiée après la création du compte'**
+  String get profileBirthDateReadOnlyHelper;
+
   /// No description provided for @profileCityLabel.
   ///
   /// In fr, this message translates to:
