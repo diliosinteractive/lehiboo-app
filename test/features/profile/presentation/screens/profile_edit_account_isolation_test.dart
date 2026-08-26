@@ -50,11 +50,9 @@ class _ControlledProfileApi extends ProfileApiDataSource {
     String? lastName,
     String? phone,
     String? jobTitle,
-    String? birthDate,
     String? membershipCity,
     bool? newsletter,
     bool? pushNotificationsEnabled,
-    bool clearBirthDate = false,
     bool clearMembershipCity = false,
     CancelToken? cancelToken,
   }) {
@@ -114,11 +112,12 @@ UserDto get _accountAResponse => const UserDto(
 Widget _testApp({
   required _ControlledProfileApi api,
   required void Function(_MutableAuthNotifier notifier) captureAuth,
+  HbUser user = _accountA,
 }) {
   return ProviderScope(
     overrides: [
       authProvider.overrideWith((ref) {
-        final notifier = _MutableAuthNotifier(ref, _accountA);
+        final notifier = _MutableAuthNotifier(ref, user);
         captureAuth(notifier);
         return notifier;
       }),
@@ -134,6 +133,49 @@ Widget _testApp({
 }
 
 void main() {
+  testWidgets(
+    'birth date is displayed as read-only and does not open a picker',
+    (tester) async {
+      final api = _ControlledProfileApi();
+      final user = HbUser(
+        id: '1',
+        email: 'alice.private@example.test',
+        displayName: 'Alice Private',
+        firstName: 'Alice',
+        lastName: 'Private',
+        birthDate: DateTime(1990, 4, 21),
+      );
+
+      await tester.pumpWidget(
+        _testApp(
+          api: api,
+          user: user,
+          captureAuth: (_) {},
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final birthDate = find.byKey(const ValueKey('profile-edit-birth-date'));
+      final editableText = find.descendant(
+        of: birthDate,
+        matching: find.byType(EditableText),
+      );
+      expect(tester.widget<EditableText>(editableText).readOnly, isTrue);
+      expect(find.text('04/21/1990'), findsOneWidget);
+      expect(
+        find.text('Birth date cannot be changed after account creation'),
+        findsOneWidget,
+      );
+
+      await tester.ensureVisible(birthDate);
+      await tester.tap(birthDate);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DatePickerDialog), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets(
     'account switch clears profile PII and cancels an in-flight save',
     (tester) async {
