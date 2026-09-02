@@ -71,22 +71,15 @@ class _OrganizerActivitiesTabState
         final events =
             state.events.map(EventMapper.toEvent).toList(growable: false);
 
-        // Bucketing may throw UnimplementedError until the user fills in
-        // bucketFor — fail soft so the rest of the screen stays usable.
-        List<Event> current;
-        List<Event> past;
-        try {
-          current = [
-            for (final e in events)
-              if (bucketFor(e, now) == EventTimingBucket.currentUpcoming) e,
-          ];
-          past = [
-            for (final e in events)
-              if (bucketFor(e, now) == EventTimingBucket.past) e,
-          ];
-        } on UnimplementedError {
-          current = events;
-          past = const [];
+        final current = <Event>[];
+        final past = <Event>[];
+        for (final event in events) {
+          switch (bucketFor(event, now)) {
+            case EventTimingBucket.currentUpcoming:
+              current.add(event);
+            case EventTimingBucket.past:
+              past.add(event);
+          }
         }
 
         final visible =
