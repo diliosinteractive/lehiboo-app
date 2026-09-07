@@ -198,7 +198,7 @@ class BookingFlowController extends StateNotifier<BookingFlowState> {
   }
 
   Future<void> _submitBooking({String? paymentIntentId}) async {
-    if (!_canUseOwningAccount) return;
+    if (state.isSubmitting || !_canUseOwningAccount) return;
     _paymentOutcomeUncertain = false;
     state = state.copyWith(
       isSubmitting: true,

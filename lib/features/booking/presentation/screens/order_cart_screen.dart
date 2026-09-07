@@ -982,7 +982,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
   // Submit
 
   Future<void> _submitOrder() async {
-    if (!_isCurrentAccount) return;
+    if (_isLoading || !_isCurrentAccount) return;
     final ownerAccountId = _ownerSessionUserId!;
     FocusManager.instance.primaryFocus?.unfocus();
 
