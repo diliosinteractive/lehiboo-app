@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/domain/entities/booking.dart';
@@ -12,6 +14,8 @@ import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
 class MockBookingRepository implements BookingRepository {
   Object? confirmationFailure;
   final List<Object> ticketOutcomes = [];
+  Completer<Booking>? createBookingGate;
+  int createBookingCalls = 0;
 
   @override
   Future<Booking> createBooking({
@@ -24,6 +28,10 @@ class MockBookingRepository implements BookingRepository {
     bool acceptNewsletter = false,
     String? promoCode,
   }) async {
+    createBookingCalls++;
+    final gate = createBookingGate;
+    if (gate != null) return gate.future;
+
     return Booking(
       id: 'booking_123',
       userId: 'user_1',
@@ -181,21 +189,56 @@ void main() {
     },
   );
 
-  test('paid confirmation failure marks the payment outcome uncertain',
-      () async {
-    mockRepository.confirmationFailure =
-        Exception('Confirmation response unavailable.');
+  test(
+    'paid confirmation failure marks the payment outcome uncertain',
+    () async {
+      mockRepository.confirmationFailure = Exception(
+        'Confirmation response unavailable.',
+      );
+
+      await _preparePaidBooking(controller, mockSlot);
+      await controller.submitPaidBooking(paymentIntentId: 'pi_succeeded');
+
+      expect(controller.paymentOutcomeUncertain, isTrue);
+      expect(controller.state.confirmedBooking, isNull);
+      expect(controller.state.step, const BookingStep.payment());
+      expect(
+        controller.state.errorMessage,
+        bookingCachedL10n().bookingPaymentConfirmationUncertain,
+      );
+      expect(controller.state.isSubmitting, isFalse);
+    },
+  );
+
+  test('rapid repeated submit creates and confirms only one booking', () async {
+    final createGate = Completer<Booking>();
+    mockRepository.createBookingGate = createGate;
 
     await _preparePaidBooking(controller, mockSlot);
-    await controller.submitPaidBooking(paymentIntentId: 'pi_succeeded');
-
-    expect(controller.paymentOutcomeUncertain, isTrue);
-    expect(controller.state.confirmedBooking, isNull);
-    expect(controller.state.step, const BookingStep.payment());
-    expect(
-      controller.state.errorMessage,
-      bookingCachedL10n().bookingPaymentConfirmationUncertain,
+    final firstSubmit = controller.submitPaidBooking(
+      paymentIntentId: 'pi_succeeded',
     );
+    final repeatedSubmit = controller.submitPaidBooking(
+      paymentIntentId: 'pi_succeeded',
+    );
+
+    expect(mockRepository.createBookingCalls, 1);
+    expect(controller.state.isSubmitting, isTrue);
+
+    createGate.complete(
+      const Booking(
+        id: 'booking_123',
+        userId: 'user_1',
+        slotId: 'slot_1',
+        activityId: 'act_1',
+        status: 'pending',
+        totalPrice: 10,
+      ),
+    );
+    await Future.wait([firstSubmit, repeatedSubmit]);
+
+    expect(controller.state.step, const BookingStep.confirmation());
+    expect(controller.state.confirmedBooking?.id, 'booking_123');
     expect(controller.state.isSubmitting, isFalse);
   });
 }
