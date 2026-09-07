@@ -1,0 +1,155 @@
+name: Mobile CI
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+  push:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_SUPPRESS_ANALYTICS: "true"
+
+jobs:
+  quality:
+    name: Analyze and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Read Flutter version
+        id: flutter-version
+        shell: bash
+        run: |
+          version="$(python3 -c 'import json; print(json.load(open(".fvmrc", encoding="utf-8"))["flutter"])')"
+          test -n "$version"
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          channel: stable
+          cache: true
+
+      - name: Create safe CI environment files
+        shell: bash
+        run: |
+          for environment in development staging production; do
+            env_file=".env.${environment}"
+            {
+              echo "ENVIRONMENT=${environment}"
+              echo "API_BASE_URL=https://api.example.invalid/api/v1"
+              echo "AI_BASE_URL=https://api.example.invalid/api-planner"
+              echo "PETIT_BOO_BASE_URL=https://petitboo.example.invalid"
+              echo "WEBSITE_URL=https://example.invalid"
+              echo "ANALYTICS_ENABLED=false"
+              echo "CRASHLYTICS_ENABLED=false"
+            } > "$env_file"
+          done
+          cp .env.development .env
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify dependency lockfile
+        run: git diff --exit-code -- pubspec.lock
+
+      - name: Check formatting of changed Dart files
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [[ -z "$BASE_SHA" ]] || ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            BASE_SHA="$(git rev-parse HEAD^ 2>/dev/null || git rev-parse HEAD)"
+          fi
+
+          mapfile -d '' -t dart_files < <(
+            git diff --name-only --diff-filter=ACMRT -z "$BASE_SHA" HEAD -- '*.dart'
+          )
+
+          if (( ${#dart_files[@]} == 0 )); then
+            echo "No changed Dart files to format-check."
+            exit 0
+          fi
+
+          dart format --output=none --set-exit-if-changed "${dart_files[@]}"
+
+      # Existing warnings remain visible without hiding new analyzer errors.
+      - name: Analyze (errors are blocking)
+        run: flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings
+
+      - name: Run tests with coverage
+        run: flutter test --no-pub --coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: mobile-coverage
+          path: coverage/lcov.info
+          if-no-files-found: warn
+          retention-days: 14
+
+  android-build:
+    name: Build Android debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Read Flutter version
+        id: flutter-version
+        shell: bash
+        run: |
+          version="$(python3 -c 'import json; print(json.load(open(".fvmrc", encoding="utf-8"))["flutter"])')"
+          test -n "$version"
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          channel: stable
+          cache: true
+
+      - name: Create safe CI environment files
+        shell: bash
+        run: |
+          for environment in development staging production; do
+            env_file=".env.${environment}"
+            {
+              echo "ENVIRONMENT=${environment}"
+              echo "API_BASE_URL=https://api.example.invalid/api/v1"
+              echo "AI_BASE_URL=https://api.example.invalid/api-planner"
+              echo "PETIT_BOO_BASE_URL=https://petitboo.example.invalid"
+              echo "WEBSITE_URL=https://example.invalid"
+              echo "ANALYTICS_ENABLED=false"
+              echo "CRASHLYTICS_ENABLED=false"
+            } > "$env_file"
+          done
+          cp .env.development .env
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build debug APK
+        run: flutter build apk --debug --no-pub --dart-define=ENV=development

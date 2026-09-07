@@ -53,16 +53,16 @@ feature/
 ## 🚀 Démarrage
 
 ### Prérequis
-- Flutter 3.5.4+
-- Dart 3.0+
+- [FVM](https://fvm.app/) avec la version Flutter définie dans `.fvmrc`
 - Android Studio / VS Code
 - Git
 
 ### Installation
 
-1. Installez les dépendances :
+1. Installez le SDK Flutter épinglé et les dépendances :
 ```bash
-flutter pub get
+fvm install
+fvm flutter pub get
 ```
 
 2. Configurez les variables d'environnement :
@@ -72,12 +72,12 @@ flutter pub get
 
 3. Générez le code (modèles, routing, etc.) :
 ```bash
-flutter packages pub run build_runner build
+fvm dart run build_runner build
 ```
 
 4. Lancez l'application :
 ```bash
-flutter run
+fvm flutter run
 ```
 
 ## 📦 Dépendances principales
@@ -114,42 +114,42 @@ L'application utilise :
 
 ```bash
 # Tests unitaires
-flutter test
+fvm flutter test
 
 # Tests d'intégration
-flutter test integration_test/
+fvm flutter test integration_test/
 
 # Coverage
-flutter test --coverage
+fvm flutter test --coverage
 ```
 
 ## 📱 Build
 
 ### Android
 ```bash
-flutter build apk --release
-flutter build appbundle --release
+fvm flutter build apk --release
+fvm flutter build appbundle --release
 ```
 
 ### iOS
 ```bash
-flutter build ios --release
+fvm flutter build ios --release
 ```
 
 ## 🔧 Scripts utiles
 
 ```bash
 # Génération de code
-flutter packages pub run build_runner build --delete-conflicting-outputs
+fvm dart run build_runner build --delete-conflicting-outputs
 
 # Nettoyage
-flutter clean && flutter pub get
+fvm flutter clean && fvm flutter pub get
 
 # Analyse du code
-flutter analyze
+fvm flutter analyze
 
 # Formatage
-dart format .
+fvm dart format .
 ```
 
 ## 🏗️ Structure des features

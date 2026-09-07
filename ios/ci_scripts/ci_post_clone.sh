@@ -19,13 +19,19 @@ if [ -d "$HOME/flutter" ]; then
     rm -rf "$HOME/flutter"
 fi
 
-# Pin to a specific Flutter release so CI matches local development.
-# Cloning `-b stable` would pull whatever stable is *today*, which has caused
-# CI regressions when newer Flutter releases ship breaking changes (e.g. IconData
-# becoming a final class breaking font_awesome_flutter / phosphor_flutter) or
-# enable experimental features (e.g. Swift Package Manager) before our plugins
-# are ready. Bump intentionally alongside `flutter upgrade` locally + pubspec bumps.
-FLUTTER_VERSION="3.38.7"
+# `.fvmrc` is the single source of truth for the Flutter SDK used locally and
+# by Xcode Cloud. Cloning `-b stable` would pull whatever stable is *today* and
+# make release builds non-reproducible.
+if [ ! -f .fvmrc ]; then
+    echo "error: Missing .fvmrc Flutter version pin"
+    exit 1
+fi
+
+FLUTTER_VERSION=$(awk -F'"' '/"flutter"[[:space:]]*:/ { print $4; exit }' .fvmrc)
+if [ -z "$FLUTTER_VERSION" ]; then
+    echo "error: Unable to read the Flutter version from .fvmrc"
+    exit 1
+fi
 
 echo "Installing Flutter SDK $FLUTTER_VERSION..."
 git clone https://github.com/flutter/flutter.git --depth 1 -b "$FLUTTER_VERSION" $HOME/flutter
