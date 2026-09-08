@@ -43,13 +43,19 @@ Open the repository's
 [Environments settings](https://github.com/diliosinteractive/lehiboo-app/settings/environments)
 and create an environment named exactly `production`.
 
-Recommended environment protection:
+Required baseline protection:
 
-1. Add at least one required reviewer who understands the mobile release.
-2. Disable self-approval when the GitHub plan exposes that option.
-3. Limit deployment branches to `release/*`.
-4. Do not approve the Android build until the preflight job is green and the
-   release commit/version shown in the run are correct.
+1. Limit deployment branches to `release/*`.
+2. Keep all Android release values in environment secrets so they are not
+   exposed to preflight or pull-request jobs.
+
+If the organization plan exposes required reviewers for this private
+repository, also add at least one reviewer who understands the mobile release
+and disable self-approval. Do not rely on this control without checking the
+environment settings: GitHub limits required reviewers for private repositories
+on some plans. When review protection is unavailable, pushing the correctly
+versioned release branch is the release authorization, just as it is for the
+existing Xcode Cloud trigger.
 
 Add these **environment secrets**, not repository variables:
 
@@ -197,16 +203,16 @@ That push starts:
 
 1. GitHub preflight: release metadata validation, analyzer, and all Flutter
    tests against the exact release commit.
-2. GitHub Android build: waits for approval on the `production` environment,
-   validates the real production environment, verifies the upload keystore,
-   builds an obfuscated signed AAB, and verifies its signature.
+2. GitHub Android build: applies any protection configured on the `production`
+   environment, validates the real production environment, verifies the upload
+   keystore, builds an obfuscated signed AAB, and verifies its signature.
 3. Xcode Cloud iOS build: independently prepares the pinned Flutter SDK,
    validates production configuration, synchronizes the app and extension
    versions, archives, and follows the workflow's TestFlight policy.
 
-Because GitHub Actions and Xcode Cloud are separate systems, the GitHub approval
-does not pause Xcode Cloud. Treat the branch push itself as authorization to
-start the iOS release candidate.
+Because GitHub Actions and Xcode Cloud are separate systems, a GitHub approval
+gate, when available, does not pause Xcode Cloud. Treat the branch push itself
+as authorization to start the iOS release candidate.
 
 ## Android outputs
 
