@@ -108,6 +108,74 @@ void main() {
     expect(mismatchedRecipientDestination, '/notifications');
   });
 
+  test('member organization event opens only for the exact recipient', () {
+    final exactRecipientDestination = authorizedPushDestination(
+      resolvedRoute: '/event/member-concert',
+      data: const {
+        'type': 'new_event_from_member_organization',
+        'event_slug': 'member-concert',
+        'organization_uuid': 'member-organization',
+        'recipient_user_id': '101',
+      },
+      activeRecipient: accountA,
+    );
+    final mismatchedRecipientDestination = authorizedPushDestination(
+      resolvedRoute: '/event/member-concert',
+      data: const {
+        'type': 'new_event_from_member_organization',
+        'event_slug': 'member-concert',
+        'organization_uuid': 'member-organization',
+        'recipient_user_id': '101',
+      },
+      activeRecipient: accountB,
+    );
+    final signedOutDestination = authorizedPushDestination(
+      resolvedRoute: '/event/member-concert',
+      data: const {
+        'type': 'new_event_from_member_organization',
+        'event_slug': 'member-concert',
+        'organization_uuid': 'member-organization',
+        'recipient_user_id': '101',
+      },
+      activeRecipient: null,
+    );
+
+    expect(exactRecipientDestination, '/event/member-concert');
+    expect(mismatchedRecipientDestination, '/notifications');
+    expect(signedOutDestination, isNull);
+  });
+
+  test('member in-app notification normalizes the web event action URL', () {
+    final fixture = _serviceFixture(currentRecipient: () => accountA);
+    addTearDown(fixture.dispose);
+
+    fixture.deepLinks.navigateFromNotification(
+      actionUrl: '/events/member-concert',
+      type: 'new_event_from_member_organization',
+      data: const {
+        'event_slug': 'member-concert',
+      },
+    );
+
+    expect(fixture.deepLinks.destinations, ['/event/member-concert']);
+  });
+
+  test('one-hour event reminder opens the event on mobile', () {
+    final fixture = _serviceFixture(currentRecipient: () => accountA);
+    addTearDown(fixture.dispose);
+
+    fixture.deepLinks.navigateFromNotification(
+      actionUrl: '/events/ceramics-workshop',
+      type: 'event_start_reminder',
+      data: const {
+        'event_slug': 'ceramics-workshop',
+        'recipient_user_id': '101',
+      },
+    );
+
+    expect(fixture.deepLinks.destinations, ['/event/ceramics-workshop']);
+  });
+
   test('pending click is erased across an exact identity switch', () {
     final fixture = _serviceFixture(currentRecipient: () => accountB);
     addTearDown(fixture.dispose);
@@ -247,6 +315,11 @@ class _RecordingDeepLinkService extends DeepLinkService {
 
   @override
   void navigate(String path) {
+    destinations.add(path);
+  }
+
+  @override
+  void push(String path) {
     destinations.add(path);
   }
 }

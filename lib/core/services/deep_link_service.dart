@@ -87,7 +87,9 @@ class DeepLinkService {
     final lower = type.toLowerCase();
 
     if (lower == 'new_message') {
-      push(routeForType(type, data) ?? _routeFromActionUrl(actionUrl) ?? '/messages');
+      push(routeForType(type, data) ??
+          _routeFromActionUrl(actionUrl) ??
+          '/messages');
       return;
     }
 
@@ -95,7 +97,9 @@ class DeepLinkService {
     // (action_url est une URL web sans route mobile → ErrorScreen).
     // Spec §5.2 : la route mobile dérive de data.type, jamais de data.action.
     if (lower.startsWith('review_') || lower.startsWith('organizer_review_')) {
-      push(routeForType(type, data) ?? _routeFromActionUrl(actionUrl) ?? '/notifications');
+      push(routeForType(type, data) ??
+          _routeFromActionUrl(actionUrl) ??
+          '/notifications');
       return;
     }
 
@@ -106,16 +110,31 @@ class DeepLinkService {
   String? _routeFromActionUrl(String? actionUrl) {
     if (actionUrl == null || actionUrl.trim().isEmpty) return null;
     final trimmed = actionUrl.trim();
-    if (trimmed.startsWith('/')) return trimmed;
+    if (trimmed.startsWith('/')) return _normalizeWebRoute(trimmed);
 
     final uri = Uri.tryParse(trimmed);
     if (uri == null) return null;
-    if (!uri.hasScheme) return trimmed.startsWith('/') ? trimmed : '/$trimmed';
+    if (!uri.hasScheme) return _normalizeWebRoute('/$trimmed');
 
     final host = uri.host.toLowerCase();
     if (!host.contains('lehiboo')) return null;
     final query = uri.hasQuery ? '?${uri.query}' : '';
-    return '${uri.path.isEmpty ? '/' : uri.path}$query';
+    return _normalizeWebRoute('${uri.path.isEmpty ? '/' : uri.path}$query');
+  }
+
+  String _normalizeWebRoute(String route) {
+    final uri = Uri.tryParse(route);
+    if (uri == null) return route;
+
+    // Notification action URLs are shared with the web client, whose public
+    // event route is plural. The mobile router uses `/event/:id`.
+    if (uri.path.startsWith('/events/')) {
+      return uri
+          .replace(path: '/event/${uri.path.substring('/events/'.length)}')
+          .toString();
+    }
+
+    return route;
   }
 
   /// Route a payload string from a tapped local notification.
@@ -291,8 +310,9 @@ class DeepLinkService {
             ? '/search?alert=$alertUuid'
             : '/notifications';
 
-      // -- Followed-organisation events --
+      // -- Followed/member-organisation events --
       case 'new_event_from_followed_organization':
+      case 'new_event_from_member_organization':
         final identifier = str('event_slug') ?? str('event_uuid');
         return identifier != null ? '/event/$identifier' : '/notifications';
 
