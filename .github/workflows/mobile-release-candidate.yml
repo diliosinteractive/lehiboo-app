@@ -1,0 +1,328 @@
+name: Mobile Release Candidate
+
+on:
+  push:
+    branches:
+      - "release/**"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Expected marketing version from pubspec.yaml (for example 1.0.6)
+        required: true
+        type: string
+      build_number:
+        description: Expected Android build number from pubspec.yaml
+        required: true
+        type: string
+      create_draft_release:
+        description: Create a draft GitHub release with the Android artifacts
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_SUPPRESS_ANALYTICS: "true"
+
+jobs:
+  preflight:
+    name: Test and validate release
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    outputs:
+      release_version: ${{ steps.release.outputs.release_version }}
+      release_build_number: ${{ steps.release.outputs.release_build_number }}
+      release_label: ${{ steps.release.outputs.release_label }}
+
+    steps:
+      - name: Check out exact release commit
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Read Flutter version
+        id: flutter-version
+        shell: bash
+        run: |
+          version="$(python3 -c 'import json; print(json.load(open(".fvmrc", encoding="utf-8"))["flutter"])')"
+          test -n "$version"
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          channel: stable
+          cache: true
+
+      - name: Create safe test environment files
+        shell: bash
+        run: |
+          for environment in development staging production; do
+            env_file=".env.${environment}"
+            {
+              echo "ENVIRONMENT=${environment}"
+              echo "API_BASE_URL=https://api.example.invalid/api/v1"
+              echo "AI_BASE_URL=https://api.example.invalid/api-planner"
+              echo "PETIT_BOO_BASE_URL=https://petitboo.example.invalid"
+              echo "WEBSITE_URL=https://example.invalid"
+              echo "ANALYTICS_ENABLED=false"
+              echo "CRASHLYTICS_ENABLED=false"
+            } > "$env_file"
+          done
+          cp .env.development .env
+
+      - name: Test release validator
+        run: python3 -m unittest discover -s tool/release/tests -p 'test_*.py' -v
+
+      - name: Validate release metadata
+        id: release
+        shell: bash
+        env:
+          EXPECTED_VERSION: ${{ inputs.version || '' }}
+          EXPECTED_BUILD_NUMBER: ${{ inputs.build_number || '' }}
+        run: |
+          args=(--root . --ref "$GITHUB_REF" --github-output "$GITHUB_OUTPUT")
+          if [[ -n "$EXPECTED_VERSION" ]]; then
+            args+=(--expected-version "$EXPECTED_VERSION")
+          fi
+          if [[ -n "$EXPECTED_BUILD_NUMBER" ]]; then
+            args+=(--expected-build-number "$EXPECTED_BUILD_NUMBER")
+          fi
+          python3 tool/release/validate_release.py "${args[@]}"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify dependency lockfile
+        run: git diff --exit-code -- pubspec.lock
+
+      - name: Analyze release commit
+        run: flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings
+
+      - name: Run release tests
+        run: flutter test --no-pub --coverage
+
+      - name: Upload release coverage
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: mobile-release-coverage-${{ github.run_id }}
+          path: coverage/lcov.info
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Record iOS Xcode Cloud handoff
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.release_version }}
+          RELEASE_BUILD_NUMBER: ${{ steps.release.outputs.release_build_number }}
+        run: |
+          {
+            echo "### iOS release handoff"
+            echo
+            echo "Xcode Cloud owns the signed iOS archive and TestFlight distribution."
+            echo "Its release/* workflow will build commit \`${GITHUB_SHA}\` with marketing version \`${RELEASE_VERSION}\`."
+            echo "Xcode Cloud assigns its own monotonically increasing iOS build number; pubspec Android build number: \`${RELEASE_BUILD_NUMBER}\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  android:
+    name: Build signed production AAB
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    env:
+      RELEASE_VERSION: ${{ needs.preflight.outputs.release_version }}
+      RELEASE_BUILD_NUMBER: ${{ needs.preflight.outputs.release_build_number }}
+
+    steps:
+      - name: Check out exact release commit
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Read Flutter version
+        id: flutter-version
+        shell: bash
+        run: |
+          version="$(python3 -c 'import json; print(json.load(open(".fvmrc", encoding="utf-8"))["flutter"])')"
+          test -n "$version"
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          channel: stable
+          cache: true
+
+      - name: Materialize and validate production environment
+        shell: bash
+        env:
+          MOBILE_PRODUCTION_ENV: ${{ secrets.MOBILE_PRODUCTION_ENV }}
+        run: |
+          if [[ -z "$MOBILE_PRODUCTION_ENV" ]]; then
+            echo "::error::MOBILE_PRODUCTION_ENV is missing from the production GitHub Environment."
+            exit 1
+          fi
+
+          umask 077
+          printf '%s\n' "$MOBILE_PRODUCTION_ENV" > .env.production
+          cp .env.production .env
+          printf 'ENVIRONMENT=development\n' > .env.development
+          printf 'ENVIRONMENT=staging\n' > .env.staging
+
+          python3 tool/release/validate_release.py \
+            --root . \
+            --expected-version "$RELEASE_VERSION" \
+            --expected-build-number "$RELEASE_BUILD_NUMBER" \
+            --ref "$GITHUB_REF" \
+            --env-file .env.production
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Install Android upload key
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: |
+          missing=()
+          [[ -n "$KEYSTORE_BASE64" ]] || missing+=(ANDROID_UPLOAD_KEYSTORE_BASE64)
+          [[ -n "$STORE_PASSWORD" ]] || missing+=(ANDROID_UPLOAD_STORE_PASSWORD)
+          [[ -n "$KEY_ALIAS" ]] || missing+=(ANDROID_UPLOAD_KEY_ALIAS)
+          [[ -n "$KEY_PASSWORD" ]] || missing+=(ANDROID_UPLOAD_KEY_PASSWORD)
+          if (( ${#missing[@]} > 0 )); then
+            echo "::error::Missing production GitHub Environment secrets: ${missing[*]}"
+            exit 1
+          fi
+
+          umask 077
+          keystore_path="$RUNNER_TEMP/lehiboo-upload.jks"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+          if [[ ! -s "$keystore_path" ]]; then
+            echo "::error::Decoded Android upload keystore is empty."
+            exit 1
+          fi
+
+          keytool -list \
+            -keystore "$keystore_path" \
+            -storepass "$STORE_PASSWORD" \
+            -alias "$KEY_ALIAS" > /dev/null
+
+      - name: Build signed production app bundle
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/lehiboo-upload.jks
+          ANDROID_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+          ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: |
+          flutter build appbundle \
+            --release \
+            --no-pub \
+            --dart-define=ENV=production \
+            --build-name="$RELEASE_VERSION" \
+            --build-number="$RELEASE_BUILD_NUMBER" \
+            --obfuscate \
+            --split-debug-info=build/symbols/android
+
+      - name: Verify signing and package artifacts
+        id: artifact
+        shell: bash
+        run: |
+          source_aab="build/app/outputs/bundle/release/app-release.aab"
+          if [[ ! -s "$source_aab" ]]; then
+            echo "::error::Expected Android app bundle was not produced."
+            exit 1
+          fi
+          jarsigner -verify -strict -certs "$source_aab" > /dev/null
+
+          mkdir -p dist/android
+          artifact_base="lehiboo-${RELEASE_VERSION}+${RELEASE_BUILD_NUMBER}"
+          cp "$source_aab" "dist/android/${artifact_base}.aab"
+          tar -C build/symbols/android -czf "dist/android/${artifact_base}-symbols.tar.gz" .
+          jq -n \
+            --arg platform "android" \
+            --arg version "$RELEASE_VERSION" \
+            --arg build_number "$RELEASE_BUILD_NUMBER" \
+            --arg commit "$GITHUB_SHA" \
+            --arg ref "$GITHUB_REF" \
+            --arg run_url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            '{platform: $platform, version: $version, build_number: $build_number, commit: $commit, ref: $ref, run_url: $run_url}' \
+            > dist/android/release-metadata.json
+          (
+            cd dist/android
+            sha256sum "${artifact_base}.aab" "${artifact_base}-symbols.tar.gz" release-metadata.json > SHA256SUMS
+          )
+          printf 'artifact_base=%s\n' "$artifact_base" >> "$GITHUB_OUTPUT"
+
+      - name: Upload signed Android release candidate
+        uses: actions/upload-artifact@v6
+        with:
+          name: android-production-${{ needs.preflight.outputs.release_label }}
+          path: dist/android/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Remove signing material
+        if: always()
+        shell: bash
+        run: |
+          rm -f \
+            "$RUNNER_TEMP/lehiboo-upload.jks" \
+            .env \
+            .env.development \
+            .env.staging \
+            .env.production
+
+  draft-release:
+    name: Create draft GitHub release
+    if: ${{ inputs.create_draft_release == true }}
+    needs:
+      - preflight
+      - android
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_VERSION: ${{ needs.preflight.outputs.release_version }}
+
+    steps:
+      - name: Download Android artifacts
+        uses: actions/download-artifact@v6
+        with:
+          name: android-production-${{ needs.preflight.outputs.release_label }}
+          path: dist/android
+
+      - name: Create immutable draft release
+        shell: bash
+        run: |
+          tag="v${RELEASE_VERSION}"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "::error::GitHub release or tag $tag already exists."
+            exit 1
+          fi
+          gh release create "$tag" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "LeHiboo ${RELEASE_VERSION}" \
+            --generate-notes \
+            --draft \
+            dist/android/*

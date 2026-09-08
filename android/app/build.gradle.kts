@@ -15,12 +15,33 @@ if (keystorePropertiesFile.exists()) {
     keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
 }
 
+fun releaseSigningValue(propertyName: String, environmentName: String): String? =
+    keystoreProperties.getProperty(propertyName)?.takeIf { it.isNotBlank() }
+        ?: System.getenv(environmentName)?.takeIf { it.isNotBlank() }
+
+val releaseStoreFile = releaseSigningValue("storeFile", "ANDROID_KEYSTORE_PATH")
+val releaseStorePassword =
+    releaseSigningValue("storePassword", "ANDROID_UPLOAD_STORE_PASSWORD")
+val releaseKeyAlias = releaseSigningValue("keyAlias", "ANDROID_UPLOAD_KEY_ALIAS")
+val releaseKeyPassword =
+    releaseSigningValue("keyPassword", "ANDROID_UPLOAD_KEY_PASSWORD")
 val hasReleaseKeystore = listOf(
-    "storeFile",
-    "storePassword",
-    "keyAlias",
-    "keyPassword",
-).all { keystoreProperties.getProperty(it)?.isNotBlank() == true }
+    releaseStoreFile,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+).all { !it.isNullOrBlank() }
+
+val isReleaseBuildRequested = gradle.startParameter.taskNames.any {
+    it.contains("release", ignoreCase = true)
+}
+
+if (isReleaseBuildRequested && !hasReleaseKeystore) {
+    throw GradleException(
+        "Android release signing is not configured. " +
+            "Create android/key.properties or provide the ANDROID_* release-signing environment variables.",
+    )
+}
 
 android {
     namespace = "com.dilios.lehibooexperience"
@@ -48,28 +69,24 @@ android {
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
     }
 
     signingConfigs {
         create("release") {
             if (hasReleaseKeystore) {
-                keyAlias = keystoreProperties.getProperty("keyAlias")
-                keyPassword = keystoreProperties.getProperty("keyPassword")
-                storeFile = file(keystoreProperties.getProperty("storeFile"))
-                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+                storeFile = file(requireNotNull(releaseStoreFile))
+                storePassword = releaseStorePassword
             }
         }
     }
 
     buildTypes {
         release {
-            signingConfig = if (hasReleaseKeystore) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
-            }
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",

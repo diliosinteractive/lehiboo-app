@@ -62,9 +62,9 @@ cd ios
 
 # Ensure we have a Gemfile for reproducible builds if possible, but for now rely on system pod
 # Check if pod is available
-if ! command -v pod &> /dev/null; then
+if ! command -v pod > /dev/null 2>&1; then
     echo "CocoaPods not found. Installing..."
-    sudo gem install cocoapods
+    HOMEBREW_NO_AUTO_UPDATE=1 brew install cocoapods
 else
     echo "CocoaPods is installed. Version: $(pod --version)"
 fi
@@ -94,6 +94,7 @@ echo "Building for environment: $APP_ENV"
 # Build number (CFBundleVersion) is left to Xcode Cloud's auto-increment.
 PUBSPEC_VERSION=$(awk '/^[[:space:]]*version:[[:space:]]*/ { version=$2; gsub(/"/, "", version); print version; exit }' pubspec.yaml)
 PUBSPEC_MARKETING_VERSION="${PUBSPEC_VERSION%%+*}"
+PUBSPEC_BUILD_NUMBER="${PUBSPEC_VERSION#*+}"
 
 if [ -z "$PUBSPEC_MARKETING_VERSION" ]; then
     echo "error: Unable to extract marketing version from pubspec.yaml version '$PUBSPEC_VERSION'"
@@ -106,11 +107,28 @@ case "$PUBSPEC_MARKETING_VERSION" in
         ;;
 esac
 
+if [ "$PUBSPEC_BUILD_NUMBER" = "$PUBSPEC_VERSION" ]; then
+    echo "error: pubspec.yaml version must include an integer build number"
+    exit 1
+fi
+
+# Xcode Cloud owns the monotonically increasing iOS build number. Local/manual
+# executions fall back to the build number in pubspec.yaml.
+XCODE_BUILD_NUMBER="${CI_BUILD_NUMBER:-$PUBSPEC_BUILD_NUMBER}"
+case "$XCODE_BUILD_NUMBER" in
+    *[!0-9]*|""|0)
+        echo "error: Invalid iOS build number '$XCODE_BUILD_NUMBER'"
+        exit 1
+        ;;
+esac
+
 echo "Workflow: ${CI_WORKFLOW:-unknown workflow} on branch ${CI_BRANCH:-unknown branch}"
 echo "Using marketing version $PUBSPEC_MARKETING_VERSION from pubspec.yaml"
+echo "Using Xcode build number $XCODE_BUILD_NUMBER"
 
 cd ios
 xcrun agvtool new-marketing-version "$PUBSPEC_MARKETING_VERSION"
+xcrun agvtool new-version -all "$XCODE_BUILD_NUMBER"
 cd ..
 
 # Generate .env.$APP_ENV from Xcode Cloud workflow environment variables.
@@ -166,22 +184,40 @@ PUSHER_AUTH_ENDPOINT=${PUSHER_AUTH_ENDPOINT}
 STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
 EOF
 
-# Validate that critical secrets were actually provided by the workflow
+# Validate that critical configuration was actually provided by the workflow.
+# A production archive must never succeed with payment, maps, push, or realtime
+# silently disabled.
 missing=""
 for var in API_KEY GOOGLE_MAPS_API_KEY ONESIGNAL_APP_ID PUSHER_APP_KEY STRIPE_PUBLISHABLE_KEY; do
-    eval value=\$$var
+    value=$(printenv "$var" 2> /dev/null || true)
     [ -z "$value" ] && missing="$missing $var"
 done
 if [ -n "$missing" ]; then
-    echo "⚠️ Missing Xcode Cloud workflow secrets:$missing"
-    echo "    Add them in App Store Connect → Xcode Cloud → Workflow → Environment (toggle 🔒 for secrets)"
+    if [ "$APP_ENV" = "production" ]; then
+        echo "error: Missing Xcode Cloud workflow values:$missing"
+        echo "Add them in App Store Connect → Xcode Cloud → Workflow → Environment."
+        exit 1
+    fi
+    echo "warning: Missing non-production Xcode Cloud workflow values:$missing"
 fi
 
 echo "Generated $ENV_FILE ($(wc -l < "$ENV_FILE") lines)"
+cp "$ENV_FILE" .env
+
+# Run the same version checks used by the Android release workflow, adding the
+# strict environment gate for production archives.
+if [ "$APP_ENV" = "production" ]; then
+    python3 tool/release/validate_release.py --root . --env-file "$ENV_FILE"
+else
+    python3 tool/release/validate_release.py --root .
+fi
 
 # Re-enable verbose tracing for the rest of the build
 set -x
 
-flutter build ios --config-only --no-codesign --release --build-name="$PUBSPEC_MARKETING_VERSION" --dart-define=ENV=$APP_ENV
+flutter build ios --config-only --no-codesign --release \
+    --build-name="$PUBSPEC_MARKETING_VERSION" \
+    --build-number="$XCODE_BUILD_NUMBER" \
+    --dart-define=ENV="$APP_ENV"
 
 # Note: Xcode Cloud will proceed to build the 'Runner' scheme after this script finishes.
