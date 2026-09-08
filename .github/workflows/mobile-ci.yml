@@ -48,6 +48,11 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Test release tooling
+        run: |
+          python3 -m unittest discover -s tool/release/tests -p 'test_*.py' -v
+          python3 tool/release/validate_release.py --root .
+
       - name: Create safe CI environment files
         shell: bash
         run: |
