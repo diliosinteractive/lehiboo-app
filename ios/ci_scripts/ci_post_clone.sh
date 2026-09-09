@@ -126,11 +126,6 @@ echo "Workflow: ${CI_WORKFLOW:-unknown workflow} on branch ${CI_BRANCH:-unknown 
 echo "Using marketing version $PUBSPEC_MARKETING_VERSION from pubspec.yaml"
 echo "Using Xcode build number $XCODE_BUILD_NUMBER"
 
-cd ios
-xcrun agvtool new-marketing-version "$PUBSPEC_MARKETING_VERSION"
-xcrun agvtool new-version -all "$XCODE_BUILD_NUMBER"
-cd ..
-
 # Generate .env.$APP_ENV from Xcode Cloud workflow environment variables.
 # These are configured in App Store Connect → Xcode Cloud → Workflow → Environment.
 # Mark sensitive values (API_KEY, GOOGLE_MAPS_API_KEY, HT_*, PUSHER_APP_KEY...) as secrets (🔒).
@@ -214,6 +209,13 @@ fi
 
 # Re-enable verbose tracing for the rest of the build
 set -x
+
+# Validate the committed Info.plist templates before agvtool replaces their
+# Flutter version macros with concrete values in Xcode Cloud's temporary checkout.
+cd ios
+xcrun agvtool new-marketing-version "$PUBSPEC_MARKETING_VERSION"
+xcrun agvtool new-version -all "$XCODE_BUILD_NUMBER"
+cd ..
 
 flutter build ios --config-only --no-codesign --release \
     --build-name="$PUBSPEC_MARKETING_VERSION" \

@@ -240,6 +240,17 @@ def _validate_ios(info_plist_path: Path, xcode_cloud_script_path: Path) -> list[
     for fragment, message in required_fragments.items():
         if fragment not in script:
             errors.append(message)
+
+    validator_position = script.find("python3 tool/release/validate_release.py")
+    agvtool_positions = (
+        script.find('xcrun agvtool new-marketing-version "$PUBSPEC_MARKETING_VERSION"'),
+        script.find('xcrun agvtool new-version -all "$XCODE_BUILD_NUMBER"'),
+    )
+    if validator_position >= 0 and all(position >= 0 for position in agvtool_positions):
+        if any(validator_position > position for position in agvtool_positions):
+            errors.append(
+                "Xcode Cloud must validate iOS templates before agvtool mutates them"
+            )
     return errors
 
 

@@ -31,9 +31,9 @@ android {
 
 GOOD_XCODE_SCRIPT = """
 XCODE_BUILD_NUMBER="${CI_BUILD_NUMBER:-$PUBSPEC_BUILD_NUMBER}"
+python3 tool/release/validate_release.py --env-file "$ENV_FILE"
 xcrun agvtool new-marketing-version "$PUBSPEC_MARKETING_VERSION"
 xcrun agvtool new-version -all "$XCODE_BUILD_NUMBER"
-python3 tool/release/validate_release.py --env-file "$ENV_FILE"
 """
 
 GOOD_ENV = """\
@@ -173,6 +173,18 @@ class ValidateReleaseTests(unittest.TestCase):
                 plist_file,
             )
         self.assert_validation_error("must use FLUTTER_BUILD_NAME")
+
+    def test_xcode_cloud_validates_templates_before_agvtool_mutates_them(self) -> None:
+        script_path = self.root / "ios/ci_scripts/ci_post_clone.sh"
+        script_path.write_text(
+            GOOD_XCODE_SCRIPT.replace(
+                'python3 tool/release/validate_release.py --env-file "$ENV_FILE"\n',
+                "",
+            )
+            + 'python3 tool/release/validate_release.py --env-file "$ENV_FILE"\n',
+            encoding="utf-8",
+        )
+        self.assert_validation_error("must validate iOS templates before agvtool")
 
     def test_duplicate_environment_key_is_rejected(self) -> None:
         env_path = self.root / ".env.production"
