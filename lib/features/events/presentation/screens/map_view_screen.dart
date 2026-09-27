@@ -498,9 +498,7 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
             ),
             children: [
               TileLayer(
-                urlTemplate:
-                    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
-                subdomains: const ['a', 'b', 'c', 'd'],
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.dilios.lehibooexperience',
               ),
               Builder(
@@ -523,11 +521,6 @@ class _MapViewScreenState extends ConsumerState<MapViewScreen> {
                     'OpenStreetMap contributors',
                     onTap: () => launchUrl(
                         Uri.parse('https://openstreetmap.org/copyright')),
-                  ),
-                  TextSourceAttribution(
-                    'CartoDB',
-                    onTap: () =>
-                        launchUrl(Uri.parse('https://carto.com/attributions')),
                   ),
                 ],
               ),
