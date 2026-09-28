@@ -2404,7 +2404,15 @@
   "eventUnlock": "Unlock",
   "eventPrivateTitle": "This event is private",
   "eventPrivateInstructions": "Enter the password shared by the organizer.",
-  "eventPasswordAttemptsWarning": "3 attempts left before a 1-minute delay.",
+  "eventPasswordAttemptsWarning": "{count, plural, =1{1 attempt left before a 1-minute delay.} other{{count} attempts left before a 1-minute delay.}}",
+  "@eventPasswordAttemptsWarning": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventPasswordMaxAttemptsReached": "You've reached the maximum number of attempts.",
   "eventPasswordLabel": "Password",
   "eventPasswordHint": "Enter the password",
   "eventMembersOnlyTitle": "Members only",

@@ -2935,7 +2935,15 @@
   "eventUnlock": "Déverrouiller",
   "eventPrivateTitle": "Cet événement est privé",
   "eventPrivateInstructions": "Entre le mot de passe communiqué par l'organisateur.",
-  "eventPasswordAttemptsWarning": "Encore 3 essais avant un délai de 1 minute.",
+  "eventPasswordAttemptsWarning": "{count, plural, =1{Encore 1 essai avant un délai de 1 minute.} other{Encore {count} essais avant un délai de 1 minute.}}",
+  "@eventPasswordAttemptsWarning": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventPasswordMaxAttemptsReached": "Tu as atteint le nombre maximum d'essais.",
   "eventPasswordLabel": "Mot de passe",
   "eventPasswordHint": "Saisis le mot de passe",
   "eventMembersOnlyTitle": "Réservé aux membres",
