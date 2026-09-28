@@ -355,11 +355,13 @@ class EventsApiDataSource {
                 );
               }
             }
-            if (body['error'] == 'invalid_password') {
-              throw const InvalidEventPasswordException();
-            }
           }
-          throw const InvalidEventPasswordException();
+          // A members-only 403 never consumes the password budget, so the
+          // remaining count is only meaningful on the rejected-password path.
+          throw InvalidEventPasswordException(
+            remainingAttempts: _rateLimitHeader(e.response, 'x-ratelimit-remaining'),
+            attemptLimit: _rateLimitHeader(e.response, 'x-ratelimit-limit'),
+          );
         case 404:
           throw const EventNotFoundException();
         case 422:
@@ -368,11 +370,27 @@ class EventsApiDataSource {
           final retry =
               int.tryParse(e.response?.headers.value('retry-after') ?? '') ??
                   60;
-          throw EventPasswordRateLimitedException(Duration(seconds: retry));
+          throw EventPasswordRateLimitedException(
+            Duration(seconds: retry),
+            attemptLimit: _rateLimitHeader(e.response, 'x-ratelimit-limit'),
+          );
         default:
           rethrow;
       }
     }
+  }
+
+  /// Reads one of Laravel's `X-RateLimit-*` counters.
+  ///
+  /// `ThrottleRequests` stamps these on every response it lets through, so the
+  /// rejected-password 403 already states how much budget is left. Returns null
+  /// when the header is absent (a proxy stripped it) or unparseable, which the
+  /// sheet treats as "fall back to the local count".
+  int? _rateLimitHeader(Response<dynamic>? response, String name) {
+    final raw = response?.headers.value(name);
+    if (raw == null) return null;
+    final parsed = int.tryParse(raw.trim());
+    return parsed == null || parsed < 0 ? null : parsed;
   }
 
   Future<HomeFeedDataDto> getHomeFeed({

@@ -69,12 +69,37 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
   late final AnimationController _shakeController;
   late final Animation<double> _shakeAnimation;
 
+  /// Mirrors the `event-password` limiter: 6 attempts per minute for a
+  /// requester and an event. Only used when the server's `X-RateLimit-*`
+  /// headers are missing, so a backend change stays authoritative.
+  static const int _fallbackAttemptLimit = 6;
+
+  /// Start warning once this few attempts remain.
+  static const int _warnAtRemaining = 3;
+
   String? _error;
   int _attempts = 0;
   bool _submitting = false;
   int _retryCountdown = 0;
   Timer? _countdownTimer;
   MembersOnlyException? _membersOnlyError;
+
+  /// `X-RateLimit-Remaining` from the last rejected attempt. Null means the
+  /// header never arrived and [_attempts] is the only count available.
+  int? _serverRemaining;
+  int _attemptLimit = _fallbackAttemptLimit;
+
+  /// Attempts left before the cooldown, or null while nothing has failed yet.
+  ///
+  /// The server counter is shared with `GET /events/{slug}?password=`, so it
+  /// can be lower than the local tally; it wins whenever it is present.
+  int? get _remainingAttempts {
+    final serverRemaining = _serverRemaining;
+    if (serverRemaining != null) return serverRemaining;
+    if (_attempts == 0) return null;
+    final left = _attemptLimit - _attempts;
+    return left < 0 ? 0 : left;
+  }
 
   @override
   void initState() {
@@ -117,7 +142,13 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
       }
       if (_retryCountdown <= 1) {
         timer.cancel();
-        setState(() => _retryCountdown = 0);
+        // The limiter window has expired: drop the exhausted budget so the
+        // banner disappears and the user starts from a full allowance.
+        setState(() {
+          _retryCountdown = 0;
+          _attempts = 0;
+          _serverRemaining = null;
+        });
       } else {
         setState(() => _retryCountdown--);
       }
@@ -141,7 +172,7 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
     try {
       final event = await widget.onSubmit(pw);
       if (mounted) Navigator.of(context).pop(event);
-    } on InvalidEventPasswordException {
+    } on InvalidEventPasswordException catch (e) {
       _attempts++;
       _shakeController.forward(from: 0);
       HapticFeedback.heavyImpact();
@@ -149,6 +180,8 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
       if (!mounted) return;
       setState(() {
         _submitting = false;
+        _serverRemaining = e.remainingAttempts;
+        _attemptLimit = e.attemptLimit ?? _attemptLimit;
         _error = context.l10n.eventPasswordIncorrect;
       });
     } on EventPasswordRateLimitedException catch (e) {
@@ -156,6 +189,8 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
       _startCountdown(e.retryAfter.inSeconds);
       setState(() {
         _submitting = false;
+        _serverRemaining = 0;
+        _attemptLimit = e.attemptLimit ?? _attemptLimit;
         _error = null;
       });
     } on MembersOnlyException catch (e) {
@@ -224,8 +259,16 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
   }
 
   Widget _buildPasswordBody() {
-    final showWarning = _attempts >= 3 && _retryCountdown == 0;
     final countdownActive = _retryCountdown > 0;
+    final remaining = _remainingAttempts;
+    // Locked out: the cooldown is running, or the server just reported an
+    // exhausted budget and the next attempt is certain to be refused.
+    final exhausted = countdownActive || remaining == 0;
+    final warningText = exhausted
+        ? context.l10n.eventPasswordMaxAttemptsReached
+        : (remaining != null && remaining <= _warnAtRemaining
+            ? context.l10n.eventPasswordAttemptsWarning(remaining)
+            : null);
     final buttonLabel = countdownActive
         ? context.l10n.eventPasswordRetryIn(_retryCountdown)
         : (_submitting
@@ -330,7 +373,7 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
             ),
           ),
         const SizedBox(height: 24),
-        if (showWarning)
+        if (warningText != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
             child: Container(
@@ -347,7 +390,7 @@ class _EventPasswordSheetState extends ConsumerState<EventPasswordSheet>
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      context.l10n.eventPasswordAttemptsWarning,
+                      warningText,
                       style: GoogleFonts.montserrat(
                         fontSize: 12,
                         color: Colors.orange.shade800,

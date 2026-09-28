@@ -5770,8 +5770,19 @@ class AppLocalizationsFr extends AppLocalizations {
       'Entre le mot de passe communiqué par l\'organisateur.';
 
   @override
-  String get eventPasswordAttemptsWarning =>
-      'Encore 3 essais avant un délai de 1 minute.';
+  String eventPasswordAttemptsWarning(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Encore $count essais avant un délai de 1 minute.',
+      one: 'Encore 1 essai avant un délai de 1 minute.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventPasswordMaxAttemptsReached =>
+      'Tu as atteint le nombre maximum d\'essais.';
 
   @override
   String get eventPasswordLabel => 'Mot de passe';

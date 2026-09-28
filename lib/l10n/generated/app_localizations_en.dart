@@ -5729,8 +5729,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enter the password shared by the organizer.';
 
   @override
-  String get eventPasswordAttemptsWarning =>
-      '3 attempts left before a 1-minute delay.';
+  String eventPasswordAttemptsWarning(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count attempts left before a 1-minute delay.',
+      one: '1 attempt left before a 1-minute delay.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventPasswordMaxAttemptsReached =>
+      'You\'ve reached the maximum number of attempts.';
 
   @override
   String get eventPasswordLabel => 'Password';

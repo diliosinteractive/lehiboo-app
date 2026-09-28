@@ -9894,8 +9894,14 @@ abstract class AppLocalizations {
   /// No description provided for @eventPasswordAttemptsWarning.
   ///
   /// In fr, this message translates to:
-  /// **'Encore 3 essais avant un délai de 1 minute.'**
-  String get eventPasswordAttemptsWarning;
+  /// **'{count, plural, =1{Encore 1 essai avant un délai de 1 minute.} other{Encore {count} essais avant un délai de 1 minute.}}'**
+  String eventPasswordAttemptsWarning(int count);
+
+  /// No description provided for @eventPasswordMaxAttemptsReached.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu as atteint le nombre maximum d\'essais.'**
+  String get eventPasswordMaxAttemptsReached;
 
   /// No description provided for @eventPasswordLabel.
   ///
