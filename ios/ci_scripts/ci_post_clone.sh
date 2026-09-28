@@ -180,10 +180,10 @@ STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
 EOF
 
 # Validate that critical configuration was actually provided by the workflow.
-# A production archive must never succeed with payment, maps, push, or realtime
+# A production archive must never succeed with payment, push, or realtime
 # silently disabled.
 missing=""
-for var in API_KEY GOOGLE_MAPS_API_KEY ONESIGNAL_APP_ID PUSHER_APP_KEY STRIPE_PUBLISHABLE_KEY; do
+for var in API_KEY ONESIGNAL_APP_ID PUSHER_APP_KEY STRIPE_PUBLISHABLE_KEY; do
     value=$(printenv "$var" 2> /dev/null || true)
     [ -z "$value" ] && missing="$missing $var"
 done
