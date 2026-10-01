@@ -7890,13 +7890,13 @@ abstract class AppLocalizations {
   /// No description provided for @homeUrgencyTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Avant qu\'il soit trop tard'**
+  /// **'Ça se joue maintenant'**
   String get homeUrgencyTitle;
 
   /// No description provided for @homeUrgencySubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Ces événements commencent bientôt'**
+  /// **'En cours ou sur le point de commencer'**
   String get homeUrgencySubtitle;
 
   /// No description provided for @homeCityNotFound.

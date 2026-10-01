@@ -4592,10 +4592,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeBook => 'Book';
 
   @override
-  String get homeUrgencyTitle => 'Before it is too late';
+  String get homeUrgencyTitle => 'Happening now';
 
   @override
-  String get homeUrgencySubtitle => 'These events start soon';
+  String get homeUrgencySubtitle => 'Underway or about to start';
 
   @override
   String get homeCityNotFound => 'City not found';

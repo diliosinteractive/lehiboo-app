@@ -4625,10 +4625,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get homeBook => 'Réserver';
 
   @override
-  String get homeUrgencyTitle => 'Avant qu\'il soit trop tard';
+  String get homeUrgencyTitle => 'Ça se joue maintenant';
 
   @override
-  String get homeUrgencySubtitle => 'Ces événements commencent bientôt';
+  String get homeUrgencySubtitle => 'En cours ou sur le point de commencer';
 
   @override
   String get homeCityNotFound => 'Ville non trouvée';
