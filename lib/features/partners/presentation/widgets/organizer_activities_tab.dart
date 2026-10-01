@@ -82,8 +82,14 @@ class _OrganizerActivitiesTabState
           }
         }
 
-        final visible =
-            _bucket == EventTimingBucket.currentUpcoming ? current : past;
+        // Current events read chronologically; past events keep the API order
+        // (most recent first) they already arrive in.
+        final visible = _bucket == EventTimingBucket.currentUpcoming
+            ? sortedByNextOccurrence(current, now)
+            : [
+                for (final event in past)
+                  (event: event, date: displayDateFor(event, now)),
+              ];
 
         if (events.isEmpty) {
           return _empty(context.l10n.organizerActivitiesEmpty);
@@ -106,10 +112,11 @@ class _OrganizerActivitiesTabState
                     ? context.l10n.organizerActivitiesNoUpcoming
                     : context.l10n.organizerActivitiesNoPast)
               else
-                ...visible.map((e) => Padding(
+                ...visible.map((occurrence) => Padding(
                       padding: const EdgeInsets.only(bottom: 14),
                       child: _OrganizerEventTile(
-                        event: e,
+                        event: occurrence.event,
+                        displayDate: occurrence.date,
                         ownerSession: widget.ownerSession,
                       ),
                     )),
@@ -234,10 +241,15 @@ class _SegmentedToggle extends StatelessWidget {
 
 class _OrganizerEventTile extends ConsumerWidget {
   final Event event;
+
+  /// Occurrence advertised by the tile — the next slot still to come rather
+  /// than the (possibly long past) start date of a recurring event.
+  final DateTime displayDate;
   final AuthSessionKey ownerSession;
 
   const _OrganizerEventTile({
     required this.event,
+    required this.displayDate,
     required this.ownerSession,
   });
 
@@ -316,7 +328,7 @@ class _OrganizerEventTile extends ConsumerWidget {
                                 'dd MMM yyyy',
                                 enPattern: 'MMM d, yyyy',
                               )
-                              .format(event.startDate),
+                              .format(displayDate),
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey[700],
