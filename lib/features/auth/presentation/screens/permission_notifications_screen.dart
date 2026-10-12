@@ -204,7 +204,8 @@ class _PermissionNotificationsScreenState
       return const Scaffold(body: SizedBox.shrink());
     }
     ref.watch(pushNotificationProvider);
-    final alreadyGranted = ref.read(pushNotificationProvider.notifier).isEnabled;
+    final alreadyGranted =
+        ref.read(pushNotificationProvider.notifier).isEnabled;
 
     return PermissionExplainerScaffold(
       icon: Icons.notifications_active_outlined,
