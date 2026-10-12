@@ -113,12 +113,9 @@ class _PermissionNotificationsScreenState
     });
 
     try {
-      // If push is already initialized (permission granted + subscription
-      // registered with backend), there's nothing to prompt for.
-      final alreadyGranted = ref.read(pushNotificationProvider).status ==
-          PushNotificationStatus.initialized;
-      final grantedNow =
-          alreadyGranted ? true : await ownerPushNotifier.requestPermission();
+      // requestPermission() returns immediately when the OS permission is
+      // already granted and the subscription registered; otherwise it prompts.
+      final grantedNow = await ownerPushNotifier.requestPermission();
 
       if (!_ownsSession(generation) ||
           !identical(
@@ -206,8 +203,8 @@ class _PermissionNotificationsScreenState
       });
       return const Scaffold(body: SizedBox.shrink());
     }
-    final alreadyGranted = ref.watch(pushNotificationProvider).status ==
-        PushNotificationStatus.initialized;
+    ref.watch(pushNotificationProvider);
+    final alreadyGranted = ref.read(pushNotificationProvider.notifier).isEnabled;
 
     return PermissionExplainerScaffold(
       icon: Icons.notifications_active_outlined,

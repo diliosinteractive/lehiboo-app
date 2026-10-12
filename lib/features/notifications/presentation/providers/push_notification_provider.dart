@@ -7,6 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../../core/services/push_notification_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../profile/data/datasources/profile_api_datasource.dart';
 import '../../data/datasources/device_token_datasource.dart';
 
 /// State for push notification initialization
@@ -130,6 +131,7 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
         debugPrint(
           'PushNotification: user ${next.accountId} has no OneSignal external id',
         );
+        unawaited(_refreshMissingExternalId(next, generation));
       }
     }
 
@@ -157,6 +159,28 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
         }
       },
     ));
+  }
+
+  /// Backend pushes target the OneSignal external id only, so a session
+  /// without one (restored from an older install, or an account that predates
+  /// `onesignal_id`) never receives them. GET /auth/me assigns and returns the
+  /// id; feeding it to [AuthNotifier.updateUser] re-enters [_replaceAccount],
+  /// which binds the device.
+  Future<void> _refreshMissingExternalId(
+    _PushAccount account,
+    int generation,
+  ) async {
+    try {
+      final user = await _ref.read(profileApiDataSourceProvider).getProfile();
+      if (!_isCurrent(account, generation)) return;
+      final externalId = user.onesignalId?.trim();
+      if (externalId == null || externalId.isEmpty) return;
+      _ref.read(authProvider.notifier).updateUser(user);
+    } catch (error) {
+      if (_isCurrent(account, generation)) {
+        debugPrint('PushNotification: external id refresh failed - $error');
+      }
+    }
   }
 
   bool _isCurrent(_PushAccount? expected, int generation) {
@@ -521,7 +545,12 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
     }
   }
 
-  bool get isEnabled => state.status == PushNotificationStatus.initialized;
+  /// Registered with the backend AND allowed by the OS to display pushes.
+  /// [PushNotificationStatus.initialized] alone is not enough: Android hands
+  /// out a subscription id before the permission is granted.
+  bool get isEnabled =>
+      state.status == PushNotificationStatus.initialized &&
+      _ref.read(pushNotificationServiceProvider).hasPermission;
 
   /// Ask for OS permission and register only for the initiating account.
   Future<bool> requestPermission() async {
@@ -529,7 +558,7 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
     final generation = _generation;
     final identityReady = _identityTail;
     if (account == null || !_isCurrent(account, generation)) return false;
-    if (state.status == PushNotificationStatus.initialized) return true;
+    if (isEnabled) return true;
     if (state.status == PushNotificationStatus.initializing) return false;
     if (!isOneSignalConfigured) {
       state = const PushNotificationState(
@@ -633,6 +662,6 @@ class _PushAccount {
 
 /// Provider to check if push notifications are enabled
 final isPushEnabledProvider = Provider<bool>((ref) {
-  final state = ref.watch(pushNotificationProvider);
-  return state.status == PushNotificationStatus.initialized;
+  ref.watch(pushNotificationProvider);
+  return ref.read(pushNotificationProvider.notifier).isEnabled;
 });

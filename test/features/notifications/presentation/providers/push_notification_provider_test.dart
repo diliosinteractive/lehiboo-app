@@ -5,14 +5,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lehiboo/core/analytics/analytics_provider.dart';
 import 'package:lehiboo/core/analytics/noop_analytics_service.dart';
 import 'package:lehiboo/core/services/deep_link_service.dart';
 import 'package:lehiboo/core/services/push_notification_service.dart';
 import 'package:lehiboo/domain/entities/user.dart';
+import 'package:lehiboo/features/auth/data/models/auth_response_dto.dart';
 import 'package:lehiboo/features/auth/domain/repositories/auth_repository.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/notifications/data/datasources/device_token_datasource.dart';
 import 'package:lehiboo/features/notifications/presentation/providers/push_notification_provider.dart';
+import 'package:lehiboo/features/profile/data/datasources/profile_api_datasource.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -177,6 +180,94 @@ void main() {
     expect(service.onSubscriptionRemoved, isNull);
     await _pumpUntil(() => service.boundExternalId == null);
   });
+
+  test('requestPermission prompts when registered but OS permission is missing',
+      () async {
+    final router = _router();
+    addTearDown(router.dispose);
+    // Android hands out a subscription id before the permission is granted,
+    // so the account registers and reaches `initialized` without it.
+    final service = _ControlledPushNotificationService(router)
+      ..permissionGranted = false;
+    final setup = _container(
+      service: service,
+      dataSource: _ControlledDeviceTokenDataSource(autoComplete: true),
+      initialUser: _accountA,
+    );
+    addTearDown(setup.container.dispose);
+    setup.container
+        .listen(pushNotificationProvider, (_, __) {}, fireImmediately: true);
+    await _pumpUntil(
+      () =>
+          setup.container.read(pushNotificationProvider).status ==
+          PushNotificationStatus.initialized,
+    );
+    final notifier = setup.container.read(pushNotificationProvider.notifier);
+    expect(notifier.isEnabled, isFalse);
+
+    final result = await notifier.requestPermission();
+
+    expect(result, isTrue);
+    expect(service.operations, contains('prompt'));
+    expect(notifier.isEnabled, isTrue);
+  });
+
+  test('requestPermission does not prompt when push is already enabled',
+      () async {
+    final router = _router();
+    addTearDown(router.dispose);
+    final service = _ControlledPushNotificationService(router);
+    final setup = _container(
+      service: service,
+      dataSource: _ControlledDeviceTokenDataSource(autoComplete: true),
+      initialUser: _accountA,
+    );
+    addTearDown(setup.container.dispose);
+    setup.container
+        .listen(pushNotificationProvider, (_, __) {}, fireImmediately: true);
+    await _pumpUntil(
+      () =>
+          setup.container.read(pushNotificationProvider).status ==
+          PushNotificationStatus.initialized,
+    );
+
+    final result = await setup.container
+        .read(pushNotificationProvider.notifier)
+        .requestPermission();
+
+    expect(result, isTrue);
+    expect(service.operations, isNot(contains('prompt')));
+  });
+
+  test('a session without external id fetches it from /auth/me and binds it',
+      () async {
+    final router = _router();
+    addTearDown(router.dispose);
+    final service = _ControlledPushNotificationService(router);
+    final profileApi = _ProfileApiReturning(
+      const UserDto(
+        id: 7,
+        email: 'legacy@example.test',
+        displayName: 'Legacy Account',
+        role: 'subscriber',
+        onesignalId: 'external-legacy',
+      ),
+    );
+    final setup = _container(
+      service: service,
+      dataSource: _ControlledDeviceTokenDataSource(autoComplete: true),
+      initialUser: _legacyAccount,
+      profileApi: profileApi,
+    );
+    addTearDown(setup.container.dispose);
+    setup.container
+        .listen(pushNotificationProvider, (_, __) {}, fireImmediately: true);
+
+    await _pumpUntil(() => service.boundExternalId == 'external-legacy');
+
+    expect(profileApi.calls, 1);
+    expect(setup.auth.state.user?.onesignalId, 'external-legacy');
+  });
 }
 
 GoRouter _router() => GoRouter(
@@ -239,6 +330,12 @@ const _accountB = HbUser(
   onesignalId: 'external-b',
 );
 
+const _legacyAccount = HbUser(
+  id: '7',
+  email: 'legacy@example.test',
+  displayName: 'Legacy Account',
+);
+
 ({
   ProviderContainer container,
   _TestAuthNotifier auth,
@@ -246,6 +343,7 @@ const _accountB = HbUser(
   required PushNotificationService service,
   required DeviceTokenDataSource dataSource,
   required HbUser? initialUser,
+  ProfileApiDataSource? profileApi,
 }) {
   late _TestAuthNotifier auth;
   final container = ProviderContainer(
@@ -254,8 +352,11 @@ const _accountB = HbUser(
         auth = _TestAuthNotifier(ref, initialUser);
         return auth;
       }),
+      analyticsServiceProvider.overrideWithValue(const NoopAnalyticsService()),
       pushNotificationServiceProvider.overrideWithValue(service),
       deviceTokenDataSourceProvider.overrideWithValue(dataSource),
+      if (profileApi != null)
+        profileApiDataSourceProvider.overrideWithValue(profileApi),
     ],
   );
   container.read(authProvider);
@@ -294,9 +395,20 @@ class _ControlledPushNotificationService extends PushNotificationService {
   final Map<String, Completer<void>> bindGates = {};
   String? boundExternalId;
   bool initialized = false;
+  bool permissionGranted = true;
 
   @override
   String? get subscriptionId => 'subscription-1';
+
+  @override
+  bool get hasPermission => permissionGranted;
+
+  @override
+  Future<bool> promptUserForPermission() async {
+    operations.add('prompt');
+    permissionGranted = true;
+    return true;
+  }
 
   @override
   bool get isInitialized => initialized;
@@ -394,6 +506,19 @@ class _ControlledDeviceTokenDataSource extends DeviceTokenDataSource {
     CancelToken? cancelToken,
   }) async =>
       true;
+}
+
+class _ProfileApiReturning extends ProfileApiDataSource {
+  _ProfileApiReturning(this.user) : super(Dio());
+
+  final UserDto user;
+  int calls = 0;
+
+  @override
+  Future<UserDto> getProfile() async {
+    calls++;
+    return user;
+  }
 }
 
 DeviceTokenResult _tokenResult(String uuid) => DeviceTokenResult(

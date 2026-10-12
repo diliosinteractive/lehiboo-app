@@ -198,6 +198,7 @@ class AuthRepositoryImpl implements AuthRepository {
     final newsletter = await _secureStorage.getUserNewsletter();
     final pushNotifications =
         await _secureStorage.getUserPushNotificationsEnabled();
+    final onesignalId = await _secureStorage.getUserOnesignalId();
 
     if (userId != null) {
       final parsedRole = _parseRole(role);
@@ -215,6 +216,7 @@ class AuthRepositoryImpl implements AuthRepository {
         membershipCity: membershipCity,
         newsletter: newsletter ?? false,
         pushNotificationsEnabled: pushNotifications ?? false,
+        onesignalId: onesignalId,
         // Capabilities aren't persisted to secure storage — derive them
         // from the persisted role on cold start so the vendor scanner
         // entry survives a relaunch. The login response refreshes the
@@ -266,6 +268,7 @@ class AuthRepositoryImpl implements AuthRepository {
     await _secureStorage.saveUserPushNotificationsEnabled(
       user.pushNotificationsEnabled,
     );
+    await _secureStorage.saveUserOnesignalId(user.onesignalId);
   }
 
   @override

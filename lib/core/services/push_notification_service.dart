@@ -91,6 +91,8 @@ PushRecipientIdentity? _recipientFromAuth(AuthState auth) {
 abstract interface class PushNotificationSdk {
   String? get subscriptionId;
 
+  bool get hasPermission;
+
   void addForegroundListener(OnNotificationWillDisplayListener listener);
 
   void removeForegroundListener(OnNotificationWillDisplayListener listener);
@@ -127,6 +129,9 @@ class OneSignalPushNotificationSdk implements PushNotificationSdk {
 
   @override
   String? get subscriptionId => OneSignal.User.pushSubscription.id;
+
+  @override
+  bool get hasPermission => OneSignal.Notifications.permission;
 
   @override
   void addForegroundListener(OnNotificationWillDisplayListener listener) {
@@ -265,6 +270,12 @@ class PushNotificationService {
   /// Current OneSignal push subscription id (UUID). Analogous to the legacy
   /// FCM token — opaque, used by the backend as the device handle.
   String? get subscriptionId => _subscriptionId;
+
+  /// Whether the OS currently lets this app display notifications. On
+  /// Android 13+ OneSignal hands out a [subscriptionId] even without this
+  /// permission, so a subscription id alone does not mean pushes are shown.
+  bool get hasPermission =>
+      !_disposed && _isOneSignalConfigured && _sdk.hasPermission;
 
   bool get isInitialized => _initialized;
 
