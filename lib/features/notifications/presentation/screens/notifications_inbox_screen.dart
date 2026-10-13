@@ -7,6 +7,7 @@ import '../../../../core/services/deep_link_service.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../../../../shared/widgets/segmented_toggle.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../../booking/presentation/widgets/filter_tabs_row.dart';
@@ -123,13 +124,18 @@ class _NotificationsInboxScreenState
           Container(
             color: Colors.white,
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: _ContextToggle(
-              contexts: state.availableContexts,
+            child: SegmentedToggle<String>(
+              options: [
+                for (final value in state.availableContexts)
+                  SegmentedToggleOption(
+                    value: value,
+                    label: _contextLabel(value),
+                    badgeCount: value == state.context
+                        ? state.unreadCount
+                        : state.otherContextUnreadCounts[value],
+                  ),
+              ],
               selected: state.context,
-              unreadCounts: {
-                ...state.otherContextUnreadCounts,
-                state.context: state.unreadCount,
-              },
               onChanged: (value) {
                 if (!_owns(owner)) return;
                 HapticFeedback.selectionClick();
@@ -304,6 +310,15 @@ class _NotificationsInboxScreenState
         ),
       ),
     );
+  }
+
+  String _contextLabel(String value) {
+    final l10n = context.l10n;
+    return switch (value) {
+      'vendor' => l10n.notificationsContextOrganizer,
+      'admin' => l10n.notificationsContextAdmin,
+      _ => l10n.notificationsContextParticipant,
+    };
   }
 
   bool _owns(_NotificationOwner owner) {
@@ -789,123 +804,6 @@ class _NotificationVisuals {
 }
 
 enum _NotificationTone { success, warning, destructive, standard }
-
-/// Organizer/admin ↔ participant switch. Each segment shows its unread count
-/// so notifications waiting in the hidden context stay visible.
-class _ContextToggle extends StatelessWidget {
-  final List<String> contexts;
-  final String selected;
-  final Map<String, int> unreadCounts;
-  final ValueChanged<String> onChanged;
-
-  const _ContextToggle({
-    required this.contexts,
-    required this.selected,
-    required this.unreadCounts,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          for (final value in contexts)
-            Expanded(
-              child: _segment(
-                label: _labelFor(context, value),
-                unreadCount: unreadCounts[value] ?? 0,
-                isSelected: value == selected,
-                onTap: () => onChanged(value),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  static String _labelFor(BuildContext context, String value) {
-    final l10n = context.l10n;
-    return switch (value) {
-      'vendor' => l10n.notificationsContextOrganizer,
-      'admin' => l10n.notificationsContextAdmin,
-      _ => l10n.notificationsContextParticipant,
-    };
-  }
-
-  Widget _segment({
-    required String label,
-    required int unreadCount,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Flexible(
-                child: Text(
-                  label,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: isSelected ? HbColors.textSlate : Colors.grey[600],
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-              if (unreadCount > 0) ...[
-                const SizedBox(width: 6),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: HbColors.brandPrimary,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    unreadCount > 99 ? '99+' : '$unreadCount',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _EmptyNotificationsState extends StatelessWidget {
   final bool unreadOnly;

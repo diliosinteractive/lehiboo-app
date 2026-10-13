@@ -485,10 +485,14 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
     if (!_isCurrentAccount) return;
     final matchesContext = _matchesCurrentContext(notification);
     if (matchesContext == null) {
-      // Only the server knows which context this notification belongs to:
-      // refresh the counts and the visible list instead of guessing.
-      refreshUnreadCount();
-      if (state.hasLoadedInbox) load(refresh: true);
+      // Only the server knows which context this notification belongs to.
+      // Reloading a loaded inbox also refreshes every unread count; an inbox
+      // never opened only needs the counts.
+      if (state.hasLoadedInbox) {
+        load(refresh: true);
+      } else {
+        refreshUnreadCount();
+      }
       return;
     }
     if (!matchesContext) {

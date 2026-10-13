@@ -449,6 +449,59 @@ void main() {
     );
   });
 
+  test(
+      'a realtime notification without context reloads an organizer inbox once',
+      () async {
+    final scope = _createAuthenticatedContainer(user: _organizer);
+    addTearDown(scope.subscription.close);
+    addTearDown(scope.container.dispose);
+    _pendingUnread(scope.repository, 'vendor').response.complete(0);
+    _pendingUnread(scope.repository, 'participant').response.complete(0);
+    await pumpEventQueue();
+    final notifier = scope.container.read(inAppNotificationsProvider.notifier);
+
+    final initialLoad = notifier.load(refresh: true);
+    scope.repository.notificationRequests.single.response.complete(
+      _page(1, const []),
+    );
+    await pumpEventQueue();
+    _pendingUnread(scope.repository, 'vendor').response.complete(0);
+    await initialLoad;
+    await pumpEventQueue();
+    _pendingUnread(scope.repository, 'participant').response.complete(0);
+    await pumpEventQueue();
+    final unreadRequestsBefore = scope.repository.unreadRequests.length;
+
+    notifier.handleRealtimeNotification(_notification('pushed'));
+
+    // A single reload: its own count requests come after the page.
+    expect(scope.repository.notificationRequests, hasLength(2));
+    expect(scope.repository.unreadRequests, hasLength(unreadRequestsBefore));
+  });
+
+  test(
+      'a realtime notification without context only refreshes the counts '
+      'of an inbox never opened', () async {
+    final scope = _createAuthenticatedContainer(user: _organizer);
+    addTearDown(scope.subscription.close);
+    addTearDown(scope.container.dispose);
+    _pendingUnread(scope.repository, 'vendor').response.complete(0);
+    _pendingUnread(scope.repository, 'participant').response.complete(0);
+    await pumpEventQueue();
+
+    scope.container
+        .read(inAppNotificationsProvider.notifier)
+        .handleRealtimeNotification(_notification('pushed'));
+
+    expect(scope.repository.notificationRequests, isEmpty);
+    expect(
+      scope.repository.unreadRequests
+          .where((request) => !request.response.isCompleted)
+          .map((request) => request.context),
+      unorderedEquals(['vendor', 'participant']),
+    );
+  });
+
   test('a profile update keeps the selected context', () async {
     final scope = _createAuthenticatedContainer(user: _organizer);
     addTearDown(scope.subscription.close);
