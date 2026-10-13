@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -35,6 +38,14 @@ class InAppNotificationsState {
   final String context;
   final String? organizationId;
 
+  /// Inbox contexts this account can browse. Organizers and admins are also
+  /// participants: their bookings, reminders and followed-organizer alerts
+  /// live in the `participant` context.
+  final List<String> availableContexts;
+
+  /// Unread counts of the [availableContexts] other than [context].
+  final Map<String, int> otherContextUnreadCounts;
+
   const InAppNotificationsState({
     this.notifications = const AsyncValue.data([]),
     this.currentPage = AppConstants.initialPage,
@@ -46,7 +57,13 @@ class InAppNotificationsState {
     this.hasLoadedInbox = false,
     this.context = 'participant',
     this.organizationId,
+    this.availableContexts = const ['participant'],
+    this.otherContextUnreadCounts = const {},
   });
+
+  /// Unread notifications across every context, for the app-wide badge.
+  int get totalUnreadCount => otherContextUnreadCounts.values
+      .fold(unreadCount, (total, count) => total + count);
 
   InAppNotificationsState copyWith({
     AsyncValue<List<InAppNotification>>? notifications,
@@ -60,6 +77,8 @@ class InAppNotificationsState {
     String? context,
     String? organizationId,
     bool clearOrganizationId = false,
+    List<String>? availableContexts,
+    Map<String, int>? otherContextUnreadCounts,
   }) {
     return InAppNotificationsState(
       notifications: notifications ?? this.notifications,
@@ -78,6 +97,9 @@ class InAppNotificationsState {
       context: context ?? this.context,
       organizationId:
           clearOrganizationId ? null : (organizationId ?? this.organizationId),
+      availableContexts: availableContexts ?? this.availableContexts,
+      otherContextUnreadCounts:
+          otherContextUnreadCounts ?? this.otherContextUnreadCounts,
     );
   }
 }
@@ -91,6 +113,7 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
 
   int _inboxRequestGeneration = 0;
   int _unreadRequestGeneration = 0;
+  int _otherUnreadRequestGeneration = 0;
   int _mutationGeneration = 0;
 
   InAppNotificationsNotifier({
@@ -110,7 +133,11 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
   void _bootstrapAuthListener() {
     final authState = _ref.read(authProvider);
     if (_isCurrentAccount) {
-      state = state.copyWith(context: _contextFor(authState));
+      final contexts = _contextsFor(authState);
+      state = state.copyWith(
+        context: contexts.first,
+        availableContexts: contexts,
+      );
       refreshUnreadCount();
     }
 
@@ -124,12 +151,17 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
       final isSameAccountUpdate =
           previousAccountId == _accountId && nextAccountId == _accountId;
       if (_isCurrentAccount && isSameAccountUpdate) {
-        final nextContext = _contextFor(next);
-        final contextChanged = state.context != nextContext;
+        // Compare the role-derived contexts, not the selected one: a plain
+        // profile update must not undo the user's organizer/participant pick.
+        final nextContexts = _contextsFor(next);
+        final contextChanged =
+            !listEquals(state.availableContexts, nextContexts);
         if (contextChanged) {
           _invalidateRequests();
           state = state.copyWith(
-            context: nextContext,
+            context: nextContexts.first,
+            availableContexts: nextContexts,
+            otherContextUnreadCounts: const {},
             notifications: const AsyncValue.data([]),
             hasLoadedInbox: false,
             currentPage: AppConstants.initialPage,
@@ -178,15 +210,47 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
   void _invalidateRequests() {
     _inboxRequestGeneration++;
     _unreadRequestGeneration++;
+    _otherUnreadRequestGeneration++;
     _mutationGeneration++;
   }
 
-  String _contextFor(AuthState authState) {
+  /// The role's own context first (the default), then `participant`, which
+  /// every account also has.
+  List<String> _contextsFor(AuthState authState) {
     return switch (authState.user?.role) {
-      UserRole.partner => 'vendor',
-      UserRole.admin => 'admin',
-      _ => 'participant',
+      UserRole.partner => const ['vendor', 'participant'],
+      UserRole.admin => const ['admin', 'participant'],
+      _ => const ['participant'],
     };
+  }
+
+  /// Switches the inbox to another of [InAppNotificationsState.availableContexts]
+  /// (e.g. organizer ↔ participant) and reloads it.
+  Future<void> setContext(String context) async {
+    if (!_isCurrentAccount) return;
+    if (context == state.context ||
+        !state.availableContexts.contains(context)) {
+      return;
+    }
+
+    _invalidateRequests();
+    final otherCounts = {
+      ...state.otherContextUnreadCounts,
+      state.context: state.unreadCount,
+    }..remove(context);
+    state = state.copyWith(
+      context: context,
+      unreadCount: state.otherContextUnreadCounts[context] ?? 0,
+      otherContextUnreadCounts: otherCounts,
+      notifications: const AsyncValue.data([]),
+      hasLoadedInbox: false,
+      currentPage: AppConstants.initialPage,
+      hasMore: false,
+      isLoadingMore: false,
+      loadMoreError: null,
+      clearOrganizationId: true,
+    );
+    await load(refresh: true);
   }
 
   @override
@@ -203,6 +267,7 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
   Future<void> refreshUnreadCount() async {
     if (!_isCurrentAccount) return;
 
+    unawaited(_refreshOtherContextUnreadCounts());
     final generation = ++_unreadRequestGeneration;
     final requestContext = state.context;
     final requestOrganizationId = state.organizationId;
@@ -223,6 +288,35 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
     } catch (_) {
       // Badge refresh is best-effort; list screens surface explicit errors.
     }
+  }
+
+  /// Keeps the switch badges and the app-wide badge aware of notifications
+  /// waiting in the contexts that are not displayed.
+  Future<void> _refreshOtherContextUnreadCounts() async {
+    if (!_isCurrentAccount) return;
+    final requestContext = state.context;
+    final otherContexts = state.availableContexts
+        .where((context) => context != requestContext)
+        .toList();
+    if (otherContexts.isEmpty) return;
+
+    final generation = ++_otherUnreadRequestGeneration;
+    final counts = <String, int>{};
+    for (final context in otherContexts) {
+      try {
+        counts[context] = await _repository.getUnreadCount(context: context);
+      } catch (_) {
+        // Badge refresh is best-effort.
+      }
+    }
+    if (!_isCurrentAccount ||
+        generation != _otherUnreadRequestGeneration ||
+        state.context != requestContext) {
+      return;
+    }
+    state = state.copyWith(
+      otherContextUnreadCounts: {...state.otherContextUnreadCounts, ...counts},
+    );
   }
 
   Future<void> load({
@@ -296,6 +390,7 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
         unreadCount: canApplyUnreadCount ? unreadCount : state.unreadCount,
         hasLoadedInbox: true,
       );
+      unawaited(_refreshOtherContextUnreadCounts());
     } catch (error, stackTrace) {
       if (!_isCurrentInboxRequest(
         generation: generation,
@@ -388,13 +483,25 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
     int? unreadCount,
   }) {
     if (!_isCurrentAccount) return;
-    if (!_matchesCurrentContext(notification)) {
+    final matchesContext = _matchesCurrentContext(notification);
+    if (matchesContext == null) {
+      // Only the server knows which context this notification belongs to:
+      // refresh the counts and the visible list instead of guessing.
+      refreshUnreadCount();
+      if (state.hasLoadedInbox) load(refresh: true);
+      return;
+    }
+    if (!matchesContext) {
       refreshUnreadCount();
       return;
     }
 
     final current = state.notifications.valueOrNull;
-    final nextUnreadCount = unreadCount ?? state.unreadCount + 1;
+    // The pushed unread_count spans every context, so it is only the current
+    // context's count when the account has a single one.
+    final pushedUnreadCount =
+        state.availableContexts.length == 1 ? unreadCount : null;
+    final nextUnreadCount = pushedUnreadCount ?? state.unreadCount + 1;
     _unreadRequestGeneration++;
 
     if (current == null || !state.hasLoadedInbox) {
@@ -536,12 +643,14 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
     return result;
   }
 
-  bool _matchesCurrentContext(InAppNotification notification) {
+  /// `null` when the payload carries no context and the account has several.
+  bool? _matchesCurrentContext(InAppNotification notification) {
     final payloadContext = notification.data['context']?.toString();
     if (payloadContext != null && payloadContext.isNotEmpty) {
       return payloadContext == state.context;
     }
 
+    if (state.availableContexts.length > 1) return null;
     if (state.context != 'participant') return true;
 
     final type = notification.type.toLowerCase();

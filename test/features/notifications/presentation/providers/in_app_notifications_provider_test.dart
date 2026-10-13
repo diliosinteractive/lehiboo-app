@@ -130,6 +130,21 @@ const _accountB = HbUser(
   displayName: 'Account B',
 );
 
+const _organizer = HbUser(
+  id: 'organizer',
+  email: 'organizer@example.test',
+  displayName: 'Organizer',
+  role: UserRole.partner,
+);
+
+_UnreadRequest _pendingUnread(
+  _ControlledNotificationsRepository repository,
+  String context,
+) =>
+    repository.unreadRequests.lastWhere(
+      (request) => request.context == context && !request.response.isCompleted,
+    );
+
 InAppNotification _notification(String id) => InAppNotification(
       id: id,
       type: 'reminder',
@@ -157,13 +172,13 @@ InAppNotificationsPage _page(
   _TestAuthNotifier auth,
   _ControlledNotificationsRepository repository,
   ProviderSubscription<InAppNotificationsState> subscription,
-}) _createAuthenticatedContainer() {
+}) _createAuthenticatedContainer({HbUser user = _accountA}) {
   final repository = _ControlledNotificationsRepository();
   late _TestAuthNotifier auth;
   final container = ProviderContainer(
     overrides: [
       authProvider.overrideWith((ref) {
-        auth = _TestAuthNotifier(ref, _accountA);
+        auth = _TestAuthNotifier(ref, user);
         return auth;
       }),
       inAppNotificationsRepositoryProvider.overrideWithValue(repository),
@@ -336,5 +351,128 @@ void main() {
       state.notifications.valueOrNull?.map((item) => item.id),
       ['latest-unread'],
     );
+  });
+
+  test('a participant account has a single inbox context', () async {
+    final scope = _createAuthenticatedContainer();
+    addTearDown(scope.subscription.close);
+    addTearDown(scope.container.dispose);
+
+    await scope.container
+        .read(inAppNotificationsProvider.notifier)
+        .setContext('vendor');
+
+    final state = scope.container.read(inAppNotificationsProvider);
+    expect(state.availableContexts, ['participant']);
+    expect(state.context, 'participant');
+    expect(scope.repository.notificationRequests, isEmpty);
+    expect(
+      scope.repository.unreadRequests.map((request) => request.context),
+      ['participant'],
+    );
+  });
+
+  test('an organizer can switch the inbox to the participant context',
+      () async {
+    final scope = _createAuthenticatedContainer(user: _organizer);
+    addTearDown(scope.subscription.close);
+    addTearDown(scope.container.dispose);
+    final notifier = scope.container.read(inAppNotificationsProvider.notifier);
+
+    var state = scope.container.read(inAppNotificationsProvider);
+    expect(state.availableContexts, ['vendor', 'participant']);
+    expect(state.context, 'vendor');
+
+    _pendingUnread(scope.repository, 'vendor').response.complete(2);
+    _pendingUnread(scope.repository, 'participant').response.complete(5);
+    await pumpEventQueue();
+    state = scope.container.read(inAppNotificationsProvider);
+    expect(state.unreadCount, 2);
+    expect(state.otherContextUnreadCounts, {'participant': 5});
+    expect(state.totalUnreadCount, 7);
+
+    final switching = notifier.setContext('participant');
+    state = scope.container.read(inAppNotificationsProvider);
+    expect(state.context, 'participant');
+    expect(state.unreadCount, 5);
+    expect(state.otherContextUnreadCounts, {'vendor': 2});
+    expect(state.notifications.isLoading, isTrue);
+
+    final request = scope.repository.notificationRequests.single;
+    expect(request.context, 'participant');
+    request.response.complete(_page(1, [_notification('event-start')]));
+    await pumpEventQueue();
+    _pendingUnread(scope.repository, 'participant').response.complete(4);
+    await switching;
+    await pumpEventQueue();
+    _pendingUnread(scope.repository, 'vendor').response.complete(3);
+    await pumpEventQueue();
+
+    state = scope.container.read(inAppNotificationsProvider);
+    expect(
+      state.notifications.valueOrNull?.map((item) => item.id),
+      ['event-start'],
+    );
+    expect(state.unreadCount, 4);
+    expect(state.otherContextUnreadCounts, {'vendor': 3});
+    expect(state.totalUnreadCount, 7);
+  });
+
+  test('a late page of the previous context cannot fill the new one', () async {
+    final scope = _createAuthenticatedContainer(user: _organizer);
+    addTearDown(scope.subscription.close);
+    addTearDown(scope.container.dispose);
+    _pendingUnread(scope.repository, 'vendor').response.complete(0);
+    _pendingUnread(scope.repository, 'participant').response.complete(0);
+    await pumpEventQueue();
+    final notifier = scope.container.read(inAppNotificationsProvider.notifier);
+
+    final vendorLoad = notifier.load(refresh: true);
+    final vendorRequest = scope.repository.notificationRequests.single;
+    final switching = notifier.setContext('participant');
+    vendorRequest.response.complete(_page(1, [_notification('vendor-only')]));
+    await vendorLoad;
+
+    final participantRequest = scope.repository.notificationRequests.last;
+    expect(participantRequest.context, 'participant');
+    participantRequest.response.complete(
+      _page(1, [_notification('participant-only')]),
+    );
+    await pumpEventQueue();
+    _pendingUnread(scope.repository, 'participant').response.complete(1);
+    await switching;
+
+    final state = scope.container.read(inAppNotificationsProvider);
+    expect(
+      state.notifications.valueOrNull?.map((item) => item.id),
+      ['participant-only'],
+    );
+  });
+
+  test('a profile update keeps the selected context', () async {
+    final scope = _createAuthenticatedContainer(user: _organizer);
+    addTearDown(scope.subscription.close);
+    addTearDown(scope.container.dispose);
+    _pendingUnread(scope.repository, 'vendor').response.complete(0);
+    _pendingUnread(scope.repository, 'participant').response.complete(0);
+    await pumpEventQueue();
+    final notifier = scope.container.read(inAppNotificationsProvider.notifier);
+
+    final switching = notifier.setContext('participant');
+    scope.repository.notificationRequests.single.response.complete(
+      _page(1, const []),
+    );
+    await pumpEventQueue();
+    _pendingUnread(scope.repository, 'participant').response.complete(0);
+    await switching;
+
+    scope.auth.setUser(_organizer.copyWith(displayName: 'Renamed'));
+    await pumpEventQueue();
+
+    expect(
+      scope.container.read(inAppNotificationsProvider).context,
+      'participant',
+    );
+    expect(scope.repository.notificationRequests.last.context, 'participant');
   });
 }

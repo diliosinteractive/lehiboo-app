@@ -417,7 +417,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final user = ref.watch(authProvider).user;
     final avatarUrl = user?.avatarUrl;
     final notificationCount = ref.watch(
-      inAppNotificationsProvider.select((state) => state.unreadCount),
+      inAppNotificationsProvider.select((state) => state.totalUnreadCount),
     );
 
     return AppBar(

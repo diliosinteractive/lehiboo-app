@@ -7744,6 +7744,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsFilterUnread => 'Unread';
 
   @override
+  String get notificationsContextParticipant => 'Participant';
+
+  @override
+  String get notificationsContextOrganizer => 'Organizer';
+
+  @override
+  String get notificationsContextAdmin => 'Admin';
+
+  @override
   String get notificationsGuestTitle => 'Log in';
 
   @override

@@ -13239,6 +13239,24 @@ abstract class AppLocalizations {
   /// **'Non lues'**
   String get notificationsFilterUnread;
 
+  /// No description provided for @notificationsContextParticipant.
+  ///
+  /// In fr, this message translates to:
+  /// **'Participant'**
+  String get notificationsContextParticipant;
+
+  /// No description provided for @notificationsContextOrganizer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Organisateur'**
+  String get notificationsContextOrganizer;
+
+  /// No description provided for @notificationsContextAdmin.
+  ///
+  /// In fr, this message translates to:
+  /// **'Administration'**
+  String get notificationsContextAdmin;
+
   /// No description provided for @notificationsGuestTitle.
   ///
   /// In fr, this message translates to:
