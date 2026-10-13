@@ -239,6 +239,77 @@ void main() {
     expect(service.operations, isNot(contains('prompt')));
   });
 
+  test('a permission revoked in the system settings disables push', () async {
+    final router = _router();
+    addTearDown(router.dispose);
+    final service = _ControlledPushNotificationService(router);
+    final setup = _container(
+      service: service,
+      dataSource: _ControlledDeviceTokenDataSource(autoComplete: true),
+      initialUser: _accountA,
+    );
+    addTearDown(setup.container.dispose);
+    setup.container
+        .listen(pushNotificationProvider, (_, __) {}, fireImmediately: true);
+    await _pumpUntil(
+      () => setup.container.read(pushNotificationProvider).isEnabled,
+    );
+    expect(setup.container.read(isPushEnabledProvider), isTrue);
+
+    // OneSignal's permission observer fires when the user switches
+    // notifications off in the Android settings.
+    service.permissionGranted = false;
+    service.onPermissionChanged!(false);
+
+    final state = setup.container.read(pushNotificationProvider);
+    expect(state.status, PushNotificationStatus.initialized);
+    expect(state.isEnabled, isFalse);
+    expect(setup.container.read(isPushEnabledProvider), isFalse);
+  });
+
+  test('a refused prompt disables push until granted in the system settings',
+      () async {
+    final router = _router();
+    addTearDown(router.dispose);
+    final service = _ControlledPushNotificationService(router)
+      ..permissionGranted = false
+      ..promptResult = false;
+    final setup = _container(
+      service: service,
+      dataSource: _ControlledDeviceTokenDataSource(autoComplete: true),
+      initialUser: _accountA,
+    );
+    addTearDown(setup.container.dispose);
+    setup.container
+        .listen(pushNotificationProvider, (_, __) {}, fireImmediately: true);
+    await _pumpUntil(
+      () =>
+          setup.container.read(pushNotificationProvider).status ==
+          PushNotificationStatus.initialized,
+    );
+
+    final granted = await setup.container
+        .read(pushNotificationProvider.notifier)
+        .requestPermission();
+
+    var state = setup.container.read(pushNotificationProvider);
+    expect(granted, isFalse);
+    expect(state.status, PushNotificationStatus.disabled);
+    expect(state.failureReason, PushNotificationFailureReason.permissionDenied);
+    expect(state.isEnabled, isFalse);
+
+    // The user then enables notifications from the Android settings.
+    service.permissionGranted = true;
+    service.onPermissionChanged!(true);
+    await _pumpUntil(
+      () => setup.container.read(pushNotificationProvider).isEnabled,
+    );
+
+    state = setup.container.read(pushNotificationProvider);
+    expect(state.status, PushNotificationStatus.initialized);
+    expect(state.failureReason, isNull);
+  });
+
   test('a session without external id fetches it from /auth/me and binds it',
       () async {
     final router = _router();
@@ -403,11 +474,17 @@ class _ControlledPushNotificationService extends PushNotificationService {
   @override
   bool get hasPermission => permissionGranted;
 
+  /// What the user answers to the OS permission prompt.
+  bool promptResult = true;
+
+  @override
+  bool get permissionDenied => !permissionGranted;
+
   @override
   Future<bool> promptUserForPermission() async {
     operations.add('prompt');
-    permissionGranted = true;
-    return true;
+    permissionGranted = promptResult;
+    return promptResult;
   }
 
   @override

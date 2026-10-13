@@ -252,6 +252,11 @@ class PushNotificationService {
   /// Fired when the local subscription is dropped (logout).
   Future<void> Function(String subscriptionId)? onSubscriptionRemoved;
 
+  /// Fired whenever the OS notification permission changes, including when
+  /// the user toggles it in the system settings, so the provider state stays
+  /// in sync with [hasPermission].
+  void Function(bool granted)? onPermissionChanged;
+
   PushNotificationService({
     required DeepLinkService deepLinkService,
     required AnalyticsService analytics,
@@ -274,8 +279,14 @@ class PushNotificationService {
   /// Whether the OS currently lets this app display notifications. On
   /// Android 13+ OneSignal hands out a [subscriptionId] even without this
   /// permission, so a subscription id alone does not mean pushes are shown.
+  ///
+  /// Only meaningful once [initialize] ran: before that the SDK's cached
+  /// value is its `false` default, not a refusal.
   bool get hasPermission =>
-      !_disposed && _isOneSignalConfigured && _sdk.hasPermission;
+      !_disposed &&
+      _isOneSignalConfigured &&
+      _initialized &&
+      _sdk.hasPermission;
 
   bool get isInitialized => _initialized;
 
@@ -359,6 +370,7 @@ class PushNotificationService {
     final generation = _recipientGeneration;
     debugPrint('OneSignal: permission changed → $permission');
     _permissionDenied = !permission;
+    onPermissionChanged?.call(permission);
     if (!permission) return;
     await ensureSubscriptionId();
     if (!_ownsRecipient(recipient, generation)) return;
@@ -613,6 +625,7 @@ class PushNotificationService {
     _subscriptionResolutionFuture = null;
     onSubscriptionReceived = null;
     onSubscriptionRemoved = null;
+    onPermissionChanged = null;
   }
 
   Future<String> getDeviceId() async {

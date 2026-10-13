@@ -600,12 +600,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (updatedUser is UserDto) {
       final mapped = AuthMapper.toUser(updatedUser);
       // AuthMapper may default role to subscriber if the profile endpoint
-      // doesn't return it — preserve the current role in that case.
+      // doesn't return it — preserve the current role in that case, and the
+      // capabilities derived from it (vendor ticket scanner).
       // Same for the OneSignal external id: it never changes server-side, and
       // dropping it would make the push provider log the device out.
+      final keepsRole = mapped.role != UserRole.subscriber;
       next = mapped.copyWith(
-        role:
-            mapped.role != UserRole.subscriber ? mapped.role : currentUser.role,
+        role: keepsRole ? mapped.role : currentUser.role,
+        capabilities:
+            keepsRole ? mapped.capabilities : currentUser.capabilities,
         onesignalId: mapped.onesignalId ?? currentUser.onesignalId,
       );
     } else if (updatedUser is HbUser) {
