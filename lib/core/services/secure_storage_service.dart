@@ -200,6 +200,14 @@ class SecureStorageService {
     return raw == 'true';
   }
 
+  Future<void> saveUserOnesignalId(String? value) async {
+    await _writeOrDelete('user_onesignal_id', value);
+  }
+
+  Future<String?> getUserOnesignalId() async {
+    return await _storage.read(key: 'user_onesignal_id');
+  }
+
   /// Writes [value] when non-null, deletes the key otherwise.
   /// Mirrors the in-memory entity exactly — clearing a field on the user must
   /// also clear it on disk.
@@ -247,6 +255,7 @@ class SecureStorageService {
     await _storage.delete(key: 'user_avatar_url');
     await _storage.delete(key: 'user_newsletter');
     await _storage.delete(key: 'user_push_notifications');
+    await _storage.delete(key: 'user_onesignal_id');
   }
 
   // Check if user is authenticated

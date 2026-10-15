@@ -249,7 +249,7 @@ class _TermsAcceptanceFormState extends ConsumerState<TermsAcceptanceForm> {
                           recognizer: TapGestureRecognizer()
                             ..onTap = () => LegalLinks.open(
                                   context,
-                                  LegalDocument.sales,
+                                  LegalDocument.terms,
                                 ),
                         ),
                       ],

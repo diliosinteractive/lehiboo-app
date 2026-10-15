@@ -672,7 +672,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           TextStyle(fontSize: 13, color: Colors.grey.shade700),
                       children: [
                         TextSpan(
-                          text: context.l10n.legalSales.toLowerCase(),
+                          text: context.l10n.legalTerms.toLowerCase(),
                           style: const TextStyle(
                             color: HbColors.brandPrimary,
                             decoration: TextDecoration.underline,

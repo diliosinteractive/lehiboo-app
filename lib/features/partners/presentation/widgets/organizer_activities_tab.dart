@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../../shared/widgets/segmented_toggle.dart';
 import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../../events/data/mappers/event_mapper.dart';
 import '../../../events/domain/entities/event.dart';
@@ -82,8 +83,14 @@ class _OrganizerActivitiesTabState
           }
         }
 
-        final visible =
-            _bucket == EventTimingBucket.currentUpcoming ? current : past;
+        // Current events read chronologically; past events keep the API order
+        // (most recent first) they already arrive in.
+        final visible = _bucket == EventTimingBucket.currentUpcoming
+            ? sortedByNextOccurrence(current, now)
+            : [
+                for (final event in past)
+                  (event: event, date: displayDateFor(event, now)),
+              ];
 
         if (events.isEmpty) {
           return _empty(context.l10n.organizerActivitiesEmpty);
@@ -94,10 +101,19 @@ class _OrganizerActivitiesTabState
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 80),
             children: [
-              _SegmentedToggle(
-                bucket: _bucket,
-                currentCount: current.length,
-                pastCount: past.length,
+              SegmentedToggle<EventTimingBucket>(
+                options: [
+                  SegmentedToggleOption(
+                    value: EventTimingBucket.currentUpcoming,
+                    label: context.l10n
+                        .organizerActivitiesCurrentTab(current.length),
+                  ),
+                  SegmentedToggleOption(
+                    value: EventTimingBucket.past,
+                    label: context.l10n.organizerActivitiesPastTab(past.length),
+                  ),
+                ],
+                selected: _bucket,
                 onChanged: (b) => setState(() => _bucket = b),
               ),
               const SizedBox(height: 16),
@@ -106,10 +122,11 @@ class _OrganizerActivitiesTabState
                     ? context.l10n.organizerActivitiesNoUpcoming
                     : context.l10n.organizerActivitiesNoPast)
               else
-                ...visible.map((e) => Padding(
+                ...visible.map((occurrence) => Padding(
                       padding: const EdgeInsets.only(bottom: 14),
                       child: _OrganizerEventTile(
-                        event: e,
+                        event: occurrence.event,
+                        displayDate: occurrence.date,
                         ownerSession: widget.ownerSession,
                       ),
                     )),
@@ -152,92 +169,17 @@ class _OrganizerActivitiesTabState
   }
 }
 
-class _SegmentedToggle extends StatelessWidget {
-  final EventTimingBucket bucket;
-  final int currentCount;
-  final int pastCount;
-  final ValueChanged<EventTimingBucket> onChanged;
-
-  const _SegmentedToggle({
-    required this.bucket,
-    required this.currentCount,
-    required this.pastCount,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _segment(
-              label: context.l10n.organizerActivitiesCurrentTab(currentCount),
-              selected: bucket == EventTimingBucket.currentUpcoming,
-              onTap: () => onChanged(EventTimingBucket.currentUpcoming),
-            ),
-          ),
-          Expanded(
-            child: _segment(
-              label: context.l10n.organizerActivitiesPastTab(pastCount),
-              selected: bucket == EventTimingBucket.past,
-              onTap: () => onChanged(EventTimingBucket.past),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _segment({
-    required String label,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: selected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                  ),
-                ]
-              : null,
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: selected ? const Color(0xFF1A1A2E) : Colors.grey[600],
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-              fontSize: 13,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _OrganizerEventTile extends ConsumerWidget {
   final Event event;
+
+  /// Occurrence advertised by the tile — the next slot still to come rather
+  /// than the (possibly long past) start date of a recurring event.
+  final DateTime displayDate;
   final AuthSessionKey ownerSession;
 
   const _OrganizerEventTile({
     required this.event,
+    required this.displayDate,
     required this.ownerSession,
   });
 
@@ -316,7 +258,7 @@ class _OrganizerEventTile extends ConsumerWidget {
                                 'dd MMM yyyy',
                                 enPattern: 'MMM d, yyyy',
                               )
-                              .format(event.startDate),
+                              .format(displayDate),
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey[700],

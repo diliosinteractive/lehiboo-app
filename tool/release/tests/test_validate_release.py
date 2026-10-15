@@ -186,6 +186,28 @@ class ValidateReleaseTests(unittest.TestCase):
         )
         self.assert_validation_error("must validate iOS templates before agvtool")
 
+    def test_unused_client_keys_are_optional(self) -> None:
+        """API_KEY and GOOGLE_MAPS_API_KEY no longer gate a production build.
+
+        Nothing reads either one: the backend never registers ValidateApiKey,
+        and the app dropped Google Maps for OSM tiles. Requiring them only
+        blocked releases.
+        """
+        env_path = self.root / ".env.production"
+        env_path.write_text(
+            GOOD_ENV.replace("API_KEY=mobile-api-key\n", "").replace(
+                "GOOGLE_MAPS_API_KEY=maps-key\n", ""
+            ),
+            encoding="utf-8",
+        )
+        validate_repository(
+            root=self.root,
+            expected_version="1.2.3",
+            expected_build_number=45,
+            ref="refs/heads/release/1.2.3",
+            env_file=env_path,
+        )
+
     def test_duplicate_environment_key_is_rejected(self) -> None:
         env_path = self.root / ".env.production"
         env_path.write_text(GOOD_ENV + "API_KEY=duplicate\n", encoding="utf-8")

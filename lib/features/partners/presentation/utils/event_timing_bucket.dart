@@ -113,3 +113,81 @@ DateTime _combineDateAndTime(DateTime date, _ClockTime time) {
     time.second,
   );
 }
+
+/// The occurrence an organizer activity tile should advertise at [now].
+///
+/// A recurring event keeps its original `start_date` forever, so showing it
+/// makes a still-running event look stale ("25 sept." while we are the 29th).
+/// We advertise the first slot that has not ended yet; once every slot is over
+/// (Past segment) the most recent one is shown. Events without slots fall back
+/// to [Event.startDate].
+DateTime displayDateFor(Event event, DateTime now) {
+  final slots = event.calendar?.dateSlots ?? const <CalendarDateSlot>[];
+
+  if (slots.isEmpty) {
+    return event.startDate;
+  }
+
+  CalendarDateSlot? upcoming;
+  DateTime? upcomingEnd;
+  CalendarDateSlot? latest;
+  DateTime? latestEnd;
+
+  for (final slot in slots) {
+    // Malformed timing stays visible — same leniency as [bucketFor].
+    final end = _slotEndDateTime(slot) ??
+        _combineDateAndTime(slot.date, (hour: 23, minute: 59, second: 59));
+
+    if (!end.isBefore(now) &&
+        (upcomingEnd == null || end.isBefore(upcomingEnd))) {
+      upcoming = slot;
+      upcomingEnd = end;
+    }
+
+    if (latestEnd == null || end.isAfter(latestEnd)) {
+      latest = slot;
+      latestEnd = end;
+    }
+  }
+
+  final slot = upcoming ?? latest;
+  return slot == null ? event.startDate : _slotStartDateTime(slot);
+}
+
+DateTime _slotStartDateTime(CalendarDateSlot slot) {
+  final start = _parseClockTime(slot.startTime?.trim());
+  return _combineDateAndTime(
+    slot.date,
+    start ?? (hour: 0, minute: 0, second: 0),
+  );
+}
+
+/// An organizer event paired with the occurrence its tile advertises.
+typedef OrganizerEventOccurrence = ({Event event, DateTime date});
+
+/// Order current/upcoming events by the occurrence they advertise, soonest
+/// first, so the list reads chronologically even when the API returns events
+/// in another order (a weekly event started months ago still sits next to the
+/// other events happening that week).
+///
+/// Ties keep the API order: `List.sort` is not stable, so the original index
+/// is the tie-breaker. Sorting the whole loaded list (not just the new page)
+/// keeps pagination appends in place.
+List<OrganizerEventOccurrence> sortedByNextOccurrence(
+  List<Event> events,
+  DateTime now,
+) {
+  final indexed = <({int index, Event event, DateTime date})>[
+    for (var i = 0; i < events.length; i++)
+      (index: i, event: events[i], date: displayDateFor(events[i], now)),
+  ];
+
+  indexed.sort((a, b) {
+    final byDate = a.date.compareTo(b.date);
+    return byDate != 0 ? byDate : a.index.compareTo(b.index);
+  });
+
+  return [
+    for (final entry in indexed) (event: entry.event, date: entry.date),
+  ];
+}

@@ -5,13 +5,14 @@ import '../../config/env_config.dart';
 import '../../core/l10n/app_locale.dart';
 import '../../core/l10n/l10n.dart';
 
-/// The five canonical legal documents seeded on the backend.
+/// The four canonical legal documents seeded on the backend.
 ///
 /// Slugs are a stable contract with the backend; see
-/// `docs/LEGAL_PAGES_MOBILE_SPEC.md` §1.
+/// `docs/LEGAL_PAGES_MOBILE_SPEC.md` §1. The former `cgu` and
+/// `cgv` documents were merged into `cguv` on 2026-10-12; the old URLs still
+/// redirect, so older builds keep working.
 enum LegalDocument {
-  terms('cgu', Icons.description_outlined),
-  sales('cgv', Icons.shopping_bag_outlined),
+  terms('cguv', Icons.description_outlined),
   privacy('privacy', Icons.privacy_tip_outlined),
   cookies('cookies', Icons.cookie_outlined),
   legalNotices('mentions-legales', Icons.gavel_outlined);
@@ -39,7 +40,6 @@ class LegalLinks {
     final l10n = context.l10n;
     return switch (doc) {
       LegalDocument.terms => l10n.legalTerms,
-      LegalDocument.sales => l10n.legalSales,
       LegalDocument.privacy => l10n.legalPrivacy,
       LegalDocument.cookies => l10n.legalCookies,
       LegalDocument.legalNotices => l10n.legalNotices,

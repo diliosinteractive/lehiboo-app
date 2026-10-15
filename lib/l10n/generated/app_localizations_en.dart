@@ -1533,10 +1533,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get messagesAdminReportStatusSuspended => 'Suspended';
 
   @override
-  String get legalTerms => 'Terms of Use';
-
-  @override
-  String get legalSales => 'Terms of Sale';
+  String get legalTerms => 'Terms of Use and Sale';
 
   @override
   String get legalPrivacy => 'Privacy Policy';
@@ -3668,7 +3665,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authPasswordsDoNotMatch => 'Passwords do not match';
 
   @override
-  String get authAcceptTermsRequired => 'Please accept the terms of use';
+  String get authAcceptTermsRequired =>
+      'Please accept the terms of use and sale';
 
   @override
   String get authRegisterTermsPrefix => 'I accept the ';
@@ -4592,10 +4590,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeBook => 'Book';
 
   @override
-  String get homeUrgencyTitle => 'Before it is too late';
+  String get homeUrgencyTitle => 'Happening now';
 
   @override
-  String get homeUrgencySubtitle => 'These events start soon';
+  String get homeUrgencySubtitle => 'Underway or about to start';
 
   @override
   String get homeCityNotFound => 'City not found';
@@ -6040,7 +6038,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bookingTermsConnector => ' and the ';
 
   @override
-  String get bookingAcceptSalesRequired => 'Please accept the terms of sale';
+  String get bookingAcceptSalesRequired =>
+      'Please accept the terms of use and sale';
 
   @override
   String get refundPolicyTitle => 'Refund policy';
@@ -7742,6 +7741,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationsFilterUnread => 'Unread';
+
+  @override
+  String get notificationsContextParticipant => 'Participant';
+
+  @override
+  String get notificationsContextOrganizer => 'Organizer';
+
+  @override
+  String get notificationsContextAdmin => 'Admin';
 
   @override
   String get notificationsGuestTitle => 'Log in';

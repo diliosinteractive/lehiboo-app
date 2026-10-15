@@ -7,6 +7,7 @@ import '../../../../core/services/deep_link_service.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../../../../shared/widgets/segmented_toggle.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../../booking/presentation/widgets/filter_tabs_row.dart';
@@ -119,6 +120,29 @@ class _NotificationsInboxScreenState
 
     return Column(
       children: [
+        if (state.availableContexts.length > 1)
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: SegmentedToggle<String>(
+              options: [
+                for (final value in state.availableContexts)
+                  SegmentedToggleOption(
+                    value: value,
+                    label: _contextLabel(value),
+                    badgeCount: value == state.context
+                        ? state.unreadCount
+                        : state.otherContextUnreadCounts[value],
+                  ),
+              ],
+              selected: state.context,
+              onChanged: (value) {
+                if (!_owns(owner)) return;
+                HapticFeedback.selectionClick();
+                owner.notifier.setContext(value);
+              },
+            ),
+          ),
         Container(
           color: Colors.white,
           child: FilterTabsRow(
@@ -286,6 +310,15 @@ class _NotificationsInboxScreenState
         ),
       ),
     );
+  }
+
+  String _contextLabel(String value) {
+    final l10n = context.l10n;
+    return switch (value) {
+      'vendor' => l10n.notificationsContextOrganizer,
+      'admin' => l10n.notificationsContextAdmin,
+      _ => l10n.notificationsContextParticipant,
+    };
   }
 
   bool _owns(_NotificationOwner owner) {
