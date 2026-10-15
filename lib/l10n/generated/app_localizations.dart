@@ -2861,14 +2861,8 @@ abstract class AppLocalizations {
   /// No description provided for @legalTerms.
   ///
   /// In fr, this message translates to:
-  /// **'Conditions Générales d\'Utilisation'**
+  /// **'Conditions Générales d\'Utilisation et de Vente'**
   String get legalTerms;
-
-  /// No description provided for @legalSales.
-  ///
-  /// In fr, this message translates to:
-  /// **'Conditions Générales de Vente'**
-  String get legalSales;
 
   /// No description provided for @legalPrivacy.
   ///
@@ -6270,7 +6264,7 @@ abstract class AppLocalizations {
   /// No description provided for @authAcceptTermsRequired.
   ///
   /// In fr, this message translates to:
-  /// **'Veuillez accepter les conditions d\'utilisation'**
+  /// **'Veuillez accepter les conditions générales d\'utilisation et de vente'**
   String get authAcceptTermsRequired;
 
   /// No description provided for @authRegisterTermsPrefix.
@@ -10392,7 +10386,7 @@ abstract class AppLocalizations {
   /// No description provided for @bookingAcceptSalesRequired.
   ///
   /// In fr, this message translates to:
-  /// **'Veuillez accepter les conditions générales de vente'**
+  /// **'Veuillez accepter les conditions générales d\'utilisation et de vente'**
   String get bookingAcceptSalesRequired;
 
   /// No description provided for @refundPolicyTitle.

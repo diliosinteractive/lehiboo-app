@@ -767,14 +767,14 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
                       children: [
                         TextSpan(text: context.l10n.bookingTermsPrefix),
                         TextSpan(
-                          text: context.l10n.legalSales.toLowerCase(),
+                          text: context.l10n.legalTerms.toLowerCase(),
                           style: const TextStyle(
                             color: HbColors.brandPrimary,
                             fontWeight: FontWeight.w600,
                           ),
                           recognizer: TapGestureRecognizer()
                             ..onTap = () =>
-                                LegalLinks.open(context, LegalDocument.sales),
+                                LegalLinks.open(context, LegalDocument.terms),
                         ),
                         TextSpan(text: context.l10n.bookingTermsConnector),
                         TextSpan(

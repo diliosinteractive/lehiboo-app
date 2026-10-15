@@ -1545,10 +1545,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get messagesAdminReportStatusSuspended => 'Suspendu';
 
   @override
-  String get legalTerms => 'Conditions Générales d\'Utilisation';
-
-  @override
-  String get legalSales => 'Conditions Générales de Vente';
+  String get legalTerms => 'Conditions Générales d\'Utilisation et de Vente';
 
   @override
   String get legalPrivacy => 'Politique de confidentialité';
@@ -3687,7 +3684,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get authAcceptTermsRequired =>
-      'Veuillez accepter les conditions d\'utilisation';
+      'Veuillez accepter les conditions générales d\'utilisation et de vente';
 
   @override
   String get authRegisterTermsPrefix => 'J\'accepte les ';
@@ -6086,7 +6083,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get bookingAcceptSalesRequired =>
-      'Veuillez accepter les conditions générales de vente';
+      'Veuillez accepter les conditions générales d\'utilisation et de vente';
 
   @override
   String get refundPolicyTitle => 'Politique de remboursement';
