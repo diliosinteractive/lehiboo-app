@@ -7,6 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../../core/services/push_notification_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../profile/data/datasources/profile_api_datasource.dart';
 import '../../data/datasources/device_token_datasource.dart';
 
 /// State for push notification initialization
@@ -36,21 +37,32 @@ class PushNotificationState {
   final String? subscriptionId;
   final PushNotificationFailureReason? failureReason;
 
+  /// OS notification permission, kept in sync by the OneSignal permission
+  /// observer. Android hands out a [subscriptionId] before it is granted.
+  final bool hasPermission;
+
   const PushNotificationState({
     this.status = PushNotificationStatus.uninitialized,
     this.subscriptionId,
     this.failureReason,
+    this.hasPermission = false,
   });
+
+  /// Registered with the backend AND allowed by the OS to display pushes.
+  bool get isEnabled =>
+      status == PushNotificationStatus.initialized && hasPermission;
 
   PushNotificationState copyWith({
     PushNotificationStatus? status,
     String? subscriptionId,
     PushNotificationFailureReason? failureReason,
+    bool? hasPermission,
   }) {
     return PushNotificationState(
       status: status ?? this.status,
       subscriptionId: subscriptionId ?? this.subscriptionId,
       failureReason: failureReason,
+      hasPermission: hasPermission ?? this.hasPermission,
     );
   }
 }
@@ -85,6 +97,7 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
       _cancelTokenRequests();
       service.onSubscriptionReceived = null;
       service.onSubscriptionRemoved = null;
+      service.onPermissionChanged = null;
     });
     _ref.listen<AuthState>(authProvider, (_, next) => _replaceAccount(next));
     _replaceAccount(_ref.read(authProvider));
@@ -109,6 +122,7 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
 
     service.onSubscriptionReceived = null;
     service.onSubscriptionRemoved = null;
+    service.onPermissionChanged = null;
 
     final previousIdentityWork = _identityTail;
     Future<void> applyIdentity() async {
@@ -130,6 +144,7 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
         debugPrint(
           'PushNotification: user ${next.accountId} has no OneSignal external id',
         );
+        unawaited(_refreshMissingExternalId(next, generation));
       }
     }
 
@@ -157,6 +172,29 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
         }
       },
     ));
+  }
+
+  /// Backend pushes target the OneSignal external id only, so a session
+  /// without one (restored from an older install, or an account that predates
+  /// `onesignal_id`) never receives them. The backend assigns the id at
+  /// account creation, at login or at the first push send; GET /auth/me only
+  /// reads it. Feeding it to [AuthNotifier.updateUser] re-enters
+  /// [_replaceAccount], which binds the device.
+  Future<void> _refreshMissingExternalId(
+    _PushAccount account,
+    int generation,
+  ) async {
+    try {
+      final user = await _ref.read(profileApiDataSourceProvider).getProfile();
+      if (!_isCurrent(account, generation)) return;
+      final externalId = user.onesignalId?.trim();
+      if (externalId == null || externalId.isEmpty) return;
+      _ref.read(authProvider.notifier).updateUser(user);
+    } catch (error) {
+      if (_isCurrent(account, generation)) {
+        debugPrint('PushNotification: external id refresh failed - $error');
+      }
+    }
   }
 
   bool _isCurrent(_PushAccount? expected, int generation) {
@@ -207,6 +245,27 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
         }
       } finally {
         _activeTokenRequests.remove(cancelToken);
+      }
+    };
+
+    service.onPermissionChanged = (granted) {
+      if (!_isCurrent(account, generation)) return;
+      state = PushNotificationState(
+        status: state.status,
+        subscriptionId: state.subscriptionId,
+        failureReason: state.failureReason,
+        hasPermission: granted,
+      );
+      // Granted from the system settings while push was off: finish the
+      // setup so the toggle reflects it without a new prompt.
+      if (granted &&
+          (state.status == PushNotificationStatus.disabled ||
+              state.status == PushNotificationStatus.error)) {
+        unawaited(identityReady.then<void>((_) async {
+          if (_isCurrent(account, generation)) {
+            await _initializeFor(account, generation);
+          }
+        }));
       }
     };
   }
@@ -277,6 +336,7 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
       state = PushNotificationState(
         status: PushNotificationStatus.initialized,
         subscriptionId: subscriptionId,
+        hasPermission: service.hasPermission,
       );
     } catch (error) {
       if (!_isCurrent(account, generation)) return;
@@ -342,6 +402,7 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
           ? PushNotificationState(
               status: PushNotificationStatus.initialized,
               subscriptionId: subscriptionId,
+              hasPermission: service.hasPermission,
             )
           : const PushNotificationState(
               status: PushNotificationStatus.error,
@@ -521,7 +582,8 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
     }
   }
 
-  bool get isEnabled => state.status == PushNotificationStatus.initialized;
+  /// See [PushNotificationState.isEnabled].
+  bool get isEnabled => state.isEnabled;
 
   /// Ask for OS permission and register only for the initiating account.
   Future<bool> requestPermission() async {
@@ -529,7 +591,7 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
     final generation = _generation;
     final identityReady = _identityTail;
     if (account == null || !_isCurrent(account, generation)) return false;
-    if (state.status == PushNotificationStatus.initialized) return true;
+    if (isEnabled) return true;
     if (state.status == PushNotificationStatus.initializing) return false;
     if (!isOneSignalConfigured) {
       state = const PushNotificationState(
@@ -581,6 +643,9 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
           ? PushNotificationState(
               status: PushNotificationStatus.initialized,
               subscriptionId: subscriptionId,
+              // The prompt result is authoritative: the SDK's permission
+              // callback may land after the method channel result.
+              hasPermission: true,
             )
           : const PushNotificationState(
               status: PushNotificationStatus.error,
@@ -633,6 +698,5 @@ class _PushAccount {
 
 /// Provider to check if push notifications are enabled
 final isPushEnabledProvider = Provider<bool>((ref) {
-  final state = ref.watch(pushNotificationProvider);
-  return state.status == PushNotificationStatus.initialized;
+  return ref.watch(pushNotificationProvider.select((state) => state.isEnabled));
 });

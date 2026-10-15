@@ -152,6 +152,8 @@ class ProfileApiDataSource {
       isVerified: userData['is_email_verified'] == true,
       newsletter: userData['newsletter'] == true,
       pushNotificationsEnabled: userData['push_notifications_enabled'] == true,
+      onesignalId:
+          (userData['onesignal_id'] ?? userData['onesignalId'])?.toString(),
     );
   }
 }

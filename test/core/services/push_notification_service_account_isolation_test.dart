@@ -333,6 +333,9 @@ class _FakePushNotificationSdk implements PushNotificationSdk {
   @override
   String? subscriptionId = 'subscription-1';
 
+  @override
+  bool hasPermission = true;
+
   int foregroundAdds = 0;
   int foregroundRemoves = 0;
   int clickAdds = 0;

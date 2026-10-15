@@ -76,6 +76,9 @@ class _ReadyPushNotificationService extends PushNotificationService {
   String? get subscriptionId => null;
 
   @override
+  bool get hasPermission => true;
+
+  @override
   bool get isInitialized => true;
 
   @override
