@@ -7806,6 +7806,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get notificationsFilterUnread => 'Non lues';
 
   @override
+  String get notificationsContextParticipant => 'Participant';
+
+  @override
+  String get notificationsContextOrganizer => 'Organisateur';
+
+  @override
+  String get notificationsContextAdmin => 'Administration';
+
+  @override
   String get notificationsGuestTitle => 'Connectez-vous';
 
   @override
