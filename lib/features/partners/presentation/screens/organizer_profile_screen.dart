@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import '../../../memberships/presentation/providers/membership_state_providers.dart';
 import '../../data/models/organizer_profile_dto.dart';
 import '../providers/organizer_profile_providers.dart';
 import '../widgets/organizer_about_section.dart';
@@ -31,9 +34,34 @@ class OrganizerProfileScreen extends ConsumerStatefulWidget {
       _OrganizerProfileScreenState();
 }
 
-class _OrganizerProfileScreenState
-    extends ConsumerState<OrganizerProfileScreen> {
+class _OrganizerProfileScreenState extends ConsumerState<OrganizerProfileScreen>
+    with WidgetsBindingObserver {
   bool _coordinatesOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // The profile provider is auto-disposed, while the membership list is a
+    // session cache. Reconcile when entering the profile so an older cached
+    // pending status cannot leak into a newly opened page.
+    unawaited(_reconcileMembershipState());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    unawaited(_reconcileMembershipState());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  Future<void> _reconcileMembershipState() =>
+      ref.read(membershipStateSyncProvider).reconcile();
 
   @override
   Widget build(BuildContext context) {
@@ -61,12 +89,14 @@ class _OrganizerProfileScreenState
           onCoordinatesToggle: (open) =>
               setState(() => _coordinatesOpen = open),
           onRefresh: () async {
-            ref.invalidate(
-                organizerEventsControllerProvider(widget.identifier));
-            await ref
-                .read(
-                    organizerProfileFutureProvider(widget.identifier).notifier)
-                .refresh();
+            ref.invalidate(organizerEventsControllerProvider(organizer.uuid));
+            await Future.wait([
+              ref
+                  .read(organizerProfileFutureProvider(widget.identifier)
+                      .notifier)
+                  .refresh(),
+              _reconcileMembershipState(),
+            ]);
           },
         ),
       ),

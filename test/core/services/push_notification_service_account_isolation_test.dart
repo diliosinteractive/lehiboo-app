@@ -160,6 +160,28 @@ void main() {
     expect(fixture.deepLinks.destinations, ['/event/member-concert']);
   });
 
+  test('notification interaction exposes domain data for cache reconciliation',
+      () {
+    final fixture = _serviceFixture(currentRecipient: () => accountA);
+    addTearDown(fixture.dispose);
+    final received = <Map<String, dynamic>>[];
+    fixture.service.onNotificationData = received.add;
+
+    fixture.service.handleClickDataForTesting(const {
+      'type': 'organization_join_approved',
+      'organization_uuid': 'organization-a',
+      'recipient_user_id': '101',
+    });
+
+    expect(received, [
+      {
+        'type': 'organization_join_approved',
+        'organization_uuid': 'organization-a',
+        'recipient_user_id': '101',
+      },
+    ]);
+  });
+
   test('one-hour event reminder opens the event on mobile', () {
     final fixture = _serviceFixture(currentRecipient: () => accountA);
     addTearDown(fixture.dispose);

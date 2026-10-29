@@ -217,6 +217,61 @@ void main() {
     await _flush();
   });
 
+  test(
+      'membership notifications silently reconcile the cached organizer status',
+      () async {
+    final repository = _ControlledMembershipsRepository();
+    final container = _container(repository);
+    addTearDown(container.dispose);
+    final subscription = container.listen(
+      myMembershipsListProvider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+
+    repository.membershipsRequests.single.complete(
+      _membershipsPage(
+        'org-a',
+        status: MembershipStatus.pending,
+      ),
+    );
+    await _flush();
+
+    final coordinator = container.read(membershipStateSyncProvider);
+    final approvalRefresh = coordinator.reconcileFromNotification(
+      'organization_join_approved',
+    );
+    // A duplicate realtime/push signal shares the active reconciliation.
+    final rejectionRefresh = coordinator.reconcileFromNotification(
+      'organization_join_rejected',
+    );
+
+    expect(repository.membershipsRequests, hasLength(2));
+    final refreshing = container.read(myMembershipsListProvider);
+    expect(refreshing.isLoading, isTrue);
+    expect(
+      refreshing.valueOrNull?.data.single.status,
+      MembershipStatus.pending,
+    );
+
+    repository.membershipsRequests.last.complete(
+      _membershipsPage(
+        'org-a',
+        status: MembershipStatus.active,
+      ),
+    );
+    await Future.wait([approvalRefresh, rejectionRefresh]);
+
+    expect(
+      container.read(myMembershipsListProvider).requireValue.data.single.status,
+      MembershipStatus.active,
+    );
+
+    await coordinator.reconcileFromNotification('new_message');
+    expect(repository.membershipsRequests, hasLength(2));
+  });
+
   test('old and anonymous membership actions cannot issue or publish',
       () async {
     final repository = _ControlledMembershipsRepository();
@@ -332,10 +387,15 @@ void _setAccount(ProviderContainer container, String? accountId) {
 
 Future<void> _flush() => Future<void>.delayed(Duration.zero);
 
-MembershipsPage _membershipsPage(String organizationUuid) => MembershipsPage(
+MembershipsPage _membershipsPage(
+  String organizationUuid, {
+  MembershipStatus status = MembershipStatus.active,
+}) =>
+    MembershipsPage(
       data: [
         MembershipDto(
           id: 1,
+          status: status,
           organization: OrganizationSummaryDto(
             uuid: organizationUuid,
             name: organizationUuid,

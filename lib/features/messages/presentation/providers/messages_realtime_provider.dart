@@ -14,6 +14,7 @@ import 'dart:developer' as dev;
 import 'package:lehiboo/features/notifications/data/models/in_app_notification_dto.dart';
 import 'package:lehiboo/features/notifications/domain/entities/in_app_notification.dart';
 import 'package:lehiboo/features/notifications/presentation/providers/in_app_notifications_provider.dart';
+import 'package:lehiboo/features/memberships/presentation/providers/membership_state_providers.dart';
 import 'package:lehiboo/routes/app_router.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
@@ -576,6 +577,15 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
     );
     final notification = InAppNotificationDto.fromJson(json).toDomain();
     final unreadCount = _int(data['unread_count']);
+
+    // Approval/rejection is a domain-state transition, not only an inbox
+    // message. Reconcile the cached membership list so every watcher (notably
+    // the organizer profile join button) rebuilds from authoritative data.
+    unawaited(
+      _ref
+          .read(membershipStateSyncProvider)
+          .reconcileFromNotification(notification.type),
+    );
 
     if (_isOwnMessageNotification(notification)) {
       dev.log(
