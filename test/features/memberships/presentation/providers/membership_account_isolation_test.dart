@@ -273,8 +273,22 @@ void main() {
       MembershipStatus.active,
     );
 
+    final revokedRefresh = coordinator.reconcileFromNotification(
+      'organization_membership_revoked',
+    );
+    expect(repository.membershipsRequests, hasLength(3));
+    repository.membershipsRequests.last.complete(
+      const MembershipsPage(data: []),
+    );
+    await revokedRefresh;
+
+    expect(
+      container.read(myMembershipsListProvider).requireValue.data,
+      isEmpty,
+    );
+
     await coordinator.reconcileFromNotification('new_message');
-    expect(repository.membershipsRequests, hasLength(2));
+    expect(repository.membershipsRequests, hasLength(3));
   });
 
   test('membership notification queues a fetch behind an older initial load',

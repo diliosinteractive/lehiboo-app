@@ -121,6 +121,7 @@ final myMembershipsListProvider = StateNotifierProvider<
 const Set<String> _membershipStateNotificationTypes = {
   'organization_join_approved',
   'organization_join_rejected',
+  'organization_membership_revoked',
 };
 
 @visibleForTesting
