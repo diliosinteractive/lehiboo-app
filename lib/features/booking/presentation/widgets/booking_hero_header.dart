@@ -19,24 +19,23 @@ class BookingHeroHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Stack(
+      fit: StackFit.expand,
       children: [
-        // Hero image
-        AspectRatio(
-          aspectRatio: 16 / 9,
-          child: imageUrl != null && imageUrl!.isNotEmpty
-              ? CachedNetworkImage(
-                  imageUrl: imageUrl!,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) => Container(
-                    color: Colors.grey.shade200,
-                    child: const Center(
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
+        // Fill the flexible app-bar bounds. A fixed aspect ratio can leave an
+        // uncovered strip when the viewport and expanded height differ.
+        imageUrl != null && imageUrl!.isNotEmpty
+            ? CachedNetworkImage(
+                imageUrl: imageUrl!,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => Container(
+                  color: Colors.grey.shade200,
+                  child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  errorWidget: (_, __, ___) => _buildPlaceholder(context),
-                )
-              : _buildPlaceholder(context),
-        ),
+                ),
+                errorWidget: (_, __, ___) => _buildPlaceholder(context),
+              )
+            : _buildPlaceholder(context),
         // Gradient overlay at bottom
         Positioned(
           bottom: 0,
@@ -56,33 +55,36 @@ class BookingHeroHeader extends StatelessWidget {
             ),
           ),
         ),
-        // Status badge positioned at bottom right
+        // Keep hero metadata together in the protected bottom overlay, away
+        // from the system inset and app-bar navigation controls.
         Positioned(
           bottom: 16,
+          left: 16,
           right: 16,
-          child: BookingStatusBadge.fromString(status),
-        ),
-        // Reference badge at top left
-        if (reference != null)
-          Positioned(
-            top: 16,
-            left: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '#$reference',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+          child: Row(
+            children: [
+              if (reference != null)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '#$reference',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-              ),
-            ),
+              const Spacer(),
+              BookingStatusBadge.fromString(status),
+            ],
           ),
+        ),
       ],
     );
   }
