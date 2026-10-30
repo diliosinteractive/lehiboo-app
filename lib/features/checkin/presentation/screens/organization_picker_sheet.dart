@@ -5,11 +5,11 @@ import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../memberships/data/models/membership_dto.dart';
-import '../../../memberships/presentation/providers/membership_state_providers.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import '../../data/models/managed_organization_dto.dart';
 import '../../domain/entities/active_organization.dart';
 import '../providers/active_organization_provider.dart';
-import '../providers/vendor_memberships_provider.dart';
+import '../providers/managed_organizations_provider.dart';
 
 /// Bottom sheet that asks the vendor to pick the organization they're
 /// working at. Shown lazily on the first scan attempt when no active org
@@ -21,6 +21,7 @@ import '../providers/vendor_memberships_provider.dart';
 Future<bool> showOrganizationPickerSheet(
   BuildContext context, {
   required String ownerAccountId,
+  bool refreshOnOpen = true,
 }) async {
   final result = await showModalBottomSheet<bool>(
     context: context,
@@ -31,15 +32,22 @@ Future<bool> showOrganizationPickerSheet(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (_) => _OrgPickerSheet(ownerAccountId: ownerAccountId),
+    builder: (_) => _OrgPickerSheet(
+      ownerAccountId: ownerAccountId,
+      refreshOnOpen: refreshOnOpen,
+    ),
   );
   return result ?? false;
 }
 
 class _OrgPickerSheet extends ConsumerStatefulWidget {
-  const _OrgPickerSheet({required this.ownerAccountId});
+  const _OrgPickerSheet({
+    required this.ownerAccountId,
+    required this.refreshOnOpen,
+  });
 
   final String ownerAccountId;
+  final bool refreshOnOpen;
 
   @override
   ConsumerState<_OrgPickerSheet> createState() => _OrgPickerSheetState();
@@ -47,6 +55,7 @@ class _OrgPickerSheet extends ConsumerStatefulWidget {
 
 class _OrgPickerSheetState extends ConsumerState<_OrgPickerSheet> {
   bool _invalid = false;
+  bool _refreshedOnOpen = false;
 
   @override
   void initState() {
@@ -60,6 +69,15 @@ class _OrgPickerSheetState extends ConsumerState<_OrgPickerSheet> {
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_refreshedOnOpen || !widget.refreshOnOpen) return;
+    _refreshedOnOpen = true;
+    final ownerSession = ref.read(authSessionKeyProvider);
+    ref.invalidate(managedOrganizationsProvider(ownerSession));
+  }
+
   bool get _ownsCurrentSession =>
       !_invalid && ref.read(authSessionUserIdProvider) == widget.ownerAccountId;
 
@@ -70,10 +88,12 @@ class _OrgPickerSheetState extends ConsumerState<_OrgPickerSheet> {
       return const SizedBox.shrink();
     }
 
-    final memberships = ref.watch(vendorMembershipsProvider);
-    final asyncList = ref.watch(myMembershipsListProvider);
+    final ownerSession = ref.watch(authSessionKeyProvider);
+    final organizationsAsync =
+        ref.watch(managedOrganizationsProvider(ownerSession));
+    final organizations = organizationsAsync.valueOrNull ?? const [];
     final l10n = context.l10n;
-    final loadError = asyncList.maybeWhen<Object?>(
+    final loadError = organizationsAsync.maybeWhen<Object?>(
       error: (error, _) => error,
       orElse: () => null,
     );
@@ -113,55 +133,43 @@ class _OrgPickerSheetState extends ConsumerState<_OrgPickerSheet> {
               ),
             ),
             const SizedBox(height: 20),
-            if (asyncList.isLoading && memberships.isEmpty)
+            if (organizationsAsync.isLoading && organizations.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
                 child: Center(child: CircularProgressIndicator()),
               )
-            else if (loadError != null && memberships.isEmpty)
+            else if (loadError != null && organizations.isEmpty)
               _LoadErrorState(
                 message: ApiResponseHandler.extractError(
                   loadError,
                   fallback: l10n.membershipLoadError,
                 ),
-                refresh: () async {
+                refresh: () {
                   if (!_ownsCurrentSession) return;
-                  final refresh =
-                      ref.read(myMembershipsListProvider.notifier).refresh();
-                  await refresh;
-                  if (!_ownsCurrentSession) return;
+                  ref.invalidate(managedOrganizationsProvider(ownerSession));
                 },
               )
-            else if (memberships.isEmpty)
-              _EmptyState(refresh: () async {
+            else if (organizations.isEmpty)
+              _EmptyState(refresh: () {
                 if (!_ownsCurrentSession) return;
-                final refresh =
-                    ref.read(myMembershipsListProvider.notifier).refresh();
-                await refresh;
-                if (!_ownsCurrentSession) return;
+                ref.invalidate(managedOrganizationsProvider(ownerSession));
               })
             else
               Flexible(
                 child: ListView.separated(
                   shrinkWrap: true,
-                  itemCount: memberships.length,
+                  itemCount: organizations.length,
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (_, index) {
-                    final m = memberships[index];
+                    final organization = organizations[index];
                     return _OrgTile(
-                      membership: m,
+                      organization: organization,
                       onTap: () async {
                         if (!_ownsCurrentSession) return;
-                        final org = m.organization;
-                        if (org == null || org.uuid == null) return;
                         final activeOrganization =
                             ref.read(activeOrganizationProvider.notifier);
-                        await activeOrganization.set(ActiveOrganization(
-                          uuid: org.uuid!,
-                          name: org.displayName,
-                          role: m.role ?? MembershipRole.staff,
-                          logoUrl: org.logoOrUrl,
-                        ));
+                        await activeOrganization
+                            .set(organization.toActiveOrganization());
                         if (!_ownsCurrentSession) return;
                         if (context.mounted && _ownsCurrentSession) {
                           Navigator.of(context).pop(true);
@@ -182,7 +190,7 @@ class _LoadErrorState extends StatelessWidget {
   const _LoadErrorState({required this.message, required this.refresh});
 
   final String message;
-  final Future<void> Function() refresh;
+  final VoidCallback refresh;
 
   @override
   Widget build(BuildContext context) {
@@ -228,24 +236,18 @@ class _LoadErrorState extends StatelessWidget {
 }
 
 class _OrgTile extends StatelessWidget {
-  final MembershipDto membership;
+  final ManagedOrganizationDto organization;
   final VoidCallback onTap;
 
-  const _OrgTile({required this.membership, required this.onTap});
+  const _OrgTile({required this.organization, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final org = membership.organization;
     final l10n = context.l10n;
-    // When the backend doesn't ship per-row role yet, don't render a
-    // potentially misleading viewer label for a vendor staff member; show the
-    // org's address (or nothing) instead.
-    final subtitle = switch (membership.role) {
-      MembershipRole.owner => l10n.checkinRoleOwner,
-      MembershipRole.admin => l10n.checkinRoleAdmin,
-      MembershipRole.staff => l10n.checkinRoleStaff,
-      MembershipRole.viewer => l10n.checkinRoleViewer,
-      null => org?.address ?? '',
+    final subtitle = switch (organization.role) {
+      OrganizationAccessRole.owner => l10n.checkinRoleOwner,
+      OrganizationAccessRole.admin => l10n.checkinRoleAdmin,
+      OrganizationAccessRole.manager => l10n.checkinRoleStaff,
     };
     return InkWell(
       onTap: onTap,
@@ -256,11 +258,10 @@ class _OrgTile extends StatelessWidget {
             CircleAvatar(
               radius: 22,
               backgroundColor: HbColors.surfaceElevated,
-              backgroundImage:
-                  org?.logoOrUrl != null && org!.logoOrUrl!.isNotEmpty
-                      ? NetworkImage(org.logoOrUrl!)
-                      : null,
-              child: org?.logoOrUrl == null || org!.logoOrUrl!.isEmpty
+              backgroundImage: organization.logoUrl != null
+                  ? NetworkImage(organization.logoUrl!)
+                  : null,
+              child: organization.logoUrl == null
                   ? const Icon(Icons.business, color: HbColors.textSecondary)
                   : null,
             ),
@@ -270,7 +271,7 @@ class _OrgTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    org?.displayName ?? '—',
+                    organization.name.isEmpty ? '—' : organization.name,
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -297,7 +298,7 @@ class _OrgTile extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  final Future<void> Function() refresh;
+  final VoidCallback refresh;
   const _EmptyState({required this.refresh});
 
   @override

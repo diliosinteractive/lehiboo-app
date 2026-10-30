@@ -10,17 +10,16 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../memberships/data/models/membership_dto.dart';
-import '../../../memberships/presentation/providers/membership_state_providers.dart';
+import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../data/models/checkin_request_dto.dart';
+import '../../data/models/managed_organization_dto.dart';
 import '../../data/models/ticket_summary_dto.dart';
 import '../../data/repositories/checkin_repository_impl.dart';
-import '../../domain/entities/active_organization.dart';
 import '../../domain/entities/peek_result.dart';
 import '../../domain/repositories/checkin_repository.dart';
 import '../providers/active_organization_provider.dart';
+import '../providers/managed_organizations_provider.dart';
 import '../providers/scan_session_provider.dart';
-import '../providers/vendor_memberships_provider.dart';
 import 'checkin_blocked_sheet.dart';
 import 'checkin_confirm_sheet.dart';
 import 'organization_picker_sheet.dart';
@@ -111,30 +110,37 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
   Future<void> _ensureActiveOrganization() async {
     if (!_ownsCurrentSession) return;
     final activeOrg = ref.read(activeOrganizationProvider);
-    if (activeOrg != null) return;
+    final ownerSession = ref.read(authSessionKeyProvider);
 
-    // Prime the memberships list — the picker needs it.
-    if (ref.read(myMembershipsListProvider) is AsyncLoading) {
-      // wait for it
-      try {
-        await ref.read(myMembershipsListProvider.notifier).waitForCurrentLoad();
-        if (!_ownsCurrentSession) return;
-      } catch (_) {/* picker will show its own error */}
-    } else if (ref.read(myMembershipsListProvider).hasError) {
-      ref.read(myMembershipsListProvider.notifier).refresh();
+    List<ManagedOrganizationDto>? managedOrganizations;
+    try {
+      managedOrganizations = await ref.refresh(
+        managedOrganizationsProvider(ownerSession).future,
+      );
+    } catch (_) {
+      // Preserve a previously selected organization during a transient load
+      // failure. The server remains authoritative for every scan request.
+      if (activeOrg != null) return;
     }
-
     if (!_ownsCurrentSession) return;
 
-    // Edge case: only one vendor org → silent select, no sheet.
-    final vendorOrgs = ref.read(vendorMembershipsProvider);
-    if (vendorOrgs.length == 1) {
-      final m = vendorOrgs.first;
-      final org = m.organization;
-      if (org != null && org.uuid != null) {
+    if (managedOrganizations != null) {
+      final activeStillManaged = activeOrg != null &&
+          managedOrganizations.any((org) => org.uuid == activeOrg.uuid);
+      if (activeStillManaged) return;
+
+      // Clear selections persisted by older versions when they only represent
+      // a customer adherence and are absent from GET /organizations.
+      if (activeOrg != null) {
+        await ref.read(activeOrganizationProvider.notifier).clear();
+        if (!_ownsCurrentSession) return;
+      }
+
+      // Edge case: only one managed organization → silent select, no sheet.
+      if (managedOrganizations.length == 1) {
         await ref
             .read(activeOrganizationProvider.notifier)
-            .set(_buildActiveOrgFromMembership(m));
+            .set(managedOrganizations.first.toActiveOrganization());
         if (!mounted || !_ownsCurrentSession) return;
         return;
       }
@@ -145,6 +151,7 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
     final picked = await showOrganizationPickerSheet(
       context,
       ownerAccountId: _ownerAccountId!,
+      refreshOnOpen: false,
     );
     _orgPickerShown = false;
     if (!mounted || !_ownsCurrentSession) return;
@@ -468,16 +475,6 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
       ref.read(scanSessionProvider.notifier).setGate(res.isEmpty ? null : res);
     }
   }
-}
-
-ActiveOrganization _buildActiveOrgFromMembership(MembershipDto membership) {
-  final org = membership.organization!;
-  return ActiveOrganization(
-    uuid: org.uuid!,
-    name: org.displayName,
-    role: membership.role ?? MembershipRole.staff,
-    logoUrl: org.logoOrUrl,
-  );
 }
 
 class _ScanReticle extends StatelessWidget {

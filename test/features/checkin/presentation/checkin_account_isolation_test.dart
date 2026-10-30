@@ -16,7 +16,6 @@ import 'package:lehiboo/features/checkin/domain/repositories/checkin_repository.
 import 'package:lehiboo/features/checkin/presentation/providers/active_organization_provider.dart';
 import 'package:lehiboo/features/checkin/presentation/providers/scan_session_provider.dart';
 import 'package:lehiboo/features/checkin/presentation/screens/checkin_manual_entry_screen.dart';
-import 'package:lehiboo/features/memberships/data/models/membership_dto.dart';
 import 'package:lehiboo/l10n/generated/app_localizations.dart';
 
 final _accountIdProvider = StateProvider<String?>((ref) => 'account-a');
@@ -168,7 +167,7 @@ Future<void> _pumpManualScreen(
         const ActiveOrganization(
           uuid: 'org-a',
           name: 'Account A organization',
-          role: MembershipRole.staff,
+          role: OrganizationAccessRole.manager,
         ),
       );
   await tester.pumpAndSettle();

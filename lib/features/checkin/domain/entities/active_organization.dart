@@ -1,4 +1,18 @@
-import '../../../memberships/data/models/membership_dto.dart';
+/// Organization roles that can operate the vendor ticket scanner.
+///
+/// `staff` is accepted while decoding persisted state for compatibility with
+/// app versions that used the mobile-only `MembershipRole.staff` value. The
+/// backend's canonical role name is `manager`.
+enum OrganizationAccessRole { owner, admin, manager }
+
+OrganizationAccessRole? parseOrganizationAccessRole(Object? value) {
+  return switch (value?.toString().trim().toLowerCase()) {
+    'owner' => OrganizationAccessRole.owner,
+    'admin' => OrganizationAccessRole.admin,
+    'manager' || 'staff' => OrganizationAccessRole.manager,
+    _ => null,
+  };
+}
 
 /// The organization the vendor is currently checking tickets in for. The
 /// `X-Organization-Id` header on every `/vendor/...` request is sourced
@@ -6,7 +20,7 @@ import '../../../memberships/data/models/membership_dto.dart';
 class ActiveOrganization {
   final String uuid;
   final String name;
-  final MembershipRole role;
+  final OrganizationAccessRole role;
   final String? logoUrl;
 
   const ActiveOrganization({
@@ -26,11 +40,8 @@ class ActiveOrganization {
   static ActiveOrganization? fromJson(Map<String, dynamic> json) {
     final uuid = json['uuid']?.toString();
     if (uuid == null || uuid.isEmpty) return null;
-    final roleStr = json['role']?.toString().toLowerCase() ?? '';
-    final role = MembershipRole.values.firstWhere(
-      (r) => r.name == roleStr,
-      orElse: () => MembershipRole.staff,
-    );
+    final role = parseOrganizationAccessRole(json['role']);
+    if (role == null) return null;
     return ActiveOrganization(
       uuid: uuid,
       name: json['name']?.toString() ?? '',
