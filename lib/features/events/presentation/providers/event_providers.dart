@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import '../../../memberships/presentation/providers/membership_content_revision_provider.dart';
 import '../../domain/repositories/event_repository.dart';
 import '../../../search/presentation/providers/filter_provider.dart';
 import '../../../search/domain/models/event_filter.dart';
@@ -39,6 +40,7 @@ final eventsProvider = StateNotifierProvider.autoDispose<_MapEventsController,
   // Map results can contain member-only events. Recreate synchronously with a
   // blank loading state whenever the opaque auth session changes.
   ref.watch(authSessionKeyProvider);
+  ref.watch(membershipContentRevisionProvider);
   final repository = ref.watch(eventRepositoryProvider);
   final filter = ref.watch(eventFilterProvider);
   return _MapEventsController(repository, filter);

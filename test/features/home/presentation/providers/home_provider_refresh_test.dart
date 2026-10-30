@@ -13,6 +13,7 @@ import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/repositories/event_repository.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 import 'package:lehiboo/features/home/presentation/providers/user_location_provider.dart';
+import 'package:lehiboo/features/memberships/presentation/providers/membership_content_revision_provider.dart';
 
 class _CategoriesRepository implements EventRepository {
   List<EventCategoryDto> categories = const [
@@ -214,6 +215,50 @@ void main() {
 
     expect(
         container.read(homeFeedProvider).requireValue.locationProvided, true);
+  });
+
+  test('home feed refreshes when membership content access changes', () async {
+    final repository = _HomeFeedRepository();
+    final container = ProviderContainer(
+      overrides: [
+        authProvider.overrideWith(
+          (ref) => _TestAuthNotifier(ref, _accountA),
+        ),
+        eventRepositoryProvider.overrideWithValue(repository),
+        userLocationProvider.overrideWith(
+          (ref) => _StaticUserLocationNotifier(),
+        ),
+        homeNowProvider.overrideWithValue(() => DateTime(2030)),
+      ],
+    );
+    addTearDown(container.dispose);
+    final subscription = container.listen(
+      homeFeedProvider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+
+    expect(repository.requests, hasLength(1));
+    final initialLoad =
+        container.read(homeFeedProvider.notifier).waitForInitialLoad();
+    repository.requests.single.complete(const HomeFeedDataDto());
+    await initialLoad;
+
+    container.read(membershipContentRevisionProvider.notifier).advance();
+    await pumpEventQueue();
+
+    expect(repository.requests, hasLength(2));
+    final refreshedLoad =
+        container.read(homeFeedProvider.notifier).waitForInitialLoad();
+    repository.requests.last.complete(
+      const HomeFeedDataDto(locationProvided: true),
+    );
+    await refreshedLoad;
+    expect(
+      container.read(homeFeedProvider).requireValue.locationProvided,
+      isTrue,
+    );
   });
 
   test('home feed rejects A to B to A late responses', () async {

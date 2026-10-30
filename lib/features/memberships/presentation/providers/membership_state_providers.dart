@@ -6,12 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/analytics/analytics_event.dart';
 import '../../../../core/analytics/analytics_provider.dart';
 import '../../../auth/presentation/providers/auth_session_key_provider.dart';
-import '../../../partners/presentation/providers/organizer_profile_providers.dart';
 import '../../data/models/membership_dto.dart';
 import '../../domain/repositories/memberships_repository.dart';
 import '../utils/membership_error_mapper.dart';
+import 'membership_content_revision_provider.dart';
 import 'personalized_feed_provider.dart';
-import 'private_events_provider.dart';
 
 /// One fetch of `/me/memberships` covering all statuses; downstream selectors
 /// derive everything (per-org lookup, tab counters) from this single source
@@ -121,18 +120,60 @@ final myMembershipsListProvider = StateNotifierProvider<
 const Set<String> _membershipStateNotificationTypes = {
   'organization_join_approved',
   'organization_join_rejected',
+  'organization_membership_revoked',
 };
 
 @visibleForTesting
 bool isMembershipStateNotificationType(String? type) =>
-    type != null &&
-    _membershipStateNotificationTypes.contains(type.trim().toLowerCase());
+    _normalizedMembershipStateNotificationType(type) != null;
 
-/// Reconciles externally-triggered membership changes (vendor approval or
-/// rejection) with the API, which remains the source of truth.
+String? _normalizedMembershipStateNotificationType(String? type) {
+  if (type == null) return null;
+  final normalized = type.trim().toLowerCase();
+  return _membershipStateNotificationTypes.contains(normalized)
+      ? normalized
+      : null;
+}
+
+String? _membershipOrganizationIdentity(Map<String, dynamic> data) {
+  for (final field in const [
+    'organization_id',
+    'organization_uuid',
+    'organization_slug',
+  ]) {
+    final value = data[field]?.toString().trim();
+    if (value != null && value.isNotEmpty) return value;
+  }
+  return null;
+}
+
+@immutable
+class _MembershipTransitionKey {
+  const _MembershipTransitionKey({
+    required this.type,
+    required this.organizationIdentity,
+  });
+
+  final String type;
+  final String organizationIdentity;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _MembershipTransitionKey &&
+      other.type == type &&
+      other.organizationIdentity == organizationIdentity;
+
+  @override
+  int get hashCode => Object.hash(type, organizationIdentity);
+}
+
+/// Reconciles externally-triggered membership changes (approval, rejection,
+/// or revocation) with the API, which remains the source of truth.
 ///
 /// OneSignal and the realtime notification channel can both report the same
-/// transition. [_inFlight] coalesces those signals into a single request.
+/// transition. Duplicate type/organization pairs share the active request,
+/// while a distinct transition received in flight schedules one trailing
+/// reconciliation so its server state cannot be missed.
 class MembershipStateSyncCoordinator {
   MembershipStateSyncCoordinator(
     this._ref, {
@@ -142,37 +183,86 @@ class MembershipStateSyncCoordinator {
   final Ref _ref;
   final AuthSessionKey _ownerSession;
   Future<void>? _inFlight;
+  final Set<_MembershipTransitionKey> _activeTransitions = {};
+  final Set<_MembershipTransitionKey> _pendingTransitions = {};
+  bool _pendingUnidentifiedTransition = false;
 
   bool get _ownsActiveSession =>
       _ownerSession.accountId != null &&
       identical(_ref.read(authSessionKeyProvider), _ownerSession);
 
-  Future<void> reconcileFromNotification(String? type) {
-    if (!isMembershipStateNotificationType(type)) {
+  Future<void> reconcileFromNotification(
+    String? type, {
+    Map<String, dynamic> data = const {},
+  }) {
+    final normalizedType = _normalizedMembershipStateNotificationType(type);
+    if (normalizedType == null) {
       return Future<void>.value();
     }
-    return reconcile();
+    final organizationIdentity = _membershipOrganizationIdentity(data);
+    return _requestReconciliation(
+      organizationIdentity == null
+          ? null
+          : _MembershipTransitionKey(
+              type: normalizedType,
+              organizationIdentity: organizationIdentity,
+            ),
+    );
   }
 
-  Future<void> reconcile() {
+  Future<void> reconcile() => _requestReconciliation(null);
+
+  Future<void> _requestReconciliation(
+    _MembershipTransitionKey? transition,
+  ) {
     if (!_ownsActiveSession) return Future<void>.value();
     final current = _inFlight;
-    if (current != null) return current;
+    if (current != null) {
+      _queueTransition(transition);
+      return current;
+    }
+
+    _queueTransition(transition);
 
     late final Future<void> task;
-    task = _performReconciliation().whenComplete(() {
-      if (identical(_inFlight, task)) _inFlight = null;
+    task = _drainReconciliations().whenComplete(() {
+      if (!identical(_inFlight, task)) return;
+      _inFlight = null;
+      _activeTransitions.clear();
+      _pendingTransitions.clear();
+      _pendingUnidentifiedTransition = false;
     });
     _inFlight = task;
     return task;
   }
 
+  void _queueTransition(_MembershipTransitionKey? transition) {
+    if (transition == null) {
+      // Without an organization identity we cannot prove two signals describe
+      // the same transition, so conservatively schedule trailing work.
+      _pendingUnidentifiedTransition = true;
+      return;
+    }
+    if (_activeTransitions.contains(transition)) return;
+    _pendingTransitions.add(transition);
+  }
+
+  Future<void> _drainReconciliations() async {
+    while (_ownsActiveSession &&
+        (_pendingUnidentifiedTransition || _pendingTransitions.isNotEmpty)) {
+      _activeTransitions
+        ..clear()
+        ..addAll(_pendingTransitions);
+      _pendingTransitions.clear();
+      _pendingUnidentifiedTransition = false;
+      await _performReconciliation();
+    }
+  }
+
   Future<void> _performReconciliation() async {
     // Membership changes alter access to private events everywhere they are
     // surfaced, as well as the join-status button.
-    _ref.invalidate(personalizedFeedProvider);
-    _ref.invalidate(privateEventsControllerProvider);
-    _ref.invalidate(organizerEventsControllerProvider);
+    _ref.read(membershipContentRevisionProvider.notifier).advance();
     await _ref.read(myMembershipsListProvider.notifier).refreshSilently();
   }
 }

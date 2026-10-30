@@ -582,9 +582,10 @@ class MessagesRealtimeNotifier extends StateNotifier<bool> {
     // message. Reconcile the cached membership list so every watcher (notably
     // the organizer profile join button) rebuilds from authoritative data.
     unawaited(
-      _ref
-          .read(membershipStateSyncProvider)
-          .reconcileFromNotification(notification.type),
+      _ref.read(membershipStateSyncProvider).reconcileFromNotification(
+            notification.type,
+            data: notification.data,
+          ),
     );
 
     if (_isOwnMessageNotification(notification)) {

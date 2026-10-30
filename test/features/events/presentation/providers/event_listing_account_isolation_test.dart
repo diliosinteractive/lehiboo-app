@@ -9,6 +9,7 @@ import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/repositories/event_repository.dart';
 import 'package:lehiboo/features/events/presentation/providers/event_providers.dart';
 import 'package:lehiboo/features/events/presentation/screens/event_list_screen.dart';
+import 'package:lehiboo/features/memberships/presentation/providers/membership_content_revision_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -69,6 +70,43 @@ void main() {
     expect(
       container.read(eventsProvider).requireValue.events.single.id,
       'active-map-a',
+    );
+  });
+
+  test('map event feed refreshes when membership content access changes',
+      () async {
+    SharedPreferences.setMockInitialValues({});
+    final repository = _PendingEventsRepository();
+    final container = ProviderContainer(
+      overrides: [
+        authProvider.overrideWith(
+          (ref) => _TestAuthNotifier(ref, _accountA),
+        ),
+        eventRepositoryProvider.overrideWithValue(repository),
+      ],
+    );
+    addTearDown(container.dispose);
+    final subscription = container.listen(
+      eventsProvider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+
+    expect(repository.requests, hasLength(1));
+    repository.requests.single.complete(_eventsResult('member-only'));
+    await pumpEventQueue();
+
+    container.read(membershipContentRevisionProvider.notifier).advance();
+    await pumpEventQueue();
+
+    expect(repository.requests, hasLength(2));
+    expect(container.read(eventsProvider).isLoading, isTrue);
+    repository.requests.last.complete(_eventsResult('public-only'));
+    await pumpEventQueue();
+    expect(
+      container.read(eventsProvider).requireValue.events.single.id,
+      'public-only',
     );
   });
 }
