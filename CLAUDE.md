@@ -380,6 +380,11 @@ if (result != null) {
 
 **Ne JAMAIS ajouter de Co-Authored-By dans les commits.**
 
+**Ne JAMAIS ajouter de mention "Generated with Claude Code" dans les descriptions de PR.**
+
+Aucune signature d'outil ne doit apparaitre dans l'historique du depot :
+ni dans les messages de commit, ni dans les descriptions de pull request.
+
 ---
 
 ## Conventions de Code
