@@ -8,9 +8,9 @@ part 'membership_dto.g.dart';
 /// responses (controller filter excludes it) — see spec §18.
 enum MembershipStatus { pending, active, rejected }
 
-/// Role of the user inside an organization. Customer memberships are always
-/// `viewer`; vendor staff carry `owner`, `staff`, or `admin`. The ticket
-/// check-in feature filters on this — see MOBILE_CHECKIN_SPEC.md §12.2.
+/// Legacy role values accepted from the combined memberships payload.
+/// Customer memberships returned by `/me/memberships` do not use this field;
+/// ticket check-in loads managed organizations from `/organizations`.
 enum MembershipRole { owner, staff, admin, viewer }
 
 extension MembershipRoleX on MembershipRole {
@@ -25,22 +25,25 @@ extension MembershipRoleX on MembershipRole {
 /// One membership row from `GET /me/memberships` or the response body of
 /// `POST /organizations/{slug}/membership-request`.
 ///
-/// Spec: docs/MEMBERSHIPS_MOBILE_SPEC.md §3.4 / §5.2 (customer view) and
-/// docs/MOBILE_CHECKIN_SPEC.md §12.2 (vendor view). The same endpoint
-/// returns both shapes; vendor rows omit `id`/`status`/`status_label` and
-/// add `role`/`is_active`.
+/// Spec: docs/MEMBERSHIPS_MOBILE_SPEC.md §3.4 / §5.2. Legacy `role` and
+/// `is_active` fields remain tolerant for cached/combined payloads but are not
+/// used to determine scanner access.
 @freezed
 class MembershipDto with _$MembershipDto {
   const factory MembershipDto({
     @JsonKey(fromJson: _int) @Default(0) int id,
-    @JsonKey(fromJson: _membershipStatus) @Default(MembershipStatus.active) MembershipStatus status,
-    @JsonKey(name: 'status_label', fromJson: _string) @Default('') String statusLabel,
+    @JsonKey(fromJson: _membershipStatus)
+    @Default(MembershipStatus.active)
+    MembershipStatus status,
+    @JsonKey(name: 'status_label', fromJson: _string)
+    @Default('')
+    String statusLabel,
     OrganizationSummaryDto? organization,
     @JsonKey(name: 'requested_at', fromJson: _stringOrNull) String? requestedAt,
     @JsonKey(name: 'approved_at', fromJson: _stringOrNull) String? approvedAt,
     @JsonKey(name: 'rejected_at', fromJson: _stringOrNull) String? rejectedAt,
     @JsonKey(name: 'created_at', fromJson: _stringOrNull) String? createdAt,
-    // Vendor view (MOBILE_CHECKIN_SPEC §12.2). Null on customer rows.
+    // Legacy combined view. Null on customer rows.
     @JsonKey(fromJson: _membershipRoleOrNull) MembershipRole? role,
     @JsonKey(name: 'is_active', fromJson: _boolOrNull) bool? isActive,
   }) = _MembershipDto;
@@ -65,7 +68,8 @@ class OrganizationSummaryDto with _$OrganizationSummaryDto {
     // Vendor /me/memberships shape (MOBILE_CHECKIN_SPEC §12.2) sends
     // `organization_name` instead of `name`. Kept as a separate field so
     // both shapes parse cleanly; [displayName] returns the first non-empty.
-    @JsonKey(name: 'organization_name', fromJson: _stringOrNull) String? organizationName,
+    @JsonKey(name: 'organization_name', fromJson: _stringOrNull)
+    String? organizationName,
     @JsonKey(name: 'logo_url', fromJson: _stringOrNull) String? logoUrl,
     @JsonKey(fromJson: _stringOrNull) String? logo,
     @JsonKey(name: 'cover_url', fromJson: _stringOrNull) String? coverUrl,
@@ -89,9 +93,11 @@ extension OrganizationSummaryDtoX on OrganizationSummaryDto {
       (logoUrl != null && logoUrl!.isNotEmpty) ? logoUrl : logo;
   String? get coverOrUrl =>
       (coverUrl != null && coverUrl!.isNotEmpty) ? coverUrl : cover;
+
   /// Either snake or camelCase variant of members_count, whichever the
   /// backend sent. Null when the field is absent from the response.
   int? get membersCountOrNull => membersCount ?? membersCountCamel;
+
   /// Customer rows expose `name`; vendor rows expose `organization_name`.
   /// Returns the first non-empty value, or the empty string.
   String get displayName {
