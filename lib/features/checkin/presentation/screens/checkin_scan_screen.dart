@@ -381,9 +381,19 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
       backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.black54,
+        // The camera feed can contain any luminance. Override the global
+        // dark AppBar title/icon styles explicitly and keep a strong scrim so
+        // scanner controls remain legible over every frame.
+        backgroundColor: Colors.black.withValues(alpha: 0.64),
         elevation: 0,
         foregroundColor: Colors.white,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        iconTheme: const IconThemeData(color: Colors.white),
+        actionsIconTheme: const IconThemeData(color: Colors.white),
+        titleTextStyle: Theme.of(context)
+            .appBarTheme
+            .titleTextStyle
+            ?.copyWith(color: Colors.white),
         title: Text(l10n.checkinScannerTitle),
         actions: [
           IconButton(
