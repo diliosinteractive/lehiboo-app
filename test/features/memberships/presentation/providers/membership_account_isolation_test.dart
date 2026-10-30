@@ -11,6 +11,7 @@ import 'package:lehiboo/features/memberships/data/models/membership_dto.dart';
 import 'package:lehiboo/features/memberships/data/models/personalized_feed_dto.dart';
 import 'package:lehiboo/features/memberships/domain/repositories/memberships_repository.dart';
 import 'package:lehiboo/features/memberships/presentation/providers/invitation_peek_provider.dart';
+import 'package:lehiboo/features/memberships/presentation/providers/membership_content_revision_provider.dart';
 import 'package:lehiboo/features/memberships/presentation/providers/membership_state_providers.dart';
 import 'package:lehiboo/features/memberships/presentation/providers/memberships_screen_providers.dart';
 import 'package:lehiboo/features/memberships/presentation/providers/personalized_feed_provider.dart';
@@ -246,10 +247,12 @@ void main() {
     final coordinator = container.read(membershipStateSyncProvider);
     final approvalRefresh = coordinator.reconcileFromNotification(
       'organization_join_approved',
+      data: const {'organization_id': 1},
     );
     // A duplicate realtime/push signal shares the active reconciliation.
     final duplicateRefresh = coordinator.reconcileFromNotification(
       'organization_join_approved',
+      data: const {'organization_id': 1},
     );
 
     expect(repository.membershipsRequests, hasLength(2));
@@ -275,6 +278,7 @@ void main() {
 
     final revokedRefresh = coordinator.reconcileFromNotification(
       'organization_membership_revoked',
+      data: const {'organization_id': 1},
     );
     expect(repository.membershipsRequests, hasLength(3));
     repository.membershipsRequests.last.complete(
@@ -291,6 +295,53 @@ void main() {
     expect(repository.membershipsRequests, hasLength(3));
   });
 
+  test('distinct membership transition in flight gets a trailing fetch',
+      () async {
+    final repository = _ControlledMembershipsRepository();
+    final container = _container(repository);
+    addTearDown(container.dispose);
+    final subscription = container.listen(
+      myMembershipsListProvider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+
+    repository.membershipsRequests.single.complete(
+      _membershipsPage('org-a'),
+    );
+    await _flush();
+
+    final coordinator = container.read(membershipStateSyncProvider);
+    final firstRevocation = coordinator.reconcileFromNotification(
+      'organization_membership_revoked',
+      data: const {'organization_id': 1},
+    );
+    final secondRevocation = coordinator.reconcileFromNotification(
+      'organization_membership_revoked',
+      data: const {'organization_id': 2},
+    );
+
+    expect(repository.membershipsRequests, hasLength(2));
+    repository.membershipsRequests.last.complete(
+      _membershipsPage('org-b'),
+    );
+    await _flush();
+
+    // The first response may have been captured before the second revocation.
+    // A distinct organization therefore requires one trailing reconciliation.
+    expect(repository.membershipsRequests, hasLength(3));
+    repository.membershipsRequests.last.complete(
+      const MembershipsPage(data: []),
+    );
+    await Future.wait([firstRevocation, secondRevocation]);
+
+    expect(
+      container.read(myMembershipsListProvider).requireValue.data,
+      isEmpty,
+    );
+  });
+
   test('membership notification queues a fetch behind an older initial load',
       () async {
     final repository = _ControlledMembershipsRepository();
@@ -304,9 +355,11 @@ void main() {
     addTearDown(subscription.close);
 
     expect(repository.membershipsRequests, hasLength(1));
-    final reconciliation = container
-        .read(membershipStateSyncProvider)
-        .reconcileFromNotification('organization_join_approved');
+    final reconciliation =
+        container.read(membershipStateSyncProvider).reconcileFromNotification(
+      'organization_join_approved',
+      data: const {'organization_id': 1},
+    );
 
     // The existing request started before the notification, so it cannot be
     // trusted as the reconciliation response.
@@ -381,25 +434,31 @@ void main() {
     organizerRepository.eventsRequests.single.complete(_organizerEventsPage());
     await _flush();
 
-    final reconciliation = container
-        .read(membershipStateSyncProvider)
-        .reconcileFromNotification('organization_join_approved');
+    expect(container.read(membershipContentRevisionProvider), 0);
+    final reconciliation =
+        container.read(membershipStateSyncProvider).reconcileFromNotification(
+      'organization_membership_revoked',
+      data: const {'organization_id': 1},
+    );
     await _flush();
 
+    expect(container.read(membershipContentRevisionProvider), 1);
     expect(repository.membershipsRequests, hasLength(2));
     expect(repository.privateEventsRequests, hasLength(2));
     expect(organizerRepository.eventsRequests, hasLength(2));
 
     repository.membershipsRequests.last.complete(
-      _membershipsPage(
-        'org-a',
-        status: MembershipStatus.active,
-      ),
+      const MembershipsPage(data: []),
     );
     repository.privateEventsRequests.last.complete(_privateEventsPage());
     organizerRepository.eventsRequests.last.complete(_organizerEventsPage());
     await reconciliation;
     await _flush();
+
+    expect(
+      container.read(myMembershipsListProvider).requireValue.data,
+      isEmpty,
+    );
   });
 
   test('old and anonymous membership actions cannot issue or publish',

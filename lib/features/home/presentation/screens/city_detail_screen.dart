@@ -11,6 +11,7 @@ import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/events/domain/repositories/event_repository.dart';
 import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
+import 'package:lehiboo/features/memberships/presentation/providers/membership_content_revision_provider.dart';
 import 'package:lehiboo/features/home/presentation/widgets/event_card.dart';
 
 /// Provider for city detail - finds city by slug from the cities list
@@ -178,6 +179,7 @@ final cityActivitiesProvider = StateNotifierProvider.family<
     // Watching the opaque key recreates the controller for guest/account
     // transitions, including a rapid A -> B -> A cycle.
     ref.watch(authSessionKeyProvider);
+    ref.watch(membershipContentRevisionProvider);
     final repository = ref.watch(eventRepositoryProvider);
     return CityActivitiesController(repository, citySlug: citySlug);
   },

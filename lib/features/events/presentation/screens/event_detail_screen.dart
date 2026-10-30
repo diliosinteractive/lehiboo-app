@@ -43,6 +43,7 @@ import '../../../memberships/presentation/widgets/members_only_gate.dart';
 import '../../../reviews/presentation/widgets/event_reviews_section.dart';
 import '../../../reviews/presentation/widgets/write_review_sheet.dart';
 import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
+import '../../../memberships/presentation/providers/membership_content_revision_provider.dart';
 import '../../../reminders/presentation/providers/reminders_provider.dart';
 import '../../../reminders/data/datasources/reminders_api_datasource.dart';
 import '../../../booking/domain/models/refund_policy.dart';
@@ -83,6 +84,7 @@ class EventDetailController extends AutoDisposeFamilyAsyncNotifier<
     });
     final generation = ++_stateGeneration;
     final activeOwner = ref.watch(authSessionKeyProvider);
+    ref.watch(membershipContentRevisionProvider);
     if (!identical(activeOwner, request.owner)) {
       throw const EventDetailSessionChangedException();
     }
@@ -157,6 +159,7 @@ final eventAvailabilityProvider = FutureProvider.autoDispose
     .family<EventAvailabilityResponseDto, EventAvailabilityRequest>(
         (ref, request) async {
   final activeOwner = ref.watch(authSessionKeyProvider);
+  ref.watch(membershipContentRevisionProvider);
   if (!identical(activeOwner, request.owner)) {
     throw const EventDetailSessionChangedException();
   }

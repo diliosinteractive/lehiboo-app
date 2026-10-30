@@ -103,9 +103,10 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
     });
     service.onNotificationData = (data) {
       unawaited(
-        _ref
-            .read(membershipStateSyncProvider)
-            .reconcileFromNotification(data['type']?.toString()),
+        _ref.read(membershipStateSyncProvider).reconcileFromNotification(
+              data['type']?.toString(),
+              data: data,
+            ),
       );
     };
     _ref.listen<AuthState>(authProvider, (_, next) => _replaceAccount(next));

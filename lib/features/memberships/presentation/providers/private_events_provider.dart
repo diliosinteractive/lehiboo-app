@@ -7,6 +7,7 @@ import '../../../events/data/models/event_dto.dart';
 import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../data/datasources/memberships_api_datasource.dart';
 import '../../domain/repositories/memberships_repository.dart';
+import 'membership_content_revision_provider.dart';
 
 /// Search filter for the private-events screen. Empty = no filter.
 final privateEventsSearchProvider = StateProvider<String>((ref) {
@@ -188,6 +189,7 @@ class PrivateEventsController
 final privateEventsControllerProvider = StateNotifierProvider<
     PrivateEventsController, AsyncValue<PrivateEventsState>>((ref) {
   final ownerSession = ref.watch(authSessionKeyProvider);
+  ref.watch(membershipContentRevisionProvider);
   final accountId = ownerSession.accountId;
   final search = ref.watch(privateEventsSearchProvider);
   final orgId = ref.watch(privateEventsOrgFilterProvider);
