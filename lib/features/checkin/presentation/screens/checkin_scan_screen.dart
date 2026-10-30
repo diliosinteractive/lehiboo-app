@@ -114,7 +114,7 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
 
     List<ManagedOrganizationDto>? managedOrganizations;
     try {
-      managedOrganizations = await ref.read(
+      managedOrganizations = await ref.refresh(
         managedOrganizationsProvider(ownerSession).future,
       );
     } catch (_) {
@@ -151,6 +151,7 @@ class _CheckinScanScreenState extends ConsumerState<CheckinScanScreen>
     final picked = await showOrganizationPickerSheet(
       context,
       ownerAccountId: _ownerAccountId!,
+      refreshOnOpen: false,
     );
     _orgPickerShown = false;
     if (!mounted || !_ownsCurrentSession) return;

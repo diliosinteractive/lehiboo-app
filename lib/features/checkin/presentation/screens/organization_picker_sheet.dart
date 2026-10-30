@@ -21,6 +21,7 @@ import '../providers/managed_organizations_provider.dart';
 Future<bool> showOrganizationPickerSheet(
   BuildContext context, {
   required String ownerAccountId,
+  bool refreshOnOpen = true,
 }) async {
   final result = await showModalBottomSheet<bool>(
     context: context,
@@ -31,15 +32,22 @@ Future<bool> showOrganizationPickerSheet(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (_) => _OrgPickerSheet(ownerAccountId: ownerAccountId),
+    builder: (_) => _OrgPickerSheet(
+      ownerAccountId: ownerAccountId,
+      refreshOnOpen: refreshOnOpen,
+    ),
   );
   return result ?? false;
 }
 
 class _OrgPickerSheet extends ConsumerStatefulWidget {
-  const _OrgPickerSheet({required this.ownerAccountId});
+  const _OrgPickerSheet({
+    required this.ownerAccountId,
+    required this.refreshOnOpen,
+  });
 
   final String ownerAccountId;
+  final bool refreshOnOpen;
 
   @override
   ConsumerState<_OrgPickerSheet> createState() => _OrgPickerSheetState();
@@ -47,6 +55,7 @@ class _OrgPickerSheet extends ConsumerStatefulWidget {
 
 class _OrgPickerSheetState extends ConsumerState<_OrgPickerSheet> {
   bool _invalid = false;
+  bool _refreshedOnOpen = false;
 
   @override
   void initState() {
@@ -58,6 +67,15 @@ class _OrgPickerSheetState extends ConsumerState<_OrgPickerSheet> {
       final navigator = Navigator.of(context);
       if (navigator.canPop()) navigator.pop(false);
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_refreshedOnOpen || !widget.refreshOnOpen) return;
+    _refreshedOnOpen = true;
+    final ownerSession = ref.read(authSessionKeyProvider);
+    ref.invalidate(managedOrganizationsProvider(ownerSession));
   }
 
   bool get _ownsCurrentSession =>
@@ -126,23 +144,15 @@ class _OrgPickerSheetState extends ConsumerState<_OrgPickerSheet> {
                   loadError,
                   fallback: l10n.membershipLoadError,
                 ),
-                refresh: () async {
+                refresh: () {
                   if (!_ownsCurrentSession) return;
-                  final refreshed = ref.refresh(
-                    managedOrganizationsProvider(ownerSession).future,
-                  );
-                  await refreshed;
-                  if (!_ownsCurrentSession) return;
+                  ref.invalidate(managedOrganizationsProvider(ownerSession));
                 },
               )
             else if (organizations.isEmpty)
-              _EmptyState(refresh: () async {
+              _EmptyState(refresh: () {
                 if (!_ownsCurrentSession) return;
-                final refreshed = ref.refresh(
-                  managedOrganizationsProvider(ownerSession).future,
-                );
-                await refreshed;
-                if (!_ownsCurrentSession) return;
+                ref.invalidate(managedOrganizationsProvider(ownerSession));
               })
             else
               Flexible(
@@ -180,7 +190,7 @@ class _LoadErrorState extends StatelessWidget {
   const _LoadErrorState({required this.message, required this.refresh});
 
   final String message;
-  final Future<void> Function() refresh;
+  final VoidCallback refresh;
 
   @override
   Widget build(BuildContext context) {
@@ -288,7 +298,7 @@ class _OrgTile extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  final Future<void> Function() refresh;
+  final VoidCallback refresh;
   const _EmptyState({required this.refresh});
 
   @override

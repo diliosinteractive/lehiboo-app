@@ -1,10 +1,18 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lehiboo/core/analytics/analytics_provider.dart';
+import 'package:lehiboo/core/analytics/noop_analytics_service.dart';
 import 'package:lehiboo/domain/entities/user.dart';
 import 'package:lehiboo/features/auth/domain/repositories/auth_repository.dart';
+import 'package:lehiboo/features/auth/data/models/auth_response_dto.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
+import 'package:lehiboo/features/checkin/data/datasources/managed_organizations_api_datasource.dart';
+import 'package:lehiboo/features/checkin/data/models/managed_organization_dto.dart';
+import 'package:lehiboo/features/checkin/presentation/providers/managed_organizations_provider.dart';
 import 'package:lehiboo/features/memberships/data/datasources/memberships_api_datasource.dart';
 import 'package:lehiboo/features/memberships/data/models/invitation_dto.dart';
 import 'package:lehiboo/features/memberships/data/models/membership_dto.dart';
@@ -19,6 +27,7 @@ import 'package:lehiboo/features/memberships/presentation/providers/private_even
 import 'package:lehiboo/features/partners/data/datasources/organizer_api_datasource.dart';
 import 'package:lehiboo/features/partners/domain/repositories/organizer_repository.dart';
 import 'package:lehiboo/features/partners/presentation/providers/organizer_profile_providers.dart';
+import 'package:lehiboo/features/profile/data/datasources/profile_api_datasource.dart';
 
 void main() {
   test('personalized feed clears synchronously at an account boundary',
@@ -514,6 +523,74 @@ void main() {
   });
 
   test(
+      'management invitation refreshes auth and managed organizations '
+      'without populating customer memberships', () async {
+    final repository = _ControlledMembershipsRepository();
+    final profileApi = _ControlledProfileApiDataSource();
+    final managedOrganizationsApi =
+        _ControlledManagedOrganizationsApiDataSource();
+    final container = _container(
+      repository,
+      profileApi: profileApi,
+      managedOrganizationsApi: managedOrganizationsApi,
+    );
+    addTearDown(container.dispose);
+    _setAccount(container, '1');
+
+    final membershipsSubscription = container.listen(
+      myMembershipsListProvider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    final ownerSession = container.read(authSessionKeyProvider);
+    final managedProvider = managedOrganizationsProvider(ownerSession);
+    final managedSubscription = container.listen(
+      managedProvider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    addTearDown(membershipsSubscription.close);
+    addTearDown(managedSubscription.close);
+
+    repository.membershipsRequests.single.complete(
+      const MembershipsPage(data: []),
+    );
+    managedOrganizationsApi.requests.single.complete(const []);
+    await _flush();
+
+    final accepting = container
+        .read(invitationActionControllerProvider('staff-token').notifier)
+        .accept(
+          fallbackMessage: 'failed',
+          accessKind: InvitationAccessKind.management,
+        );
+    repository.acceptRequests.single.complete();
+    await _flush();
+
+    expect(profileApi.requests, hasLength(1));
+    profileApi.requests.single.complete(
+      const UserDto(
+        id: 1,
+        email: 'user@example.test',
+        displayName: 'Vendor User',
+        role: 'vendor',
+      ),
+    );
+
+    expect(await accepting, isTrue);
+    await _flush();
+
+    final user = container.read(authProvider).user;
+    expect(user?.role, UserRole.partner);
+    expect(user?.capabilities.canScanTickets, isTrue);
+    expect(repository.membershipsRequests, hasLength(1));
+    expect(managedOrganizationsApi.requests, hasLength(2));
+
+    managedOrganizationsApi.requests.last.complete(const []);
+    await _flush();
+  });
+
+  test(
       'invitation peek replaces authed data per account and uses public API '
       'after logout', () async {
     final repository = _ControlledMembershipsRepository();
@@ -563,13 +640,24 @@ void main() {
 ProviderContainer _container(
   MembershipsRepository repository, {
   OrganizerRepository? organizerRepository,
+  ProfileApiDataSource? profileApi,
+  ManagedOrganizationsApiDataSource? managedOrganizationsApi,
 }) {
   return ProviderContainer(
     overrides: [
       authProvider.overrideWith(_MutableAuthNotifier.new),
+      analyticsServiceProvider.overrideWithValue(
+        const NoopAnalyticsService(),
+      ),
       membershipsRepositoryProvider.overrideWithValue(repository),
       if (organizerRepository != null)
         organizerRepositoryProvider.overrideWithValue(organizerRepository),
+      if (profileApi != null)
+        profileApiDataSourceProvider.overrideWithValue(profileApi),
+      if (managedOrganizationsApi != null)
+        managedOrganizationsApiDataSourceProvider.overrideWithValue(
+          managedOrganizationsApi,
+        ),
     ],
   );
 }
@@ -727,7 +815,37 @@ class _NeverCompletingAuthRepository implements AuthRepository {
   Future<bool> isAuthenticated() => _result.future;
 
   @override
+  Future<void> persistUser(HbUser user) async {}
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _ControlledProfileApiDataSource extends ProfileApiDataSource {
+  _ControlledProfileApiDataSource() : super(Dio());
+
+  final List<Completer<UserDto>> requests = [];
+
+  @override
+  Future<UserDto> getProfile() {
+    final request = Completer<UserDto>();
+    requests.add(request);
+    return request.future;
+  }
+}
+
+class _ControlledManagedOrganizationsApiDataSource
+    extends ManagedOrganizationsApiDataSource {
+  _ControlledManagedOrganizationsApiDataSource() : super(Dio());
+
+  final List<Completer<List<ManagedOrganizationDto>>> requests = [];
+
+  @override
+  Future<List<ManagedOrganizationDto>> getManagedOrganizations() {
+    final request = Completer<List<ManagedOrganizationDto>>();
+    requests.add(request);
+    return request.future;
+  }
 }
 
 class _MutableAuthNotifier extends AuthNotifier {

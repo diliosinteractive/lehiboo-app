@@ -15,7 +15,7 @@ import '_status_chip.dart';
 /// One invitation row on the Mes adhésions screen — spec §13.2, §15.2.
 class InvitationCard extends ConsumerWidget {
   final InvitationDto invitation;
-  final VoidCallback? onAccepted;
+  final ValueChanged<InvitationAccessKind>? onAccepted;
 
   const InvitationCard({
     super.key,
@@ -191,6 +191,7 @@ class InvitationCard extends ConsumerWidget {
     final fallback = context.l10n.membershipInvitationAcceptFailed;
     final ok = await actionController.accept(
       fallbackMessage: fallback,
+      accessKind: invitation.accessKind,
     );
     if (!context.mounted ||
         ref.read(authSessionUserIdProvider) != ownerAccountId ||
@@ -203,7 +204,7 @@ class InvitationCard extends ConsumerWidget {
           content: Text(context.l10n.membershipInvitationWelcome(orgName)),
         ),
       );
-      onAccepted?.call();
+      onAccepted?.call(invitation.accessKind);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
