@@ -6,10 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/analytics/analytics_event.dart';
 import '../../../../core/analytics/analytics_provider.dart';
 import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import '../../../partners/presentation/providers/organizer_profile_providers.dart';
 import '../../data/models/membership_dto.dart';
 import '../../domain/repositories/memberships_repository.dart';
 import '../utils/membership_error_mapper.dart';
 import 'personalized_feed_provider.dart';
+import 'private_events_provider.dart';
 
 /// One fetch of `/me/memberships` covering all statuses; downstream selectors
 /// derive everything (per-org lookup, tab counters) from this single source
@@ -91,11 +93,15 @@ class MyMembershipsListController
   /// Reconciles a server-side membership transition without clearing the
   /// currently rendered status while the request is in flight.
   ///
-  /// If the initial load is already running, reuse it instead of issuing a
-  /// duplicate request (for example when an organizer profile first opens).
-  Future<void> refreshSilently() {
-    if (state.isLoading && !state.hasValue) return waitForCurrentLoad();
-    return _load(preservePrevious: true);
+  /// If a load that predates the reconciliation is already running, wait for
+  /// it and then issue a trailing request. Its response may have been captured
+  /// before the server-side transition even if it arrives after the signal.
+  Future<void> refreshSilently() async {
+    if (state.isLoading && !state.hasValue) {
+      await waitForCurrentLoad();
+      if (!_ownsActiveSession) return;
+    }
+    await _load(preservePrevious: true);
   }
 
   Future<void> waitForCurrentLoad() => _currentLoad ?? Future<void>.value();
@@ -162,9 +168,11 @@ class MembershipStateSyncCoordinator {
   }
 
   Future<void> _performReconciliation() async {
-    // Membership changes alter access to private events and therefore the
-    // personalized feed as well as the join-status button.
+    // Membership changes alter access to private events everywhere they are
+    // surfaced, as well as the join-status button.
     _ref.invalidate(personalizedFeedProvider);
+    _ref.invalidate(privateEventsControllerProvider);
+    _ref.invalidate(organizerEventsControllerProvider);
     await _ref.read(myMembershipsListProvider.notifier).refreshSilently();
   }
 }

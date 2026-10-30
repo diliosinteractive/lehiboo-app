@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lehiboo/domain/entities/user.dart';
 import 'package:lehiboo/features/auth/domain/repositories/auth_repository.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/memberships/data/datasources/memberships_api_datasource.dart';
 import 'package:lehiboo/features/memberships/data/models/invitation_dto.dart';
 import 'package:lehiboo/features/memberships/data/models/membership_dto.dart';
 import 'package:lehiboo/features/memberships/data/models/personalized_feed_dto.dart';
@@ -13,6 +14,10 @@ import 'package:lehiboo/features/memberships/presentation/providers/invitation_p
 import 'package:lehiboo/features/memberships/presentation/providers/membership_state_providers.dart';
 import 'package:lehiboo/features/memberships/presentation/providers/memberships_screen_providers.dart';
 import 'package:lehiboo/features/memberships/presentation/providers/personalized_feed_provider.dart';
+import 'package:lehiboo/features/memberships/presentation/providers/private_events_provider.dart';
+import 'package:lehiboo/features/partners/data/datasources/organizer_api_datasource.dart';
+import 'package:lehiboo/features/partners/domain/repositories/organizer_repository.dart';
+import 'package:lehiboo/features/partners/presentation/providers/organizer_profile_providers.dart';
 
 void main() {
   test('personalized feed clears synchronously at an account boundary',
@@ -243,8 +248,8 @@ void main() {
       'organization_join_approved',
     );
     // A duplicate realtime/push signal shares the active reconciliation.
-    final rejectionRefresh = coordinator.reconcileFromNotification(
-      'organization_join_rejected',
+    final duplicateRefresh = coordinator.reconcileFromNotification(
+      'organization_join_approved',
     );
 
     expect(repository.membershipsRequests, hasLength(2));
@@ -261,7 +266,7 @@ void main() {
         status: MembershipStatus.active,
       ),
     );
-    await Future.wait([approvalRefresh, rejectionRefresh]);
+    await Future.wait([approvalRefresh, duplicateRefresh]);
 
     expect(
       container.read(myMembershipsListProvider).requireValue.data.single.status,
@@ -270,6 +275,117 @@ void main() {
 
     await coordinator.reconcileFromNotification('new_message');
     expect(repository.membershipsRequests, hasLength(2));
+  });
+
+  test('membership notification queues a fetch behind an older initial load',
+      () async {
+    final repository = _ControlledMembershipsRepository();
+    final container = _container(repository);
+    addTearDown(container.dispose);
+    final subscription = container.listen(
+      myMembershipsListProvider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+
+    expect(repository.membershipsRequests, hasLength(1));
+    final reconciliation = container
+        .read(membershipStateSyncProvider)
+        .reconcileFromNotification('organization_join_approved');
+
+    // The existing request started before the notification, so it cannot be
+    // trusted as the reconciliation response.
+    expect(repository.membershipsRequests, hasLength(1));
+    repository.membershipsRequests.single.complete(
+      _membershipsPage(
+        'org-a',
+        status: MembershipStatus.pending,
+      ),
+    );
+    await _flush();
+
+    expect(repository.membershipsRequests, hasLength(2));
+    final trailingRefresh = container.read(myMembershipsListProvider);
+    expect(trailingRefresh.isLoading, isTrue);
+    expect(
+      trailingRefresh.valueOrNull?.data.single.status,
+      MembershipStatus.pending,
+    );
+
+    repository.membershipsRequests.last.complete(
+      _membershipsPage(
+        'org-a',
+        status: MembershipStatus.active,
+      ),
+    );
+    await reconciliation;
+
+    expect(
+      container.read(myMembershipsListProvider).requireValue.data.single.status,
+      MembershipStatus.active,
+    );
+  });
+
+  test('membership reconciliation invalidates membership-gated event caches',
+      () async {
+    final repository = _ControlledMembershipsRepository();
+    final organizerRepository = _ControlledOrganizerRepository();
+    final container = _container(
+      repository,
+      organizerRepository: organizerRepository,
+    );
+    addTearDown(container.dispose);
+
+    final membershipsSubscription = container.listen(
+      myMembershipsListProvider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    final privateEventsSubscription = container.listen(
+      privateEventsControllerProvider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    final organizerEventsProvider = organizerEventsControllerProvider('org-a');
+    final organizerEventsSubscription = container.listen(
+      organizerEventsProvider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    addTearDown(membershipsSubscription.close);
+    addTearDown(privateEventsSubscription.close);
+    addTearDown(organizerEventsSubscription.close);
+
+    repository.membershipsRequests.single.complete(
+      _membershipsPage(
+        'org-a',
+        status: MembershipStatus.pending,
+      ),
+    );
+    repository.privateEventsRequests.single.complete(_privateEventsPage());
+    organizerRepository.eventsRequests.single.complete(_organizerEventsPage());
+    await _flush();
+
+    final reconciliation = container
+        .read(membershipStateSyncProvider)
+        .reconcileFromNotification('organization_join_approved');
+    await _flush();
+
+    expect(repository.membershipsRequests, hasLength(2));
+    expect(repository.privateEventsRequests, hasLength(2));
+    expect(organizerRepository.eventsRequests, hasLength(2));
+
+    repository.membershipsRequests.last.complete(
+      _membershipsPage(
+        'org-a',
+        status: MembershipStatus.active,
+      ),
+    );
+    repository.privateEventsRequests.last.complete(_privateEventsPage());
+    organizerRepository.eventsRequests.last.complete(_organizerEventsPage());
+    await reconciliation;
+    await _flush();
   });
 
   test('old and anonymous membership actions cannot issue or publish',
@@ -371,11 +487,16 @@ void main() {
   });
 }
 
-ProviderContainer _container(MembershipsRepository repository) {
+ProviderContainer _container(
+  MembershipsRepository repository, {
+  OrganizerRepository? organizerRepository,
+}) {
   return ProviderContainer(
     overrides: [
       authProvider.overrideWith(_MutableAuthNotifier.new),
       membershipsRepositoryProvider.overrideWithValue(repository),
+      if (organizerRepository != null)
+        organizerRepositoryProvider.overrideWithValue(organizerRepository),
     ],
   );
 }
@@ -412,6 +533,22 @@ InvitationDto _invitation(int id, String token) => InvitationDto(
 InvitationPreviewDto _preview(String message) =>
     InvitationPreviewDto(message: message);
 
+PrivateEventsPage _privateEventsPage() => const PrivateEventsPage(
+      events: [],
+      page: 1,
+      perPage: 15,
+      total: 0,
+      lastPage: 1,
+    );
+
+OrganizerEventsPage _organizerEventsPage() => const OrganizerEventsPage(
+      events: [],
+      page: 1,
+      perPage: 12,
+      total: 0,
+      lastPage: 1,
+    );
+
 class _ControlledMembershipsRepository implements MembershipsRepository {
   final List<Completer<MembershipsPage>> membershipsRequests = [];
   final List<Completer<List<InvitationDto>>> invitationsRequests = [];
@@ -420,6 +557,7 @@ class _ControlledMembershipsRepository implements MembershipsRepository {
   final List<Completer<void>> acceptRequests = [];
   final List<Completer<void>> cancelRequests = [];
   final List<Completer<PersonalizedFeedDto>> personalizedFeedRequests = [];
+  final List<Completer<PrivateEventsPage>> privateEventsRequests = [];
 
   @override
   Future<PersonalizedFeedDto> getPersonalizedFeed({int limit = 8}) {
@@ -448,6 +586,18 @@ class _ControlledMembershipsRepository implements MembershipsRepository {
   }
 
   @override
+  Future<PrivateEventsPage> getPrivateEvents({
+    String? search,
+    String? organizationId,
+    int page = 1,
+    int perPage = 15,
+  }) {
+    final request = Completer<PrivateEventsPage>();
+    privateEventsRequests.add(request);
+    return request.future;
+  }
+
+  @override
   Future<InvitationPreviewDto> peekInvitationAuthed(String token) {
     final request = Completer<InvitationPreviewDto>();
     authedPeekRequests.add(request);
@@ -472,6 +622,24 @@ class _ControlledMembershipsRepository implements MembershipsRepository {
   Future<void> cancelOrLeaveMembership(String organizationIdentifier) {
     final request = Completer<void>();
     cancelRequests.add(request);
+    return request.future;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _ControlledOrganizerRepository implements OrganizerRepository {
+  final List<Completer<OrganizerEventsPage>> eventsRequests = [];
+
+  @override
+  Future<OrganizerEventsPage> getEvents(
+    String identifier, {
+    int page = 1,
+    int perPage = 12,
+  }) {
+    final request = Completer<OrganizerEventsPage>();
+    eventsRequests.add(request);
     return request.future;
   }
 
