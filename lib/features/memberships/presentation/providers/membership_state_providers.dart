@@ -6,10 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/analytics/analytics_event.dart';
 import '../../../../core/analytics/analytics_provider.dart';
 import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import '../../../partners/presentation/providers/organizer_profile_providers.dart';
 import '../../data/models/membership_dto.dart';
 import '../../domain/repositories/memberships_repository.dart';
 import '../utils/membership_error_mapper.dart';
 import 'personalized_feed_provider.dart';
+import 'private_events_provider.dart';
 
 /// One fetch of `/me/memberships` covering all statuses; downstream selectors
 /// derive everything (per-org lookup, tab counters) from this single source
@@ -52,17 +54,20 @@ class MyMembershipsListController
     }
   }
 
-  Future<void> _load() {
-    final load = _performLoad();
+  Future<void> _load({bool preservePrevious = false}) {
+    final load = _performLoad(preservePrevious: preservePrevious);
     _currentLoad = load;
     return load;
   }
 
-  Future<void> _performLoad() async {
+  Future<void> _performLoad({required bool preservePrevious}) async {
     final requestGeneration = ++_requestGeneration;
     if (!_ownsActiveSession) return;
 
-    state = const AsyncLoading();
+    final previous = state;
+    state = preservePrevious
+        ? const AsyncLoading<MembershipsPage>().copyWithPrevious(previous)
+        : const AsyncLoading<MembershipsPage>();
     try {
       final memberships = await _repository.getMyMemberships(
         page: 1,
@@ -76,11 +81,28 @@ class MyMembershipsListController
       if (!_ownsActiveSession || requestGeneration != _requestGeneration) {
         return;
       }
-      state = AsyncValue.error(error, stackTrace);
+      state = preservePrevious
+          ? AsyncError<MembershipsPage>(error, stackTrace)
+              .copyWithPrevious(previous)
+          : AsyncError<MembershipsPage>(error, stackTrace);
     }
   }
 
   Future<void> refresh() => _load();
+
+  /// Reconciles a server-side membership transition without clearing the
+  /// currently rendered status while the request is in flight.
+  ///
+  /// If a load that predates the reconciliation is already running, wait for
+  /// it and then issue a trailing request. Its response may have been captured
+  /// before the server-side transition even if it arrives after the signal.
+  Future<void> refreshSilently() async {
+    if (state.isLoading && !state.hasValue) {
+      await waitForCurrentLoad();
+      if (!_ownsActiveSession) return;
+    }
+    await _load(preservePrevious: true);
+  }
 
   Future<void> waitForCurrentLoad() => _currentLoad ?? Future<void>.value();
 }
@@ -95,6 +117,75 @@ final myMembershipsListProvider = StateNotifierProvider<
     ownerSession: ownerSession,
   );
 });
+
+const Set<String> _membershipStateNotificationTypes = {
+  'organization_join_approved',
+  'organization_join_rejected',
+};
+
+@visibleForTesting
+bool isMembershipStateNotificationType(String? type) =>
+    type != null &&
+    _membershipStateNotificationTypes.contains(type.trim().toLowerCase());
+
+/// Reconciles externally-triggered membership changes (vendor approval or
+/// rejection) with the API, which remains the source of truth.
+///
+/// OneSignal and the realtime notification channel can both report the same
+/// transition. [_inFlight] coalesces those signals into a single request.
+class MembershipStateSyncCoordinator {
+  MembershipStateSyncCoordinator(
+    this._ref, {
+    required AuthSessionKey ownerSession,
+  }) : _ownerSession = ownerSession;
+
+  final Ref _ref;
+  final AuthSessionKey _ownerSession;
+  Future<void>? _inFlight;
+
+  bool get _ownsActiveSession =>
+      _ownerSession.accountId != null &&
+      identical(_ref.read(authSessionKeyProvider), _ownerSession);
+
+  Future<void> reconcileFromNotification(String? type) {
+    if (!isMembershipStateNotificationType(type)) {
+      return Future<void>.value();
+    }
+    return reconcile();
+  }
+
+  Future<void> reconcile() {
+    if (!_ownsActiveSession) return Future<void>.value();
+    final current = _inFlight;
+    if (current != null) return current;
+
+    late final Future<void> task;
+    task = _performReconciliation().whenComplete(() {
+      if (identical(_inFlight, task)) _inFlight = null;
+    });
+    _inFlight = task;
+    return task;
+  }
+
+  Future<void> _performReconciliation() async {
+    // Membership changes alter access to private events everywhere they are
+    // surfaced, as well as the join-status button.
+    _ref.invalidate(personalizedFeedProvider);
+    _ref.invalidate(privateEventsControllerProvider);
+    _ref.invalidate(organizerEventsControllerProvider);
+    await _ref.read(myMembershipsListProvider.notifier).refreshSilently();
+  }
+}
+
+final membershipStateSyncProvider = Provider<MembershipStateSyncCoordinator>(
+  (ref) {
+    final ownerSession = ref.watch(authSessionKeyProvider);
+    return MembershipStateSyncCoordinator(
+      ref,
+      ownerSession: ownerSession,
+    );
+  },
+);
 
 /// Lookup of "my membership row for org X" derived from the cached list.
 ///

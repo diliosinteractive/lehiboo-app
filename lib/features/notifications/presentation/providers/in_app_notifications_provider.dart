@@ -8,6 +8,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../domain/entities/user.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import '../../../memberships/presentation/providers/membership_state_providers.dart';
 import '../../domain/entities/in_app_notification.dart';
 import '../../domain/repositories/in_app_notifications_repository.dart';
 
@@ -258,6 +259,9 @@ class InAppNotificationsNotifier extends StateNotifier<InAppNotificationsState>
     if (state != AppLifecycleState.resumed) return;
     if (!_isCurrentAccount) return;
 
+    // Reconcile membership changes that may have happened while realtime was
+    // disconnected in the background and the push was not opened.
+    unawaited(_ref.read(membershipStateSyncProvider).reconcile());
     refreshUnreadCount();
     if (this.state.hasLoadedInbox) {
       load(refresh: true);

@@ -8,6 +8,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../../../../core/services/push_notification_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../profile/data/datasources/profile_api_datasource.dart';
+import '../../../memberships/presentation/providers/membership_state_providers.dart';
 import '../../data/datasources/device_token_datasource.dart';
 
 /// State for push notification initialization
@@ -98,7 +99,15 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
       service.onSubscriptionReceived = null;
       service.onSubscriptionRemoved = null;
       service.onPermissionChanged = null;
+      service.onNotificationData = null;
     });
+    service.onNotificationData = (data) {
+      unawaited(
+        _ref
+            .read(membershipStateSyncProvider)
+            .reconcileFromNotification(data['type']?.toString()),
+      );
+    };
     _ref.listen<AuthState>(authProvider, (_, next) => _replaceAccount(next));
     _replaceAccount(_ref.read(authProvider));
   }

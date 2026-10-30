@@ -257,6 +257,10 @@ class PushNotificationService {
   /// in sync with [hasPermission].
   void Function(bool granted)? onPermissionChanged;
 
+  /// Fired for foreground deliveries and notification interactions so domain
+  /// caches can reconcile server-side changes carried by a push.
+  void Function(Map<String, dynamic> data)? onNotificationData;
+
   PushNotificationService({
     required DeepLinkService deepLinkService,
     required AnalyticsService analytics,
@@ -354,6 +358,7 @@ class PushNotificationService {
       'OneSignal: foreground notification '
       '${event.notification.notificationId}',
     );
+    _notifyNotificationData(event.notification.additionalData);
     // Match the previous behaviour: surface the OS notification even when the
     // app is foregrounded. Without this OneSignal silently drops it.
     event.preventDefault();
@@ -555,6 +560,7 @@ class PushNotificationService {
     Map<String, dynamic> data, {
     bool coldStart = false,
   }) {
+    _notifyNotificationData(data);
     final deepLinks = _activeDeepLinkService;
     final type = data['type']?.toString();
     final resolvedRoute = type == null
@@ -626,6 +632,12 @@ class PushNotificationService {
     onSubscriptionReceived = null;
     onSubscriptionRemoved = null;
     onPermissionChanged = null;
+    onNotificationData = null;
+  }
+
+  void _notifyNotificationData(Map<String, dynamic>? data) {
+    if (_disposed || data == null || data.isEmpty) return;
+    onNotificationData?.call(Map<String, dynamic>.from(data));
   }
 
   Future<String> getDeviceId() async {
