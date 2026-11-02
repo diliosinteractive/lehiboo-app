@@ -119,6 +119,8 @@ abstract interface class PushNotificationSdk {
 
   Future<bool> requestPermission();
 
+  Future<bool> canRequestPermission();
+
   Future<void> login(String externalId);
 
   Future<void> logout();
@@ -185,6 +187,9 @@ class OneSignalPushNotificationSdk implements PushNotificationSdk {
   Future<bool> requestPermission() {
     return OneSignal.Notifications.requestPermission(true);
   }
+
+  @override
+  Future<bool> canRequestPermission() => OneSignal.Notifications.canRequest();
 
   @override
   Future<void> login(String externalId) => OneSignal.login(externalId);
@@ -433,6 +438,19 @@ class PushNotificationService {
     } catch (e) {
       debugPrint('OneSignal: promptUserForPermission failed: $e');
       return false;
+    }
+  }
+
+  /// Whether the OS can still show its notification permission prompt.
+  /// `false` once it no longer will (refused for good): only the system
+  /// settings can bring notifications back. `null` when the SDK cannot tell.
+  Future<bool?> canRequestPermission() async {
+    if (_disposed || !_isOneSignalConfigured) return null;
+    try {
+      return await _sdk.canRequestPermission();
+    } catch (e) {
+      debugPrint('OneSignal: canRequestPermission failed: $e');
+      return null;
     }
   }
 

@@ -15,9 +15,16 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../../notifications/presentation/providers/push_notification_provider.dart';
 import '../../../notifications/presentation/utils/push_notification_error_message.dart';
-import '../../../notifications/presentation/utils/push_switch_view.dart';
+import '../../../notifications/presentation/utils/push_device_hint.dart';
 import '../../../petit_boo/presentation/widgets/animated_toast.dart';
 import '../../data/datasources/profile_api_datasource.dart';
+
+/// What keeps this device from displaying pushes, and the fix offered for it.
+typedef _PushDeviceAction = ({
+  String message,
+  String label,
+  Future<void> Function() run,
+});
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -29,6 +36,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _busyNewsletter = false;
   bool _busyPush = false;
+  bool _busyPushDevice = false;
   late final String? _ownerAccountId;
   late final AuthNotifier _ownerAuthNotifier;
   late final ProviderSubscription<String?> _sessionSubscription;
@@ -83,6 +91,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _cancelOutstandingWork();
     _busyNewsletter = false;
     _busyPush = false;
+    _busyPushDevice = false;
     if (mounted) setState(() {});
     _scheduleFailClosedExit();
   }
@@ -227,12 +236,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final user = ref.watch(authProvider).user;
     final newsletter = user?.newsletter ?? false;
     final pushEnabled = user?.pushNotificationsEnabled ?? false;
-    // The Hibons reward is account-level, so it keeps reading the server flag.
     final neitherEverActivated = !newsletter && !pushEnabled;
-    // The switch itself reflects whether THIS device will display pushes.
-    final pushSwitch = resolvePushSwitch(
-      accountOptIn: pushEnabled,
-      device: ref.watch(pushNotificationProvider),
+    // The switch is the account preference; this tells whether it reaches
+    // THIS device. Rebuilds only when the displayed hint changes.
+    final pushDeviceHint = ref.watch(
+      pushNotificationProvider.select(
+        (device) => resolvePushDeviceHint(
+          accountOptIn: pushEnabled,
+          device: device,
+        ),
+      ),
     );
 
     return Scaffold(
@@ -289,15 +302,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               color: Color(0xFFFF601F),
             ),
             title: Text(l10n.settingsPushTitle),
-            subtitle: _buildPushSubtitle(l10n, pushSwitch.hint),
-            value: pushSwitch.isOn,
-            // Passing the displayed value routes every "off" state through
-            // requestPermission(), which prompts, falls back to the system
-            // settings and re-registers this device as needed.
+            subtitle: Text(l10n.settingsPushSubtitle),
+            value: pushEnabled,
             onChanged: _busyPush
                 ? null
-                : (_) => _togglePref(current: pushSwitch.isOn, isPush: true),
+                : (_) => _togglePref(current: pushEnabled, isPush: true),
           ),
+          // Kept outside the switch tile, which merges its semantics: the fix
+          // must stay reachable on its own with a screen reader.
+          if (_pushDeviceAction(l10n, pushDeviceHint) case final action?)
+            _buildPushDeviceHint(action),
           SwitchListTile(
             key: const ValueKey('settings-newsletter-switch'),
             secondary: const Icon(
@@ -468,46 +482,113 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildPushSubtitle(AppLocalizations l10n, PushSwitchHint hint) {
-    if (hint == PushSwitchHint.none) return Text(l10n.settingsPushSubtitle);
-
-    final warningColor = Colors.orange.shade800;
-    final message = switch (hint) {
-      PushSwitchHint.blockedBySystem => l10n.settingsPushHintBlockedBySystem,
-      PushSwitchHint.notSetUpOnDevice => l10n.settingsPushHintNotSetUpOnDevice,
-      PushSwitchHint.deviceSyncFailed => l10n.settingsPushHintDeviceSyncFailed,
-      PushSwitchHint.none => l10n.settingsPushSubtitle,
-    };
-
-    return Column(
-      key: const ValueKey('settings-push-hint'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, size: 16, color: warningColor),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Text(message, style: TextStyle(color: warningColor)),
-            ),
-          ],
+  _PushDeviceAction? _pushDeviceAction(
+    AppLocalizations l10n,
+    PushDeviceHint hint,
+  ) {
+    return switch (hint) {
+      PushDeviceHint.none => null,
+      PushDeviceHint.blockedBySystem => (
+          message: l10n.settingsPushHintBlockedBySystem,
+          label: l10n.settingsPushHintOpenSystemSettings,
+          run: _openSystemSettings,
         ),
-        // Only the OS can lift this one: tapping the switch would just bounce
-        // through the permission prompt, so offer the shortcut directly.
-        if (hint == PushSwitchHint.blockedBySystem)
+      PushDeviceHint.notSetUp => (
+          message: l10n.settingsPushHintNotSetUpOnDevice,
+          label: l10n.settingsPushHintEnableOnDevice,
+          run: _setUpThisDevice,
+        ),
+      PushDeviceHint.setupFailed => (
+          message: l10n.settingsPushHintSetupFailed,
+          label: l10n.commonRetry,
+          run: _setUpThisDevice,
+        ),
+    };
+  }
+
+  Widget _buildPushDeviceHint(_PushDeviceAction action) {
+    final warningColor = Colors.orange.shade800;
+    return Container(
+      key: const ValueKey('settings-push-device-hint'),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.only(left: 12, right: 4),
+      decoration: BoxDecoration(
+        color: warningColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: warningColor.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, size: 20, color: warningColor),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              action.message,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade800,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
           TextButton(
-            key: const ValueKey('settings-push-open-system-settings'),
+            key: const ValueKey('settings-push-device-action'),
             style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: const Size(0, 32),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               foregroundColor: const Color(0xFFFF601F),
             ),
-            onPressed: openAppSettings,
-            child: Text(l10n.settingsPushHintOpenSystemSettings),
+            onPressed: _busyPushDevice ? null : action.run,
+            child: Text(action.label),
           ),
-      ],
+        ],
+      ),
     );
+  }
+
+  /// Repairs this device only: the account preference is already on, so the
+  /// profile is left untouched.
+  Future<void> _setUpThisDevice() async {
+    final generation = _sessionGeneration;
+    if (_busyPushDevice || !_ownsSession(generation)) return;
+    final l10n = context.l10n;
+    final ownerPushNotifier = ref.read(pushNotificationProvider.notifier);
+    setState(() => _busyPushDevice = true);
+    try {
+      final ready = await ownerPushNotifier.requestPermission();
+      if (ready ||
+          !_ownsSession(generation) ||
+          !identical(
+            ref.read(pushNotificationProvider.notifier),
+            ownerPushNotifier,
+          )) {
+        return;
+      }
+      if (!mounted) return;
+      PetitBooToast.error(
+        context,
+        pushNotificationErrorMessage(
+          l10n,
+          ref.read(pushNotificationProvider).failureReason,
+        ),
+      );
+    } finally {
+      if (_ownsSession(generation)) {
+        setState(() => _busyPushDevice = false);
+      }
+    }
+  }
+
+  /// Coming back with notifications allowed is picked up by the OneSignal
+  /// permission observer, which clears the hint.
+  Future<void> _openSystemSettings() async {
+    final l10n = context.l10n;
+    var opened = false;
+    try {
+      opened = await openAppSettings();
+    } catch (error) {
+      debugPrint('Settings: openAppSettings failed - $error');
+    }
+    if (opened || !mounted) return;
+    PetitBooToast.error(context, l10n.settingsPushOpenSystemSettingsFailed);
   }
 
   Uri _accountDeletionUri(BuildContext context) {

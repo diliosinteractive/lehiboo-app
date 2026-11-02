@@ -234,8 +234,15 @@ class AppLocalizationsFr extends AppLocalizations {
       'Pas encore activées sur ce téléphone';
 
   @override
-  String get settingsPushHintDeviceSyncFailed =>
-      'Activation impossible sur ce téléphone, touche pour réessayer';
+  String get settingsPushHintEnableOnDevice => 'Activer';
+
+  @override
+  String get settingsPushHintSetupFailed =>
+      'Pas encore prêtes sur ce téléphone';
+
+  @override
+  String get settingsPushOpenSystemSettingsFailed =>
+      'Impossible d\'ouvrir les réglages. Ouvre-les depuis ton téléphone.';
 
   @override
   String get settingsNewsletterTitle => 'Newsletter';

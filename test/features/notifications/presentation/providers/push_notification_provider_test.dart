@@ -15,6 +15,7 @@ import 'package:lehiboo/features/auth/domain/repositories/auth_repository.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/notifications/data/datasources/device_token_datasource.dart';
 import 'package:lehiboo/features/notifications/presentation/providers/push_notification_provider.dart';
+import 'package:lehiboo/features/notifications/presentation/utils/push_device_hint.dart';
 import 'package:lehiboo/features/profile/data/datasources/profile_api_datasource.dart';
 
 void main() {
@@ -310,6 +311,114 @@ void main() {
     expect(state.failureReason, isNull);
   });
 
+  test('a permission revoked in the system settings reports a blocked device',
+      () async {
+    final router = _router();
+    addTearDown(router.dispose);
+    final service = _ControlledPushNotificationService(router)
+      ..canRequest = false;
+    final setup = _container(
+      service: service,
+      dataSource: _ControlledDeviceTokenDataSource(autoComplete: true),
+      initialUser: _accountA,
+    );
+    addTearDown(setup.container.dispose);
+    setup.container
+        .listen(pushNotificationProvider, (_, __) {}, fireImmediately: true);
+    await _pumpUntil(
+      () => setup.container.read(pushNotificationProvider).isEnabled,
+    );
+
+    service.permissionGranted = false;
+    service.onPermissionChanged!(false);
+    await _pumpUntil(
+      () =>
+          setup.container.read(pushNotificationProvider).canRequestPermission !=
+          null,
+    );
+
+    final state = setup.container.read(pushNotificationProvider);
+    expect(state.status, PushNotificationStatus.initialized);
+    expect(state.canRequestPermission, isFalse);
+    expect(
+      resolvePushDeviceHint(accountOptIn: true, device: state),
+      PushDeviceHint.blockedBySystem,
+    );
+  });
+
+  test(
+      'registered without permission, the device reports whether the OS can '
+      'still prompt (fresh Android 13+ install vs revoked before a restart)',
+      () async {
+    for (final (canRequest, expected) in [
+      (true, PushDeviceHint.notSetUp),
+      (false, PushDeviceHint.blockedBySystem),
+    ]) {
+      final router = _router();
+      final service = _ControlledPushNotificationService(router)
+        ..permissionGranted = false
+        ..canRequest = canRequest;
+      final setup = _container(
+        service: service,
+        dataSource: _ControlledDeviceTokenDataSource(autoComplete: true),
+        initialUser: _accountA,
+      );
+      setup.container
+          .listen(pushNotificationProvider, (_, __) {}, fireImmediately: true);
+      await _pumpUntil(() {
+        final state = setup.container.read(pushNotificationProvider);
+        return state.status == PushNotificationStatus.initialized &&
+            state.canRequestPermission != null;
+      });
+
+      final state = setup.container.read(pushNotificationProvider);
+      expect(
+        resolvePushDeviceHint(accountOptIn: true, device: state),
+        expected,
+        reason: 'canRequest=$canRequest',
+      );
+      setup.container.dispose();
+      router.dispose();
+    }
+  });
+
+  test('a token arriving after initialization gave up completes the setup',
+      () async {
+    final router = _router();
+    addTearDown(router.dispose);
+    // Late APNs token: no subscription yet when initialization polls.
+    final service = _ControlledPushNotificationService(router)
+      ..subscription = null;
+    final dataSource = _ControlledDeviceTokenDataSource(autoComplete: true);
+    final setup = _container(
+      service: service,
+      dataSource: dataSource,
+      initialUser: _accountA,
+    );
+    addTearDown(setup.container.dispose);
+    setup.container
+        .listen(pushNotificationProvider, (_, __) {}, fireImmediately: true);
+    await _pumpUntil(
+      () =>
+          setup.container.read(pushNotificationProvider).status ==
+          PushNotificationStatus.disabled,
+    );
+    expect(dataSource.requests, isEmpty);
+
+    service.subscription = 'subscription-late';
+    await service.onSubscriptionReceived!('subscription-late');
+
+    final state = setup.container.read(pushNotificationProvider);
+    expect(state.status, PushNotificationStatus.initialized);
+    expect(state.subscriptionId, 'subscription-late');
+    expect(state.isEnabled, isTrue);
+    expect(dataSource.requests, hasLength(1));
+    expect(
+      resolvePushDeviceHint(accountOptIn: true, device: state),
+      PushDeviceHint.none,
+    );
+  });
+
   test('a session without external id fetches it from /auth/me and binds it',
       () async {
     final router = _router();
@@ -467,12 +576,19 @@ class _ControlledPushNotificationService extends PushNotificationService {
   String? boundExternalId;
   bool initialized = false;
   bool permissionGranted = true;
+  String? subscription = 'subscription-1';
+
+  /// What the OS answers to "can the permission prompt still be shown?".
+  bool? canRequest = true;
 
   @override
-  String? get subscriptionId => 'subscription-1';
+  String? get subscriptionId => subscription;
 
   @override
   bool get hasPermission => permissionGranted;
+
+  @override
+  Future<bool?> canRequestPermission() async => canRequest;
 
   /// What the user answers to the OS permission prompt.
   bool promptResult = true;

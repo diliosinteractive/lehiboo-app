@@ -512,11 +512,23 @@ abstract class AppLocalizations {
   /// **'Pas encore activées sur ce téléphone'**
   String get settingsPushHintNotSetUpOnDevice;
 
-  /// No description provided for @settingsPushHintDeviceSyncFailed.
+  /// No description provided for @settingsPushHintEnableOnDevice.
   ///
   /// In fr, this message translates to:
-  /// **'Activation impossible sur ce téléphone, touche pour réessayer'**
-  String get settingsPushHintDeviceSyncFailed;
+  /// **'Activer'**
+  String get settingsPushHintEnableOnDevice;
+
+  /// No description provided for @settingsPushHintSetupFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas encore prêtes sur ce téléphone'**
+  String get settingsPushHintSetupFailed;
+
+  /// No description provided for @settingsPushOpenSystemSettingsFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir les réglages. Ouvre-les depuis ton téléphone.'**
+  String get settingsPushOpenSystemSettingsFailed;
 
   /// No description provided for @settingsNewsletterTitle.
   ///

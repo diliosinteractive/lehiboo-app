@@ -378,6 +378,9 @@ class _FakePushNotificationSdk implements PushNotificationSdk {
   @override
   bool hasPermission = true;
 
+  @override
+  Future<bool> canRequestPermission() async => !hasPermission;
+
   int foregroundAdds = 0;
   int foregroundRemoves = 0;
   int clickAdds = 0;

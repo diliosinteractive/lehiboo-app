@@ -233,8 +233,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Not enabled on this phone yet';
 
   @override
-  String get settingsPushHintDeviceSyncFailed =>
-      'Couldn\'t enable on this phone, tap to retry';
+  String get settingsPushHintEnableOnDevice => 'Enable';
+
+  @override
+  String get settingsPushHintSetupFailed => 'Not ready on this phone yet';
+
+  @override
+  String get settingsPushOpenSystemSettingsFailed =>
+      'Couldn\'t open the settings. Open them from your phone.';
 
   @override
   String get settingsNewsletterTitle => 'Newsletter';
