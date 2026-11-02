@@ -223,6 +223,28 @@ class AppLocalizationsFr extends AppLocalizations {
       'Les notifications sont prêtes, mais la préférence de votre compte n\'a pas pu être enregistrée. Réessayez.';
 
   @override
+  String get settingsPushHintBlockedBySystem =>
+      'Bloquées dans les réglages du téléphone';
+
+  @override
+  String get settingsPushHintOpenSystemSettings => 'Ouvrir les réglages';
+
+  @override
+  String get settingsPushHintNotSetUpOnDevice =>
+      'Pas encore activées sur ce téléphone';
+
+  @override
+  String get settingsPushHintEnableOnDevice => 'Activer';
+
+  @override
+  String get settingsPushHintSetupFailed =>
+      'Pas encore prêtes sur ce téléphone';
+
+  @override
+  String get settingsPushOpenSystemSettingsFailed =>
+      'Impossible d\'ouvrir les réglages. Ouvre-les depuis ton téléphone.';
+
+  @override
   String get settingsNewsletterTitle => 'Newsletter';
 
   @override

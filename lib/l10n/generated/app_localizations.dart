@@ -494,6 +494,42 @@ abstract class AppLocalizations {
   /// **'Les notifications sont prêtes, mais la préférence de votre compte n\'a pas pu être enregistrée. Réessayez.'**
   String get settingsPushPreferenceUpdateFailed;
 
+  /// No description provided for @settingsPushHintBlockedBySystem.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bloquées dans les réglages du téléphone'**
+  String get settingsPushHintBlockedBySystem;
+
+  /// No description provided for @settingsPushHintOpenSystemSettings.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir les réglages'**
+  String get settingsPushHintOpenSystemSettings;
+
+  /// No description provided for @settingsPushHintNotSetUpOnDevice.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas encore activées sur ce téléphone'**
+  String get settingsPushHintNotSetUpOnDevice;
+
+  /// No description provided for @settingsPushHintEnableOnDevice.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activer'**
+  String get settingsPushHintEnableOnDevice;
+
+  /// No description provided for @settingsPushHintSetupFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas encore prêtes sur ce téléphone'**
+  String get settingsPushHintSetupFailed;
+
+  /// No description provided for @settingsPushOpenSystemSettingsFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir les réglages. Ouvre-les depuis ton téléphone.'**
+  String get settingsPushOpenSystemSettingsFailed;
+
   /// No description provided for @settingsNewsletterTitle.
   ///
   /// In fr, this message translates to:

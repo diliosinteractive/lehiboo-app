@@ -39,14 +39,21 @@ class PushNotificationState {
   final PushNotificationFailureReason? failureReason;
 
   /// OS notification permission, kept in sync by the OneSignal permission
-  /// observer. Android hands out a [subscriptionId] before it is granted.
+  /// observer and re-read after every setup attempt. Android hands out a
+  /// [subscriptionId] before it is granted.
   final bool hasPermission;
+
+  /// Whether the OS can still show its permission prompt on this device.
+  /// Only checked while [hasPermission] is false; `null` until checked, or
+  /// when the SDK cannot tell.
+  final bool? canRequestPermission;
 
   const PushNotificationState({
     this.status = PushNotificationStatus.uninitialized,
     this.subscriptionId,
     this.failureReason,
     this.hasPermission = false,
+    this.canRequestPermission,
   });
 
   /// Registered with the backend AND allowed by the OS to display pushes.
@@ -58,12 +65,28 @@ class PushNotificationState {
     String? subscriptionId,
     PushNotificationFailureReason? failureReason,
     bool? hasPermission,
+    bool? canRequestPermission,
   }) {
     return PushNotificationState(
       status: status ?? this.status,
       subscriptionId: subscriptionId ?? this.subscriptionId,
       failureReason: failureReason,
       hasPermission: hasPermission ?? this.hasPermission,
+      canRequestPermission: canRequestPermission ?? this.canRequestPermission,
+    );
+  }
+
+  /// Same setup outcome, new OS permission facts.
+  PushNotificationState withDevicePermission({
+    required bool hasPermission,
+    bool? canRequestPermission,
+  }) {
+    return PushNotificationState(
+      status: status,
+      subscriptionId: subscriptionId,
+      failureReason: failureReason,
+      hasPermission: hasPermission,
+      canRequestPermission: canRequestPermission,
     );
   }
 }
@@ -230,12 +253,25 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
     service.onSubscriptionReceived = (subscriptionId) async {
       await identityReady;
       if (!_isCurrent(account, generation)) return;
-      await _registerTokenWithBackend(
+      final registered = await _registerTokenWithBackend(
         subscriptionId,
         service,
         account,
         generation,
       );
+      if (!registered || !_isCurrent(account, generation)) return;
+      // A token that lands after initialization gave up (late APNs token,
+      // subscription refreshed after a failed sync) completes the setup. A
+      // run still in flight settles the state itself.
+      if (state.status == PushNotificationStatus.disabled ||
+          state.status == PushNotificationStatus.error) {
+        state = PushNotificationState(
+          status: PushNotificationStatus.initialized,
+          subscriptionId: subscriptionId,
+          hasPermission: service.hasPermission,
+        );
+        await _syncDevicePermission(account, generation);
+      }
     };
 
     service.onSubscriptionRemoved = (subscriptionId) async {
@@ -260,12 +296,10 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
 
     service.onPermissionChanged = (granted) {
       if (!_isCurrent(account, generation)) return;
-      state = PushNotificationState(
-        status: state.status,
-        subscriptionId: state.subscriptionId,
-        failureReason: state.failureReason,
-        hasPermission: granted,
-      );
+      state = state.withDevicePermission(hasPermission: granted);
+      // Switched off from the system settings: find out whether the OS can
+      // still prompt, or only its settings can bring notifications back.
+      if (!granted) unawaited(_syncDevicePermission(account, generation));
       // Granted from the system settings while push was off: finish the
       // setup so the toggle reflects it without a new prompt.
       if (granted &&
@@ -355,7 +389,33 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
         status: PushNotificationStatus.error,
         failureReason: PushNotificationFailureReason.unexpected,
       );
+    } finally {
+      await _syncDevicePermission(account, generation);
     }
+  }
+
+  /// Re-reads this device's OS permission into the current state, and
+  /// whether the OS can still prompt when it is missing.
+  ///
+  /// Settled states are rebuilt from scratch, which resets these facts, so
+  /// every setup attempt ends here. It only ever raises [hasPermission]: a
+  /// revocation is reported by the permission observer, while the SDK value
+  /// can lag behind a prompt that was just granted.
+  Future<void> _syncDevicePermission(
+    _PushAccount account,
+    int generation,
+  ) async {
+    if (!_isCurrent(account, generation) || state.hasPermission) return;
+    final service = _ref.read(pushNotificationServiceProvider);
+    final canRequest =
+        service.hasPermission ? null : await service.canRequestPermission();
+    if (!_isCurrent(account, generation) || state.hasPermission) return;
+    // Re-read: a prompt may have been answered while canRequest was pending.
+    final hasPermission = service.hasPermission;
+    state = state.withDevicePermission(
+      hasPermission: hasPermission,
+      canRequestPermission: hasPermission ? null : canRequest,
+    );
   }
 
   /// Force a fresh backend registration for the current subscription.
@@ -427,6 +487,8 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
         failureReason: PushNotificationFailureReason.unexpected,
       );
       return false;
+    } finally {
+      await _syncDevicePermission(account, generation);
     }
   }
 
@@ -670,6 +732,8 @@ class PushNotificationNotifier extends StateNotifier<PushNotificationState> {
         failureReason: PushNotificationFailureReason.unexpected,
       );
       return false;
+    } finally {
+      await _syncDevicePermission(account, generation);
     }
   }
 }
