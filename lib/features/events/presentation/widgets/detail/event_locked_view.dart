@@ -13,10 +13,9 @@ import 'event_password_sheet.dart';
 /// Locked-shell preview for password-protected events.
 ///
 /// Shown when [EventDetailController] resolves to
-/// `EventDetailState.locked(shell)` — typically a deep link entry where the
-/// user lands on the detail screen without first going through a list-side
-/// unlock. Auto-opens the password sheet on first paint; the CTA re-opens it
-/// if dismissed.
+/// `EventDetailState.locked(shell)`, which is how every protected event is
+/// unlocked, whether it is opened from a list or a deep link. Auto-opens the
+/// password sheet on first paint; the CTA re-opens it if dismissed.
 class EventLockedView extends ConsumerStatefulWidget {
   final LockedEventShell shell;
   final String identifier;
