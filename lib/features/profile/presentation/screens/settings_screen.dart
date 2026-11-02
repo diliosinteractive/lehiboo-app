@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/analytics/analytics_consent.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../config/env_config.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -14,6 +15,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
 import '../../../notifications/presentation/providers/push_notification_provider.dart';
 import '../../../notifications/presentation/utils/push_notification_error_message.dart';
+import '../../../notifications/presentation/utils/push_switch_view.dart';
 import '../../../petit_boo/presentation/widgets/animated_toast.dart';
 import '../../data/datasources/profile_api_datasource.dart';
 
@@ -225,7 +227,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final user = ref.watch(authProvider).user;
     final newsletter = user?.newsletter ?? false;
     final pushEnabled = user?.pushNotificationsEnabled ?? false;
+    // The Hibons reward is account-level, so it keeps reading the server flag.
     final neitherEverActivated = !newsletter && !pushEnabled;
+    // The switch itself reflects whether THIS device will display pushes.
+    final pushSwitch = resolvePushSwitch(
+      accountOptIn: pushEnabled,
+      device: ref.watch(pushNotificationProvider),
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -281,11 +289,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               color: Color(0xFFFF601F),
             ),
             title: Text(l10n.settingsPushTitle),
-            subtitle: Text(l10n.settingsPushSubtitle),
-            value: pushEnabled,
+            subtitle: _buildPushSubtitle(l10n, pushSwitch.hint),
+            value: pushSwitch.isOn,
+            // Passing the displayed value routes every "off" state through
+            // requestPermission(), which prompts, falls back to the system
+            // settings and re-registers this device as needed.
             onChanged: _busyPush
                 ? null
-                : (_) => _togglePref(current: pushEnabled, isPush: true),
+                : (_) => _togglePref(current: pushSwitch.isOn, isPush: true),
           ),
           SwitchListTile(
             key: const ValueKey('settings-newsletter-switch'),
@@ -454,6 +465,48 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           letterSpacing: 1.2,
         ),
       ),
+    );
+  }
+
+  Widget _buildPushSubtitle(AppLocalizations l10n, PushSwitchHint hint) {
+    if (hint == PushSwitchHint.none) return Text(l10n.settingsPushSubtitle);
+
+    final warningColor = Colors.orange.shade800;
+    final message = switch (hint) {
+      PushSwitchHint.blockedBySystem => l10n.settingsPushHintBlockedBySystem,
+      PushSwitchHint.notSetUpOnDevice => l10n.settingsPushHintNotSetUpOnDevice,
+      PushSwitchHint.deviceSyncFailed => l10n.settingsPushHintDeviceSyncFailed,
+      PushSwitchHint.none => l10n.settingsPushSubtitle,
+    };
+
+    return Column(
+      key: const ValueKey('settings-push-hint'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, size: 16, color: warningColor),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(message, style: TextStyle(color: warningColor)),
+            ),
+          ],
+        ),
+        // Only the OS can lift this one: tapping the switch would just bounce
+        // through the permission prompt, so offer the shortcut directly.
+        if (hint == PushSwitchHint.blockedBySystem)
+          TextButton(
+            key: const ValueKey('settings-push-open-system-settings'),
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(0, 32),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              foregroundColor: const Color(0xFFFF601F),
+            ),
+            onPressed: openAppSettings,
+            child: Text(l10n.settingsPushHintOpenSystemSettings),
+          ),
+      ],
     );
   }
 

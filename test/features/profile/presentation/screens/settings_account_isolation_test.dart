@@ -4,9 +4,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/analytics/analytics_provider.dart';
 import 'package:lehiboo/core/analytics/noop_analytics_service.dart';
 import 'package:lehiboo/core/providers/shared_preferences_provider.dart';
+import 'package:lehiboo/core/services/push_notification_service.dart';
 import 'package:lehiboo/domain/entities/user.dart';
 import 'package:lehiboo/features/auth/data/models/auth_response_dto.dart';
 import 'package:lehiboo/features/auth/domain/repositories/auth_repository.dart';
@@ -17,6 +19,8 @@ import 'package:lehiboo/features/profile/data/datasources/profile_api_datasource
 import 'package:lehiboo/features/profile/presentation/screens/settings_screen.dart';
 import 'package:lehiboo/l10n/generated/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../../helpers/fake_push_notification_service.dart';
 
 class _NeverCompletingAuthRepository implements AuthRepository {
   final _result = Completer<bool>();
@@ -64,6 +68,10 @@ class _ControlledProfileApi extends ProfileApiDataSource {
     this.cancelToken = cancelToken;
     return updateResponse.future;
   }
+
+  // The push notifier refreshes a missing OneSignal id through /auth/me.
+  @override
+  Future<UserDto> getProfile() => Completer<UserDto>().future;
 }
 
 const _accountA = HbUser(
@@ -93,8 +101,15 @@ Widget _testApp({
   required _ControlledProfileApi api,
   required void Function(_MutableAuthNotifier notifier) captureAuth,
 }) {
+  final router = GoRouter(
+    routes: [GoRoute(path: '/', builder: (_, __) => const SizedBox.shrink())],
+  );
+  addTearDown(router.dispose);
   return ProviderScope(
     overrides: [
+      pushNotificationServiceProvider.overrideWithValue(
+        FakePushNotificationService(router),
+      ),
       authProvider.overrideWith((ref) {
         final notifier = _MutableAuthNotifier(ref, _accountA);
         captureAuth(notifier);

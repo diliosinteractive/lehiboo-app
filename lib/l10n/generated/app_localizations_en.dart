@@ -222,6 +222,21 @@ class AppLocalizationsEn extends AppLocalizations {
       'Notification setup succeeded, but your account preference could not be saved. Try again.';
 
   @override
+  String get settingsPushHintBlockedBySystem =>
+      'Blocked in your phone settings';
+
+  @override
+  String get settingsPushHintOpenSystemSettings => 'Open settings';
+
+  @override
+  String get settingsPushHintNotSetUpOnDevice =>
+      'Not enabled on this phone yet';
+
+  @override
+  String get settingsPushHintDeviceSyncFailed =>
+      'Couldn\'t enable on this phone, tap to retry';
+
+  @override
   String get settingsNewsletterTitle => 'Newsletter';
 
   @override
