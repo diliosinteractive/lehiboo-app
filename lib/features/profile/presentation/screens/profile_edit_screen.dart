@@ -12,6 +12,7 @@ import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
 import '../../../../domain/entities/user.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/utils/birth_date_picker.dart';
 import '../../../auth/presentation/utils/birth_date_validation.dart';
 import '../../data/datasources/profile_api_datasource.dart';
 import '../utils/profile_image_picker_error.dart';
@@ -29,8 +30,11 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _membershipCityController = TextEditingController();
-  final _birthDateController = TextEditingController();
+
+  /// First birth date picked on this screen, not saved yet. A saved one is
+  /// read from the account and never edited here.
   DateTime? _birthDate;
+  bool _birthDatePickerOpen = false;
 
   bool _isLoading = false;
   bool _isUploadingAvatar = false;
@@ -59,6 +63,24 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         _invalidateSession();
       }
     });
+    unawaited(_refreshProfile());
+  }
+
+  /// The cached account can predate a birth date set elsewhere, on the web
+  /// profile for example. Reloading it locks the field instead of offering a
+  /// first birth date the API would refuse.
+  Future<void> _refreshProfile() async {
+    final ownerAccountId = _ownerAccountId;
+    final generation = _sessionGeneration;
+    if (!_ownsSession(ownerAccountId, generation)) return;
+    try {
+      final profile = await ref.read(profileApiDataSourceProvider).getProfile();
+      if (!_ownsSession(ownerAccountId, generation)) return;
+      ref.read(authProvider.notifier).updateUser(profile);
+    } catch (_) {
+      // Best effort: the cached profile stays usable, and the API still
+      // refuses a second birth date with a message this screen shows.
+    }
   }
 
   void _initializeFields() {
@@ -87,7 +109,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       _lastNameController.text = lastName;
       _phoneController.text = user.phone ?? '';
       _membershipCityController.text = user.membershipCity ?? '';
-      _birthDate = user.birthDate;
     }
   }
 
@@ -99,7 +120,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     _lastNameController.dispose();
     _phoneController.dispose();
     _membershipCityController.dispose();
-    _birthDateController.dispose();
     super.dispose();
   }
 
@@ -131,7 +151,6 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     _lastNameController.clear();
     _phoneController.clear();
     _membershipCityController.clear();
-    _birthDateController.clear();
     _currentPasswordController?.clear();
     _newPasswordController?.clear();
     _confirmPasswordController?.clear();
@@ -157,7 +176,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
-      if (_currentPasswordController != null) {
+      // Both dialogs sit on the root navigator, above this screen.
+      if (_currentPasswordController != null || _birthDatePickerOpen) {
         Navigator.of(context, rootNavigator: true).pop();
       }
 
@@ -506,25 +526,32 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       );
     }
 
-    return _buildTextField(
-      fieldKey: const ValueKey('profile-edit-birth-date-picker'),
-      controller: _birthDateController,
-      label: context.l10n.profileBirthDateLabel,
-      icon: Icons.cake_outlined,
-      readOnly: true,
-      onTap: () => _pickBirthDate(user.role),
-      helperText: context.l10n.profileBirthDateSetOnceHelper,
-      suffixIcon: _birthDate != null
-          ? IconButton(
-              key: const ValueKey('profile-edit-birth-date-clear'),
-              icon: const Icon(Icons.clear, size: 20),
-              tooltip: MaterialLocalizations.of(context).clearButtonTooltip,
-              onPressed: () => setState(() {
-                _birthDate = null;
-                _birthDateController.clear();
-              }),
-            )
-          : null,
+    final picked = _birthDate;
+    // An InkWell rather than a read-only text field: a read-only TextField
+    // exposes no tap action to screen readers.
+    return InkWell(
+      key: const ValueKey('profile-edit-birth-date-picker'),
+      onTap: _isLoading ? null : () => _pickBirthDate(user.role),
+      borderRadius: BorderRadius.circular(12),
+      child: InputDecorator(
+        isEmpty: picked == null,
+        decoration: _fieldDecoration(
+          label: context.l10n.profileBirthDateLabel,
+          icon: Icons.cake_outlined,
+          helperText: context.l10n.profileBirthDateSetOnceHelper,
+          suffixIcon: picked != null
+              ? IconButton(
+                  key: const ValueKey('profile-edit-birth-date-clear'),
+                  icon: const Icon(Icons.clear, size: 20),
+                  tooltip: MaterialLocalizations.of(context).clearButtonTooltip,
+                  onPressed: _isLoading
+                      ? null
+                      : () => setState(() => _birthDate = null),
+                )
+              : null,
+        ),
+        child: Text(picked == null ? '' : _formatBirthDate(picked)),
+      ),
     );
   }
 
@@ -537,28 +564,26 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   Future<void> _pickBirthDate(UserRole role) async {
     final ownerAccountId = _ownerAccountId;
     final generation = _sessionGeneration;
-    if (!_ownsSession(ownerAccountId, generation)) return;
+    if (!_ownsSession(ownerAccountId, generation) ||
+        _isLoading ||
+        _birthDatePickerOpen) {
+      return;
+    }
 
-    // Same minimum age as the API, which depends on the account's role.
-    final maxDate = latestAllowedBirthDate(
-      minimumAgeYears: role == UserRole.subscriber
-          ? customerMinimumRegistrationAgeYears
-          : vendorMinimumRegistrationAgeYears,
-    );
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _birthDate != null && !_birthDate!.isAfter(maxDate)
-          ? _birthDate!
-          : maxDate,
-      firstDate: DateTime(1920),
-      lastDate: maxDate,
-      helpText: context.l10n.profileBirthDateLabel,
-    );
+    _birthDatePickerOpen = true;
+    final DateTime? picked;
+    try {
+      picked = await showBirthDatePicker(
+        context,
+        minimumAgeYears: minimumRegistrationAgeFor(role),
+        initialDate: _birthDate,
+        helpText: context.l10n.profileBirthDateLabel,
+      );
+    } finally {
+      _birthDatePickerOpen = false;
+    }
     if (picked == null || !_ownsSession(ownerAccountId, generation)) return;
-    setState(() {
-      _birthDate = picked;
-      _birthDateController.text = _formatBirthDate(picked);
-    });
+    setState(() => _birthDate = picked);
   }
 
   Widget _buildTextField({
@@ -584,32 +609,46 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       readOnly: readOnly,
       onTap: onTap,
       validator: validator,
-      decoration: InputDecoration(
-        labelText: label,
+      decoration: _fieldDecoration(
+        label: label,
+        icon: icon,
         helperText: helperText,
-        helperMaxLines: 2,
-        prefixIcon: Icon(icon, color: HbColors.brandPrimary),
         suffixIcon: suffixIcon,
-        filled: true,
-        fillColor: enabled && (!readOnly || onTap != null)
-            ? Colors.grey.shade50
-            : Colors.grey.shade100,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade200),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red),
-        ),
+        editable: enabled && (!readOnly || onTap != null),
+      ),
+    );
+  }
+
+  InputDecoration _fieldDecoration({
+    required String label,
+    required IconData icon,
+    String? helperText,
+    Widget? suffixIcon,
+    bool editable = true,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      helperText: helperText,
+      helperMaxLines: 2,
+      prefixIcon: Icon(icon, color: HbColors.brandPrimary),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: editable ? Colors.grey.shade50 : Colors.grey.shade100,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade200),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: HbColors.brandPrimary, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.red),
       ),
     );
   }
@@ -751,11 +790,13 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       _errorMessage = null;
     });
 
+    var sentBirthDate = false;
     try {
       final profileDataSource = ref.read(profileApiDataSourceProvider);
       final user = ref.read(authProvider).user;
       // Only a first birth date is sent: the API refuses to change one.
       final newBirthDate = user?.birthDate == null ? _birthDate : null;
+      sentBirthDate = newBirthDate != null;
       final updatedUser = await profileDataSource.updateProfile(
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
@@ -797,6 +838,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
             fallback: l10n.profileUpdateFailed,
           );
         });
+        // A refused first birth date may mean the account already has one.
+        if (sentBirthDate) unawaited(_refreshProfile());
       }
     } finally {
       if (identical(_profileMutationCancelToken, cancelToken)) {

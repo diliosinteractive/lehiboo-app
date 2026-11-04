@@ -40,6 +40,10 @@ class _ControlledProfileApi extends ProfileApiDataSource {
 
   final profileResponse = Completer<UserDto>();
   final passwordResponse = Completer<void>();
+
+  /// `GET /auth/me` reloads, in call order. They stay pending unless a test
+  /// completes them.
+  final profileReloads = <Completer<UserDto>>[];
   CancelToken? profileCancelToken;
   CancelToken? passwordCancelToken;
   String? submittedFirstName;
@@ -63,6 +67,13 @@ class _ControlledProfileApi extends ProfileApiDataSource {
     submittedBirthDate = birthDate;
     profileCancelToken = cancelToken;
     return profileResponse.future;
+  }
+
+  @override
+  Future<UserDto> getProfile() {
+    final reload = Completer<UserDto>();
+    profileReloads.add(reload);
+    return reload.future;
   }
 
   @override
@@ -113,10 +124,58 @@ UserDto get _accountAResponse => const UserDto(
       role: 'subscriber',
     );
 
+UserDto _accountAWithBirthDate(String birthDate) => UserDto(
+      id: 1,
+      email: 'alice.private@example.test',
+      displayName: 'Alice Private',
+      firstName: 'Alice',
+      lastName: 'Private',
+      role: 'subscriber',
+      birthDate: birthDate,
+    );
+
+final _birthDatePicker =
+    find.byKey(const ValueKey('profile-edit-birth-date-picker'));
+final _lockedBirthDate = find.byKey(const ValueKey('profile-edit-birth-date'));
+final _clearBirthDate =
+    find.byKey(const ValueKey('profile-edit-birth-date-clear'));
+final _save = find.byKey(const ValueKey('profile-edit-save'));
+
+Future<void> _openBirthDatePicker(WidgetTester tester) async {
+  await tester.ensureVisible(_birthDatePicker);
+  await tester.tap(_birthDatePicker);
+  await tester.pumpAndSettle();
+}
+
+/// Picks the 15th of a month in 2005 through the year grid, then confirms.
+Future<void> _pickBirthDateIn2005(WidgetTester tester) async {
+  await _openBirthDatePicker(tester);
+  await tester.scrollUntilVisible(
+    find.text('2005'),
+    -100,
+    scrollable: find.descendant(
+      of: find.byType(YearPicker),
+      matching: find.byType(Scrollable),
+    ),
+  );
+  await tester.tap(find.text('2005'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('15'));
+  await tester.tap(find.text('OK'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _tapSave(WidgetTester tester) async {
+  await tester.ensureVisible(_save);
+  await tester.tap(_save);
+  await tester.pump();
+}
+
 Widget _testApp({
   required _ControlledProfileApi api,
   required void Function(_MutableAuthNotifier notifier) captureAuth,
   HbUser user = _accountA,
+  bool pushedOverHome = false,
 }) {
   return ProviderScope(
     overrides: [
@@ -127,11 +186,22 @@ Widget _testApp({
       }),
       profileApiDataSourceProvider.overrideWithValue(api),
     ],
-    child: const MaterialApp(
-      locale: Locale('en'),
+    child: MaterialApp(
+      locale: const Locale('en'),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: ProfileEditScreen(),
+      home: pushedOverHome
+          ? Builder(
+              builder: (context) => TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const ProfileEditScreen(),
+                  ),
+                ),
+                child: const Text('open profile'),
+              ),
+            )
+          : const ProfileEditScreen(),
     ),
   );
 }
@@ -194,60 +264,82 @@ void main() {
       await tester.pumpWidget(_testApp(api: api, captureAuth: (_) {}));
       await tester.pumpAndSettle();
 
-      expect(
-          find.byKey(const ValueKey('profile-edit-birth-date')), findsNothing);
+      expect(_lockedBirthDate, findsNothing);
       expect(
         find.text("You won't be able to change it once saved"),
         findsOneWidget,
       );
 
-      final picker =
-          find.byKey(const ValueKey('profile-edit-birth-date-picker'));
-      await tester.ensureVisible(picker);
-      await tester.tap(picker);
-      await tester.pumpAndSettle();
-
-      final latestAllowed = latestAllowedBirthDate(
-        minimumAgeYears: customerMinimumRegistrationAgeYears,
-      );
+      await _openBirthDatePicker(tester);
       final dialog =
           tester.widget<DatePickerDialog>(find.byType(DatePickerDialog));
-      expect(dialog.lastDate, latestAllowed);
-
-      await tester.tap(find.text('OK'));
-      await tester.pumpAndSettle();
       expect(
-        find.byKey(const ValueKey('profile-edit-birth-date-clear')),
-        findsOneWidget,
+        dialog.lastDate,
+        latestAllowedBirthDate(
+          minimumAgeYears: customerMinimumRegistrationAgeYears,
+        ),
       );
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
 
-      final save = find.byKey(const ValueKey('profile-edit-save'));
-      await tester.ensureVisible(save);
-      await tester.tap(save);
-      await tester.pump();
-      expect(api.submittedBirthDate, formatBirthDateForApi(latestAllowed));
+      await _pickBirthDateIn2005(tester);
+      expect(_clearBirthDate, findsOneWidget);
+
+      await _tapSave(tester);
+      expect(api.submittedBirthDate, matches(RegExp(r'^2005-\d{2}-15$')));
     },
   );
 
   testWidgets(
-    'a refused birth date shows the API message',
+    'confirming the birth date picker untouched sets no birth date',
     (tester) async {
       final api = _ControlledProfileApi();
       await tester.pumpWidget(_testApp(api: api, captureAuth: (_) {}));
       await tester.pumpAndSettle();
 
-      final picker =
-          find.byKey(const ValueKey('profile-edit-birth-date-picker'));
-      await tester.ensureVisible(picker);
-      await tester.tap(picker);
-      await tester.pumpAndSettle();
+      await _openBirthDatePicker(tester);
+      final dialog =
+          tester.widget<DatePickerDialog>(find.byType(DatePickerDialog));
+      expect(dialog.initialDate, isNull);
+      expect(dialog.initialCalendarMode, DatePickerMode.year);
+
       await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
+      expect(_clearBirthDate, findsNothing);
 
-      final save = find.byKey(const ValueKey('profile-edit-save'));
-      await tester.ensureVisible(save);
-      await tester.tap(save);
-      await tester.pump();
+      await _tapSave(tester);
+      expect(api.submittedFirstName, 'Alice');
+      expect(api.submittedBirthDate, isNull);
+    },
+  );
+
+  testWidgets(
+    'a birth date set elsewhere locks the field once the profile reloads',
+    (tester) async {
+      final api = _ControlledProfileApi();
+      await tester.pumpWidget(_testApp(api: api, captureAuth: (_) {}));
+      await tester.pumpAndSettle();
+      expect(_birthDatePicker, findsOneWidget);
+      expect(api.profileReloads, hasLength(1));
+
+      api.profileReloads.single.complete(_accountAWithBirthDate('1990-04-21'));
+      await tester.pumpAndSettle();
+
+      expect(_birthDatePicker, findsNothing);
+      expect(_lockedBirthDate, findsOneWidget);
+      expect(find.text('04/21/1990'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a refused birth date shows the API message and reloads the profile',
+    (tester) async {
+      final api = _ControlledProfileApi();
+      await tester.pumpWidget(_testApp(api: api, captureAuth: (_) {}));
+      await tester.pumpAndSettle();
+
+      await _pickBirthDateIn2005(tester);
+      await _tapSave(tester);
 
       const message =
           'La date de naissance ne peut plus être modifiée une fois renseignée.';
@@ -271,7 +363,68 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(message), findsOneWidget);
+      expect(api.profileReloads, hasLength(2));
+
+      api.profileReloads.last.complete(_accountAWithBirthDate('1990-04-21'));
+      await tester.pumpAndSettle();
+      expect(_lockedBirthDate, findsOneWidget);
       expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('the birth date picker stays closed while a save is pending',
+      (tester) async {
+    final api = _ControlledProfileApi();
+    await tester.pumpWidget(_testApp(api: api, captureAuth: (_) {}));
+    await tester.pumpAndSettle();
+
+    await _tapSave(tester);
+    await tester.ensureVisible(_birthDatePicker);
+    await tester.tap(_birthDatePicker);
+    // The save button spins while the request is pending: no settling.
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.byType(DatePickerDialog), findsNothing);
+  });
+
+  testWidgets('the birth date picker exposes a tap action to screen readers',
+      (tester) async {
+    final semantics = tester.ensureSemantics();
+    final api = _ControlledProfileApi();
+    await tester.pumpWidget(_testApp(api: api, captureAuth: (_) {}));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.getSemantics(_birthDatePicker),
+      containsSemantics(hasTapAction: true),
+    );
+    semantics.dispose();
+  });
+
+  testWidgets(
+    'account switch closes an open birth date picker and leaves the screen',
+    (tester) async {
+      final api = _ControlledProfileApi();
+      late _MutableAuthNotifier auth;
+      await tester.pumpWidget(
+        _testApp(
+          api: api,
+          captureAuth: (value) => auth = value,
+          pushedOverHome: true,
+        ),
+      );
+      await tester.tap(find.text('open profile'));
+      await tester.pumpAndSettle();
+      await _openBirthDatePicker(tester);
+      expect(find.byType(DatePickerDialog), findsOneWidget);
+
+      auth.setUser(_accountB);
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DatePickerDialog), findsNothing);
+      expect(find.byType(ProfileEditScreen), findsNothing);
+      expect(find.text('open profile'), findsOneWidget);
     },
   );
 

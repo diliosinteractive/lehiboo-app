@@ -7,6 +7,7 @@ import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../shared/legal/legal_links.dart';
 import '../providers/auth_provider.dart';
+import '../utils/birth_date_picker.dart';
 import '../utils/birth_date_validation.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -267,17 +268,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // Birth date picker
                 GestureDetector(
                   onTap: () async {
-                    final maxDate = latestAllowedBirthDate(
+                    final picked = await showBirthDatePicker(
+                      context,
                       minimumAgeYears: customerMinimumRegistrationAgeYears,
-                    );
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate:
-                          _birthDate != null && !_birthDate!.isAfter(maxDate)
-                              ? _birthDate!
-                              : maxDate,
-                      firstDate: DateTime(1920),
-                      lastDate: maxDate,
+                      initialDate: _birthDate,
                       helpText: l10n.authBirthDateHelp,
                     );
                     if (picked != null) {
