@@ -2555,7 +2555,7 @@
   "bookingLastNameLabelRequired": "Last name *",
   "bookingEmailLabelRequired": "Email *",
   "bookingPhoneLabel": "Phone",
-  "bookingAgeLabel": "Age",
+  "bookingBirthDateLabel": "Birth date",
   "bookingMembershipCityLabel": "Membership city",
   "bookingFirstNameRequired": "First name is required",
   "bookingLastNameRequired": "Last name is required",

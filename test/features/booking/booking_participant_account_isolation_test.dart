@@ -35,7 +35,11 @@ void main() {
     );
 
     final fields = find.byType(TextFormField);
-    expect(fields, findsNWidgets(6));
+    expect(fields, findsNWidgets(5));
+    // The buyer gives a birth date, never an age the app turns into one.
+    expect(
+        find.byKey(const ValueKey('booking-birth-date-field')), findsOneWidget);
+    expect(find.text('Age'), findsNothing);
     await tester.enterText(fields.at(0), 'Account A surname');
     await tester.enterText(fields.at(1), 'Account A first name');
     await tester.enterText(fields.at(2), 'account-a-private@example.test');

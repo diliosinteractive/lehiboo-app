@@ -6033,7 +6033,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bookingPhoneLabel => 'Phone';
 
   @override
-  String get bookingAgeLabel => 'Age';
+  String get bookingBirthDateLabel => 'Birth date';
 
   @override
   String get bookingMembershipCityLabel => 'Membership city';

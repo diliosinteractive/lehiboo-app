@@ -11,7 +11,6 @@ import 'package:go_router/go_router.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/services/crash_reporter.dart';
 import 'package:lehiboo/core/themes/colors.dart';
-import 'package:lehiboo/core/utils/age_utils.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/auth/presentation/widgets/account_bound_route_guard.dart';
@@ -46,7 +45,6 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _ageController = TextEditingController();
   final _townController = TextEditingController();
 
   String? _customerBirthDate;
@@ -85,7 +83,6 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
       _lastNameController.clear();
       _emailController.clear();
       _phoneController.clear();
-      _ageController.clear();
       _townController.clear();
       _attendeesByCartItemId.clear();
       setState(() {
@@ -122,7 +119,6 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
-    _ageController.dispose();
     _townController.dispose();
     _reservationTimer?.cancel();
     _cartHoldTimer?.cancel();
@@ -150,10 +146,7 @@ class _OrderCartScreenState extends ConsumerState<OrderCartScreen> {
     _phoneController.text = user.phone ?? '';
 
     if (user.birthDate != null) {
-      final birthDate = user.birthDate!.toIso8601String().substring(0, 10);
-      _customerBirthDate = birthDate;
-      final age = computeAge(birthDate);
-      if (age != null) _ageController.text = age.toString();
+      _customerBirthDate = user.birthDate!.toIso8601String().substring(0, 10);
     }
     if (user.membershipCity != null && user.membershipCity!.isNotEmpty) {
       _townController.text = user.membershipCity!;

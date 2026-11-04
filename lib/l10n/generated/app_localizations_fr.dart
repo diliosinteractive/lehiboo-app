@@ -6077,7 +6077,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get bookingPhoneLabel => 'Téléphone';
 
   @override
-  String get bookingAgeLabel => 'Âge';
+  String get bookingBirthDateLabel => 'Date de naissance';
 
   @override
   String get bookingMembershipCityLabel => 'Ville d\'appartenance';

@@ -3086,7 +3086,7 @@
   "bookingLastNameLabelRequired": "Nom *",
   "bookingEmailLabelRequired": "Email *",
   "bookingPhoneLabel": "Téléphone",
-  "bookingAgeLabel": "Âge",
+  "bookingBirthDateLabel": "Date de naissance",
   "bookingMembershipCityLabel": "Ville d'appartenance",
   "bookingFirstNameRequired": "Le prénom est requis",
   "bookingLastNameRequired": "Le nom est requis",

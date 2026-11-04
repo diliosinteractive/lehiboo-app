@@ -10365,11 +10365,11 @@ abstract class AppLocalizations {
   /// **'Téléphone'**
   String get bookingPhoneLabel;
 
-  /// No description provided for @bookingAgeLabel.
+  /// No description provided for @bookingBirthDateLabel.
   ///
   /// In fr, this message translates to:
-  /// **'Âge'**
-  String get bookingAgeLabel;
+  /// **'Date de naissance'**
+  String get bookingBirthDateLabel;
 
   /// No description provided for @bookingMembershipCityLabel.
   ///
