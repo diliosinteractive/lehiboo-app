@@ -759,6 +759,7 @@ class _NotificationVisuals {
   static _NotificationTone _toneForType(String type) {
     if (type.contains('cancel') ||
         type.contains('rejected') ||
+        type.contains('revoked') ||
         type.contains('failed')) {
       return _NotificationTone.destructive;
     }
