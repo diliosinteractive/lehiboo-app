@@ -6646,11 +6646,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String bookingAgeYears(int age) {
-    return '$age years old';
-  }
-
-  @override
   String get bookingAddToCalendar => 'Add to calendar';
 
   @override

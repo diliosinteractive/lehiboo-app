@@ -19,7 +19,6 @@ import 'package:lehiboo/features/booking/presentation/widgets/booking_detail_sum
 import 'package:lehiboo/features/booking/presentation/widgets/ticket_preview_card.dart';
 import 'package:lehiboo/features/booking/data/datasources/booking_api_datasource.dart';
 import 'package:lehiboo/features/booking/presentation/utils/ticket_download_helper.dart';
-import 'package:lehiboo/core/utils/age_utils.dart';
 // import 'package:lehiboo/features/memberships/presentation/providers/personalized_feed_provider.dart';
 
 enum _TicketsLoadState {
@@ -941,9 +940,9 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                 SizedBox(height: tokens.spacing.m),
                 // Summary card
                 BookingDetailSummaryCard.fromBooking(booking),
-                // Customer additional info (age / town)
-                if (booking.customerBirthDate != null ||
-                    booking.customerTown != null) ...[
+                // Customer additional info (town). The age is no longer
+                // shown, as on the web.
+                if (booking.customerTown?.trim().isNotEmpty ?? false) ...[
                   SizedBox(height: tokens.spacing.m),
                   _buildCustomerInfoCard(booking),
                 ],
@@ -1026,8 +1025,6 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
   }
 
   Widget _buildCustomerInfoCard(Booking booking) {
-    final age = computeAge(booking.customerBirthDate);
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -1054,33 +1051,17 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          if (age != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Icon(Icons.person_outline,
-                      size: 16, color: Colors.grey.shade600),
-                  const SizedBox(width: 8),
-                  Text(
-                    context.l10n.bookingAgeYears(age),
-                    style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-                  ),
-                ],
+          Row(
+            children: [
+              Icon(Icons.location_on_outlined,
+                  size: 16, color: Colors.grey.shade600),
+              const SizedBox(width: 8),
+              Text(
+                booking.customerTown!,
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
               ),
-            ),
-          if (booking.customerTown != null)
-            Row(
-              children: [
-                Icon(Icons.location_on_outlined,
-                    size: 16, color: Colors.grey.shade600),
-                const SizedBox(width: 8),
-                Text(
-                  booking.customerTown!,
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-                ),
-              ],
-            ),
+            ],
+          ),
         ],
       ),
     );

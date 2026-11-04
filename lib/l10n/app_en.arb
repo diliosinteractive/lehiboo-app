@@ -2858,14 +2858,6 @@
       }
     }
   },
-  "bookingAgeYears": "{age} years old",
-  "@bookingAgeYears": {
-    "placeholders": {
-      "age": {
-        "type": "int"
-      }
-    }
-  },
   "bookingAddToCalendar": "Add to calendar",
   "bookingContactOrganizer": "Contact organizer",
   "bookingAdditionalInfoTitle": "Additional information",

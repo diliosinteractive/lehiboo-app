@@ -11391,12 +11391,6 @@ abstract class AppLocalizations {
   /// **'Participant {index}'**
   String bookingParticipantNumber(int index);
 
-  /// No description provided for @bookingAgeYears.
-  ///
-  /// In fr, this message translates to:
-  /// **'{age} ans'**
-  String bookingAgeYears(int age);
-
   /// No description provided for @bookingAddToCalendar.
   ///
   /// In fr, this message translates to:

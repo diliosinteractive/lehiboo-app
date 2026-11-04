@@ -3389,14 +3389,6 @@
       }
     }
   },
-  "bookingAgeYears": "{age} ans",
-  "@bookingAgeYears": {
-    "placeholders": {
-      "age": {
-        "type": "int"
-      }
-    }
-  },
   "bookingAddToCalendar": "Ajouter au calendrier",
   "bookingContactOrganizer": "Contacter l'organisateur",
   "bookingAdditionalInfoTitle": "Informations complémentaires",

@@ -116,6 +116,23 @@ void main() {
     expect(find.byType(TicketPreviewCard), findsNothing);
   });
 
+  testWidgets('shows the customer town but not their age', (tester) async {
+    await tester.pumpWidget(
+      _app(
+        _DetailRepository(),
+        initialBooking: _booking(
+          customerBirthDate: '1990-04-21',
+          customerTown: 'Lyon',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Lyon'), 300);
+
+    expect(find.text('Lyon'), findsOneWidget);
+    expect(find.textContaining('years old'), findsNothing);
+  });
+
   testWidgets('renders only UUID and QR data returned by the ticket endpoint',
       (tester) async {
     final dataSource = _TicketDataSource(
@@ -339,6 +356,8 @@ Booking _booking({
   String status = 'confirmed',
   String userId = 'user-a',
   List<Ticket>? tickets,
+  String? customerBirthDate,
+  String? customerTown,
 }) {
   return Booking(
     id: 'booking-uuid',
@@ -348,6 +367,8 @@ Booking _booking({
     quantity: 1,
     status: status,
     tickets: tickets,
+    customerBirthDate: customerBirthDate,
+    customerTown: customerTown,
     activity: Activity(
       id: 'event-1',
       title: title,

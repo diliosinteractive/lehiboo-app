@@ -85,6 +85,54 @@ void main() {
     },
   );
 
+  testWidgets('shows the attendee city but not their age', (tester) async {
+    const ticket = Ticket(
+      id: 'ticket-a',
+      bookingId: 'booking-a',
+      userId: 'account-a',
+      slotId: 'slot-a',
+      qrCodeData: 'account-a-qr',
+      status: 'active',
+    );
+    const booking = Booking(
+      id: 'booking-a',
+      userId: 'account-a',
+      slotId: 'slot-a',
+      activityId: 'event-a',
+      attendees: [
+        Attendee(firstName: 'Alice', lastName: 'Martin', age: 36, city: 'Lyon'),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authSessionUserIdProvider.overrideWith(
+            (ref) => ref.watch(_sessionUserIdProvider),
+          ),
+        ],
+        child: MaterialApp(
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: AppTheme.lightTheme,
+          home: TicketDetailScreen(
+            ticketId: ticket.id,
+            ticket: ticket,
+            booking: booking,
+            initialDataOwnerAccountId: 'account-a',
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Alice Martin'), findsOneWidget);
+    expect(find.text('Lyon'), findsOneWidget);
+    expect(find.textContaining('36'), findsNothing);
+    expect(find.byIcon(Icons.cake_outlined), findsNothing);
+  });
+
   testWidgets('does not turn a ticket identifier into QR data', (tester) async {
     const ticket = Ticket(
       id: 'real-ticket-id-is-not-a-qr-payload',

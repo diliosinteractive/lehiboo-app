@@ -6698,11 +6698,6 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String bookingAgeYears(int age) {
-    return '$age ans';
-  }
-
-  @override
   String get bookingAddToCalendar => 'Ajouter au calendrier';
 
   @override
