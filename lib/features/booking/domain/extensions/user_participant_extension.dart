@@ -1,4 +1,3 @@
-import 'package:lehiboo/core/utils/age_utils.dart';
 import 'package:lehiboo/domain/entities/user.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 
@@ -14,7 +13,6 @@ extension UserParticipantInfo on HbUser {
       phone: phone,
       relationship: 'self',
       birthDate: dob,
-      age: computeAge(dob),
       city: city ?? membershipCity,
       membershipCity: membershipCity ?? city,
     );

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lehiboo/domain/entities/user.dart';
 import 'package:lehiboo/features/auth/presentation/utils/birth_date_validation.dart';
 
 void main() {
@@ -22,6 +23,12 @@ void main() {
         ),
         DateTime(2008, 8, 17),
       );
+    });
+
+    test('maps account roles to the API minimum age', () {
+      expect(minimumRegistrationAgeFor(UserRole.subscriber), 16);
+      expect(minimumRegistrationAgeFor(UserRole.partner), 18);
+      expect(minimumRegistrationAgeFor(UserRole.admin), 18);
     });
 
     test('accepts a customer on their sixteenth birthday', () {

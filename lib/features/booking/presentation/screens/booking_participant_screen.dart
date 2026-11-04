@@ -7,9 +7,9 @@ import 'package:lehiboo/core/widgets/inputs/hb_text_field.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/booking/presentation/controllers/booking_flow_controller.dart';
+import 'package:lehiboo/features/booking/presentation/widgets/booking_birth_date_field.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/booking_stepper_header.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
-import 'package:lehiboo/core/utils/age_utils.dart';
 
 class BookingParticipantScreen extends ConsumerStatefulWidget {
   const BookingParticipantScreen({super.key, required this.activity});
@@ -28,7 +28,6 @@ class _BookingParticipantScreenState
   late TextEditingController _lastNameCtrl;
   late TextEditingController _emailCtrl;
   late TextEditingController _phoneCtrl;
-  late TextEditingController _ageCtrl;
   late TextEditingController _townCtrl;
   String? _customerBirthDate;
   late final String? _ownerAccountId;
@@ -48,22 +47,16 @@ class _BookingParticipantScreenState
     _lastNameCtrl = TextEditingController(text: state.buyerInfo?.lastName);
     _emailCtrl = TextEditingController(text: state.buyerInfo?.email);
     _phoneCtrl = TextEditingController(text: state.buyerInfo?.phone);
-    _ageCtrl = TextEditingController();
     _townCtrl = TextEditingController(text: state.buyerInfo?.town);
 
-    // Prefill age from buyerInfo or user profile
+    // Prefill the birth date from buyerInfo or the user profile
     if (state.buyerInfo?.birthDate != null) {
       _customerBirthDate = state.buyerInfo!.birthDate;
-      final age = computeAge(_customerBirthDate);
-      if (age != null) _ageCtrl.text = age.toString();
     } else {
       final user = ref.read(currentUserProvider);
       if (user?.birthDate != null) {
-        final birthDateStr =
+        _customerBirthDate =
             user!.birthDate!.toIso8601String().substring(0, 10);
-        _customerBirthDate = birthDateStr;
-        final age = computeAge(birthDateStr);
-        if (age != null) _ageCtrl.text = age.toString();
       }
       if (_townCtrl.text.isEmpty &&
           user?.membershipCity != null &&
@@ -79,7 +72,6 @@ class _BookingParticipantScreenState
       _lastNameCtrl.clear();
       _emailCtrl.clear();
       _phoneCtrl.clear();
-      _ageCtrl.clear();
       _townCtrl.clear();
       _customerBirthDate = null;
       if (mounted) setState(() {});
@@ -97,7 +89,6 @@ class _BookingParticipantScreenState
     _lastNameCtrl.dispose();
     _emailCtrl.dispose();
     _phoneCtrl.dispose();
-    _ageCtrl.dispose();
     _townCtrl.dispose();
     super.dispose();
   }
@@ -205,18 +196,14 @@ class _BookingParticipantScreenState
                       ),
                     ),
                     const SizedBox(height: 12),
-                    HbTextField(
-                      controller: _ageCtrl,
-                      label: context.l10n.bookingAgeLabel,
-                      keyboardType: TextInputType.number,
-                      onChanged: (value) {
-                        final age = int.tryParse(value);
-                        if (age != null && age >= 1 && age < 150) {
-                          _customerBirthDate = ageToBirthDate(age);
-                        } else if (value.isEmpty) {
-                          _customerBirthDate = null;
-                        }
-                      },
+                    BookingBirthDateField(
+                      value: _customerBirthDate,
+                      ownerAccountId: _ownerAccountId,
+                      decoration: InputDecoration(
+                        labelText: context.l10n.bookingBirthDateLabel,
+                      ),
+                      onChanged: (value) =>
+                          setState(() => _customerBirthDate = value),
                     ),
                     const SizedBox(height: 12),
                     HbTextField(

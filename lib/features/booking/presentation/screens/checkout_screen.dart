@@ -17,8 +17,8 @@ import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 import 'package:lehiboo/features/booking/presentation/utils/booking_l10n.dart';
 import 'package:lehiboo/features/booking/presentation/utils/order_checkout_error_mapper.dart';
+import 'package:lehiboo/features/booking/presentation/widgets/booking_birth_date_field.dart';
 import 'package:lehiboo/features/booking/presentation/widgets/participant_forms_section.dart';
-import 'package:lehiboo/core/utils/age_utils.dart';
 import 'package:lehiboo/features/memberships/presentation/providers/personalized_feed_provider.dart';
 import 'package:lehiboo/features/profile/presentation/providers/saved_participants_provider.dart';
 
@@ -41,10 +41,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _ageController = TextEditingController();
   final _townController = TextEditingController();
 
-  // Birth date backing value for API (computed from age)
+  /// `customer_birth_date`, `yyyy-MM-dd`.
   String? _customerBirthDate;
 
   // Attendees per ticket type
@@ -141,7 +140,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
-    _ageController.dispose();
     _townController.dispose();
     super.dispose();
   }
@@ -177,14 +175,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       _emailController.text = user.email;
       _phoneController.text = user.phone ?? '';
 
-      // Birth date -> age
       if (user.birthDate != null) {
-        final birthDateStr = user.birthDate!.toIso8601String().substring(0, 10);
-        _customerBirthDate = birthDateStr;
-        final age = computeAge(birthDateStr);
-        if (age != null) {
-          _ageController.text = age.toString();
-        }
+        _customerBirthDate = user.birthDate!.toIso8601String().substring(0, 10);
       }
       // Town
       if (user.membershipCity != null && user.membershipCity!.isNotEmpty) {
@@ -568,19 +560,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             ),
             const SizedBox(height: 12),
 
-            // Age
-            TextFormField(
-              controller: _ageController,
-              decoration: _inputDecoration(context.l10n.bookingAgeLabel),
-              keyboardType: TextInputType.number,
-              onChanged: (value) {
-                final age = int.tryParse(value);
-                if (age != null && age >= 1 && age < 150) {
-                  _customerBirthDate = ageToBirthDate(age);
-                } else if (value.isEmpty) {
-                  _customerBirthDate = null;
-                }
-              },
+            BookingBirthDateField(
+              value: _customerBirthDate,
+              ownerAccountId: _ownerSessionUserId,
+              decoration: _inputDecoration(context.l10n.bookingBirthDateLabel),
+              onChanged: (value) => setState(() => _customerBirthDate = value),
             ),
             const SizedBox(height: 12),
 

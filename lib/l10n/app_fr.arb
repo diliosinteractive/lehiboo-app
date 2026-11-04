@@ -260,8 +260,8 @@
   "profileLastNameRequired": "Le nom est requis",
   "profilePhoneLabel": "Téléphone",
   "profileBirthDateLabel": "Date de naissance",
-  "profileBirthDateUnset": "Non renseigné",
-  "profileBirthDateReadOnlyHelper": "La date de naissance ne peut plus être modifiée après la création du compte",
+  "profileBirthDateReadOnlyHelper": "La date de naissance ne peut plus être modifiée une fois renseignée",
+  "profileBirthDateSetOnceHelper": "Vous ne pourrez plus la modifier une fois enregistrée",
   "profileCityLabel": "Ville",
   "profileEmailReadOnlyHelper": "L'email ne peut pas être modifié",
   "profileChangePasswordCta": "Changer mon mot de passe",
@@ -3086,7 +3086,7 @@
   "bookingLastNameLabelRequired": "Nom *",
   "bookingEmailLabelRequired": "Email *",
   "bookingPhoneLabel": "Téléphone",
-  "bookingAgeLabel": "Âge",
+  "bookingBirthDateLabel": "Date de naissance",
   "bookingMembershipCityLabel": "Ville d'appartenance",
   "bookingFirstNameRequired": "Le prénom est requis",
   "bookingLastNameRequired": "Le nom est requis",
@@ -3385,14 +3385,6 @@
   "@bookingParticipantNumber": {
     "placeholders": {
       "index": {
-        "type": "int"
-      }
-    }
-  },
-  "bookingAgeYears": "{age} ans",
-  "@bookingAgeYears": {
-    "placeholders": {
-      "age": {
         "type": "int"
       }
     }

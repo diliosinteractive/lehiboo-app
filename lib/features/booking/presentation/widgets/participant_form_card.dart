@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/core/themes/colors.dart';
-import 'package:lehiboo/core/utils/age_utils.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/auth/presentation/widgets/account_bound_route_guard.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
@@ -135,7 +134,6 @@ class _ParticipantFormCardState extends ConsumerState<ParticipantFormCard> {
   // Sync helpers
 
   void _emitChange() {
-    final age = computeAge(_birthDate);
     widget.onChanged(ParticipantInfo(
       firstName: _firstNameCtrl.text.trim(),
       lastName: _lastNameCtrl.text.trim(),
@@ -143,7 +141,6 @@ class _ParticipantFormCardState extends ConsumerState<ParticipantFormCard> {
       phone: _phoneCtrl.text.trim().isNotEmpty ? _phoneCtrl.text.trim() : null,
       relationship: _relationship,
       birthDate: _birthDate,
-      age: age,
       city: _cityCtrl.text.trim().isNotEmpty ? _cityCtrl.text.trim() : null,
       membershipCity:
           _cityCtrl.text.trim().isNotEmpty ? _cityCtrl.text.trim() : null,

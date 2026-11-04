@@ -250,8 +250,8 @@
   "profileLastNameRequired": "Last name is required",
   "profilePhoneLabel": "Phone",
   "profileBirthDateLabel": "Birth date",
-  "profileBirthDateUnset": "Not provided",
-  "profileBirthDateReadOnlyHelper": "Birth date cannot be changed after account creation",
+  "profileBirthDateReadOnlyHelper": "Birth date cannot be changed once set",
+  "profileBirthDateSetOnceHelper": "You won't be able to change it once saved",
   "profileCityLabel": "City",
   "profileEmailReadOnlyHelper": "Email cannot be changed",
   "profileChangePasswordCta": "Change my password",
@@ -2555,7 +2555,7 @@
   "bookingLastNameLabelRequired": "Last name *",
   "bookingEmailLabelRequired": "Email *",
   "bookingPhoneLabel": "Phone",
-  "bookingAgeLabel": "Age",
+  "bookingBirthDateLabel": "Birth date",
   "bookingMembershipCityLabel": "Membership city",
   "bookingFirstNameRequired": "First name is required",
   "bookingLastNameRequired": "Last name is required",
@@ -2854,14 +2854,6 @@
   "@bookingParticipantNumber": {
     "placeholders": {
       "index": {
-        "type": "int"
-      }
-    }
-  },
-  "bookingAgeYears": "{age} years old",
-  "@bookingAgeYears": {
-    "placeholders": {
-      "age": {
         "type": "int"
       }
     }

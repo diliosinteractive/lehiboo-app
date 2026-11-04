@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lehiboo/core/themes/app_theme.dart';
+import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/domain/entities/user.dart';
 import 'package:lehiboo/features/auth/domain/repositories/auth_repository.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
@@ -45,6 +46,25 @@ void main() {
     expect(find.text('Organizer'), findsNothing);
     expect(find.text('Your event starts in 1 hour'), findsOneWidget);
     expect(repository.requestedContexts, everyElement('participant'));
+  });
+
+  testWidgets('a revoked membership is shown as a destructive notification',
+      (tester) async {
+    final repository = _ContextNotificationsRepository(
+      participantNotification: _notification(
+        'revoked',
+        'organization_membership_revoked',
+        'Votre adhésion a été retirée',
+      ),
+    );
+    final container = _container(_participant, repository);
+    addTearDown(container.dispose);
+    await tester.pumpWidget(_app(container));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Votre adhésion a été retirée'), findsOneWidget);
+    final icon = tester.widget<Icon>(find.byIcon(Icons.groups_outlined));
+    expect(icon.color, HbColors.error);
   });
 }
 
@@ -93,6 +113,9 @@ class _TestAuthNotifier extends AuthNotifier {
 }
 
 class _ContextNotificationsRepository implements InAppNotificationsRepository {
+  _ContextNotificationsRepository({this.participantNotification});
+
+  final InAppNotification? participantNotification;
   final requestedContexts = <String>[];
 
   @override
@@ -109,8 +132,9 @@ class _ContextNotificationsRepository implements InAppNotificationsRepository {
     final notification = context == 'vendor'
         ? _notification(
             'vendor', 'booking_received_organiser', 'New booking received')
-        : _notification('participant', 'event_start_reminder',
-            'Your event starts in 1 hour');
+        : participantNotification ??
+            _notification('participant', 'event_start_reminder',
+                'Your event starts in 1 hour');
     return InAppNotificationsPage(
       notifications: [notification],
       currentPage: 1,

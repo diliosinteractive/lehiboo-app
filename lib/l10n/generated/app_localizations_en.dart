@@ -723,11 +723,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileBirthDateLabel => 'Birth date';
 
   @override
-  String get profileBirthDateUnset => 'Not provided';
+  String get profileBirthDateReadOnlyHelper =>
+      'Birth date cannot be changed once set';
 
   @override
-  String get profileBirthDateReadOnlyHelper =>
-      'Birth date cannot be changed after account creation';
+  String get profileBirthDateSetOnceHelper =>
+      'You won\'t be able to change it once saved';
 
   @override
   String get profileCityLabel => 'City';
@@ -6032,7 +6033,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bookingPhoneLabel => 'Phone';
 
   @override
-  String get bookingAgeLabel => 'Age';
+  String get bookingBirthDateLabel => 'Birth date';
 
   @override
   String get bookingMembershipCityLabel => 'Membership city';
@@ -6643,11 +6644,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String bookingParticipantNumber(int index) {
     return 'Participant $index';
-  }
-
-  @override
-  String bookingAgeYears(int age) {
-    return '$age years old';
   }
 
   @override
