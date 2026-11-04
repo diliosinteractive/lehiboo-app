@@ -133,6 +133,25 @@ void main() {
     expect(find.textContaining('years old'), findsNothing);
   });
 
+  testWidgets('a long customer town wraps instead of overflowing',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const town = 'Saint-Rémy-de-Provence-et-Communes-Associées-du-Luberon';
+    await tester.pumpWidget(
+      _app(
+        _DetailRepository(),
+        initialBooking: _booking(customerTown: town),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text(town), 300);
+
+    expect(find.text(town), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('renders only UUID and QR data returned by the ticket endpoint',
       (tester) async {
     final dataSource = _TicketDataSource(

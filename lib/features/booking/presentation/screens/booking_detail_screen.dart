@@ -1056,9 +1056,11 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               Icon(Icons.location_on_outlined,
                   size: 16, color: Colors.grey.shade600),
               const SizedBox(width: 8),
-              Text(
-                booking.customerTown!,
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+              Expanded(
+                child: Text(
+                  booking.customerTown!,
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                ),
               ),
             ],
           ),
