@@ -50,6 +50,7 @@ class _RecordingProfileApi extends ProfileApiDataSource {
     String? lastName,
     String? phone,
     String? jobTitle,
+    String? birthDate,
     String? membershipCity,
     bool? newsletter,
     bool? pushNotificationsEnabled,

@@ -10,7 +10,9 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../../../../domain/entities/user.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/utils/birth_date_validation.dart';
 import '../../data/datasources/profile_api_datasource.dart';
 import '../utils/profile_image_picker_error.dart';
 
@@ -27,6 +29,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   final _lastNameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _membershipCityController = TextEditingController();
+  final _birthDateController = TextEditingController();
   DateTime? _birthDate;
 
   bool _isLoading = false;
@@ -96,6 +99,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     _lastNameController.dispose();
     _phoneController.dispose();
     _membershipCityController.dispose();
+    _birthDateController.dispose();
     super.dispose();
   }
 
@@ -127,6 +131,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     _lastNameController.clear();
     _phoneController.clear();
     _membershipCityController.clear();
+    _birthDateController.clear();
     _currentPasswordController?.clear();
     _newPasswordController?.clear();
     _confirmPasswordController?.clear();
@@ -313,22 +318,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                         keyboardType: TextInputType.phone,
                       ),
                       const SizedBox(height: 16),
-                      _buildTextField(
-                        fieldKey: const ValueKey('profile-edit-birth-date'),
-                        initialValue: _birthDate != null
-                            ? context
-                                .appDateFormat(
-                                  'dd/MM/yyyy',
-                                  enPattern: 'MM/dd/yyyy',
-                                )
-                                .format(_birthDate!)
-                            : context.l10n.profileBirthDateUnset,
-                        label: context.l10n.profileBirthDateLabel,
-                        icon: Icons.cake_outlined,
-                        readOnly: true,
-                        helperText: context.l10n.profileBirthDateReadOnlyHelper,
-                        suffixIcon: const Icon(Icons.lock_outline, size: 20),
-                      ),
+                      _buildBirthDateField(user),
                       const SizedBox(height: 16),
                       // Membership city
                       _buildTextField(
@@ -500,6 +490,77 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     );
   }
 
+  /// The API accepts a birth date once and refuses any later change, so the
+  /// field is editable only while the account has none.
+  Widget _buildBirthDateField(HbUser user) {
+    final savedBirthDate = user.birthDate;
+    if (savedBirthDate != null) {
+      return _buildTextField(
+        fieldKey: const ValueKey('profile-edit-birth-date'),
+        initialValue: _formatBirthDate(savedBirthDate),
+        label: context.l10n.profileBirthDateLabel,
+        icon: Icons.cake_outlined,
+        readOnly: true,
+        helperText: context.l10n.profileBirthDateReadOnlyHelper,
+        suffixIcon: const Icon(Icons.lock_outline, size: 20),
+      );
+    }
+
+    return _buildTextField(
+      fieldKey: const ValueKey('profile-edit-birth-date-picker'),
+      controller: _birthDateController,
+      label: context.l10n.profileBirthDateLabel,
+      icon: Icons.cake_outlined,
+      readOnly: true,
+      onTap: () => _pickBirthDate(user.role),
+      helperText: context.l10n.profileBirthDateSetOnceHelper,
+      suffixIcon: _birthDate != null
+          ? IconButton(
+              key: const ValueKey('profile-edit-birth-date-clear'),
+              icon: const Icon(Icons.clear, size: 20),
+              tooltip: MaterialLocalizations.of(context).clearButtonTooltip,
+              onPressed: () => setState(() {
+                _birthDate = null;
+                _birthDateController.clear();
+              }),
+            )
+          : null,
+    );
+  }
+
+  String _formatBirthDate(DateTime date) {
+    return context
+        .appDateFormat('dd/MM/yyyy', enPattern: 'MM/dd/yyyy')
+        .format(date);
+  }
+
+  Future<void> _pickBirthDate(UserRole role) async {
+    final ownerAccountId = _ownerAccountId;
+    final generation = _sessionGeneration;
+    if (!_ownsSession(ownerAccountId, generation)) return;
+
+    // Same minimum age as the API, which depends on the account's role.
+    final maxDate = latestAllowedBirthDate(
+      minimumAgeYears: role == UserRole.subscriber
+          ? customerMinimumRegistrationAgeYears
+          : vendorMinimumRegistrationAgeYears,
+    );
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _birthDate != null && !_birthDate!.isAfter(maxDate)
+          ? _birthDate!
+          : maxDate,
+      firstDate: DateTime(1920),
+      lastDate: maxDate,
+      helpText: context.l10n.profileBirthDateLabel,
+    );
+    if (picked == null || !_ownsSession(ownerAccountId, generation)) return;
+    setState(() {
+      _birthDate = picked;
+      _birthDateController.text = _formatBirthDate(picked);
+    });
+  }
+
   Widget _buildTextField({
     Key? fieldKey,
     TextEditingController? controller,
@@ -509,6 +570,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     TextInputType keyboardType = TextInputType.text,
     bool enabled = true,
     bool readOnly = false,
+    VoidCallback? onTap,
     String? helperText,
     Widget? suffixIcon,
     String? Function(String?)? validator,
@@ -520,15 +582,18 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       keyboardType: keyboardType,
       enabled: enabled,
       readOnly: readOnly,
+      onTap: onTap,
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
         helperText: helperText,
+        helperMaxLines: 2,
         prefixIcon: Icon(icon, color: HbColors.brandPrimary),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor:
-            enabled && !readOnly ? Colors.grey.shade50 : Colors.grey.shade100,
+        fillColor: enabled && (!readOnly || onTap != null)
+            ? Colors.grey.shade50
+            : Colors.grey.shade100,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -689,12 +754,16 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     try {
       final profileDataSource = ref.read(profileApiDataSourceProvider);
       final user = ref.read(authProvider).user;
+      // Only a first birth date is sent: the API refuses to change one.
+      final newBirthDate = user?.birthDate == null ? _birthDate : null;
       final updatedUser = await profileDataSource.updateProfile(
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
         phone: _phoneController.text.trim().isNotEmpty
             ? _phoneController.text.trim()
             : null,
+        birthDate:
+            newBirthDate != null ? formatBirthDateForApi(newBirthDate) : null,
         membershipCity: _membershipCityController.text.trim().isNotEmpty
             ? _membershipCityController.text.trim()
             : null,

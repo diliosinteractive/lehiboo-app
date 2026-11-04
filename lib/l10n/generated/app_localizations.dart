@@ -1412,17 +1412,17 @@ abstract class AppLocalizations {
   /// **'Date de naissance'**
   String get profileBirthDateLabel;
 
-  /// No description provided for @profileBirthDateUnset.
-  ///
-  /// In fr, this message translates to:
-  /// **'Non renseigné'**
-  String get profileBirthDateUnset;
-
   /// No description provided for @profileBirthDateReadOnlyHelper.
   ///
   /// In fr, this message translates to:
-  /// **'La date de naissance ne peut plus être modifiée après la création du compte'**
+  /// **'La date de naissance ne peut plus être modifiée une fois renseignée'**
   String get profileBirthDateReadOnlyHelper;
+
+  /// No description provided for @profileBirthDateSetOnceHelper.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous ne pourrez plus la modifier une fois enregistrée'**
+  String get profileBirthDateSetOnceHelper;
 
   /// No description provided for @profileCityLabel.
   ///

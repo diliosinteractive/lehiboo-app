@@ -723,11 +723,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileBirthDateLabel => 'Birth date';
 
   @override
-  String get profileBirthDateUnset => 'Not provided';
+  String get profileBirthDateReadOnlyHelper =>
+      'Birth date cannot be changed once set';
 
   @override
-  String get profileBirthDateReadOnlyHelper =>
-      'Birth date cannot be changed after account creation';
+  String get profileBirthDateSetOnceHelper =>
+      'You won\'t be able to change it once saved';
 
   @override
   String get profileCityLabel => 'City';

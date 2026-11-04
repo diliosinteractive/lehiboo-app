@@ -727,11 +727,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get profileBirthDateLabel => 'Date de naissance';
 
   @override
-  String get profileBirthDateUnset => 'Non renseigné';
+  String get profileBirthDateReadOnlyHelper =>
+      'La date de naissance ne peut plus être modifiée une fois renseignée';
 
   @override
-  String get profileBirthDateReadOnlyHelper =>
-      'La date de naissance ne peut plus être modifiée après la création du compte';
+  String get profileBirthDateSetOnceHelper =>
+      'Vous ne pourrez plus la modifier une fois enregistrée';
 
   @override
   String get profileCityLabel => 'Ville';

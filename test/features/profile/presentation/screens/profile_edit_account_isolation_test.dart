@@ -9,6 +9,7 @@ import 'package:lehiboo/domain/entities/user.dart';
 import 'package:lehiboo/features/auth/data/models/auth_response_dto.dart';
 import 'package:lehiboo/features/auth/domain/repositories/auth_repository.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/utils/birth_date_validation.dart';
 import 'package:lehiboo/features/profile/data/datasources/profile_api_datasource.dart';
 import 'package:lehiboo/features/profile/presentation/screens/profile_edit_screen.dart';
 import 'package:lehiboo/l10n/generated/app_localizations.dart';
@@ -42,6 +43,7 @@ class _ControlledProfileApi extends ProfileApiDataSource {
   CancelToken? profileCancelToken;
   CancelToken? passwordCancelToken;
   String? submittedFirstName;
+  String? submittedBirthDate;
   String? submittedCurrentPassword;
 
   @override
@@ -50,6 +52,7 @@ class _ControlledProfileApi extends ProfileApiDataSource {
     String? lastName,
     String? phone,
     String? jobTitle,
+    String? birthDate,
     String? membershipCity,
     bool? newsletter,
     bool? pushNotificationsEnabled,
@@ -57,6 +60,7 @@ class _ControlledProfileApi extends ProfileApiDataSource {
     CancelToken? cancelToken,
   }) {
     submittedFirstName = firstName;
+    submittedBirthDate = birthDate;
     profileCancelToken = cancelToken;
     return profileResponse.future;
   }
@@ -163,7 +167,7 @@ void main() {
       expect(tester.widget<EditableText>(editableText).readOnly, isTrue);
       expect(find.text('04/21/1990'), findsOneWidget);
       expect(
-        find.text('Birth date cannot be changed after account creation'),
+        find.text('Birth date cannot be changed once set'),
         findsOneWidget,
       );
 
@@ -172,6 +176,101 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(DatePickerDialog), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      final save = find.byKey(const ValueKey('profile-edit-save'));
+      await tester.ensureVisible(save);
+      await tester.tap(save);
+      await tester.pump();
+      expect(api.submittedFirstName, 'Alice');
+      expect(api.submittedBirthDate, isNull);
+    },
+  );
+
+  testWidgets(
+    'a missing birth date can be set once, within the minimum age',
+    (tester) async {
+      final api = _ControlledProfileApi();
+      await tester.pumpWidget(_testApp(api: api, captureAuth: (_) {}));
+      await tester.pumpAndSettle();
+
+      expect(
+          find.byKey(const ValueKey('profile-edit-birth-date')), findsNothing);
+      expect(
+        find.text("You won't be able to change it once saved"),
+        findsOneWidget,
+      );
+
+      final picker =
+          find.byKey(const ValueKey('profile-edit-birth-date-picker'));
+      await tester.ensureVisible(picker);
+      await tester.tap(picker);
+      await tester.pumpAndSettle();
+
+      final latestAllowed = latestAllowedBirthDate(
+        minimumAgeYears: customerMinimumRegistrationAgeYears,
+      );
+      final dialog =
+          tester.widget<DatePickerDialog>(find.byType(DatePickerDialog));
+      expect(dialog.lastDate, latestAllowed);
+
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey('profile-edit-birth-date-clear')),
+        findsOneWidget,
+      );
+
+      final save = find.byKey(const ValueKey('profile-edit-save'));
+      await tester.ensureVisible(save);
+      await tester.tap(save);
+      await tester.pump();
+      expect(api.submittedBirthDate, formatBirthDateForApi(latestAllowed));
+    },
+  );
+
+  testWidgets(
+    'a refused birth date shows the API message',
+    (tester) async {
+      final api = _ControlledProfileApi();
+      await tester.pumpWidget(_testApp(api: api, captureAuth: (_) {}));
+      await tester.pumpAndSettle();
+
+      final picker =
+          find.byKey(const ValueKey('profile-edit-birth-date-picker'));
+      await tester.ensureVisible(picker);
+      await tester.tap(picker);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      final save = find.byKey(const ValueKey('profile-edit-save'));
+      await tester.ensureVisible(save);
+      await tester.tap(save);
+      await tester.pump();
+
+      const message =
+          'La date de naissance ne peut plus être modifiée une fois renseignée.';
+      final requestOptions = RequestOptions(path: '/auth/me');
+      api.profileResponse.completeError(
+        DioException(
+          requestOptions: requestOptions,
+          type: DioExceptionType.badResponse,
+          response: Response(
+            requestOptions: requestOptions,
+            statusCode: 422,
+            data: const {
+              'message': message,
+              'errors': {
+                'birth_date': [message],
+              },
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(message), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
