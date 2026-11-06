@@ -21,6 +21,7 @@ import '../../../../features/events/data/models/home_feed_response_dto.dart'
     show HomeFeedDataDto;
 import '../../../events/data/mappers/event_mapper.dart';
 import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import '../../../memberships/presentation/providers/membership_content_revision_provider.dart';
 
 /// Maximum age of Home data while the provider remains cached.
 ///
@@ -195,6 +196,7 @@ final homeFeedProvider = StateNotifierProvider.autoDispose<
   // Reconstructing this controller synchronously prevents account A's feed
   // from remaining visible while account B is loading.
   ref.watch(authSessionKeyProvider);
+  ref.watch(membershipContentRevisionProvider);
   final eventRepository = ref.watch(eventRepositoryProvider);
   final userLocation = ref.watch(userLocationProvider).valueOrNull;
   final now = ref.watch(homeNowProvider);
@@ -253,6 +255,7 @@ final homeNearbyAvailableActivitiesProvider = StateNotifierProvider.autoDispose<
     AsyncValue<List<Activity>>>((ref) {
   const nearbyRadiusKm = 30;
   ref.watch(authSessionKeyProvider);
+  ref.watch(membershipContentRevisionProvider);
   final eventRepository = ref.watch(eventRepositoryProvider);
   final userLocation = ref.watch(userLocationProvider).valueOrNull;
   final now = ref.watch(homeNowProvider);
@@ -884,6 +887,7 @@ final homeNewActivitiesProvider = StateNotifierProvider.autoDispose<
   const querySize = 50;
   const maxCards = 10;
   ref.watch(authSessionKeyProvider);
+  ref.watch(membershipContentRevisionProvider);
   final eventRepository = ref.watch(eventRepositoryProvider);
   final now = ref.watch(homeNowProvider);
   return _SessionBoundHomeController<List<Activity>>(

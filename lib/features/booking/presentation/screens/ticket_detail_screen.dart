@@ -437,7 +437,6 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
     final email = attendee?.email ?? ticket.attendeeEmail;
     final phone = attendee?.phone;
     final city = attendee?.city;
-    final age = attendee?.age;
 
     return SingleChildScrollView(
       padding: EdgeInsets.all(tokens.spacing.m),
@@ -573,10 +572,10 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                     ),
                   ],
                 ),
-                // Extra attendee info: email, phone, age, city.
+                // Extra attendee info: email, phone, city. The age is no
+                // longer shown, as on the web.
                 if ((email != null && email.isNotEmpty) ||
                     (phone != null && phone.isNotEmpty) ||
-                    age != null ||
                     (city != null && city.isNotEmpty)) ...[
                   const SizedBox(height: 12),
                   Divider(
@@ -589,13 +588,6 @@ class _TicketDetailScreenState extends ConsumerState<TicketDetailScreen> {
                   if (phone != null && phone.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     _buildInfoRow(icon: Icons.phone_outlined, text: phone),
-                  ],
-                  if (age != null) ...[
-                    const SizedBox(height: 6),
-                    _buildInfoRow(
-                      icon: Icons.cake_outlined,
-                      text: context.l10n.bookingAgeYears(age),
-                    ),
                   ],
                   if (city != null && city.isNotEmpty) ...[
                     const SizedBox(height: 6),

@@ -175,9 +175,9 @@ void main() {
     expect(repository.detailRequests, hasLength(2));
 
     final oldController = container.read(firstProviderA.notifier);
-    expect(
-      oldController.seed(_event('Stale A event'), owner: firstOwnerA),
-      isFalse,
+    await expectLater(
+      oldController.unlock('secret', owner: firstOwnerA),
+      throwsA(isA<EventDetailSessionChangedException>()),
     );
 
     repository.detailRequests[0].complete(_event('Old A response'));

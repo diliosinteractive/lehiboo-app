@@ -222,6 +222,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'Notification setup succeeded, but your account preference could not be saved. Try again.';
 
   @override
+  String get settingsPushHintBlockedBySystem =>
+      'Blocked in your phone settings';
+
+  @override
+  String get settingsPushHintOpenSystemSettings => 'Open settings';
+
+  @override
+  String get settingsPushHintNotSetUpOnDevice =>
+      'Not enabled on this phone yet';
+
+  @override
+  String get settingsPushHintEnableOnDevice => 'Enable';
+
+  @override
+  String get settingsPushHintSetupFailed => 'Not ready on this phone yet';
+
+  @override
+  String get settingsPushOpenSystemSettingsFailed =>
+      'Couldn\'t open the settings. Open them from your phone.';
+
+  @override
   String get settingsNewsletterTitle => 'Newsletter';
 
   @override
@@ -702,11 +723,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileBirthDateLabel => 'Birth date';
 
   @override
-  String get profileBirthDateUnset => 'Not provided';
+  String get profileBirthDateReadOnlyHelper =>
+      'Birth date cannot be changed once set';
 
   @override
-  String get profileBirthDateReadOnlyHelper =>
-      'Birth date cannot be changed after account creation';
+  String get profileBirthDateSetOnceHelper =>
+      'You won\'t be able to change it once saved';
 
   @override
   String get profileCityLabel => 'City';
@@ -6011,7 +6033,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bookingPhoneLabel => 'Phone';
 
   @override
-  String get bookingAgeLabel => 'Age';
+  String get bookingBirthDateLabel => 'Birth date';
 
   @override
   String get bookingMembershipCityLabel => 'Membership city';
@@ -6622,11 +6644,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String bookingParticipantNumber(int index) {
     return 'Participant $index';
-  }
-
-  @override
-  String bookingAgeYears(int age) {
-    return '$age years old';
   }
 
   @override

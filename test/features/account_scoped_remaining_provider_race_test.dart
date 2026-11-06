@@ -11,7 +11,6 @@ import 'package:lehiboo/features/checkin/domain/entities/active_organization.dar
 import 'package:lehiboo/features/checkin/presentation/providers/active_organization_provider.dart';
 import 'package:lehiboo/features/events/data/models/event_dto.dart';
 import 'package:lehiboo/features/memberships/data/datasources/memberships_api_datasource.dart';
-import 'package:lehiboo/features/memberships/data/models/membership_dto.dart';
 import 'package:lehiboo/features/memberships/domain/repositories/memberships_repository.dart';
 import 'package:lehiboo/features/memberships/presentation/providers/private_events_provider.dart';
 import 'package:lehiboo/features/partners/data/datasources/organizer_api_datasource.dart';
@@ -511,7 +510,7 @@ PrivateEventsPage _privateEventsPage(
 ActiveOrganization _organization(String uuid) => ActiveOrganization(
       uuid: uuid,
       name: uuid,
-      role: MembershipRole.staff,
+      role: OrganizationAccessRole.manager,
     );
 
 String _persistedOrganization(

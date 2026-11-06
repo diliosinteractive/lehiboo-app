@@ -19,8 +19,11 @@ class InvitationDto with _$InvitationDto {
     @JsonKey(fromJson: _stringOrNull) String? role,
     @JsonKey(name: 'role_label', fromJson: _stringOrNull) String? roleLabel,
     @JsonKey(name: 'is_valid', fromJson: _bool) @Default(false) bool isValid,
-    @JsonKey(name: 'is_expired', fromJson: _bool) @Default(false) bool isExpired,
-    @JsonKey(name: 'is_accepted', fromJson: _bool) @Default(false)
+    @JsonKey(name: 'is_expired', fromJson: _bool)
+    @Default(false)
+    bool isExpired,
+    @JsonKey(name: 'is_accepted', fromJson: _bool)
+    @Default(false)
     bool isAccepted,
     @JsonKey(name: 'has_account', fromJson: _boolOrNull) bool? hasAccount,
     @JsonKey(fromJson: _stringOrNull) String? token,
@@ -34,6 +37,28 @@ class InvitationDto with _$InvitationDto {
 
   factory InvitationDto.fromJson(Map<String, dynamic> json) =>
       _$InvitationDtoFromJson(json);
+}
+
+/// The two invitation outcomes are backed by different server-side models.
+///
+/// Viewer invitations create a customer adherence and belong in
+/// `/me/memberships`. Owner/admin/manager invitations create a staff
+/// `OrganizationMember` and belong in the managed-organization surface.
+enum InvitationAccessKind { adherence, management }
+
+InvitationAccessKind invitationAccessKindForRole(String? role) {
+  return switch (role?.trim().toLowerCase()) {
+    'owner' ||
+    'admin' ||
+    'manager' ||
+    'staff' =>
+      InvitationAccessKind.management,
+    _ => InvitationAccessKind.adherence,
+  };
+}
+
+extension InvitationDtoAccess on InvitationDto {
+  InvitationAccessKind get accessKind => invitationAccessKindForRole(role);
 }
 
 @freezed
@@ -69,7 +94,8 @@ class InvitationPreviewDto with _$InvitationPreviewDto {
 class InvitationPreviewMetaDto with _$InvitationPreviewMetaDto {
   const factory InvitationPreviewMetaDto({
     @JsonKey(name: 'is_valid', fromJson: _bool) @Default(false) bool isValid,
-    @JsonKey(name: 'expires_in_hours', fromJson: _intOrNull) int? expiresInHours,
+    @JsonKey(name: 'expires_in_hours', fromJson: _intOrNull)
+    int? expiresInHours,
     @JsonKey(name: 'organization_name', fromJson: _stringOrNull)
     String? organizationName,
     @JsonKey(fromJson: _stringOrNull) String? role,

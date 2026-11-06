@@ -18,6 +18,7 @@ import 'package:lehiboo/core/utils/guest_guard.dart';
 import 'package:lehiboo/features/search/presentation/widgets/save_search_sheet.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
+import 'package:lehiboo/features/memberships/presentation/providers/membership_content_revision_provider.dart';
 
 /// Provider for events list from real API
 final eventsListProvider = StateNotifierProvider.family<_EventsListController,
@@ -26,6 +27,7 @@ final eventsListProvider = StateNotifierProvider.family<_EventsListController,
   // opaque key forces a fresh, blank controller for every session boundary,
   // including a rapid A -> B -> A transition.
   ref.watch(authSessionKeyProvider);
+  ref.watch(membershipContentRevisionProvider);
   final repository = ref.watch(eventRepositoryProvider);
   return _EventsListController(repository, params);
 });

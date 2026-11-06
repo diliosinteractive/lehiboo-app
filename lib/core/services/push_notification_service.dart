@@ -119,6 +119,8 @@ abstract interface class PushNotificationSdk {
 
   Future<bool> requestPermission();
 
+  Future<bool> canRequestPermission();
+
   Future<void> login(String externalId);
 
   Future<void> logout();
@@ -185,6 +187,9 @@ class OneSignalPushNotificationSdk implements PushNotificationSdk {
   Future<bool> requestPermission() {
     return OneSignal.Notifications.requestPermission(true);
   }
+
+  @override
+  Future<bool> canRequestPermission() => OneSignal.Notifications.canRequest();
 
   @override
   Future<void> login(String externalId) => OneSignal.login(externalId);
@@ -256,6 +261,10 @@ class PushNotificationService {
   /// the user toggles it in the system settings, so the provider state stays
   /// in sync with [hasPermission].
   void Function(bool granted)? onPermissionChanged;
+
+  /// Fired for foreground deliveries and notification interactions so domain
+  /// caches can reconcile server-side changes carried by a push.
+  void Function(Map<String, dynamic> data)? onNotificationData;
 
   PushNotificationService({
     required DeepLinkService deepLinkService,
@@ -354,6 +363,7 @@ class PushNotificationService {
       'OneSignal: foreground notification '
       '${event.notification.notificationId}',
     );
+    _notifyNotificationData(event.notification.additionalData);
     // Match the previous behaviour: surface the OS notification even when the
     // app is foregrounded. Without this OneSignal silently drops it.
     event.preventDefault();
@@ -428,6 +438,19 @@ class PushNotificationService {
     } catch (e) {
       debugPrint('OneSignal: promptUserForPermission failed: $e');
       return false;
+    }
+  }
+
+  /// Whether the OS can still show its notification permission prompt.
+  /// `false` once it no longer will (refused for good): only the system
+  /// settings can bring notifications back. `null` when the SDK cannot tell.
+  Future<bool?> canRequestPermission() async {
+    if (_disposed || !_isOneSignalConfigured) return null;
+    try {
+      return await _sdk.canRequestPermission();
+    } catch (e) {
+      debugPrint('OneSignal: canRequestPermission failed: $e');
+      return null;
     }
   }
 
@@ -555,6 +578,7 @@ class PushNotificationService {
     Map<String, dynamic> data, {
     bool coldStart = false,
   }) {
+    _notifyNotificationData(data);
     final deepLinks = _activeDeepLinkService;
     final type = data['type']?.toString();
     final resolvedRoute = type == null
@@ -626,6 +650,12 @@ class PushNotificationService {
     onSubscriptionReceived = null;
     onSubscriptionRemoved = null;
     onPermissionChanged = null;
+    onNotificationData = null;
+  }
+
+  void _notifyNotificationData(Map<String, dynamic>? data) {
+    if (_disposed || data == null || data.isEmpty) return;
+    onNotificationData?.call(Map<String, dynamic>.from(data));
   }
 
   Future<String> getDeviceId() async {

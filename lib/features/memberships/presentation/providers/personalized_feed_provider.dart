@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../data/models/personalized_feed_dto.dart';
 import '../../domain/repositories/memberships_repository.dart';
+import 'membership_content_revision_provider.dart';
 
 /// Aggregated "Pour vous" feed — spec
 /// `docs/PERSONALIZED_FEED_MOBILE_SPEC.md` §3.1 / §4.1.
@@ -103,6 +104,7 @@ class _PersonalizedFeedController extends PersonalizedFeedStateController {
 final personalizedFeedProvider = StateNotifierProvider.autoDispose<
     PersonalizedFeedStateController, AsyncValue<PersonalizedFeedView>>((ref) {
   final owner = ref.watch(authSessionKeyProvider);
+  ref.watch(membershipContentRevisionProvider);
   return _PersonalizedFeedController(
     ref.watch(membershipsRepositoryProvider),
     ownerSession: owner,

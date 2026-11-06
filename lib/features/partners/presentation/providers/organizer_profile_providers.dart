@@ -7,6 +7,7 @@ import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../data/models/organizer_profile_dto.dart';
 import '../../domain/repositories/organizer_repository.dart';
 import '../../../events/data/models/event_dto.dart';
+import '../../../memberships/presentation/providers/membership_content_revision_provider.dart';
 import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
 import 'followed_organizers_providers.dart';
 
@@ -195,6 +196,7 @@ final organizerEventsControllerProvider = StateNotifierProvider.autoDispose
     .family<OrganizerEventsController, AsyncValue<OrganizerEventsState>,
         String>((ref, identifier) {
   final ownerSession = ref.watch(authSessionKeyProvider);
+  ref.watch(membershipContentRevisionProvider);
   final repository = ref.watch(organizerRepositoryProvider);
   return OrganizerEventsController(
     repository,

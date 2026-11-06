@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../providers/business_register_provider.dart';
+import '../utils/birth_date_picker.dart';
 import '../utils/birth_date_validation.dart';
 import 'password_strength_indicator.dart';
 
@@ -211,19 +212,11 @@ class _PersonalInfoFormState extends ConsumerState<PersonalInfoForm> {
             // Birth date picker
             GestureDetector(
               onTap: () async {
-                final maxDate = latestAllowedBirthDate(
+                final picked = await showBirthDatePicker(
+                  context,
                   minimumAgeYears: vendorMinimumRegistrationAgeYears,
-                );
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate:
-                      _birthDate != null && !_birthDate!.isAfter(maxDate)
-                          ? _birthDate!
-                          : maxDate,
-                  firstDate: DateTime(1920),
-                  lastDate: maxDate,
+                  initialDate: _birthDate,
                   helpText: l10n.authBirthDateHelp,
-                  // locale: const Locale('fr'),
                 );
                 if (picked != null) {
                   setState(() => _birthDate = picked);

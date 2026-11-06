@@ -1,18 +1,33 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lehiboo/core/analytics/analytics_provider.dart';
+import 'package:lehiboo/core/analytics/noop_analytics_service.dart';
 import 'package:lehiboo/domain/entities/user.dart';
 import 'package:lehiboo/features/auth/domain/repositories/auth_repository.dart';
+import 'package:lehiboo/features/auth/data/models/auth_response_dto.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
+import 'package:lehiboo/features/checkin/data/datasources/managed_organizations_api_datasource.dart';
+import 'package:lehiboo/features/checkin/data/models/managed_organization_dto.dart';
+import 'package:lehiboo/features/checkin/presentation/providers/managed_organizations_provider.dart';
+import 'package:lehiboo/features/memberships/data/datasources/memberships_api_datasource.dart';
 import 'package:lehiboo/features/memberships/data/models/invitation_dto.dart';
 import 'package:lehiboo/features/memberships/data/models/membership_dto.dart';
 import 'package:lehiboo/features/memberships/data/models/personalized_feed_dto.dart';
 import 'package:lehiboo/features/memberships/domain/repositories/memberships_repository.dart';
 import 'package:lehiboo/features/memberships/presentation/providers/invitation_peek_provider.dart';
+import 'package:lehiboo/features/memberships/presentation/providers/membership_content_revision_provider.dart';
 import 'package:lehiboo/features/memberships/presentation/providers/membership_state_providers.dart';
 import 'package:lehiboo/features/memberships/presentation/providers/memberships_screen_providers.dart';
 import 'package:lehiboo/features/memberships/presentation/providers/personalized_feed_provider.dart';
+import 'package:lehiboo/features/memberships/presentation/providers/private_events_provider.dart';
+import 'package:lehiboo/features/partners/data/datasources/organizer_api_datasource.dart';
+import 'package:lehiboo/features/partners/domain/repositories/organizer_repository.dart';
+import 'package:lehiboo/features/partners/presentation/providers/organizer_profile_providers.dart';
+import 'package:lehiboo/features/profile/data/datasources/profile_api_datasource.dart';
 
 void main() {
   test('personalized feed clears synchronously at an account boundary',
@@ -217,6 +232,244 @@ void main() {
     await _flush();
   });
 
+  test(
+      'membership notifications silently reconcile the cached organizer status',
+      () async {
+    final repository = _ControlledMembershipsRepository();
+    final container = _container(repository);
+    addTearDown(container.dispose);
+    final subscription = container.listen(
+      myMembershipsListProvider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+
+    repository.membershipsRequests.single.complete(
+      _membershipsPage(
+        'org-a',
+        status: MembershipStatus.pending,
+      ),
+    );
+    await _flush();
+
+    final coordinator = container.read(membershipStateSyncProvider);
+    final approvalRefresh = coordinator.reconcileFromNotification(
+      'organization_join_approved',
+      data: const {'organization_id': 1},
+    );
+    // A duplicate realtime/push signal shares the active reconciliation.
+    final duplicateRefresh = coordinator.reconcileFromNotification(
+      'organization_join_approved',
+      data: const {'organization_id': 1},
+    );
+
+    expect(repository.membershipsRequests, hasLength(2));
+    final refreshing = container.read(myMembershipsListProvider);
+    expect(refreshing.isLoading, isTrue);
+    expect(
+      refreshing.valueOrNull?.data.single.status,
+      MembershipStatus.pending,
+    );
+
+    repository.membershipsRequests.last.complete(
+      _membershipsPage(
+        'org-a',
+        status: MembershipStatus.active,
+      ),
+    );
+    await Future.wait([approvalRefresh, duplicateRefresh]);
+
+    expect(
+      container.read(myMembershipsListProvider).requireValue.data.single.status,
+      MembershipStatus.active,
+    );
+
+    final revokedRefresh = coordinator.reconcileFromNotification(
+      'organization_membership_revoked',
+      data: const {'organization_id': 1},
+    );
+    expect(repository.membershipsRequests, hasLength(3));
+    repository.membershipsRequests.last.complete(
+      const MembershipsPage(data: []),
+    );
+    await revokedRefresh;
+
+    expect(
+      container.read(myMembershipsListProvider).requireValue.data,
+      isEmpty,
+    );
+
+    await coordinator.reconcileFromNotification('new_message');
+    expect(repository.membershipsRequests, hasLength(3));
+  });
+
+  test('distinct membership transition in flight gets a trailing fetch',
+      () async {
+    final repository = _ControlledMembershipsRepository();
+    final container = _container(repository);
+    addTearDown(container.dispose);
+    final subscription = container.listen(
+      myMembershipsListProvider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+
+    repository.membershipsRequests.single.complete(
+      _membershipsPage('org-a'),
+    );
+    await _flush();
+
+    final coordinator = container.read(membershipStateSyncProvider);
+    final firstRevocation = coordinator.reconcileFromNotification(
+      'organization_membership_revoked',
+      data: const {'organization_id': 1},
+    );
+    final secondRevocation = coordinator.reconcileFromNotification(
+      'organization_membership_revoked',
+      data: const {'organization_id': 2},
+    );
+
+    expect(repository.membershipsRequests, hasLength(2));
+    repository.membershipsRequests.last.complete(
+      _membershipsPage('org-b'),
+    );
+    await _flush();
+
+    // The first response may have been captured before the second revocation.
+    // A distinct organization therefore requires one trailing reconciliation.
+    expect(repository.membershipsRequests, hasLength(3));
+    repository.membershipsRequests.last.complete(
+      const MembershipsPage(data: []),
+    );
+    await Future.wait([firstRevocation, secondRevocation]);
+
+    expect(
+      container.read(myMembershipsListProvider).requireValue.data,
+      isEmpty,
+    );
+  });
+
+  test('membership notification queues a fetch behind an older initial load',
+      () async {
+    final repository = _ControlledMembershipsRepository();
+    final container = _container(repository);
+    addTearDown(container.dispose);
+    final subscription = container.listen(
+      myMembershipsListProvider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+
+    expect(repository.membershipsRequests, hasLength(1));
+    final reconciliation =
+        container.read(membershipStateSyncProvider).reconcileFromNotification(
+      'organization_join_approved',
+      data: const {'organization_id': 1},
+    );
+
+    // The existing request started before the notification, so it cannot be
+    // trusted as the reconciliation response.
+    expect(repository.membershipsRequests, hasLength(1));
+    repository.membershipsRequests.single.complete(
+      _membershipsPage(
+        'org-a',
+        status: MembershipStatus.pending,
+      ),
+    );
+    await _flush();
+
+    expect(repository.membershipsRequests, hasLength(2));
+    final trailingRefresh = container.read(myMembershipsListProvider);
+    expect(trailingRefresh.isLoading, isTrue);
+    expect(
+      trailingRefresh.valueOrNull?.data.single.status,
+      MembershipStatus.pending,
+    );
+
+    repository.membershipsRequests.last.complete(
+      _membershipsPage(
+        'org-a',
+        status: MembershipStatus.active,
+      ),
+    );
+    await reconciliation;
+
+    expect(
+      container.read(myMembershipsListProvider).requireValue.data.single.status,
+      MembershipStatus.active,
+    );
+  });
+
+  test('membership reconciliation invalidates membership-gated event caches',
+      () async {
+    final repository = _ControlledMembershipsRepository();
+    final organizerRepository = _ControlledOrganizerRepository();
+    final container = _container(
+      repository,
+      organizerRepository: organizerRepository,
+    );
+    addTearDown(container.dispose);
+
+    final membershipsSubscription = container.listen(
+      myMembershipsListProvider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    final privateEventsSubscription = container.listen(
+      privateEventsControllerProvider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    final organizerEventsProvider = organizerEventsControllerProvider('org-a');
+    final organizerEventsSubscription = container.listen(
+      organizerEventsProvider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    addTearDown(membershipsSubscription.close);
+    addTearDown(privateEventsSubscription.close);
+    addTearDown(organizerEventsSubscription.close);
+
+    repository.membershipsRequests.single.complete(
+      _membershipsPage(
+        'org-a',
+        status: MembershipStatus.pending,
+      ),
+    );
+    repository.privateEventsRequests.single.complete(_privateEventsPage());
+    organizerRepository.eventsRequests.single.complete(_organizerEventsPage());
+    await _flush();
+
+    expect(container.read(membershipContentRevisionProvider), 0);
+    final reconciliation =
+        container.read(membershipStateSyncProvider).reconcileFromNotification(
+      'organization_membership_revoked',
+      data: const {'organization_id': 1},
+    );
+    await _flush();
+
+    expect(container.read(membershipContentRevisionProvider), 1);
+    expect(repository.membershipsRequests, hasLength(2));
+    expect(repository.privateEventsRequests, hasLength(2));
+    expect(organizerRepository.eventsRequests, hasLength(2));
+
+    repository.membershipsRequests.last.complete(
+      const MembershipsPage(data: []),
+    );
+    repository.privateEventsRequests.last.complete(_privateEventsPage());
+    organizerRepository.eventsRequests.last.complete(_organizerEventsPage());
+    await reconciliation;
+    await _flush();
+
+    expect(
+      container.read(myMembershipsListProvider).requireValue.data,
+      isEmpty,
+    );
+  });
+
   test('old and anonymous membership actions cannot issue or publish',
       () async {
     final repository = _ControlledMembershipsRepository();
@@ -270,6 +523,74 @@ void main() {
   });
 
   test(
+      'management invitation refreshes auth and managed organizations '
+      'without populating customer memberships', () async {
+    final repository = _ControlledMembershipsRepository();
+    final profileApi = _ControlledProfileApiDataSource();
+    final managedOrganizationsApi =
+        _ControlledManagedOrganizationsApiDataSource();
+    final container = _container(
+      repository,
+      profileApi: profileApi,
+      managedOrganizationsApi: managedOrganizationsApi,
+    );
+    addTearDown(container.dispose);
+    _setAccount(container, '1');
+
+    final membershipsSubscription = container.listen(
+      myMembershipsListProvider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    final ownerSession = container.read(authSessionKeyProvider);
+    final managedProvider = managedOrganizationsProvider(ownerSession);
+    final managedSubscription = container.listen(
+      managedProvider,
+      (_, __) {},
+      fireImmediately: true,
+    );
+    addTearDown(membershipsSubscription.close);
+    addTearDown(managedSubscription.close);
+
+    repository.membershipsRequests.single.complete(
+      const MembershipsPage(data: []),
+    );
+    managedOrganizationsApi.requests.single.complete(const []);
+    await _flush();
+
+    final accepting = container
+        .read(invitationActionControllerProvider('staff-token').notifier)
+        .accept(
+          fallbackMessage: 'failed',
+          accessKind: InvitationAccessKind.management,
+        );
+    repository.acceptRequests.single.complete();
+    await _flush();
+
+    expect(profileApi.requests, hasLength(1));
+    profileApi.requests.single.complete(
+      const UserDto(
+        id: 1,
+        email: 'user@example.test',
+        displayName: 'Vendor User',
+        role: 'vendor',
+      ),
+    );
+
+    expect(await accepting, isTrue);
+    await _flush();
+
+    final user = container.read(authProvider).user;
+    expect(user?.role, UserRole.partner);
+    expect(user?.capabilities.canScanTickets, isTrue);
+    expect(repository.membershipsRequests, hasLength(1));
+    expect(managedOrganizationsApi.requests, hasLength(2));
+
+    managedOrganizationsApi.requests.last.complete(const []);
+    await _flush();
+  });
+
+  test(
       'invitation peek replaces authed data per account and uses public API '
       'after logout', () async {
     final repository = _ControlledMembershipsRepository();
@@ -316,11 +637,27 @@ void main() {
   });
 }
 
-ProviderContainer _container(MembershipsRepository repository) {
+ProviderContainer _container(
+  MembershipsRepository repository, {
+  OrganizerRepository? organizerRepository,
+  ProfileApiDataSource? profileApi,
+  ManagedOrganizationsApiDataSource? managedOrganizationsApi,
+}) {
   return ProviderContainer(
     overrides: [
       authProvider.overrideWith(_MutableAuthNotifier.new),
+      analyticsServiceProvider.overrideWithValue(
+        const NoopAnalyticsService(),
+      ),
       membershipsRepositoryProvider.overrideWithValue(repository),
+      if (organizerRepository != null)
+        organizerRepositoryProvider.overrideWithValue(organizerRepository),
+      if (profileApi != null)
+        profileApiDataSourceProvider.overrideWithValue(profileApi),
+      if (managedOrganizationsApi != null)
+        managedOrganizationsApiDataSourceProvider.overrideWithValue(
+          managedOrganizationsApi,
+        ),
     ],
   );
 }
@@ -332,10 +669,15 @@ void _setAccount(ProviderContainer container, String? accountId) {
 
 Future<void> _flush() => Future<void>.delayed(Duration.zero);
 
-MembershipsPage _membershipsPage(String organizationUuid) => MembershipsPage(
+MembershipsPage _membershipsPage(
+  String organizationUuid, {
+  MembershipStatus status = MembershipStatus.active,
+}) =>
+    MembershipsPage(
       data: [
         MembershipDto(
           id: 1,
+          status: status,
           organization: OrganizationSummaryDto(
             uuid: organizationUuid,
             name: organizationUuid,
@@ -352,6 +694,22 @@ InvitationDto _invitation(int id, String token) => InvitationDto(
 InvitationPreviewDto _preview(String message) =>
     InvitationPreviewDto(message: message);
 
+PrivateEventsPage _privateEventsPage() => const PrivateEventsPage(
+      events: [],
+      page: 1,
+      perPage: 15,
+      total: 0,
+      lastPage: 1,
+    );
+
+OrganizerEventsPage _organizerEventsPage() => const OrganizerEventsPage(
+      events: [],
+      page: 1,
+      perPage: 12,
+      total: 0,
+      lastPage: 1,
+    );
+
 class _ControlledMembershipsRepository implements MembershipsRepository {
   final List<Completer<MembershipsPage>> membershipsRequests = [];
   final List<Completer<List<InvitationDto>>> invitationsRequests = [];
@@ -360,6 +718,7 @@ class _ControlledMembershipsRepository implements MembershipsRepository {
   final List<Completer<void>> acceptRequests = [];
   final List<Completer<void>> cancelRequests = [];
   final List<Completer<PersonalizedFeedDto>> personalizedFeedRequests = [];
+  final List<Completer<PrivateEventsPage>> privateEventsRequests = [];
 
   @override
   Future<PersonalizedFeedDto> getPersonalizedFeed({int limit = 8}) {
@@ -384,6 +743,18 @@ class _ControlledMembershipsRepository implements MembershipsRepository {
   Future<List<InvitationDto>> getMyInvitations() {
     final request = Completer<List<InvitationDto>>();
     invitationsRequests.add(request);
+    return request.future;
+  }
+
+  @override
+  Future<PrivateEventsPage> getPrivateEvents({
+    String? search,
+    String? organizationId,
+    int page = 1,
+    int perPage = 15,
+  }) {
+    final request = Completer<PrivateEventsPage>();
+    privateEventsRequests.add(request);
     return request.future;
   }
 
@@ -419,6 +790,24 @@ class _ControlledMembershipsRepository implements MembershipsRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+class _ControlledOrganizerRepository implements OrganizerRepository {
+  final List<Completer<OrganizerEventsPage>> eventsRequests = [];
+
+  @override
+  Future<OrganizerEventsPage> getEvents(
+    String identifier, {
+    int page = 1,
+    int perPage = 12,
+  }) {
+    final request = Completer<OrganizerEventsPage>();
+    eventsRequests.add(request);
+    return request.future;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class _NeverCompletingAuthRepository implements AuthRepository {
   final Completer<bool> _result = Completer<bool>();
 
@@ -426,7 +815,37 @@ class _NeverCompletingAuthRepository implements AuthRepository {
   Future<bool> isAuthenticated() => _result.future;
 
   @override
+  Future<void> persistUser(HbUser user) async {}
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _ControlledProfileApiDataSource extends ProfileApiDataSource {
+  _ControlledProfileApiDataSource() : super(Dio());
+
+  final List<Completer<UserDto>> requests = [];
+
+  @override
+  Future<UserDto> getProfile() {
+    final request = Completer<UserDto>();
+    requests.add(request);
+    return request.future;
+  }
+}
+
+class _ControlledManagedOrganizationsApiDataSource
+    extends ManagedOrganizationsApiDataSource {
+  _ControlledManagedOrganizationsApiDataSource() : super(Dio());
+
+  final List<Completer<List<ManagedOrganizationDto>>> requests = [];
+
+  @override
+  Future<List<ManagedOrganizationDto>> getManagedOrganizations() {
+    final request = Completer<List<ManagedOrganizationDto>>();
+    requests.add(request);
+    return request.future;
+  }
 }
 
 class _MutableAuthNotifier extends AuthNotifier {

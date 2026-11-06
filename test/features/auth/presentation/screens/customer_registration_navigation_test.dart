@@ -53,6 +53,18 @@ void main() {
     await tester.ensureVisible(birthDatePicker);
     await tester.tap(birthDatePicker);
     await tester.pumpAndSettle();
+    // The picker preselects nothing: choose a year, then a day.
+    await tester.scrollUntilVisible(
+      find.text('2005'),
+      -100,
+      scrollable: find.descendant(
+        of: find.byType(YearPicker),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    await tester.tap(find.text('2005'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('15'));
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
 
@@ -141,11 +153,11 @@ class _RouterHarnessState extends ConsumerState<_RouterHarness> {
 
   @override
   Widget build(BuildContext context) => MaterialApp.router(
-    locale: const Locale('en'),
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    routerConfig: _router,
-  );
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: _router,
+      );
 }
 
 class _RegistrationRepository implements AuthRepository {
@@ -162,19 +174,21 @@ class _RegistrationRepository implements AuthRepository {
   Future<OtpResult> sendOtpCode({
     required String email,
     required String type,
-  }) async => OtpResult(success: true, message: 'Sent');
+  }) async =>
+      OtpResult(success: true, message: 'Sent');
 
   @override
   Future<OtpVerificationResult> verifyOtpCode({
     required String email,
     required String code,
     required String type,
-  }) async => OtpVerificationResult(
-    success: true,
-    verified: true,
-    message: 'Verified',
-    verifiedEmailToken: 'verified-email-token',
-  );
+  }) async =>
+      OtpVerificationResult(
+        success: true,
+        verified: true,
+        message: 'Verified',
+        verifiedEmailToken: 'verified-email-token',
+      );
 
   @override
   Future<CustomerRegistrationResult> registerCustomer({
@@ -189,22 +203,23 @@ class _RegistrationRepository implements AuthRepository {
     String? membershipCity,
     required bool acceptTerms,
     bool acceptMarketing = false,
-  }) async => CustomerRegistrationResult(
-    pendingVerification: false,
-    emailVerificationRequired: false,
-    email: email,
-    message: 'Created',
-    authResult: AuthResult(
-      user: HbUser(
-        id: 'new-account',
+  }) async =>
+      CustomerRegistrationResult(
+        pendingVerification: false,
+        emailVerificationRequired: false,
         email: email,
-        displayName: '$firstName $lastName',
-      ),
-      accessToken: 'access',
-      refreshToken: 'refresh',
-      expiresIn: 3600,
-    ),
-  );
+        message: 'Created',
+        authResult: AuthResult(
+          user: HbUser(
+            id: 'new-account',
+            email: email,
+            displayName: '$firstName $lastName',
+          ),
+          accessToken: 'access',
+          refreshToken: 'refresh',
+          expiresIn: 3600,
+        ),
+      );
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

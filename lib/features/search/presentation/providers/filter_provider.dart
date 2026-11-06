@@ -14,6 +14,7 @@ import 'package:lehiboo/features/thematiques/presentation/providers/thematiques_
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
+import 'package:lehiboo/features/memberships/presentation/providers/membership_content_revision_provider.dart';
 
 const _filterPersistenceKey = 'event_filter_state';
 const _defaultPriceMax = 500.0;
@@ -920,6 +921,7 @@ Future<EventsResult> _fetchEventsForFilter(
 final filteredEventsProvider = StateNotifierProvider<FilteredEventsNotifier,
     AsyncValue<PaginatedActivities>>((ref) {
   final ownerSession = ref.watch(authSessionKeyProvider);
+  ref.watch(membershipContentRevisionProvider);
   final eventRepository = ref.watch(eventRepositoryProvider);
   final notifier = FilteredEventsNotifier(
     eventRepository,
@@ -1135,6 +1137,7 @@ typedef _SearchSuggestionsSessionQuery = ({
 final _searchSuggestionsForSessionProvider = FutureProvider.autoDispose
     .family<SearchSuggestionsDto, _SearchSuggestionsSessionQuery>(
         (ref, query) async {
+  ref.watch(membershipContentRevisionProvider);
   final ownerSession = query.ownerSession;
   final request = query.request;
   if (!identical(ref.read(authSessionKeyProvider), ownerSession)) {
@@ -1190,6 +1193,7 @@ typedef _FilterPreviewSessionQuery = ({
 
 final _filterPreviewCountForSessionProvider = FutureProvider.autoDispose
     .family<int, _FilterPreviewSessionQuery>((ref, query) async {
+  ref.watch(membershipContentRevisionProvider);
   final ownerSession = query.ownerSession;
   if (!identical(ref.read(authSessionKeyProvider), ownerSession)) return 0;
   var requestActive = true;

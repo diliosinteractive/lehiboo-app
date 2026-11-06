@@ -7,6 +7,7 @@ import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
+import '../../../checkin/presentation/providers/vendor_eligibility_provider.dart';
 import '../../../partners/presentation/widgets/organizer_avatar.dart';
 import '../../data/models/invitation_dto.dart';
 import '../../data/models/membership_dto.dart';
@@ -188,7 +189,13 @@ class _Body extends ConsumerWidget {
             onAccept: () {
               final accountId = initiatingAccountId;
               if (accountId == null) return;
-              _onAccept(context, ref, orgName, accountId);
+              _onAccept(
+                context,
+                ref,
+                orgName,
+                accountId,
+                invitation.accessKind,
+              );
             },
             onDecline: () {
               final accountId = initiatingAccountId;
@@ -224,6 +231,7 @@ class _Body extends ConsumerWidget {
     WidgetRef ref,
     String orgName,
     String initiatingAccountId,
+    InvitationAccessKind accessKind,
   ) async {
     final ownerAccountId = initiatingAccountId;
     if (ref.read(authSessionUserIdProvider) != ownerAccountId) return;
@@ -232,6 +240,7 @@ class _Body extends ConsumerWidget {
     final fallback = context.l10n.membershipInvitationAcceptFailed;
     final ok = await actionController.accept(
       fallbackMessage: fallback,
+      accessKind: accessKind,
     );
     if (!context.mounted ||
         ref.read(authSessionUserIdProvider) != ownerAccountId ||
@@ -244,7 +253,15 @@ class _Body extends ConsumerWidget {
           content: Text(context.l10n.membershipInvitationWelcome(orgName)),
         ),
       );
-      context.go('/me/memberships?tab=active');
+      if (accessKind == InvitationAccessKind.management) {
+        if (ref.read(vendorEligibilityProvider)) {
+          context.go('/vendor/scan');
+        } else {
+          context.go('/');
+        }
+      } else {
+        context.go('/me/memberships?tab=active');
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

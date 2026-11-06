@@ -43,6 +43,7 @@ import '../../../memberships/presentation/widgets/members_only_gate.dart';
 import '../../../reviews/presentation/widgets/event_reviews_section.dart';
 import '../../../reviews/presentation/widgets/write_review_sheet.dart';
 import '../../../memberships/presentation/providers/personalized_feed_provider.dart';
+import '../../../memberships/presentation/providers/membership_content_revision_provider.dart';
 import '../../../reminders/presentation/providers/reminders_provider.dart';
 import '../../../reminders/data/datasources/reminders_api_datasource.dart';
 import '../../../booking/domain/models/refund_policy.dart';
@@ -53,9 +54,8 @@ import '../../../booking/presentation/providers/order_cart_provider.dart';
 ///
 /// Wraps the repository fetch in an [EventDetailState] sealed union so the
 /// screen can distinguish a fully loaded [Event] from a locked-shell preview
-/// (`403 password_required`). The controller exposes [seed] for callers that
-/// already have a verified [Event] (list-side unlock path) and [unlock] for
-/// the password sheet to submit a password and transition into `.loaded`.
+/// (`403 password_required`). The controller exposes [unlock] for the
+/// password sheet to submit a password and transition into `.loaded`.
 typedef EventDetailRequest = ({AuthSessionKey owner, String identifier});
 
 EventDetailRequest eventDetailRequest(
@@ -83,27 +83,31 @@ class EventDetailController extends AutoDisposeFamilyAsyncNotifier<
     });
     final generation = ++_stateGeneration;
     final activeOwner = ref.watch(authSessionKeyProvider);
+    ref.watch(membershipContentRevisionProvider);
     if (!identical(activeOwner, request.owner)) {
       throw const EventDetailSessionChangedException();
     }
 
+    final EventDetailState fetched;
     try {
-      final event =
-          await ref.read(eventRepositoryProvider).getEvent(request.identifier);
-      _ensureOwned(request.owner, generation);
-      return EventDetailState.loaded(event);
-    } on EventPasswordRequiredException catch (e) {
-      _ensureOwned(request.owner, generation);
-      return EventDetailState.locked(e.shell);
+      fetched = await _fetch(request.identifier);
+    } catch (_) {
+      if (_isSuperseded(request.owner, generation)) return state.requireValue;
+      rethrow;
     }
+    if (_isSuperseded(request.owner, generation)) return state.requireValue;
+    _ensureOwned(request.owner, generation);
+    return fetched;
   }
 
-  /// Pre-seed the cache with an already-unlocked event (list-side unlock).
-  bool seed(Event event, {required AuthSessionKey owner}) {
-    if (!_owns(owner)) return false;
-    _stateGeneration++;
-    state = AsyncData(EventDetailState.loaded(event));
-    return true;
+  Future<EventDetailState> _fetch(String identifier) async {
+    try {
+      final event =
+          await ref.read(eventRepositoryProvider).getEvent(identifier);
+      return EventDetailState.loaded(event);
+    } on EventPasswordRequiredException catch (e) {
+      return EventDetailState.locked(e.shell);
+    }
   }
 
   /// Submit a password to the verify endpoint. On success the state flips to
@@ -129,6 +133,13 @@ class EventDetailController extends AutoDisposeFamilyAsyncNotifier<
         identical(owner, arg.owner) &&
         identical(ref.read(authSessionKeyProvider), owner);
   }
+
+  /// [unlock] already set a verified state for this same session while the
+  /// build's GET was in flight. Setting `state` doesn't cancel a pending
+  /// build, so its late answer (locked shell, stale payload or failure) must
+  /// not overwrite the unlocked event.
+  bool _isSuperseded(AuthSessionKey owner, int generation) =>
+      generation != _stateGeneration && _owns(owner) && state.hasValue;
 
   void _ensureOwned(AuthSessionKey owner, int generation) {
     if (!_owns(owner) || generation != _stateGeneration) {
@@ -157,6 +168,7 @@ final eventAvailabilityProvider = FutureProvider.autoDispose
     .family<EventAvailabilityResponseDto, EventAvailabilityRequest>(
         (ref, request) async {
   final activeOwner = ref.watch(authSessionKeyProvider);
+  ref.watch(membershipContentRevisionProvider);
   if (!identical(activeOwner, request.owner)) {
     throw const EventDetailSessionChangedException();
   }

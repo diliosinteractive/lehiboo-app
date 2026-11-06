@@ -9,7 +9,9 @@ import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_session_key_provider.dart';
+import '../../../checkin/presentation/providers/vendor_eligibility_provider.dart';
 import '../../data/models/membership_dto.dart';
+import '../../data/models/invitation_dto.dart';
 import '../providers/membership_state_providers.dart';
 import '../providers/memberships_screen_providers.dart';
 import '../widgets/invitation_card.dart';
@@ -206,7 +208,17 @@ class _MembershipsScreenState extends ConsumerState<MembershipsScreen>
               ),
               _InvitationsList(
                 items: invitations,
-                onAccepted: () => _tabController.animateTo(0),
+                onAccepted: (accessKind) {
+                  if (accessKind == InvitationAccessKind.management) {
+                    if (ref.read(vendorEligibilityProvider)) {
+                      context.go('/vendor/scan');
+                    } else {
+                      context.go('/');
+                    }
+                    return;
+                  }
+                  _tabController.animateTo(0);
+                },
               ),
             ],
           ),
@@ -282,7 +294,7 @@ class _MembershipList extends StatelessWidget {
 
 class _InvitationsList extends StatelessWidget {
   final List<dynamic> items;
-  final VoidCallback onAccepted;
+  final ValueChanged<InvitationAccessKind> onAccepted;
 
   const _InvitationsList({required this.items, required this.onAccepted});
 

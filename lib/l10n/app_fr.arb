@@ -83,6 +83,12 @@
   "settingsPushDeviceSyncFailed": "L'autorisation a été accordée, mais cet appareil n'a pas pu être associé à votre compte. Vérifiez votre connexion puis réessayez.",
   "settingsPushSubscriptionPending": "L'autorisation a été accordée, mais l'activation des notifications n'est pas encore prête. Patientez un instant puis réessayez.",
   "settingsPushPreferenceUpdateFailed": "Les notifications sont prêtes, mais la préférence de votre compte n'a pas pu être enregistrée. Réessayez.",
+  "settingsPushHintBlockedBySystem": "Bloquées dans les réglages du téléphone",
+  "settingsPushHintOpenSystemSettings": "Ouvrir les réglages",
+  "settingsPushHintNotSetUpOnDevice": "Pas encore activées sur ce téléphone",
+  "settingsPushHintEnableOnDevice": "Activer",
+  "settingsPushHintSetupFailed": "Pas encore prêtes sur ce téléphone",
+  "settingsPushOpenSystemSettingsFailed": "Impossible d'ouvrir les réglages. Ouvre-les depuis ton téléphone.",
   "settingsNewsletterTitle": "Newsletter",
   "settingsNewsletterSubtitle": "Recommandations événements et bons plans par email",
   "settingsNewsletterUpdateFailed": "Impossible de modifier votre préférence newsletter. Vérifiez votre connexion puis réessayez.",
@@ -254,8 +260,8 @@
   "profileLastNameRequired": "Le nom est requis",
   "profilePhoneLabel": "Téléphone",
   "profileBirthDateLabel": "Date de naissance",
-  "profileBirthDateUnset": "Non renseigné",
-  "profileBirthDateReadOnlyHelper": "La date de naissance ne peut plus être modifiée après la création du compte",
+  "profileBirthDateReadOnlyHelper": "La date de naissance ne peut plus être modifiée une fois renseignée",
+  "profileBirthDateSetOnceHelper": "Vous ne pourrez plus la modifier une fois enregistrée",
   "profileCityLabel": "Ville",
   "profileEmailReadOnlyHelper": "L'email ne peut pas être modifié",
   "profileChangePasswordCta": "Changer mon mot de passe",
@@ -3080,7 +3086,7 @@
   "bookingLastNameLabelRequired": "Nom *",
   "bookingEmailLabelRequired": "Email *",
   "bookingPhoneLabel": "Téléphone",
-  "bookingAgeLabel": "Âge",
+  "bookingBirthDateLabel": "Date de naissance",
   "bookingMembershipCityLabel": "Ville d'appartenance",
   "bookingFirstNameRequired": "Le prénom est requis",
   "bookingLastNameRequired": "Le nom est requis",
@@ -3379,14 +3385,6 @@
   "@bookingParticipantNumber": {
     "placeholders": {
       "index": {
-        "type": "int"
-      }
-    }
-  },
-  "bookingAgeYears": "{age} ans",
-  "@bookingAgeYears": {
-    "placeholders": {
-      "age": {
         "type": "int"
       }
     }

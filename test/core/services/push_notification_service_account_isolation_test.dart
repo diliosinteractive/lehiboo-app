@@ -160,6 +160,48 @@ void main() {
     expect(fixture.deepLinks.destinations, ['/event/member-concert']);
   });
 
+  test('notification interaction exposes domain data for cache reconciliation',
+      () {
+    final fixture = _serviceFixture(currentRecipient: () => accountA);
+    addTearDown(fixture.dispose);
+    final received = <Map<String, dynamic>>[];
+    fixture.service.onNotificationData = received.add;
+
+    fixture.service.handleClickDataForTesting(const {
+      'type': 'organization_join_approved',
+      'organization_uuid': 'organization-a',
+      'recipient_user_id': '101',
+    });
+
+    expect(received, [
+      {
+        'type': 'organization_join_approved',
+        'organization_uuid': 'organization-a',
+        'recipient_user_id': '101',
+      },
+    ]);
+  });
+
+  test('membership revocation opens the organizer after reconciling state', () {
+    final fixture = _serviceFixture(currentRecipient: () => accountA);
+    addTearDown(fixture.dispose);
+    final received = <Map<String, dynamic>>[];
+    fixture.service.onNotificationData = received.add;
+
+    fixture.service.handleClickDataForTesting(const {
+      'type': 'organization_membership_revoked',
+      'organization_uuid': 'organization-a',
+      'organization_slug': 'organization-a-slug',
+      'recipient_user_id': '101',
+    });
+
+    expect(
+      received.single['type'],
+      'organization_membership_revoked',
+    );
+    expect(fixture.deepLinks.destinations, ['/organizers/organization-a']);
+  });
+
   test('one-hour event reminder opens the event on mobile', () {
     final fixture = _serviceFixture(currentRecipient: () => accountA);
     addTearDown(fixture.dispose);
@@ -335,6 +377,9 @@ class _FakePushNotificationSdk implements PushNotificationSdk {
 
   @override
   bool hasPermission = true;
+
+  @override
+  Future<bool> canRequestPermission() async => !hasPermission;
 
   int foregroundAdds = 0;
   int foregroundRemoves = 0;

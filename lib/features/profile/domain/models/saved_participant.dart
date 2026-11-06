@@ -1,4 +1,3 @@
-import 'package:lehiboo/core/utils/age_utils.dart';
 import 'package:lehiboo/features/booking/domain/models/booking_flow_state.dart';
 
 class SavedParticipant {
@@ -76,7 +75,6 @@ class SavedParticipant {
       phone: phone,
       relationship: relationship,
       birthDate: birthDate,
-      age: computeAge(birthDate),
       city: membershipCity,
       membershipCity: membershipCity,
     );

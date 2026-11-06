@@ -494,6 +494,42 @@ abstract class AppLocalizations {
   /// **'Les notifications sont prêtes, mais la préférence de votre compte n\'a pas pu être enregistrée. Réessayez.'**
   String get settingsPushPreferenceUpdateFailed;
 
+  /// No description provided for @settingsPushHintBlockedBySystem.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bloquées dans les réglages du téléphone'**
+  String get settingsPushHintBlockedBySystem;
+
+  /// No description provided for @settingsPushHintOpenSystemSettings.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir les réglages'**
+  String get settingsPushHintOpenSystemSettings;
+
+  /// No description provided for @settingsPushHintNotSetUpOnDevice.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas encore activées sur ce téléphone'**
+  String get settingsPushHintNotSetUpOnDevice;
+
+  /// No description provided for @settingsPushHintEnableOnDevice.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activer'**
+  String get settingsPushHintEnableOnDevice;
+
+  /// No description provided for @settingsPushHintSetupFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas encore prêtes sur ce téléphone'**
+  String get settingsPushHintSetupFailed;
+
+  /// No description provided for @settingsPushOpenSystemSettingsFailed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible d\'ouvrir les réglages. Ouvre-les depuis ton téléphone.'**
+  String get settingsPushOpenSystemSettingsFailed;
+
   /// No description provided for @settingsNewsletterTitle.
   ///
   /// In fr, this message translates to:
@@ -1376,17 +1412,17 @@ abstract class AppLocalizations {
   /// **'Date de naissance'**
   String get profileBirthDateLabel;
 
-  /// No description provided for @profileBirthDateUnset.
-  ///
-  /// In fr, this message translates to:
-  /// **'Non renseigné'**
-  String get profileBirthDateUnset;
-
   /// No description provided for @profileBirthDateReadOnlyHelper.
   ///
   /// In fr, this message translates to:
-  /// **'La date de naissance ne peut plus être modifiée après la création du compte'**
+  /// **'La date de naissance ne peut plus être modifiée une fois renseignée'**
   String get profileBirthDateReadOnlyHelper;
+
+  /// No description provided for @profileBirthDateSetOnceHelper.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous ne pourrez plus la modifier une fois enregistrée'**
+  String get profileBirthDateSetOnceHelper;
 
   /// No description provided for @profileCityLabel.
   ///
@@ -10329,11 +10365,11 @@ abstract class AppLocalizations {
   /// **'Téléphone'**
   String get bookingPhoneLabel;
 
-  /// No description provided for @bookingAgeLabel.
+  /// No description provided for @bookingBirthDateLabel.
   ///
   /// In fr, this message translates to:
-  /// **'Âge'**
-  String get bookingAgeLabel;
+  /// **'Date de naissance'**
+  String get bookingBirthDateLabel;
 
   /// No description provided for @bookingMembershipCityLabel.
   ///
@@ -11354,12 +11390,6 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Participant {index}'**
   String bookingParticipantNumber(int index);
-
-  /// No description provided for @bookingAgeYears.
-  ///
-  /// In fr, this message translates to:
-  /// **'{age} ans'**
-  String bookingAgeYears(int age);
 
   /// No description provided for @bookingAddToCalendar.
   ///
