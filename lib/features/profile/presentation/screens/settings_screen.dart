@@ -2,11 +2,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../../../core/analytics/analytics_consent.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../config/env_config.dart';
-import '../../../../core/constants/app_constants.dart';
 import '../../../../core/l10n/app_locale.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/utils/api_response_handler.dart';
@@ -43,12 +43,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   int _sessionGeneration = 0;
   bool _sessionInvalidated = false;
   bool _exitScheduled = false;
+  late final Future<String?> _appVersion;
   CancelToken? _newsletterMutationCancelToken;
   CancelToken? _pushMutationCancelToken;
 
   @override
   void initState() {
     super.initState();
+    _appVersion = _loadAppVersion();
     _ownerAccountId = ref.read(authSessionUserIdProvider);
     _ownerAuthNotifier = ref.read(authProvider.notifier);
     _sessionSubscription = ref.listenManual<String?>(
@@ -57,6 +59,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         if (next != _ownerAccountId) _invalidateSession();
       },
     );
+  }
+
+  Future<String?> _loadAppVersion() async {
+    try {
+      final version = (await PackageInfo.fromPlatform()).version.trim();
+      return version.isEmpty ? null : version;
+    } catch (_) {
+      return null;
+    }
   }
 
   @override
@@ -400,7 +411,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ListTile(
             leading: const Icon(Icons.info_outline),
             title: Text(l10n.settingsVersionTitle),
-            trailing: const Text(AppConstants.appVersion),
+            trailing: FutureBuilder<String?>(
+              future: _appVersion,
+              builder: (context, snapshot) => Text(
+                snapshot.data ?? '—',
+                key: const ValueKey('settings-app-version'),
+              ),
+            ),
           ),
         ],
       ),

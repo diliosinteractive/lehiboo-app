@@ -18,6 +18,7 @@ import 'package:lehiboo/features/notifications/presentation/providers/push_notif
 import 'package:lehiboo/features/profile/data/datasources/profile_api_datasource.dart';
 import 'package:lehiboo/features/profile/presentation/screens/settings_screen.dart';
 import 'package:lehiboo/l10n/generated/app_localizations.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../helpers/fake_push_notification_service.dart';
@@ -121,7 +122,15 @@ Future<({_StubPushNotifier push, _RecordingProfileApi api})> _pumpSettings(
   WidgetTester tester, {
   required bool pushOptIn,
   required PushNotificationState device,
+  String appVersion = '1.0.0',
 }) async {
+  PackageInfo.setMockInitialValues(
+    appName: 'Le Hiboo',
+    packageName: 'com.lehiboo.app',
+    version: appVersion,
+    buildNumber: '1',
+    buildSignature: '',
+  );
   SharedPreferences.setMockInitialValues({});
   final preferences = await SharedPreferences.getInstance();
   final router = GoRouter(
@@ -171,6 +180,25 @@ bool _switchValue(WidgetTester tester) =>
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets('shows the installed app version from package metadata',
+      (tester) async {
+    await _pumpSettings(
+      tester,
+      pushOptIn: false,
+      device: _deviceReady,
+      appVersion: '9.8.7',
+    );
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('settings-app-version')),
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
+
+    expect(find.text('9.8.7'), findsOneWidget);
+    expect(find.text('1.0.0'), findsNothing);
+  });
 
   testWidgets('a ready device shows the account preference without a hint',
       (tester) async {
