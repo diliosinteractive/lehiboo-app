@@ -201,9 +201,11 @@ class TimeSlotConfig extends Equatable {
   List<Object?> get props => [calendarType, schedules, weeklySlots];
 }
 
-/// Represents a single bookable date/time slot
+/// How a slot's end is known: an exact end time, or a start time only
+/// (the slot then runs through its last calendar day).
 enum SlotTimeKind { exact, startOnly }
 
+/// Represents a single bookable date/time slot
 class CalendarDateSlot extends Equatable {
   final String id;
   final DateTime date;
