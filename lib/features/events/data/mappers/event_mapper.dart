@@ -646,8 +646,10 @@ class EventMapper {
     return CalendarDateSlot.fromJson(<String, dynamic>{
       'id': json['uuid']?.toString() ?? json['id']?.toString() ?? '',
       'date': json['date']?.toString() ?? '',
+      'end_date': json['end_date'],
       'start_time': json['start_time'],
       'end_time': json['end_time'],
+      'time_kind': json['time_kind'],
       'spots_remaining': json['available_capacity'] ?? json['spots_remaining'],
       'total_capacity': json['capacity'] ?? json['total_capacity'],
     });

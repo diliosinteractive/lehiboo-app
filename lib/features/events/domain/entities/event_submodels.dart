@@ -202,19 +202,25 @@ class TimeSlotConfig extends Equatable {
 }
 
 /// Represents a single bookable date/time slot
+enum SlotTimeKind { exact, startOnly }
+
 class CalendarDateSlot extends Equatable {
   final String id;
   final DateTime date;
+  final DateTime? endDate;
   final String? startTime;
   final String? endTime;
+  final SlotTimeKind timeKind;
   final int? spotsRemaining;
   final int? totalCapacity;
 
   const CalendarDateSlot({
     required this.id,
     required this.date,
+    this.endDate,
     this.startTime,
     this.endTime,
+    this.timeKind = SlotTimeKind.exact,
     this.spotsRemaining,
     this.totalCapacity,
   });
@@ -225,12 +231,21 @@ class CalendarDateSlot extends Equatable {
     if (dateStr != null) {
       date = _parseDate(dateStr);
     }
+    DateTime? endDate;
+    final endDateStr = json['end_date']?.toString();
+    if (endDateStr != null) {
+      endDate = _parseDate(endDateStr);
+    }
 
     return CalendarDateSlot(
       id: json['id']?.toString() ?? '',
       date: date ?? DateTime.now(),
+      endDate: endDate,
       startTime: json['start_time']?.toString(),
       endTime: json['end_time']?.toString(),
+      timeKind: json['time_kind']?.toString() == 'start_only'
+          ? SlotTimeKind.startOnly
+          : SlotTimeKind.exact,
       spotsRemaining:
           json['spots_remaining'] is int ? json['spots_remaining'] : null,
       totalCapacity:
@@ -260,7 +275,15 @@ class CalendarDateSlot extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, date, startTime, endTime, spotsRemaining];
+  List<Object?> get props => [
+        id,
+        date,
+        endDate,
+        startTime,
+        endTime,
+        timeKind,
+        spotsRemaining,
+      ];
 }
 
 class CalendarConfig extends Equatable {

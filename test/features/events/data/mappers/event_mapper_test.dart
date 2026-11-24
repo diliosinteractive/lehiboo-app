@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lehiboo/core/l10n/app_locale.dart';
 import 'package:lehiboo/features/events/data/mappers/event_mapper.dart';
 import 'package:lehiboo/features/events/data/models/event_dto.dart';
+import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 
 void main() {
   setUp(() {
@@ -9,6 +10,52 @@ void main() {
   });
 
   group('EventMapper', () {
+    test('maps the end date and time kind of mobile slots', () {
+      final event = EventMapper.toEvent(
+        EventDto.fromJson({
+          'id': 1,
+          'title': 'Timed event',
+          'slug': 'timed-event',
+          'slots': [
+            {
+              'uuid': 'period',
+              'date': '2026-11-20',
+              'end_date': '2026-11-29',
+              'start_time': '10:00:00',
+              'end_time': '17:00:00',
+              'time_kind': 'exact',
+            },
+            {
+              'uuid': 'start-only',
+              'date': '2026-11-24',
+              'end_date': '2026-11-24',
+              'start_time': '14:00:00',
+              'end_time': null,
+              'time_kind': 'start_only',
+            },
+            {
+              'uuid': 'legacy',
+              'date': '2026-11-24',
+              'start_time': '09:00:00',
+              'end_time': '10:00:00',
+            },
+          ],
+        }),
+      );
+
+      final slots = event.calendar!.dateSlots;
+      final period = slots.singleWhere((slot) => slot.id == 'period');
+      final startOnly = slots.singleWhere((slot) => slot.id == 'start-only');
+      final legacy = slots.singleWhere((slot) => slot.id == 'legacy');
+
+      expect(period.endDate, DateTime(2026, 11, 29));
+      expect(period.timeKind, SlotTimeKind.exact);
+      expect(startOnly.timeKind, SlotTimeKind.startOnly);
+      expect(startOnly.endTime, isNull);
+      expect(legacy.endDate, isNull);
+      expect(legacy.timeKind, SlotTimeKind.exact);
+    });
+
     test('maps flat mobile venue fields when location object is absent', () {
       final event = EventMapper.toEvent(
         const EventDto(
