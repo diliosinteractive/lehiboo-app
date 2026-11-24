@@ -14,56 +14,8 @@ void main() {
   testWidgets('organizer API events are separated into current and past tabs', (
     tester,
   ) async {
-    late RequestOptions capturedRequest;
-    final dio = Dio(BaseOptions(baseUrl: 'https://example.test'));
-    addTearDown(() => dio.close(force: true));
-    dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) {
-          capturedRequest = options;
-          handler.resolve(
-            Response<Map<String, dynamic>>(
-              requestOptions: options,
-              statusCode: 200,
-              data: const {
-                'success': true,
-                'data': [_futurePrivateEvent, _pastEvent],
-                'meta': {'page': 1, 'per_page': 12, 'total': 2, 'last_page': 1},
-              },
-            ),
-          );
-        },
-      ),
-    );
-    final repository = OrganizerRepositoryImpl(OrganizerApiDataSource(dio));
-
-    tester.view.physicalSize = const Size(1080, 1920);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          authSessionUserIdProvider.overrideWithValue('member-1'),
-          organizerRepositoryProvider.overrideWithValue(repository),
-        ],
-        child: MaterialApp(
-          locale: const Locale('fr'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Consumer(
-            builder: (context, ref, _) => Scaffold(
-              body: OrganizerActivitiesTab(
-                organizerIdentifier: 'org-pro',
-                ownerSession: ref.watch(authSessionKeyProvider),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
+    final capturedRequest =
+        await _pumpOrganizerTab(tester, [_futurePrivateEvent, _pastEvent]);
 
     expect(capturedRequest.path, '/organizers/org-pro/events');
     expect(capturedRequest.queryParameters, {'page': 1, 'per_page': 12});
@@ -78,6 +30,88 @@ void main() {
     expect(find.text('Événement privé futur'), findsNothing);
     expect(find.text('Événement terminé'), findsOneWidget);
   });
+
+  testWidgets('an organizer event with no date at all is left out', (
+    tester,
+  ) async {
+    await _pumpOrganizerTab(tester, [_futurePrivateEvent, _undatedEvent]);
+
+    expect(find.text('En cours (1)'), findsOneWidget);
+    expect(find.text('Passés (0)'), findsOneWidget);
+    expect(find.text('Événement sans date'), findsNothing);
+  });
+}
+
+const _undatedEvent = <String, dynamic>{
+  'id': 3,
+  'uuid': 'undated-event',
+  'slug': 'undated-event',
+  'title': 'Événement sans date',
+  'booking_mode': 'discovery',
+  'dates': null,
+  'slots': <Object>[],
+};
+
+Future<RequestOptions> _pumpOrganizerTab(
+  WidgetTester tester,
+  List<Map<String, dynamic>> events,
+) async {
+  late RequestOptions capturedRequest;
+  final dio = Dio(BaseOptions(baseUrl: 'https://example.test'));
+  addTearDown(() => dio.close(force: true));
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) {
+        capturedRequest = options;
+        handler.resolve(
+          Response<Map<String, dynamic>>(
+            requestOptions: options,
+            statusCode: 200,
+            data: {
+              'success': true,
+              'data': events,
+              'meta': {
+                'page': 1,
+                'per_page': 12,
+                'total': events.length,
+                'last_page': 1
+              },
+            },
+          ),
+        );
+      },
+    ),
+  );
+  final repository = OrganizerRepositoryImpl(OrganizerApiDataSource(dio));
+
+  tester.view.physicalSize = const Size(1080, 1920);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        authSessionUserIdProvider.overrideWithValue('member-1'),
+        organizerRepositoryProvider.overrideWithValue(repository),
+      ],
+      child: MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Consumer(
+          builder: (context, ref, _) => Scaffold(
+            body: OrganizerActivitiesTab(
+              organizerIdentifier: 'org-pro',
+              ownerSession: ref.watch(authSessionKeyProvider),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+  return capturedRequest;
 }
 
 const _futurePrivateEvent = <String, dynamic>{

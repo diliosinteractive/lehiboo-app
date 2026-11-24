@@ -29,7 +29,9 @@ class _PersonalizedCardItem {
 }
 
 _PersonalizedCardItem? _buildCardItem(EventWithSections entry, DateTime now) {
-  final event = EventMapper.toEvent(entry.event);
+  // No date at all: drop the card rather than date it "now".
+  if (EventMapper.scheduleOf(entry.event, now: now) == null) return null;
+  final event = EventMapper.toEvent(entry.event, now: now);
   final displaySlot = _closestDisplaySlot(event, now);
   if (displaySlot == null) return null;
 

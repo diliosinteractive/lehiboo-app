@@ -57,32 +57,64 @@ void main() {
       ),
     );
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          analyticsServiceProvider.overrideWithValue(
-            const NoopAnalyticsService(),
-          ),
-          authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
-          favoritesRepositoryProvider.overrideWithValue(_FakeFavoritesRepo()),
-          personalizedFeedProvider.overrideWith(
-            (ref) => _FakePersonalizedFeedController(view),
-          ),
-        ],
-        child: const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: PersonalizedFeedSection(),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
+    await _pumpFeed(tester, view);
 
     expect(find.text('Past booking'), findsNothing);
     expect(find.text('Future booking'), findsOneWidget);
   });
+
+  testWidgets('hides personalized feed events with no date at all',
+      (tester) async {
+    final feed = PersonalizedFeedDto(
+      booked: [
+        const EventDto(
+          id: 3,
+          uuid: 'undated-event',
+          title: 'Undated booking',
+          slug: 'undated-event',
+        ),
+        _event(
+          id: 2,
+          uuid: 'future-event',
+          title: 'Future booking',
+          slotDate: DateTime.now().add(const Duration(days: 2)),
+        ),
+      ],
+    );
+
+    await _pumpFeed(
+      tester,
+      PersonalizedFeedView(raw: feed, ordered: buildOrdered(feed)),
+    );
+
+    expect(find.text('Undated booking'), findsNothing);
+    expect(find.text('Future booking'), findsOneWidget);
+  });
+}
+
+Future<void> _pumpFeed(WidgetTester tester, PersonalizedFeedView view) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        analyticsServiceProvider.overrideWithValue(
+          const NoopAnalyticsService(),
+        ),
+        authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+        favoritesRepositoryProvider.overrideWithValue(_FakeFavoritesRepo()),
+        personalizedFeedProvider.overrideWith(
+          (ref) => _FakePersonalizedFeedController(view),
+        ),
+      ],
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: PersonalizedFeedSection(),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
 }
 
 class _FakePersonalizedFeedController extends PersonalizedFeedStateController {

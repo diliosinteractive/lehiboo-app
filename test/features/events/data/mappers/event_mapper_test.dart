@@ -9,6 +9,112 @@ void main() {
     AppLocaleCache.setLanguageCode('fr');
   });
 
+  group('EventMapper without a dates block', () {
+    final now = DateTime(2026, 11, 24, 10);
+
+    Map<String, dynamic> slot(
+      String date,
+      String start,
+      String? end, {
+      String timeKind = 'exact',
+    }) =>
+        {
+          'uuid': '$date-$start',
+          'date': date,
+          'end_date': date,
+          'start_time': start,
+          'end_time': end,
+          'time_kind': timeKind,
+        };
+
+    EventDto dto(String slug, {Map<String, dynamic>? dates, List? slots}) =>
+        EventDto.fromJson({
+          'id': slug.hashCode,
+          'uuid': slug,
+          'title': slug,
+          'slug': slug,
+          if (dates != null) 'dates': dates,
+          if (slots != null) 'slots': slots,
+        });
+
+    test('takes the dates of the slot in progress from the slots', () {
+      final event = EventMapper.toEvent(
+        dto('live', slots: [
+          slot('2026-11-23', '10:00:00', '12:00:00'),
+          slot('2026-11-25', '09:00:00', '11:00:00'),
+          slot('2026-11-24', '09:30:00', '11:30:00'),
+        ]),
+        now: now,
+      );
+
+      expect(event.startDate, DateTime(2026, 11, 24, 9, 30));
+      expect(event.endDate, DateTime(2026, 11, 24, 11, 30));
+    });
+
+    test('takes the slots when the dates block has no start date', () {
+      final event = EventMapper.toEvent(
+        dto('empty-dates', dates: {}, slots: [
+          slot('2026-11-25', '18:00:00', '20:00:00'),
+        ]),
+        now: now,
+      );
+
+      expect(event.startDate, DateTime(2026, 11, 25, 18));
+      expect(event.endDate, DateTime(2026, 11, 25, 20));
+    });
+
+    test('takes the latest slot once every slot has ended', () {
+      final event = EventMapper.toEvent(
+        dto('over', slots: [
+          slot('2026-11-20', '10:00:00', '12:00:00'),
+          slot('2026-11-22', '14:00:00', '16:00:00'),
+        ]),
+        now: now,
+      );
+
+      expect(event.startDate, DateTime(2026, 11, 22, 14));
+      expect(event.endDate, DateTime(2026, 11, 22, 16));
+    });
+
+    test('does not invent an end for a start-only slot', () {
+      final event = EventMapper.toEvent(
+        dto('start-only', slots: [
+          slot('2026-11-24', '09:00:00', null, timeKind: 'start_only'),
+        ]),
+        now: now,
+      );
+
+      expect(event.startDate, DateTime(2026, 11, 24, 9));
+      expect(event.endDate, DateTime(2026, 11, 24, 9));
+    });
+
+    test('lists drop the events with no date at all', () {
+      final events = EventMapper.toEvents(
+        [
+          dto('dated', dates: {
+            'start_date': '2026-11-24',
+            'start_time': '18:00:00',
+          }),
+          dto('from-slots', slots: [
+            slot('2026-11-24', '20:00:00', '22:00:00'),
+          ]),
+          dto('no-dates-no-slots'),
+          dto('empty-dates-empty-slots', dates: {}, slots: []),
+          dto('slot-without-date', slots: [
+            {
+              'uuid': 'broken',
+              'start_time': '10:00:00',
+              'end_time': '11:00:00'
+            },
+          ]),
+        ],
+        now: now,
+      );
+
+      expect(events.map((event) => event.slug), ['dated', 'from-slots']);
+    });
+  });
+
   group('EventMapper', () {
     test('maps the end date and time kind of mobile slots', () {
       final event = EventMapper.toEvent(
