@@ -1236,11 +1236,12 @@ class _UrgencySectionState extends ConsumerState<UrgencySection> {
                 separatorBuilder: (_, __) => const SizedBox(width: 12),
                 itemBuilder: (context, index) {
                   final item = happeningNowItems[index];
-                  final activity =
-                      EventToActivityMapper.toActivity(item.event).copyWith(
-                    nextSlot: Slot(
-                      id: '${item.event.id}_happening',
-                      activityId: item.event.id,
+                  final baseActivity =
+                      EventToActivityMapper.toActivity(item.event);
+                  // The mapper always sets nextSlot; keep its capacity, prices
+                  // and status, and only move it to the advertised occurrence.
+                  final activity = baseActivity.copyWith(
+                    nextSlot: baseActivity.nextSlot!.copyWith(
                       startDateTime: item.start,
                       endDateTime: item.end ?? item.start,
                     ),
