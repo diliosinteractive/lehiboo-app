@@ -4,6 +4,63 @@ import 'package:lehiboo/features/events/data/datasources/events_api_datasource.d
 import 'package:lehiboo/features/events/data/mappers/event_mapper.dart';
 
 void main() {
+  test('home feed asks the server for the happening-now list', () async {
+    final dio = Dio(BaseOptions(baseUrl: 'https://example.test'));
+    Map<String, dynamic>? capturedQueryParameters;
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          capturedQueryParameters = options.queryParameters;
+          handler.resolve(
+            Response<Map<String, dynamic>>(
+              requestOptions: options,
+              statusCode: 200,
+              data: <String, dynamic>{
+                'success': true,
+                'data': <String, dynamic>{},
+              },
+            ),
+          );
+        },
+      ),
+    );
+
+    await EventsApiDataSource(dio).getHomeFeed();
+
+    expect(capturedQueryParameters?['include'], 'happening_now');
+  });
+
+  test(
+    'home feed keeps a missing happening-now list apart from an empty one',
+    () async {
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.test'));
+      var requestCount = 0;
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            final data = requestCount++ == 0
+                ? <String, dynamic>{'happening_now': <dynamic>[]}
+                : <String, dynamic>{};
+            handler.resolve(
+              Response<Map<String, dynamic>>(
+                requestOptions: options,
+                statusCode: 200,
+                data: <String, dynamic>{'success': true, 'data': data},
+              ),
+            );
+          },
+        ),
+      );
+      final dataSource = EventsApiDataSource(dio);
+
+      final empty = await dataSource.getHomeFeed();
+      final missing = await dataSource.getHomeFeed();
+
+      expect(empty.happeningNow, isEmpty);
+      expect(missing.happeningNow, isNull);
+    },
+  );
+
   test(
     'lightweight pins preserve discovery pricing without inferring free from zero',
     () async {

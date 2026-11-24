@@ -25,6 +25,9 @@ Map<String, dynamic> _$$HomeFeedResponseDtoImplToJson(
 _$HomeFeedDataDtoImpl _$$HomeFeedDataDtoImplFromJson(
         Map<String, dynamic> json) =>
     _$HomeFeedDataDtoImpl(
+      happeningNow: (json['happening_now'] as List<dynamic>?)
+          ?.map((e) => EventDto.fromJson(e as Map<String, dynamic>))
+          .toList(),
       today: (json['today'] as List<dynamic>?)
               ?.map((e) => EventDto.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -43,6 +46,7 @@ _$HomeFeedDataDtoImpl _$$HomeFeedDataDtoImplFromJson(
 Map<String, dynamic> _$$HomeFeedDataDtoImplToJson(
         _$HomeFeedDataDtoImpl instance) =>
     <String, dynamic>{
+      'happening_now': instance.happeningNow,
       'today': instance.today,
       'tomorrow': instance.tomorrow,
       'recommended': instance.recommended,

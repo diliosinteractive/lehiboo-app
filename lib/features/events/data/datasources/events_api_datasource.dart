@@ -359,7 +359,8 @@ class EventsApiDataSource {
           // A members-only 403 never consumes the password budget, so the
           // remaining count is only meaningful on the rejected-password path.
           throw InvalidEventPasswordException(
-            remainingAttempts: _rateLimitHeader(e.response, 'x-ratelimit-remaining'),
+            remainingAttempts:
+                _rateLimitHeader(e.response, 'x-ratelimit-remaining'),
             attemptLimit: _rateLimitHeader(e.response, 'x-ratelimit-limit'),
           );
         case 404:
@@ -399,7 +400,7 @@ class EventsApiDataSource {
     int? radius,
     int? limit,
   }) async {
-    final queryParams = <String, dynamic>{};
+    final queryParams = <String, dynamic>{'include': 'happening_now'};
     if (lat != null) queryParams['lat'] = lat;
     if (lng != null) queryParams['lng'] = lng;
     if (radius != null) queryParams['radius'] = radius;
@@ -415,7 +416,8 @@ class EventsApiDataSource {
     );
 
     final result = HomeFeedDataDto.fromJson(payload);
-    debugPrint('getHomeFeed: today=${result.today.length}, '
+    debugPrint('getHomeFeed: happeningNow=${result.happeningNow?.length}, '
+        'today=${result.today.length}, '
         'tomorrow=${result.tomorrow.length}, '
         'recommended=${result.recommended.length}');
     return result;
