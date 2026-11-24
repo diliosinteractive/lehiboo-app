@@ -217,6 +217,19 @@ final homeFeedProvider = StateNotifierProvider.autoDispose<
 });
 
 // ──────────────────────────────────────────────────────────────────────────────
+// Happening-now Events (derived from Feed)
+// ──────────────────────────────────────────────────────────────────────────────
+
+final homeHappeningNowEventsProvider =
+    Provider.autoDispose<AsyncValue<List<Event>>>((ref) {
+  return ref.watch(homeFeedProvider).whenData((feed) {
+    final eventDtos = feed.happeningNow ?? feed.today;
+    if (eventDtos.isEmpty) return const <Event>[];
+    return eventDtos.map(EventMapper.toEvent).toList();
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
 // Today's Activities (derived from Feed)
 // ──────────────────────────────────────────────────────────────────────────────
 
