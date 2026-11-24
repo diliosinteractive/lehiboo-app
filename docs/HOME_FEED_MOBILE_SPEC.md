@@ -44,7 +44,7 @@ GET /api/v1/home-feed?include=happening_now
 |---|---|---|---|---|
 | `limit` | integer | `10` | min `1`, max `20` | Caps **each** section independently. `limit=10` → up to 10 today, 10 tomorrow, 10 recommended. |
 | `city` | string | (none) | max 100 chars | PostgreSQL `ILIKE %city%` substring match against `events.city`. Case-insensitive. `Lyon` matches "Lyon", "lyon", "Saint-Lyon" alike. |
-| `include` | string | (none) | `happening_now` | Adds `data.happening_now`, capped at 6 events. Without it, older and current servers may omit the key; clients should distinguish an absent key from a present empty array. |
+| `include` | string | (none) | comma-separated, max 100 chars | `happening_now` adds `data.happening_now`, capped at `limit` like the other sections. Unknown values are ignored, never rejected. Without it the key is omitted, and servers older than this option omit it even when asked, so clients should distinguish an absent key from a present empty array. |
 
 Validation errors return **422** with the standard Laravel validation envelope. Verbatim example for `?limit=0`:
 
@@ -89,7 +89,7 @@ All sections share the same base filter: `is_active=true` AND `accessibleByUser=
 
 ### 2.1 `happening_now` (opt-in)
 
-Returned only when `include=happening_now` is requested. An event qualifies when it has a slot that has not ended and starts no more than 12 hours from the server's current time. The list contains at most 6 events.
+Returned only when `include=happening_now` is requested. An event qualifies when it has a slot that has not ended and starts no more than 12 hours from the server's current time. The list is capped at `limit` (default 10, max 20); the mobile rail displays at most 6 of them.
 
 Live events come first, ordered by the soonest end; upcoming events follow, ordered by the soonest start. For a live event with several slots, the event resource includes the slot currently in progress so clients can render the correct time.
 
@@ -154,7 +154,7 @@ The merged result is up to `limit` items. This guarantees `recommended` is never
 | Field | Type | Notes |
 |---|---|---|
 | `success` | boolean | Always `true` on 2xx. |
-| `data.happening_now` | array | Present when requested with `include=happening_now`; up to 6 event objects. A present empty array is distinct from an omitted key. |
+| `data.happening_now` | array | Present when requested with `include=happening_now`; up to `limit` event objects. A present empty array is distinct from an omitted key. |
 | `data.today` | array | Up to `limit` event objects. May be empty. |
 | `data.tomorrow` | array | Up to `limit` event objects. May be empty. |
 | `data.recommended` | array | Up to `limit` event objects. Empty only if catalogue has no upcoming events. |
