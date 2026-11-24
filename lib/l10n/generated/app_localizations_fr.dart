@@ -4651,6 +4651,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get homeUrgencySubtitle => 'En cours ou sur le point de commencer';
 
   @override
+  String get homeUrgencyLive => 'En cours';
+
+  @override
+  String homeUrgencyLiveUntil(String time) {
+    return 'Jusqu\'à $time';
+  }
+
+  @override
+  String homeUrgencyLiveUntilDate(String date) {
+    return 'Jusqu\'au $date';
+  }
+
+  @override
   String get homeCityNotFound => 'Ville non trouvée';
 
   @override

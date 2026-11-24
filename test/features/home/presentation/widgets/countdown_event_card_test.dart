@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lehiboo/domain/entities/activity.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/events/domain/entities/event.dart';
+import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:lehiboo/features/favorites/domain/repositories/favorites_repository.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 import 'package:lehiboo/features/home/presentation/widgets/countdown_event_card.dart';
@@ -13,130 +14,172 @@ class _FakeFavoritesRepository implements FavoritesRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-Activity _urgentDiscoveryActivity({
-  required String id,
-  required DiscoveryPricingType pricingType,
-  bool? isFree,
-  double? priceMin,
-  double? priceMax,
-}) {
-  final start = DateTime.now().add(const Duration(hours: 2));
-  return Activity(
-    id: id,
-    title: id,
-    slug: id,
-    description: '',
-    discoveryPricingType: pricingType,
-    isFree: isFree,
-    priceMin: priceMin,
-    priceMax: priceMax,
-    nextSlot: Slot(
-      id: '$id-slot',
-      activityId: id,
-      startDateTime: start,
-      endDateTime: start.add(const Duration(hours: 1)),
-    ),
-  );
-}
-
 void main() {
   testWidgets(
     'urgency cards use discovery pricing type instead of zero prices',
     (tester) async {
-      final activities = [
-        _urgentDiscoveryActivity(
+      final now = DateTime(2026, 11, 24, 10);
+      final events = [
+        _event(
           id: 'authoritatively-free',
-          pricingType: DiscoveryPricingType.free,
+          start: DateTime(2026, 11, 24, 11),
+          end: DateTime(2026, 11, 24, 12),
+          discoveryPricingType: 'free',
         ),
-        _urgentDiscoveryActivity(
+        _event(
           id: 'authoritatively-paid',
-          pricingType: DiscoveryPricingType.paid,
-          isFree: true,
-          priceMin: 0,
-          priceMax: 0,
+          start: DateTime(2026, 11, 24, 12),
+          end: DateTime(2026, 11, 24, 13),
+          discoveryPricingType: 'paid',
+          priceType: PriceType.free,
         ),
       ];
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            isAuthenticatedProvider.overrideWithValue(false),
-            authSessionUserIdProvider.overrideWithValue(null),
-            favoritesRepositoryProvider.overrideWithValue(
-              _FakeFavoritesRepository(),
-            ),
-            homeTodayActivitiesProvider.overrideWith(
-              (ref) => AsyncData(activities),
-            ),
-          ],
-          child: MaterialApp(
-            locale: const Locale('fr'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: const Scaffold(body: UrgencySection()),
-          ),
-        ),
-      );
-      await tester.pump();
+      await _pumpUrgencySection(tester, events: events, now: () => now);
 
       expect(find.text('Gratuit'), findsOneWidget);
 
-      // Unmount the cards so their periodic countdown timers are disposed.
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
 
-  testWidgets('urgency membership updates as the 12-hour window moves', (
-    tester,
-  ) async {
-    var now = DateTime.now();
-    final start = now.add(const Duration(hours: 12, minutes: 30));
-    final activity = Activity(
-      id: 'moving-window-event',
-      title: 'Moving window event',
-      slug: 'moving-window-event',
-      description: '',
-      discoveryPricingType: DiscoveryPricingType.paid,
-      nextSlot: Slot(
-        id: 'moving-window-slot',
-        activityId: 'moving-window-event',
-        startDateTime: start,
-        endDateTime: start.add(const Duration(hours: 1)),
-      ),
+  testWidgets(
+    'a slot stays on the rail from twelve hours before its start until it ends',
+    (tester) async {
+      var now = DateTime(2026, 11, 24, 10);
+      final start = now.add(const Duration(hours: 12, minutes: 30));
+      final end = start.add(const Duration(hours: 1));
+      final event = _event(
+        id: 'moving-window-event',
+        title: 'Moving window event',
+        start: start,
+        end: end,
+      );
+
+      await _pumpUrgencySection(tester, events: [event], now: () => now);
+      expect(find.text('Moving window event'), findsNothing);
+
+      now = now.add(const Duration(minutes: 31));
+      await tester.pump(const Duration(minutes: 1));
+      expect(find.text('Moving window event'), findsOneWidget);
+      expect(find.text('En cours'), findsNothing);
+
+      now = start.add(const Duration(minutes: 1));
+      await tester.pump(const Duration(minutes: 1));
+      expect(find.text('Moving window event'), findsOneWidget);
+      expect(find.text('En cours'), findsOneWidget);
+
+      now = end.add(const Duration(minutes: 1));
+      await tester.pump(const Duration(minutes: 1));
+      expect(find.text('Moving window event'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets('a live card says until when it runs', (tester) async {
+    final now = DateTime(2026, 11, 24, 10);
+    final event = _event(
+      id: 'live-event',
+      title: 'Live event',
+      start: DateTime(2026, 11, 24, 9, 30),
+      end: DateTime(2026, 11, 24, 11, 30),
     );
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          isAuthenticatedProvider.overrideWithValue(false),
-          authSessionUserIdProvider.overrideWithValue(null),
-          favoritesRepositoryProvider.overrideWithValue(
-            _FakeFavoritesRepository(),
-          ),
-          homeNowProvider.overrideWithValue(() => now),
-          homeTodayActivitiesProvider.overrideWith(
-            (ref) => AsyncData([activity]),
-          ),
-        ],
-        child: MaterialApp(
-          locale: const Locale('fr'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const Scaffold(body: UrgencySection()),
-        ),
-      ),
-    );
-    await tester.pump();
-    expect(find.text('Moving window event'), findsNothing);
+    await _pumpUrgencySection(tester, events: [event], now: () => now);
 
-    now = now.add(const Duration(minutes: 31));
-    await tester.pump(const Duration(minutes: 1));
-    expect(find.text('Moving window event'), findsOneWidget);
-
-    now = start.add(const Duration(minutes: 1));
-    await tester.pump(const Duration(minutes: 1));
-    expect(find.text('Moving window event'), findsNothing);
+    expect(find.text('En cours'), findsOneWidget);
+    expect(find.text("Jusqu'à 11:30"), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('a start-only live card shows no end time', (tester) async {
+    final now = DateTime(2026, 11, 24, 16);
+    final event = _event(
+      id: 'start-only-event',
+      title: 'Start-only event',
+      start: DateTime(2026, 11, 24, 14),
+      timeKind: SlotTimeKind.startOnly,
+    );
+
+    await _pumpUrgencySection(tester, events: [event], now: () => now);
+
+    expect(find.text('En cours'), findsOneWidget);
+    expect(find.textContaining('Jusqu'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+}
+
+Future<void> _pumpUrgencySection(
+  WidgetTester tester, {
+  required List<Event> events,
+  required DateTime Function() now,
+}) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        isAuthenticatedProvider.overrideWithValue(false),
+        authSessionUserIdProvider.overrideWithValue(null),
+        favoritesRepositoryProvider.overrideWithValue(
+          _FakeFavoritesRepository(),
+        ),
+        homeNowProvider.overrideWithValue(now),
+        homeHappeningNowEventsProvider.overrideWith(
+          (ref) => AsyncData(events),
+        ),
+      ],
+      child: const MaterialApp(
+        locale: Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: UrgencySection()),
+      ),
+    ),
+  );
+  await tester.pump();
+}
+
+Event _event({
+  required String id,
+  String? title,
+  required DateTime start,
+  DateTime? end,
+  SlotTimeKind timeKind = SlotTimeKind.exact,
+  String discoveryPricingType = 'paid',
+  PriceType priceType = PriceType.paid,
+}) {
+  final slotEnd = timeKind == SlotTimeKind.startOnly ? null : end;
+  final slot = CalendarDateSlot(
+    id: '$id-slot',
+    date: DateTime(start.year, start.month, start.day),
+    endDate: slotEnd == null
+        ? null
+        : DateTime(slotEnd.year, slotEnd.month, slotEnd.day),
+    startTime: _clockTime(start),
+    endTime: slotEnd == null ? null : _clockTime(slotEnd),
+    timeKind: timeKind,
+  );
+
+  return Event.minimal(
+    id: id,
+    slug: id,
+    title: title ?? id,
+  ).copyWith(
+    startDate: start,
+    endDate: end ?? start,
+    calendar: CalendarConfig(type: 'manual', dateSlots: [slot]),
+    hasDirectBooking: false,
+    discoveryPricingType: discoveryPricingType,
+    priceType: priceType,
+    minPrice: 0,
+    maxPrice: 0,
+  );
+}
+
+String _clockTime(DateTime value) {
+  final hour = value.hour.toString().padLeft(2, '0');
+  final minute = value.minute.toString().padLeft(2, '0');
+  return '$hour:$minute:00';
 }
