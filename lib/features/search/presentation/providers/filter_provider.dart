@@ -961,10 +961,19 @@ class FilteredEventsNotifier
     unawaited(_currentLoad);
   }
 
+  /// Lists drop undated events, so a server page can come back short. Explore
+  /// only loads more on scroll and shows "no results" for an empty page, so a
+  /// load tops itself up from at most this many following server pages.
+  static const _maxTopUpPages = 3;
+
   final EventRepository _eventRepository;
   final AuthSessionKey ownerSession;
   int _requestGeneration = 0;
   int _scheduledLoadGeneration = 0;
+
+  /// Server pages consumed by top-ups: the filter's page N maps to server
+  /// page N + this offset. Reset by every new search (page 1).
+  int _topUpPageOffset = 0;
   late Future<void> _currentLoad;
 
   Future<void> waitForCurrentLoad() => _currentLoad;
@@ -1014,10 +1023,32 @@ class FilteredEventsNotifier
     }
 
     try {
-      final result = await _fetchEventsForFilter(_eventRepository, filter);
+      final offset = filter.page == 1 ? 0 : _topUpPageOffset;
+      final firstServerPage = filter.page + offset;
+      var result = await _fetchEventsForFilter(
+        _eventRepository,
+        filter,
+        page: firstServerPage,
+      );
       if (!_ownsRequest(requestGeneration)) return;
 
-      final newActivities = EventToActivityMapper.toActivities(result.events);
+      final events = [...result.events];
+      var topUps = 0;
+      while (events.length < filter.perPage &&
+          result.hasNext &&
+          topUps < _maxTopUpPages) {
+        topUps++;
+        result = await _fetchEventsForFilter(
+          _eventRepository,
+          filter,
+          page: firstServerPage + topUps,
+        );
+        if (!_ownsRequest(requestGeneration)) return;
+        events.addAll(result.events);
+      }
+      _topUpPageOffset = offset + topUps;
+
+      final newActivities = EventToActivityMapper.toActivities(events);
       final hasMore = result.hasNext;
 
       if (filter.page == 1) {
