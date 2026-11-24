@@ -5015,6 +5015,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get searchNoSuggestions => 'Aucune suggestion';
 
   @override
+  String get searchSuggestionEnded => 'Terminé';
+
+  @override
   String get searchSectionThemes => 'Thématiques';
 
   @override

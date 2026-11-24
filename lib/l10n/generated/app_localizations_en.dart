@@ -4980,6 +4980,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchNoSuggestions => 'No suggestions';
 
   @override
+  String get searchSuggestionEnded => 'Ended';
+
+  @override
   String get searchSectionThemes => 'Themes';
 
   @override

@@ -2544,6 +2544,10 @@
   "searchLocationTypeHybrid": "Hybride",
   "searchHintEventOrOrganization": "Événement ou organisation",
   "searchNoSuggestions": "Aucune suggestion",
+  "searchSuggestionEnded": "Terminé",
+  "@searchSuggestionEnded": {
+    "description": "Badge on an event suggestion whose slots have all ended"
+  },
   "searchSectionThemes": "Thématiques",
   "searchSectionEventType": "Type d'événement",
   "searchSectionSpecialEvents": "Temps forts",

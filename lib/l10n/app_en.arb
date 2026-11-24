@@ -2085,6 +2085,7 @@
   "searchLocationTypeHybrid": "Hybrid",
   "searchHintEventOrOrganization": "Event or organization",
   "searchNoSuggestions": "No suggestions",
+  "searchSuggestionEnded": "Ended",
   "searchSectionThemes": "Themes",
   "searchSectionEventType": "Event type",
   "searchSectionSpecialEvents": "Highlights",
