@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lehiboo/features/events/data/mappers/event_mapper.dart';
+import 'package:lehiboo/features/events/data/models/event_dto.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:lehiboo/features/home/presentation/utils/happening_now.dart';
@@ -164,6 +166,22 @@ void main() {
       expect(item.startsAt, venue.at(24, 10));
       expect(item.start, DateTime(2026, 11, 24, 10));
       expect(item.end, DateTime(2026, 11, 24, 12));
+    });
+
+    test('is live by venue time once mapped from the API payload', () {
+      final event = EventMapper.toEvent(
+        EventDto.fromJson({
+          'id': 1,
+          'title': 'Paris',
+          'slug': 'paris',
+          'slots': [venue.slotJson('paris', 24, '10:00', '12:00')],
+        }),
+      );
+
+      final item = selectHappeningNow([event], venue.at(24, 10, 30)).single;
+
+      expect(item.isLive, isTrue);
+      expect(item.startsAt, venue.at(24, 10));
     });
 
     test('drops a slot that has ended at the venue', () {

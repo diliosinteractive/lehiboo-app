@@ -650,6 +650,10 @@ class EventMapper {
       'start_time': json['start_time'],
       'end_time': json['end_time'],
       'time_kind': json['time_kind'],
+      // Offset-aware: what timing compares with now, whatever the phone's
+      // timezone. The date and times above are the venue's wall clock.
+      'start_datetime': json['start_datetime'],
+      'end_datetime': json['end_datetime'],
       'spots_remaining': json['available_capacity'] ?? json['spots_remaining'],
       'total_capacity': json['capacity'] ?? json['total_capacity'],
     });

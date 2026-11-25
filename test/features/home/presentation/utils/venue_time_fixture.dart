@@ -28,7 +28,21 @@ class Venue {
     int? endDay,
     SlotTimeKind timeKind = SlotTimeKind.exact,
   }) {
-    return CalendarDateSlot.fromJson({
+    return CalendarDateSlot.fromJson(
+      slotJson(id, day, start, end, endDay: endDay, timeKind: timeKind),
+    );
+  }
+
+  /// The JSON of [slot], as in the `slots` of a mobile event payload.
+  Map<String, dynamic> slotJson(
+    String id,
+    int day,
+    String start,
+    String? end, {
+    int? endDay,
+    SlotTimeKind timeKind = SlotTimeKind.exact,
+  }) {
+    return {
       'id': id,
       'date': _date(day),
       'end_date': _date(endDay ?? day),
@@ -37,7 +51,7 @@ class Venue {
       'time_kind': timeKind == SlotTimeKind.startOnly ? 'start_only' : 'exact',
       'start_datetime': _iso(day, start),
       'end_datetime': end == null ? null : _iso(endDay ?? day, end),
-    });
+    };
   }
 
   String _date(int day) => '2026-11-${day.toString().padLeft(2, '0')}';
