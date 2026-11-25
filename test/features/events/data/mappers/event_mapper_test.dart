@@ -56,6 +56,32 @@ void main() {
       expect(legacy.timeKind, SlotTimeKind.exact);
     });
 
+    test('keeps the exact instants of mobile slots', () {
+      final event = EventMapper.toEvent(
+        EventDto.fromJson({
+          'id': 1,
+          'title': 'Paris',
+          'slug': 'paris',
+          'slots': [
+            {
+              'uuid': 'paris',
+              'date': '2026-11-24',
+              'end_date': '2026-11-24',
+              'start_time': '10:00:00',
+              'end_time': '12:00:00',
+              'time_kind': 'exact',
+              'start_datetime': '2026-11-24T10:00:00+01:00',
+              'end_datetime': '2026-11-24T12:00:00+01:00',
+            },
+          ],
+        }),
+      );
+
+      final slot = event.calendar!.dateSlots.single;
+      expect(slot.startsAt, DateTime.utc(2026, 11, 24, 9));
+      expect(slot.endsAt, DateTime.utc(2026, 11, 24, 11));
+    });
+
     test('maps flat mobile venue fields when location object is absent', () {
       final event = EventMapper.toEvent(
         const EventDto(
