@@ -570,11 +570,20 @@ class _FullCountdownCard extends ConsumerStatefulWidget {
   final bool isLive;
   final DateTime? liveUntil;
 
+  /// Whether [liveUntil] falls on the venue's current day.
+  final bool liveUntilToday;
+
+  /// The exact instant the occurrence starts, which the countdown measures.
+  /// The slot's own date-time is the venue's wall clock, for display.
+  final DateTime? startsAt;
+
   const _FullCountdownCard({
     required this.activity,
     required this.ownerSession,
     this.isLive = false,
     this.liveUntil,
+    this.liveUntilToday = false,
+    this.startsAt,
   });
 
   @override
@@ -601,12 +610,13 @@ class _FullCountdownCardState extends ConsumerState<_FullCountdownCard> {
   }
 
   void _calculateRemaining() {
-    final targetDate = widget.activity.nextSlot?.startDateTime;
+    final targetDate =
+        widget.startsAt ?? widget.activity.nextSlot?.startDateTime;
     if (targetDate == null) {
       setState(() => _remaining = Duration.zero);
       return;
     }
-    final now = DateTime.now();
+    final now = ref.read(homeNowProvider)();
     final diff = targetDate.difference(now);
     setState(() {
       _remaining = diff.isNegative ? Duration.zero : diff;
@@ -621,10 +631,10 @@ class _FullCountdownCardState extends ConsumerState<_FullCountdownCard> {
     return context.homeDateAtTime(dt);
   }
 
-  String _formatDateLine(BuildContext context, DateTime now) {
+  String _formatDateLine(BuildContext context) {
     final liveUntil = widget.liveUntil;
     if (widget.isLive && liveUntil != null) {
-      return _isSameCalendarDay(liveUntil, now)
+      return widget.liveUntilToday
           ? context.l10n.homeUrgencyLiveUntil(context.homeTime(liveUntil))
           : context.l10n
               .homeUrgencyLiveUntilDate(context.homeShortDate(liveUntil));
@@ -640,7 +650,6 @@ class _FullCountdownCardState extends ConsumerState<_FullCountdownCard> {
 
   @override
   Widget build(BuildContext context) {
-    final now = ref.watch(homeNowProvider)();
     return GestureDetector(
       onTap: () {
         if (!identical(
@@ -877,7 +886,7 @@ class _FullCountdownCardState extends ConsumerState<_FullCountdownCard> {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            _formatDateLine(context, now),
+                            _formatDateLine(context),
                             style: TextStyle(
                               color: Colors.grey[700],
                               fontSize: 12,
@@ -1253,6 +1262,8 @@ class _UrgencySectionState extends ConsumerState<UrgencySection> {
                       ownerSession: renderedEventsSession,
                       isLive: item.isLive,
                       liveUntil: item.end,
+                      liveUntilToday: item.endsToday,
+                      startsAt: item.startsAt,
                     ),
                   );
                 },
@@ -1267,8 +1278,4 @@ class _UrgencySectionState extends ConsumerState<UrgencySection> {
       error: (_, __) => const SizedBox.shrink(),
     );
   }
-}
-
-bool _isSameCalendarDay(DateTime a, DateTime b) {
-  return a.year == b.year && a.month == b.month && a.day == b.day;
 }

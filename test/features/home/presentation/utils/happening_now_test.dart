@@ -3,6 +3,8 @@ import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/entities/event_submodels.dart';
 import 'package:lehiboo/features/home/presentation/utils/happening_now.dart';
 
+import 'venue_time_fixture.dart';
+
 void main() {
   final now = DateTime(2026, 11, 24, 10);
 
@@ -145,6 +147,93 @@ void main() {
       selected.map((item) => item.event.id),
       ['event-0', 'event-1', 'event-2', 'event-3', 'event-4', 'event-5'],
     );
+  });
+
+  group('a venue in another timezone than the phone', () {
+    final venue = Venue();
+
+    test('is live while in progress at the venue, shown in venue time', () {
+      final item = selectHappeningNow(
+        [
+          _event('paris', [venue.slot('paris', 24, '10:00', '12:00')])
+        ],
+        venue.at(24, 10, 30),
+      ).single;
+
+      expect(item.isLive, isTrue);
+      expect(item.startsAt, venue.at(24, 10));
+      expect(item.start, DateTime(2026, 11, 24, 10));
+      expect(item.end, DateTime(2026, 11, 24, 12));
+    });
+
+    test('drops a slot that has ended at the venue', () {
+      final selected = selectHappeningNow(
+        [
+          _event('over', [venue.slot('over', 24, '08:00', '10:00')])
+        ],
+        venue.at(24, 10, 30),
+      );
+
+      expect(selected, isEmpty);
+    });
+
+    test('counts the twelve hours from the venue time', () {
+      final selected = selectHappeningNow(
+        [
+          _event('twelve-hours', [
+            venue.slot('twelve-hours', 24, '22:30', '23:00'),
+          ]),
+          _event('too-late', [venue.slot('too-late', 24, '22:31', '23:00')]),
+        ],
+        venue.at(24, 10, 30),
+      );
+
+      expect(selected.map((item) => item.event.id), ['twelve-hours']);
+    });
+
+    test('keeps a start-only slot live until midnight at the venue', () {
+      final events = [
+        _event('start-only', [
+          venue.slot(
+            'start-only',
+            24,
+            '14:00',
+            null,
+            timeKind: SlotTimeKind.startOnly,
+          ),
+        ]),
+      ];
+
+      expect(selectHappeningNow(events, venue.at(24, 23, 30)).single.isLive,
+          isTrue);
+      expect(selectHappeningNow(events, venue.at(25, 0, 30)), isEmpty);
+    });
+
+    test('ends today by the venue calendar, not the phone one', () {
+      // Late evening at a venue behind the phone is already tomorrow on the
+      // phone; early morning at a venue ahead of it is still yesterday there.
+      final (start, end, hour) =
+          venue.isBehindPhone ? ('22:00', '23:30', 22) : ('01:00', '03:00', 2);
+      final now = venue.at(24, hour, 30);
+
+      final tonight = selectHappeningNow(
+        [
+          _event('tonight', [venue.slot('tonight', 24, start, end)])
+        ],
+        now,
+      ).single;
+      final period = selectHappeningNow(
+        [
+          _event('period', [
+            venue.slot('period', 20, '00:00', '23:59', endDay: 29),
+          ]),
+        ],
+        now,
+      ).single;
+
+      expect(tonight.endsToday, isTrue);
+      expect(period.endsToday, isFalse);
+    });
   });
 }
 

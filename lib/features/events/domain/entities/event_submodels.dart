@@ -216,6 +216,14 @@ class CalendarDateSlot extends Equatable {
   final int? spotsRemaining;
   final int? totalCapacity;
 
+  /// When the slot starts and ends, as exact instants (`start_datetime`,
+  /// `end_datetime`, sent with the venue's UTC offset). [date] and the times
+  /// above are the venue's wall clock, for display; comparing those with
+  /// `DateTime.now()` reads them in the phone's timezone instead. Null on
+  /// payloads without them.
+  final DateTime? startsAt;
+  final DateTime? endsAt;
+
   const CalendarDateSlot({
     required this.id,
     required this.date,
@@ -225,6 +233,8 @@ class CalendarDateSlot extends Equatable {
     this.timeKind = SlotTimeKind.exact,
     this.spotsRemaining,
     this.totalCapacity,
+    this.startsAt,
+    this.endsAt,
   });
 
   factory CalendarDateSlot.fromJson(Map<String, dynamic> json) {
@@ -252,7 +262,18 @@ class CalendarDateSlot extends Equatable {
           json['spots_remaining'] is int ? json['spots_remaining'] : null,
       totalCapacity:
           json['total_capacity'] is int ? json['total_capacity'] : null,
+      startsAt: _parseInstant(json['start_datetime']),
+      endsAt: _parseInstant(json['end_datetime']),
     );
+  }
+
+  /// An ISO 8601 date-time with its UTC offset; null without one, since a
+  /// wall-clock time alone does not say which instant it is.
+  static DateTime? _parseInstant(Object? value) {
+    final raw = value?.toString().trim();
+    if (raw == null || raw.isEmpty) return null;
+    final parsed = DateTime.tryParse(raw);
+    return parsed != null && parsed.isUtc ? parsed : null;
   }
 
   /// Parse a date string in various formats (dd-MM-yyyy, yyyy-MM-dd, etc.)
@@ -285,6 +306,8 @@ class CalendarDateSlot extends Equatable {
         endTime,
         timeKind,
         spotsRemaining,
+        startsAt,
+        endsAt,
       ];
 }
 

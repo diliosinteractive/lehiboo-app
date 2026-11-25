@@ -3,15 +3,26 @@ import '../../../events/domain/entities/event_submodels.dart';
 
 class HappeningNowItem {
   final Event event;
+
+  /// The venue's wall-clock start and end, for display.
   final DateTime start;
   final DateTime? end;
+
+  /// When the occurrence starts, as an exact instant: what a countdown
+  /// measures, whatever the phone's timezone.
+  final DateTime startsAt;
   final bool isLive;
+
+  /// Whether [end] falls on the venue's current day.
+  final bool endsToday;
 
   const HappeningNowItem({
     required this.event,
     required this.start,
     required this.end,
+    required this.startsAt,
     required this.isLive,
+    required this.endsToday,
   });
 }
 
@@ -19,6 +30,10 @@ class HappeningNowItem {
 ///
 /// Live occurrences lead, ordered by their effective end. Upcoming
 /// occurrences follow, ordered by start. Original event order breaks ties.
+///
+/// Timing uses the slots' exact instants, so a Paris event is live at the
+/// right moment on a phone set to another timezone; the times shown stay the
+/// venue's.
 List<HappeningNowItem> selectHappeningNow(
   List<Event> events,
   DateTime now, {
@@ -53,7 +68,7 @@ List<HappeningNowItem> selectHappeningNow(
 
     final comparison = aCandidate.isLive
         ? aCandidate.effectiveEnd.compareTo(bCandidate.effectiveEnd)
-        : aCandidate.start.compareTo(bCandidate.start);
+        : aCandidate.startsAt.compareTo(bCandidate.startsAt);
     if (comparison != 0) return comparison;
 
     return a.eventIndex.compareTo(b.eventIndex);
@@ -66,7 +81,9 @@ List<HappeningNowItem> selectHappeningNow(
           event: entry.candidate.event,
           start: entry.candidate.start,
           end: entry.candidate.end,
+          startsAt: entry.candidate.startsAt,
           isLive: entry.candidate.isLive,
+          endsToday: entry.candidate.endsToday,
         ),
       )
       .toList();
@@ -93,7 +110,8 @@ _SlotCandidate? _pickEventCandidate(
       if (live == null || candidate.effectiveEnd.isBefore(live.effectiveEnd)) {
         live = candidate;
       }
-    } else if (upcoming == null || candidate.start.isBefore(upcoming.start)) {
+    } else if (upcoming == null ||
+        candidate.startsAt.isBefore(upcoming.startsAt)) {
       upcoming = candidate;
     }
   }
@@ -111,18 +129,22 @@ _SlotCandidate? _calendarCandidate(
   if (startTime == null) return null;
 
   final start = _combine(slot.date, startTime);
-  if (start.isAfter(cutoff)) return null;
+  final venue = _VenueClock.of(slot, start);
+  final startsAt = venue.instant(start);
+  if (startsAt.isAfter(cutoff)) return null;
 
   if (slot.timeKind == SlotTimeKind.startOnly) {
-    final effectiveEnd = _nextDayStart(slot.endDate ?? slot.date);
-    if (!now.isBefore(effectiveEnd)) return null;
+    final runsUntil = venue.instant(_nextDayStart(slot.endDate ?? slot.date));
+    if (!now.isBefore(runsUntil)) return null;
 
     return _SlotCandidate(
       event: event,
       start: start,
       end: null,
-      effectiveEnd: effectiveEnd,
-      isLive: !start.isAfter(now),
+      startsAt: startsAt,
+      effectiveEnd: runsUntil,
+      isLive: !startsAt.isAfter(now),
+      endsToday: false,
     );
   }
 
@@ -130,14 +152,17 @@ _SlotCandidate? _calendarCandidate(
   if (endTime == null) return null;
 
   final end = _combine(slot.endDate ?? slot.date, endTime);
-  if (end.isBefore(now)) return null;
+  final endsAt = slot.endsAt ?? venue.instant(end);
+  if (endsAt.isBefore(now)) return null;
 
   return _SlotCandidate(
     event: event,
     start: start,
     end: end,
-    effectiveEnd: end,
-    isLive: !start.isAfter(now),
+    startsAt: startsAt,
+    effectiveEnd: endsAt,
+    isLive: !startsAt.isAfter(now),
+    endsToday: venue.isToday(end, now),
   );
 }
 
@@ -154,9 +179,52 @@ _SlotCandidate? _fallbackCandidate(
     event: event,
     start: event.startDate,
     end: event.endDate,
+    startsAt: event.startDate,
     effectiveEnd: event.endDate,
     isLive: !event.startDate.isAfter(now),
+    endsToday: const _VenueClock(null).isToday(event.endDate, now),
   );
+}
+
+/// The venue's clock. A slot's date and times are the venue's wall clock;
+/// read as phone time they would be hours off on a phone set to another
+/// timezone. The API sends the start with the venue's UTC offset, which turns
+/// them into exact instants. Without it, the phone's clock stands in.
+class _VenueClock {
+  const _VenueClock(this._offset);
+
+  factory _VenueClock.of(CalendarDateSlot slot, DateTime wallClockStart) {
+    final startsAt = slot.startsAt;
+    if (startsAt == null) return const _VenueClock(null);
+    return _VenueClock(_utcFields(wallClockStart).difference(startsAt));
+  }
+
+  final Duration? _offset;
+
+  /// The instant a venue wall-clock time stands for.
+  DateTime instant(DateTime wallClock) {
+    final offset = _offset;
+    if (offset == null) return wallClock;
+    return _utcFields(wallClock).subtract(offset);
+  }
+
+  /// Whether a venue wall-clock time falls on the venue's current day.
+  bool isToday(DateTime wallClock, DateTime now) {
+    final offset = _offset;
+    final venueNow = offset == null ? now : now.toUtc().add(offset);
+    return wallClock.year == venueNow.year &&
+        wallClock.month == venueNow.month &&
+        wallClock.day == venueNow.day;
+  }
+
+  static DateTime _utcFields(DateTime time) => DateTime.utc(
+        time.year,
+        time.month,
+        time.day,
+        time.hour,
+        time.minute,
+        time.second,
+      );
 }
 
 typedef _ClockTime = ({int hour, int minute, int second});
@@ -222,15 +290,19 @@ class _SlotCandidate {
   final Event event;
   final DateTime start;
   final DateTime? end;
+  final DateTime startsAt;
   final DateTime effectiveEnd;
   final bool isLive;
+  final bool endsToday;
 
   const _SlotCandidate({
     required this.event,
     required this.start,
     required this.end,
+    required this.startsAt,
     required this.effectiveEnd,
     required this.isLive,
+    required this.endsToday,
   });
 }
 

@@ -9,6 +9,8 @@ import 'package:lehiboo/features/home/presentation/providers/home_providers.dart
 import 'package:lehiboo/features/home/presentation/widgets/countdown_event_card.dart';
 import 'package:lehiboo/l10n/generated/app_localizations.dart';
 
+import '../utils/venue_time_fixture.dart';
+
 class _FakeFavoritesRepository implements FavoritesRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -110,6 +112,58 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  group('a venue in another timezone than the phone', () {
+    final venue = Venue();
+
+    testWidgets('a live card runs and ends in venue time', (tester) async {
+      final event = _venueEvent(
+        'live-abroad',
+        venue.slot('live-abroad', 24, '10:00', '12:00'),
+      );
+
+      await _pumpUrgencySection(
+        tester,
+        events: [event],
+        now: () => venue.at(24, 10, 30),
+      );
+
+      expect(find.text('En cours'), findsOneWidget);
+      expect(find.text("Jusqu'à 12:00"), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('an upcoming card counts down to the venue start', (
+      tester,
+    ) async {
+      final event = _venueEvent(
+        'soon-abroad',
+        venue.slot('soon-abroad', 24, '11:00', '12:00'),
+      );
+
+      await _pumpUrgencySection(
+        tester,
+        events: [event],
+        now: () => venue.at(24, 10, 35),
+      );
+
+      expect(find.textContaining('25min'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  });
+}
+
+Event _venueEvent(String id, CalendarDateSlot slot) {
+  return Event.minimal(id: id, slug: id, title: id).copyWith(
+    calendar: CalendarConfig(type: 'manual', dateSlots: [slot]),
+    hasDirectBooking: false,
+    discoveryPricingType: 'paid',
+    priceType: PriceType.paid,
+    minPrice: 0,
+    maxPrice: 0,
+  );
 }
 
 Future<void> _pumpUrgencySection(

@@ -428,7 +428,7 @@ For events with multiple slots, `dates` describes only the **first upcoming** sl
 | `available_capacity` | integer. `max(0, capacity − booked_count)`. When `capacity` is `null`, this is `0`. |
 | `is_available` | boolean. Computed as `is_active && !is_past && available_capacity > 0`. **⚠️ Caveat for discovery events**: because `capacity` is typically `null` for discovery slots, `available_capacity` evaluates to `0` and `is_available` therefore returns `false` for every future-dated discovery slot. **Mobile UIs MUST NOT gate the slot picker on `is_available` alone for discovery events** — for `booking_mode === "discovery"`, treat all `!is_past` slots as selectable regardless. For `booking_mode === "booking"`, `is_available` is reliable. |
 | `is_past` / `is_today` | Computed against the server clock — trust them on screens that do not stay mounted across a time boundary. |
-| `is_ongoing` | Computed against the server clock. For exact slots this remains true through `(end_date ?? date) + end_time`, inclusive. A started `start_only` slot remains ongoing through its last calendar day. Long-lived or cached screens should recompute this rule against their live clock. |
+| `is_ongoing` | Computed against the server clock. For exact slots this remains true through `(end_date ?? date) + end_time`, inclusive. A started `start_only` slot remains ongoing through its last calendar day. Long-lived or cached screens should recompute this rule against their live clock, comparing the offset-aware `start_datetime` / `end_datetime` with it: `date` and the times are the venue's wall clock, and read in the device timezone they are hours off on a phone set to another zone. Keep the wall clock for display. |
 
 ### 5.2 Organizer — inline object
 
