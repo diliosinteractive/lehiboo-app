@@ -89,7 +89,7 @@ All sections share the same base filter: `is_active=true` AND `accessibleByUser=
 
 ### 2.1 `happening_now` (opt-in)
 
-Returned only when `include=happening_now` is requested. An event qualifies when it has a slot that has not ended and starts no more than 12 hours from the server's current time. The list is capped at `limit` (default 10, max 20); the mobile rail displays at most 6 of them.
+Returned only when `include=happening_now` is requested. An event qualifies when it has a slot that has not ended and starts no more than 12 hours 30 minutes from the server's current time. The 30 minutes are a margin: the app refreshes the feed every 15 minutes and keeps the 12 hours itself every minute, so an event is already in the response when it enters them. The list is capped at `limit` (default 10, max 20); the mobile rail displays at most 6 of them.
 
 Live events come first, ordered by the soonest end; upcoming events follow, ordered by the soonest start. For a live event with several slots, the event resource includes the slot currently in progress so clients can render the correct time.
 
