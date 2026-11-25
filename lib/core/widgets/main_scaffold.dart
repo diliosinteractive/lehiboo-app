@@ -147,9 +147,12 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
 
     // Back on home leaves the app. Elsewhere in the shell, once there is no
     // pushed page left to close, back returns home instead: tabs are opened
-    // with go(), so without this the app would close.
+    // with go(), so without this the app would close. When the shell itself
+    // was opened over another screen (Petit Boo pushes /profile), back returns
+    // there, and the iOS edge swipe, which a refused pop disables, stays on.
+    final opensOverAnotherScreen = ModalRoute.of(context)?.canPop ?? false;
     return PopScope(
-      canPop: path == '/',
+      canPop: path == '/' || opensOverAnotherScreen,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) context.go('/');
       },

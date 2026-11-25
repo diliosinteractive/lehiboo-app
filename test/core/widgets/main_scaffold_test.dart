@@ -56,6 +56,42 @@ void main() {
     });
   });
 
+  // Petit Boo, for one, pushes /profile from outside the shell. When the
+  // session started outside the shell (a link to /petit-boo), the shell is
+  // then the only page over that screen, and back must return to it.
+  group('a shell page opened from a screen outside the shell', () {
+    Future<_Shell> openedFromOutside(WidgetTester tester) async {
+      final shell = await _Shell.pump(tester, initialLocation: '/outside');
+      shell.router.push('/profile');
+      await tester.pumpAndSettle();
+      expect(find.text('Profile page'), findsOneWidget);
+      return shell;
+    }
+
+    testWidgets('back returns to that screen', (tester) async {
+      final shell = await openedFromOutside(tester);
+
+      await shell.systemBack();
+
+      expect(find.text('Outside page'), findsOneWidget);
+      expect(shell.location, '/outside');
+    });
+
+    testWidgets(
+      'the iOS edge swipe returns to that screen',
+      (tester) async {
+        final shell = await openedFromOutside(tester);
+
+        await tester.dragFrom(const Offset(5, 300), const Offset(500, 0));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Outside page'), findsOneWidget);
+        expect(shell.location, '/outside');
+      },
+      variant: TargetPlatformVariant.only(TargetPlatform.iOS),
+    );
+  });
+
   group('bottom nav visibility', () {
     testWidgets('the profile opened from home hides it until back on home', (
       tester,
@@ -154,6 +190,7 @@ class _Shell {
           ],
         ),
         _page('/map', 'Map page'),
+        _page('/outside', 'Outside page'),
       ],
     );
     addTearDown(router.dispose);

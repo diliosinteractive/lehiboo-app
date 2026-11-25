@@ -365,4 +365,19 @@ void main() {
     expect(find.text('Logged-out home'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  // A profile opened directly (link, redirect after sign-in) has no page under
+  // it and no bottom nav: without its own back button, iOS users are stuck.
+  testWidgets('a profile opened directly has a back button to home',
+      (tester) async {
+    await tester.pumpWidget(
+      _routerTestApp(api: _ControlledProfileApi(), captureAuth: (_) {}),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Logged-out home'), findsOneWidget);
+  });
 }
