@@ -669,7 +669,7 @@ class EventMapper {
 
     final notEnded = timings.where((timing) => !timing.hasEnded(now)).toList();
     final shown = notEnded.isNotEmpty
-        ? notEnded.reduce((a, b) => b.start.isBefore(a.start) ? b : a)
+        ? notEnded.reduce((a, b) => b.startsAt.isBefore(a.startsAt) ? b : a)
         : timings.reduce((a, b) => b.runsUntil.isAfter(a.runsUntil) ? b : a);
     return (start: shown.start, end: shown.end ?? shown.start);
   }
