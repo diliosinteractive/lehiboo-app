@@ -234,7 +234,13 @@ class MembershipStateSyncCoordinator {
     _MembershipTransitionKey? transition,
   ) {
     if (!_ownsActiveSession) return Future<void>.value();
-    _queueTransition(transition);
+    // Membership changes alter access to private events everywhere they are
+    // surfaced, as well as the join-status button. A notification reports
+    // one, so the cached content goes at once, even while a foreground check
+    // is still in flight. A duplicate of a transition in hand shares it.
+    if (_queueTransition(transition)) {
+      _ref.read(membershipContentRevisionProvider.notifier).advance();
+    }
     return _inFlight ?? _startReconciliations();
   }
 
@@ -252,15 +258,17 @@ class MembershipStateSyncCoordinator {
     return task;
   }
 
-  void _queueTransition(_MembershipTransitionKey? transition) {
+  /// Queues [transition] for a reconciliation; false for a duplicate of one
+  /// already active or pending.
+  bool _queueTransition(_MembershipTransitionKey? transition) {
     if (transition == null) {
       // Without an organization identity we cannot prove two signals describe
       // the same transition, so conservatively schedule trailing work.
       _pendingUnidentifiedTransition = true;
-      return;
+      return true;
     }
-    if (_activeTransitions.contains(transition)) return;
-    _pendingTransitions.add(transition);
+    if (_activeTransitions.contains(transition)) return false;
+    return _pendingTransitions.add(transition);
   }
 
   Future<void> _drainReconciliations() async {
@@ -281,26 +289,33 @@ class MembershipStateSyncCoordinator {
   }
 
   Future<void> _performReconciliation({required bool signalled}) async {
-    final revision = _ref.read(membershipContentRevisionProvider.notifier);
-    // Membership changes alter access to private events everywhere they are
-    // surfaced, as well as the join-status button. A notification reports
-    // one, so the cached content goes at once.
-    if (signalled) revision.advance();
+    // What the content was built with: the memberships of the last
+    // reconciliation, else those already cached before this refresh.
+    final cached = _ref.read(myMembershipsListProvider).valueOrNull;
+    final builtWith = _contentMemberships ??
+        (cached == null ? null : _accessFingerprint(cached));
 
     await _ref.read(myMembershipsListProvider.notifier).refreshSilently();
     if (!_ownsActiveSession) return;
 
     final fetched = _ref.read(myMembershipsListProvider);
     if (fetched.hasError || fetched.isLoading || !fetched.hasValue) return;
-    final memberships = _accessFingerprint(fetched.requireValue);
-    final builtWith = _contentMemberships;
+    final page = fetched.requireValue;
+    final memberships = _accessFingerprint(page);
     _contentMemberships = memberships;
+    // A notification already moved the revision when it came in.
+    if (signalled) return;
 
     // Every membership-gated list watches the revision and reloads when it
-    // moves, so a foreground check only moves it on a real change. The first
-    // check of a session has nothing to compare with and only records them.
-    if (!signalled && builtWith != null && !setEquals(builtWith, memberships)) {
-      revision.advance();
+    // moves, so a foreground check only moves it on a real change. With
+    // nothing to compare with (the list was never loaded this session), the
+    // check only records the memberships. Past the first page, a status
+    // change at a constant count would go unseen: a partial list cannot prove
+    // nothing changed.
+    final partial = (page.meta?.total ?? page.data.length) > page.data.length;
+    final changed = builtWith != null && !setEquals(builtWith, memberships);
+    if (partial || changed) {
+      _ref.read(membershipContentRevisionProvider.notifier).advance();
     }
   }
 }
