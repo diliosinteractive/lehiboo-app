@@ -109,7 +109,11 @@ class EventRepositoryImpl implements EventRepository {
       includePast: includePast,
     );
 
-    final events = response.events.map(EventMapper.toEvent).toList();
+    // Map pins carry no dates and need none; lists drop undated events
+    // rather than dating them "now".
+    final events = lightweight == true
+        ? response.events.map(EventMapper.toEvent).toList()
+        : EventMapper.toEvents(response.events);
 
     // Debug: log transformed event coordinates and images
     if (kDebugMode) {

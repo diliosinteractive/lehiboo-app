@@ -8553,6 +8553,12 @@ abstract class AppLocalizations {
   /// **'Aucune suggestion'**
   String get searchNoSuggestions;
 
+  /// Badge on an event suggestion whose slots have all ended
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminé'**
+  String get searchSuggestionEnded;
+
   /// No description provided for @searchSectionThemes.
   ///
   /// In fr, this message translates to:

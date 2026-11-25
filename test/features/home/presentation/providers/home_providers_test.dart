@@ -13,6 +13,52 @@ import 'package:lehiboo/features/events/domain/repositories/event_repository.dar
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 
 void main() {
+  test('home feed lists drop the events with no date at all', () {
+    const undated = EventDto(
+      id: 9,
+      uuid: 'undated',
+      title: 'Undated',
+      slug: 'undated',
+    );
+    final dated = _feedEvent(
+      id: 1,
+      slug: 'dated',
+      title: 'Dated',
+      date: '2030-06-23',
+      startTime: '10:00',
+    );
+    final feed = HomeFeedDataDto(
+      happeningNow: [undated, dated],
+      today: [undated, dated],
+      tomorrow: [undated, dated],
+      recommended: [undated, dated],
+    );
+    final container = ProviderContainer(
+      overrides: [
+        homeFeedProvider.overrideWith((ref) => _FakeHomeFeedNotifier(feed)),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    expect(
+      container
+          .read(homeHappeningNowEventsProvider)
+          .requireValue
+          .map((event) => event.slug),
+      ['dated'],
+    );
+    for (final provider in [
+      homeTodayActivitiesProvider,
+      homeTomorrowActivitiesProvider,
+      homeActivitiesProvider,
+    ]) {
+      expect(
+        container.read(provider).requireValue.map((activity) => activity.slug),
+        ['dated'],
+      );
+    }
+  });
+
   group('homeHappeningNowEventsProvider', () {
     test('uses the server happening-now list when present', () {
       final feed = HomeFeedDataDto(

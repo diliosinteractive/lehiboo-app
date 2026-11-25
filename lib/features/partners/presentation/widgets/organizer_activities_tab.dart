@@ -69,8 +69,7 @@ class _OrganizerActivitiesTabState
       ),
       data: (state) {
         final now = DateTime.now();
-        final events =
-            state.events.map(EventMapper.toEvent).toList(growable: false);
+        final events = EventMapper.toEvents(state.events, now: now);
 
         final current = <Event>[];
         final past = <Event>[];

@@ -225,7 +225,7 @@ final homeHappeningNowEventsProvider =
   return ref.watch(homeFeedProvider).whenData((feed) {
     final eventDtos = feed.happeningNow ?? feed.today;
     if (eventDtos.isEmpty) return const <Event>[];
-    return eventDtos.map(EventMapper.toEvent).toList();
+    return EventMapper.toEvents(eventDtos);
   });
 });
 
@@ -237,7 +237,7 @@ final homeTodayActivitiesProvider =
     Provider.autoDispose<AsyncValue<List<Activity>>>((ref) {
   return ref.watch(homeFeedProvider).whenData((feed) {
     if (feed.today.isEmpty) return const <Activity>[];
-    final events = feed.today.map(EventMapper.toEvent).toList();
+    final events = EventMapper.toEvents(feed.today);
     return sortActivitiesChronologically(
       EventToActivityMapper.toActivities(events),
     );
@@ -252,7 +252,7 @@ final homeTomorrowActivitiesProvider =
     Provider.autoDispose<AsyncValue<List<Activity>>>((ref) {
   return ref.watch(homeFeedProvider).whenData((feed) {
     if (feed.tomorrow.isEmpty) return const <Activity>[];
-    final events = feed.tomorrow.map(EventMapper.toEvent).toList();
+    final events = EventMapper.toEvents(feed.tomorrow);
     return sortActivitiesChronologically(
       EventToActivityMapper.toActivities(events),
     );
@@ -942,7 +942,7 @@ final homeActivitiesProvider =
     Provider.autoDispose<AsyncValue<List<Activity>>>((ref) {
   return ref.watch(homeFeedProvider).whenData((feed) {
     if (feed.recommended.isEmpty) return const <Activity>[];
-    final events = feed.recommended.map(EventMapper.toEvent).toList();
+    final events = EventMapper.toEvents(feed.recommended);
     return sortActivitiesChronologically(
       EventToActivityMapper.toActivities(events),
     );
