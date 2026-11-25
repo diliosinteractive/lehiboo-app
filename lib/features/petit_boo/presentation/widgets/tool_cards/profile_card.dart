@@ -36,7 +36,10 @@ class ProfileCard extends StatelessWidget {
     final accentColor = parseHexColor(schema.color);
 
     return GestureDetector(
-      onTap: () => context.push('/profile'),
+      // Use go() instead of push() because /profile is a ShellRoute child and
+      // the chat is outside the shell: push() would create a duplicate key in
+      // the Navigator. The chat keeps its conversation for when it reopens.
+      onTap: () => context.go('/profile'),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
