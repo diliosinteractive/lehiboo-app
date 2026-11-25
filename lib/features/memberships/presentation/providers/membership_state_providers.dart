@@ -174,6 +174,10 @@ class _MembershipTransitionKey {
 /// transition. Duplicate type/organization pairs share the active request,
 /// while a distinct transition received in flight schedules one trailing
 /// reconciliation so its server state cannot be missed.
+///
+/// [reconcile] is the foreground check: it reports no transition, so the
+/// membership-gated content is only refreshed when the memberships differ
+/// from the ones it was built with.
 class MembershipStateSyncCoordinator {
   MembershipStateSyncCoordinator(
     this._ref, {
@@ -186,6 +190,11 @@ class MembershipStateSyncCoordinator {
   final Set<_MembershipTransitionKey> _activeTransitions = {};
   final Set<_MembershipTransitionKey> _pendingTransitions = {};
   bool _pendingUnidentifiedTransition = false;
+  bool _pendingCheck = false;
+
+  /// The memberships the membership-gated content was built with, as of the
+  /// last reconciliation. Null until the first one of this session.
+  Set<String>? _contentMemberships;
 
   bool get _ownsActiveSession =>
       _ownerSession.accountId != null &&
@@ -210,20 +219,26 @@ class MembershipStateSyncCoordinator {
     );
   }
 
-  Future<void> reconcile() => _requestReconciliation(null);
+  /// Looks for membership changes made while the app was in the background
+  /// (realtime disconnected, push not opened), on return to the foreground.
+  Future<void> reconcile() {
+    if (!_ownsActiveSession) return Future<void>.value();
+    // A reconciliation in flight already fetches and compares the memberships.
+    final current = _inFlight;
+    if (current != null) return current;
+    _pendingCheck = true;
+    return _startReconciliations();
+  }
 
   Future<void> _requestReconciliation(
     _MembershipTransitionKey? transition,
   ) {
     if (!_ownsActiveSession) return Future<void>.value();
-    final current = _inFlight;
-    if (current != null) {
-      _queueTransition(transition);
-      return current;
-    }
-
     _queueTransition(transition);
+    return _inFlight ?? _startReconciliations();
+  }
 
+  Future<void> _startReconciliations() {
     late final Future<void> task;
     task = _drainReconciliations().whenComplete(() {
       if (!identical(_inFlight, task)) return;
@@ -231,6 +246,7 @@ class MembershipStateSyncCoordinator {
       _activeTransitions.clear();
       _pendingTransitions.clear();
       _pendingUnidentifiedTransition = false;
+      _pendingCheck = false;
     });
     _inFlight = task;
     return task;
@@ -249,23 +265,62 @@ class MembershipStateSyncCoordinator {
 
   Future<void> _drainReconciliations() async {
     while (_ownsActiveSession &&
-        (_pendingUnidentifiedTransition || _pendingTransitions.isNotEmpty)) {
+        (_pendingCheck ||
+            _pendingUnidentifiedTransition ||
+            _pendingTransitions.isNotEmpty)) {
+      final signalled =
+          _pendingUnidentifiedTransition || _pendingTransitions.isNotEmpty;
       _activeTransitions
         ..clear()
         ..addAll(_pendingTransitions);
       _pendingTransitions.clear();
       _pendingUnidentifiedTransition = false;
-      await _performReconciliation();
+      _pendingCheck = false;
+      await _performReconciliation(signalled: signalled);
     }
   }
 
-  Future<void> _performReconciliation() async {
+  Future<void> _performReconciliation({required bool signalled}) async {
+    final revision = _ref.read(membershipContentRevisionProvider.notifier);
     // Membership changes alter access to private events everywhere they are
-    // surfaced, as well as the join-status button.
-    _ref.read(membershipContentRevisionProvider.notifier).advance();
+    // surfaced, as well as the join-status button. A notification reports
+    // one, so the cached content goes at once.
+    if (signalled) revision.advance();
+
     await _ref.read(myMembershipsListProvider.notifier).refreshSilently();
+    if (!_ownsActiveSession) return;
+
+    final fetched = _ref.read(myMembershipsListProvider);
+    if (fetched.hasError || fetched.isLoading || !fetched.hasValue) return;
+    final memberships = _accessFingerprint(fetched.requireValue);
+    final builtWith = _contentMemberships;
+    _contentMemberships = memberships;
+
+    // Every membership-gated list watches the revision and reloads when it
+    // moves, so a foreground check only moves it on a real change. The first
+    // check of a session has nothing to compare with and only records them.
+    if (!signalled && builtWith != null && !setEquals(builtWith, memberships)) {
+      revision.advance();
+    }
   }
 }
+
+/// What gives access to member content: the organizations of the account,
+/// with status and role. Display fields (names, logos, dates) are left out, so
+/// a fresh copy of the same memberships compares equal.
+Set<String> _accessFingerprint(MembershipsPage page) => {
+      for (final membership in page.data)
+        [
+          membership.id,
+          membership.organization?.uuid ??
+              membership.organization?.id ??
+              membership.organization?.slug,
+          membership.status.name,
+          membership.role?.name,
+          membership.isActive,
+        ].join('|'),
+      'total:${page.meta?.total}',
+    };
 
 final membershipStateSyncProvider = Provider<MembershipStateSyncCoordinator>(
   (ref) {
