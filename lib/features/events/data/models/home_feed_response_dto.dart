@@ -18,6 +18,7 @@ class HomeFeedResponseDto with _$HomeFeedResponseDto {
 @freezed
 class HomeFeedDataDto with _$HomeFeedDataDto {
   const factory HomeFeedDataDto({
+    @JsonKey(name: 'happening_now') List<EventDto>? happeningNow,
     @Default([]) List<EventDto> today,
     @Default([]) List<EventDto> tomorrow,
     @Default([]) List<EventDto> recommended,

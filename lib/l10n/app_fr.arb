@@ -2287,6 +2287,23 @@
   "homeBook": "Réserver",
   "homeUrgencyTitle": "Ça se joue maintenant",
   "homeUrgencySubtitle": "En cours ou sur le point de commencer",
+  "homeUrgencyLive": "En cours",
+  "homeUrgencyLiveUntil": "Jusqu'à {time}",
+  "@homeUrgencyLiveUntil": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "homeUrgencyLiveUntilDate": "Jusqu'au {date}",
+  "@homeUrgencyLiveUntilDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "homeCityNotFound": "Ville non trouvée",
   "homeCityLoadError": "Impossible de charger cette ville",
   "homeCityActivitiesLoadError": "Impossible de charger les activités de cette ville",

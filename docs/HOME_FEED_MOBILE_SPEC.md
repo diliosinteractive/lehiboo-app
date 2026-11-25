@@ -2,7 +2,7 @@
 
 **Audience** : Mobile app (Flutter — customer side)
 **Status** : Stable contract
-**Scope** : The first screen the customer sees after launching the app. Returns three pre-grouped lists of events (today / tomorrow / recommended) optimised for vertical scrolling.
+**Scope** : The first screen the customer sees after launching the app. Returns three baseline lists of events (today / tomorrow / recommended) plus an opt-in happening-now list, optimised for vertical scrolling.
 
 The endpoint is **public** (works without authentication) but **auth-aware** — when a bearer token is provided, the response also includes private events from organisations the user is a member of.
 
@@ -15,8 +15,8 @@ The endpoint is **public** (works without authentication) but **auth-aware** —
 | Method | `GET` |
 | Path | `/api/v1/home-feed` |
 | Auth | Optional bearer token. With token → also returns member-only events. Without → public events only. |
-| Query | `?limit=10` (1-20, default 10) `&city=Lyon` (optional, ILIKE substring match) |
-| Response shape | `{ success, data: { today, tomorrow, recommended, location_provided } }` |
+| Query | `?limit=10` (1-20, default 10) `&city=Lyon` (optional, ILIKE substring match) `&include=happening_now` (optional) |
+| Response shape | `{ success, data: { happening_now?, today, tomorrow, recommended, location_provided } }` |
 | Pagination | **None.** `limit` caps each section. Return is a single shot. |
 | Cache | Recommend 60s stale, refetch on foreground/pull-to-refresh. |
 
@@ -27,6 +27,7 @@ The endpoint is **public** (works without authentication) but **auth-aware** —
 ```
 GET /api/v1/home-feed
 GET /api/v1/home-feed?limit=8&city=Lyon
+GET /api/v1/home-feed?include=happening_now
 ```
 
 ### 1.1 Headers
@@ -43,6 +44,7 @@ GET /api/v1/home-feed?limit=8&city=Lyon
 |---|---|---|---|---|
 | `limit` | integer | `10` | min `1`, max `20` | Caps **each** section independently. `limit=10` → up to 10 today, 10 tomorrow, 10 recommended. |
 | `city` | string | (none) | max 100 chars | PostgreSQL `ILIKE %city%` substring match against `events.city`. Case-insensitive. `Lyon` matches "Lyon", "lyon", "Saint-Lyon" alike. |
+| `include` | string | (none) | comma-separated, max 100 chars | `happening_now` adds `data.happening_now`, capped at `limit` like the other sections. Unknown values are ignored, never rejected. Without it the key is omitted, and servers older than this option omit it even when asked, so clients should distinguish an absent key from a present empty array. |
 
 Validation errors return **422** with the standard Laravel validation envelope. Verbatim example for `?limit=0`:
 
@@ -81,18 +83,31 @@ The home feed is not the right surface for infinite-scroll.
 
 ---
 
-## 2. The three sections — selection logic
+## 2. Section selection logic
 
-All three sections share the same base filter: `is_active=true` AND `accessibleByUser=true` AND (optional) `city ILIKE %…%`. They differ in slot-date and ordering.
+All sections share the same base filter: `is_active=true` AND `accessibleByUser=true` AND (optional) `city ILIKE %…%`. They differ in slot-date and ordering.
 
-### 2.1 `today`
+### 2.1 `happening_now` (opt-in)
+
+Returned only when `include=happening_now` is requested. An event qualifies when it has a slot that has not ended and starts no more than 12 hours 30 minutes from the server's current time. The 30 minutes are a margin: the app refreshes the feed every 15 minutes and keeps the 12 hours itself every minute, so an event is already in the response when it enters them. The list is capped at `limit` (default 10, max 20); the mobile rail displays at most 6 of them.
+
+Live events come first, ordered by the soonest end; upcoming events follow, ordered by the soonest start. For a live event with several slots, the event resource includes the slot currently in progress so clients can render the correct time.
+
+"Not ended" follows the slot model's rule:
+
+- An exact slot runs through `(end_date ?? date) + end_time`, inclusive.
+- A `start_only` slot with no `end_time` runs through the end of its last calendar day (`end_date ?? date`).
+
+An empty `happening_now` array is authoritative: it means nothing currently qualifies. If the key is absent, a backwards-compatible client may derive the rail from `today`.
+
+### 2.2 `today`
 
 Events that have **at least one active slot** with `slot_date = today` (server timezone).
 
 **Order**: `is_featured DESC` (featured events float to the top), then DB-natural for ties.
 **Cap**: `limit` (default 10).
 
-### 2.2 `tomorrow`
+### 2.3 `tomorrow`
 
 Events that have **at least one active slot** with `slot_date = today + 1 day`.
 
@@ -101,7 +116,7 @@ Events that have **at least one active slot** with `slot_date = today + 1 day`.
 
 > An event with slots both today and tomorrow appears in **both** sections — the controller does **not** deduplicate across `today` and `tomorrow`. A mobile client showing both sections back-to-back may want to dedupe by `uuid` before rendering, or accept the duplication as a "this event is available both days" signal.
 
-### 2.3 `recommended`
+### 2.4 `recommended`
 
 A two-pass query designed to surface editorial picks first, then top up with anything upcoming:
 
@@ -127,6 +142,7 @@ The merged result is up to `limit` items. This guarantees `recommended` is never
 {
   "success": true,
   "data": {
+    "happening_now": [/* present when requested */],
     "today": [/* array of MobileEventResource */],
     "tomorrow": [/* array of MobileEventResource */],
     "recommended": [/* array of MobileEventResource */],
@@ -138,6 +154,7 @@ The merged result is up to `limit` items. This guarantees `recommended` is never
 | Field | Type | Notes |
 |---|---|---|
 | `success` | boolean | Always `true` on 2xx. |
+| `data.happening_now` | array | Present when requested with `include=happening_now`; up to `limit` event objects. A present empty array is distinct from an omitted key. |
 | `data.today` | array | Up to `limit` event objects. May be empty. |
 | `data.tomorrow` | array | Up to `limit` event objects. May be empty. |
 | `data.recommended` | array | Up to `limit` event objects. Empty only if catalogue has no upcoming events. |
@@ -387,8 +404,10 @@ For events with multiple slots, `dates` describes only the **first upcoming** sl
 {
   "uuid": "slot-9f2a-…",
   "date": "2026-05-08",
+  "end_date": "2026-05-08",
   "start_time": "18:00:00",
   "end_time": "20:00:00",
+  "time_kind": "exact",
   "start_datetime": "2026-05-08T18:00:00+02:00",
   "end_datetime": "2026-05-08T20:00:00+02:00",
   "duration_minutes": 120,
@@ -396,16 +415,20 @@ For events with multiple slots, `dates` describes only the **first upcoming** sl
   "available_capacity": 37,
   "is_available": true,
   "is_past": false,
-  "is_today": true
+  "is_today": true,
+  "is_ongoing": true
 }
 ```
 
 | Field | Notes |
 |---|---|
+| `end_date` | date \| null. Last calendar day of a multi-day slot; when absent, `date` is also the last day. |
+| `time_kind` | `"exact"` or `"start_only"`. A start-only slot has no advertised end time. |
 | `capacity` | integer \| null. **Often `null` for discovery-mode events** (no capacity tracking). |
 | `available_capacity` | integer. `max(0, capacity − booked_count)`. When `capacity` is `null`, this is `0`. |
 | `is_available` | boolean. Computed as `is_active && !is_past && available_capacity > 0`. **⚠️ Caveat for discovery events**: because `capacity` is typically `null` for discovery slots, `available_capacity` evaluates to `0` and `is_available` therefore returns `false` for every future-dated discovery slot. **Mobile UIs MUST NOT gate the slot picker on `is_available` alone for discovery events** — for `booking_mode === "discovery"`, treat all `!is_past` slots as selectable regardless. For `booking_mode === "booking"`, `is_available` is reliable. |
-| `is_past` / `is_today` | Computed against the server clock — trust them rather than re-computing. |
+| `is_past` / `is_today` | Computed against the server clock — trust them on screens that do not stay mounted across a time boundary. |
+| `is_ongoing` | Computed against the server clock. For exact slots this remains true through `(end_date ?? date) + end_time`, inclusive. A started `start_only` slot remains ongoing through its last calendar day. Long-lived or cached screens should recompute this rule against their live clock, comparing the offset-aware `start_datetime` / `end_datetime` with it: `date` and the times are the venue's wall clock, and read in the device timezone they are hours off on a phone set to another zone. Keep the wall clock for display. |
 
 ### 5.2 Organizer — inline object
 
