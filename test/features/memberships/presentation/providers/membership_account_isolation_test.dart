@@ -470,6 +470,157 @@ void main() {
     );
   });
 
+  // The app checks memberships each time it returns to the foreground
+  // (unlock, notification tray). Every membership-gated list watches the
+  // content revision, so it must only move when a membership really changed.
+  group('foreground membership check', () {
+    Future<(ProviderContainer, _ControlledMembershipsRepository)> loaded(
+      MembershipStatus status,
+    ) async {
+      final repository = _ControlledMembershipsRepository();
+      final container = _container(repository);
+      addTearDown(container.dispose);
+      final subscription = container.listen(
+        myMembershipsListProvider,
+        (_, __) {},
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+      repository.membershipsRequests.single
+          .complete(_membershipsPage('org-a', status: status));
+      await _flush();
+      return (container, repository);
+    }
+
+    Future<void> check(
+      ProviderContainer container,
+      _ControlledMembershipsRepository repository,
+      MembershipStatus status,
+    ) async {
+      final reconciliation =
+          container.read(membershipStateSyncProvider).reconcile();
+      repository.membershipsRequests.last
+          .complete(_membershipsPage('org-a', status: status));
+      await reconciliation;
+    }
+
+    test('keeps the cached content while memberships are unchanged', () async {
+      final (container, repository) = await loaded(MembershipStatus.active);
+
+      await check(container, repository, MembershipStatus.active);
+      await check(container, repository, MembershipStatus.active);
+
+      expect(repository.membershipsRequests, hasLength(3));
+      expect(container.read(membershipContentRevisionProvider), 0);
+    });
+
+    test('refreshes the content once after a membership changed', () async {
+      final (container, repository) = await loaded(MembershipStatus.pending);
+
+      await check(container, repository, MembershipStatus.pending);
+      expect(container.read(membershipContentRevisionProvider), 0);
+
+      await check(container, repository, MembershipStatus.active);
+      expect(container.read(membershipContentRevisionProvider), 1);
+
+      await check(container, repository, MembershipStatus.active);
+      expect(container.read(membershipContentRevisionProvider), 1);
+    });
+
+    test('a failed check changes nothing and compares the next one', () async {
+      final (container, repository) = await loaded(MembershipStatus.pending);
+      await check(container, repository, MembershipStatus.pending);
+
+      final failed = container.read(membershipStateSyncProvider).reconcile();
+      repository.membershipsRequests.last.completeError(Exception('offline'));
+      await failed;
+      expect(container.read(membershipContentRevisionProvider), 0);
+
+      await check(container, repository, MembershipStatus.active);
+      expect(container.read(membershipContentRevisionProvider), 1);
+    });
+
+    test('compares with the memberships a notification already applied',
+        () async {
+      final (container, repository) = await loaded(MembershipStatus.pending);
+
+      final approval =
+          container.read(membershipStateSyncProvider).reconcileFromNotification(
+        'organization_join_approved',
+        data: const {'organization_id': 1},
+      );
+      expect(container.read(membershipContentRevisionProvider), 1);
+      repository.membershipsRequests.last
+          .complete(_membershipsPage('org-a', status: MembershipStatus.active));
+      await approval;
+
+      await check(container, repository, MembershipStatus.active);
+      expect(container.read(membershipContentRevisionProvider), 1);
+    });
+
+    test('the first check compares with the memberships already cached',
+        () async {
+      final (container, repository) = await loaded(MembershipStatus.pending);
+
+      await check(container, repository, MembershipStatus.active);
+
+      expect(container.read(membershipContentRevisionProvider), 1);
+    });
+
+    test('a notification during a check refreshes the content at once',
+        () async {
+      final (container, repository) = await loaded(MembershipStatus.pending);
+      final coordinator = container.read(membershipStateSyncProvider);
+
+      final foreground = coordinator.reconcile();
+      final approval = coordinator.reconcileFromNotification(
+        'organization_join_approved',
+        data: const {'organization_id': 1},
+      );
+      expect(container.read(membershipContentRevisionProvider), 1);
+
+      repository.membershipsRequests.last.complete(
+          _membershipsPage('org-a', status: MembershipStatus.pending));
+      await _flush();
+      // The approval may postdate that response: one trailing fetch follows.
+      expect(repository.membershipsRequests, hasLength(3));
+      repository.membershipsRequests.last
+          .complete(_membershipsPage('org-a', status: MembershipStatus.active));
+      await Future.wait([foreground, approval]);
+
+      expect(container.read(membershipContentRevisionProvider), 1);
+    });
+
+    test('a list with more than one page refreshes the content on each check',
+        () async {
+      // Past the first 50 memberships, a status change at a constant count
+      // would go unseen, so a partial list cannot prove nothing changed.
+      MembershipsPage partial() => MembershipsPage(
+            data: _membershipsPage('org-a').data,
+            meta: const MembershipsMetaDto(total: 51, perPage: 50, lastPage: 2),
+          );
+      final repository = _ControlledMembershipsRepository();
+      final container = _container(repository);
+      addTearDown(container.dispose);
+      final subscription = container.listen(
+        myMembershipsListProvider,
+        (_, __) {},
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
+      repository.membershipsRequests.single.complete(partial());
+      await _flush();
+      final coordinator = container.read(membershipStateSyncProvider);
+
+      for (final expected in [1, 2]) {
+        final reconciliation = coordinator.reconcile();
+        repository.membershipsRequests.last.complete(partial());
+        await reconciliation;
+        expect(container.read(membershipContentRevisionProvider), expected);
+      }
+    });
+  });
+
   test('old and anonymous membership actions cannot issue or publish',
       () async {
     final repository = _ControlledMembershipsRepository();
