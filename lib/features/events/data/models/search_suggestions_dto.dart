@@ -42,6 +42,9 @@ class SearchSuggestionItemDto {
   final String? logoUrl;
   final String? city;
 
+  /// Whether an event suggestion has ended: every one of its slots is over.
+  final bool isPast;
+
   const SearchSuggestionItemDto({
     required this.type,
     required this.id,
@@ -52,6 +55,7 @@ class SearchSuggestionItemDto {
     this.imageUrl,
     this.logoUrl,
     this.city,
+    this.isPast = false,
   });
 
   factory SearchSuggestionItemDto.fromJson(
@@ -85,6 +89,7 @@ class SearchSuggestionItemDto {
       imageUrl: _firstNullableString(json['imageUrl'], json['image_url']),
       logoUrl: _firstNullableString(json['logoUrl'], json['logo_url']),
       city: _firstNullableString(json['city']),
+      isPast: json['is_past'] == true || json['isPast'] == true,
     );
   }
 }

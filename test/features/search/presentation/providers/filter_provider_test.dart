@@ -5,12 +5,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lehiboo/domain/entities/user.dart';
 import 'package:lehiboo/features/auth/domain/repositories/auth_repository.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_provider.dart';
+import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/features/events/domain/repositories/event_repository.dart';
 import 'package:lehiboo/features/search/domain/models/event_filter.dart';
 import 'package:lehiboo/features/search/presentation/providers/filter_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _RecordingEventRepository implements EventRepository {
+  _RecordingEventRepository({this.pages = const {}});
+
+  /// Server page → (dated events it yields, whether more pages follow).
+  final Map<int, ({int count, bool hasNext})> pages;
+  final List<int> requestedPages = [];
   bool? requestedFreeOnly;
 
   @override
@@ -58,13 +64,18 @@ class _RecordingEventRepository implements EventRepository {
     bool includePast = true,
   }) async {
     requestedFreeOnly = freeOnly;
+    requestedPages.add(page);
+    final served = pages[page] ?? (count: 0, hasNext: false);
     return EventsResult(
-      events: const [],
-      currentPage: 1,
-      totalPages: 1,
+      events: [
+        for (var i = 0; i < served.count; i++)
+          Event.minimal(id: 'p$page-$i', slug: 'p$page-$i', title: 'p$page-$i'),
+      ],
+      currentPage: page,
+      totalPages: pages.length,
       totalItems: 0,
-      hasNext: false,
-      hasPrev: false,
+      hasNext: served.hasNext,
+      hasPrev: page > 1,
     );
   }
 
@@ -102,6 +113,82 @@ void main() {
     await container.read(filteredEventsProvider.notifier).waitForCurrentLoad();
 
     expect(repository.requestedFreeOnly, isTrue);
+  });
+
+  group('pages shortened by undated events', () {
+    // Undated events are dropped from lists, so a server page can come back
+    // short. Explore only loads more on scroll and shows "no results" for an
+    // empty page, so a short page is topped up from the next ones.
+    Future<(ProviderContainer, _RecordingEventRepository)> explore(
+      Map<int, ({int count, bool hasNext})> pages,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      final repository = _RecordingEventRepository(pages: pages);
+      final container = ProviderContainer(
+        overrides: [
+          eventRepositoryProvider.overrideWithValue(repository),
+          authProvider.overrideWith(
+            (ref) => _TestAuthNotifier(ref, _accountA),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container
+          .read(filteredEventsProvider.notifier)
+          .waitForCurrentLoad();
+      return (container, repository);
+    }
+
+    test('a full page fetches nothing more', () async {
+      final (container, repository) = await explore({
+        1: (count: 20, hasNext: true),
+      });
+
+      expect(repository.requestedPages, [1]);
+      expect(container.read(filteredEventsProvider).requireValue.activities,
+          hasLength(20));
+    });
+
+    test('a short page is topped up from the next pages', () async {
+      final (container, repository) = await explore({
+        1: (count: 0, hasNext: true),
+        2: (count: 12, hasNext: true),
+        3: (count: 10, hasNext: true),
+      });
+
+      final page = container.read(filteredEventsProvider).requireValue;
+      expect(repository.requestedPages, [1, 2, 3]);
+      expect(page.activities, hasLength(22));
+      expect(page.hasMore, isTrue);
+    });
+
+    test('loading more continues after the pages already used', () async {
+      final (container, repository) = await explore({
+        1: (count: 5, hasNext: true),
+        2: (count: 20, hasNext: true),
+        3: (count: 20, hasNext: false),
+      });
+
+      container.read(eventFilterProvider.notifier).nextPage();
+      await container
+          .read(filteredEventsProvider.notifier)
+          .waitForCurrentLoad();
+
+      expect(repository.requestedPages, [1, 2, 3]);
+      expect(container.read(filteredEventsProvider).requireValue.activities,
+          hasLength(45));
+    });
+
+    test('stops topping up after three extra pages', () async {
+      final (container, repository) = await explore({
+        for (var page = 1; page <= 10; page++) page: (count: 1, hasNext: true),
+      });
+
+      final page = container.read(filteredEventsProvider).requireValue;
+      expect(repository.requestedPages, [1, 2, 3, 4]);
+      expect(page.activities, hasLength(4));
+      expect(page.hasMore, isTrue);
+    });
   });
 
   test('an exact account switch discards the ephemeral search draft', () {

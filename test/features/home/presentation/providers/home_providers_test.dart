@@ -13,6 +13,146 @@ import 'package:lehiboo/features/events/domain/repositories/event_repository.dar
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
 
 void main() {
+  test('home feed lists drop the events with no date at all', () {
+    const undated = EventDto(
+      id: 9,
+      uuid: 'undated',
+      title: 'Undated',
+      slug: 'undated',
+    );
+    final dated = _feedEvent(
+      id: 1,
+      slug: 'dated',
+      title: 'Dated',
+      date: '2030-06-23',
+      startTime: '10:00',
+    );
+    final feed = HomeFeedDataDto(
+      happeningNow: [undated, dated],
+      today: [undated, dated],
+      tomorrow: [undated, dated],
+      recommended: [undated, dated],
+    );
+    final container = ProviderContainer(
+      overrides: [
+        homeFeedProvider.overrideWith((ref) => _FakeHomeFeedNotifier(feed)),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    expect(
+      container
+          .read(homeHappeningNowEventsProvider)
+          .requireValue
+          .map((event) => event.slug),
+      ['dated'],
+    );
+    for (final provider in [
+      homeTodayActivitiesProvider,
+      homeTomorrowActivitiesProvider,
+      homeActivitiesProvider,
+    ]) {
+      expect(
+        container.read(provider).requireValue.map((activity) => activity.slug),
+        ['dated'],
+      );
+    }
+  });
+
+  group('homeHappeningNowEventsProvider', () {
+    test('uses the server happening-now list when present', () {
+      final feed = HomeFeedDataDto(
+        happeningNow: [
+          _feedEvent(
+            id: 1,
+            slug: 'a',
+            title: 'A',
+            date: '2030-06-23',
+            startTime: '10:00',
+          ),
+        ],
+        today: [
+          _feedEvent(
+            id: 2,
+            slug: 'b',
+            title: 'B',
+            date: '2030-06-23',
+            startTime: '11:00',
+          ),
+        ],
+      );
+      final container = ProviderContainer(
+        overrides: [
+          homeFeedProvider.overrideWith(
+            (ref) => _FakeHomeFeedNotifier(feed),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final events =
+          container.read(homeHappeningNowEventsProvider).requireValue;
+
+      expect(events.map((event) => event.slug), ['a']);
+    });
+
+    test('falls back to today when the server sends no happening-now list', () {
+      final feed = HomeFeedDataDto(
+        happeningNow: null,
+        today: [
+          _feedEvent(
+            id: 2,
+            slug: 'b',
+            title: 'B',
+            date: '2030-06-23',
+            startTime: '11:00',
+          ),
+        ],
+      );
+      final container = ProviderContainer(
+        overrides: [
+          homeFeedProvider.overrideWith(
+            (ref) => _FakeHomeFeedNotifier(feed),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final events =
+          container.read(homeHappeningNowEventsProvider).requireValue;
+
+      expect(events.map((event) => event.slug), ['b']);
+    });
+
+    test('stays empty when the server says nothing is happening', () {
+      final feed = HomeFeedDataDto(
+        happeningNow: const [],
+        today: [
+          _feedEvent(
+            id: 2,
+            slug: 'b',
+            title: 'B',
+            date: '2030-06-23',
+            startTime: '11:00',
+          ),
+        ],
+      );
+      final container = ProviderContainer(
+        overrides: [
+          homeFeedProvider.overrideWith(
+            (ref) => _FakeHomeFeedNotifier(feed),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final events =
+          container.read(homeHappeningNowEventsProvider).requireValue;
+
+      expect(events, isEmpty);
+    });
+  });
+
   group('homeTodayActivitiesProvider', () {
     test('orders feed events by same-day start time', () async {
       final feed = HomeFeedDataDto(

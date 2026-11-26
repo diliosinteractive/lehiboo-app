@@ -1,53 +1,36 @@
 import '../../../../core/l10n/l10n.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/entities/event_submodels.dart';
+import '../../domain/utils/slot_timing.dart';
 import '../models/event_dto.dart';
 
+typedef EventSchedule = ({DateTime start, DateTime end});
+
 class EventMapper {
-  static Event toEvent(EventDto dto) {
-    // Parse date and time from dates object
-    DateTime startDate = DateTime.now();
-    DateTime endDate = DateTime.now();
+  /// Maps a list for display, dropping the events with no date at all:
+  /// a card must never show the time the list was loaded as its date.
+  static List<Event> toEvents(Iterable<EventDto> dtos, {DateTime? now}) {
+    final clock = now ?? DateTime.now();
+    return [
+      for (final dto in dtos)
+        if (scheduleOf(dto, now: clock) != null) toEvent(dto, now: clock),
+    ];
+  }
 
-    if (dto.dates != null) {
-      // Try to parse start_date
-      if (dto.dates!.startDate != null && dto.dates!.startDate!.isNotEmpty) {
-        startDate = DateTime.tryParse(dto.dates!.startDate!) ?? DateTime.now();
-      }
-      // Try to parse end_date
-      if (dto.dates!.endDate != null && dto.dates!.endDate!.isNotEmpty) {
-        endDate = DateTime.tryParse(dto.dates!.endDate!) ?? startDate;
-      } else {
-        endDate = startDate;
-      }
+  /// The event's dates: its `dates` block, else the slot to show from its
+  /// `slots` (the earliest not ended, else the latest). Null when neither
+  /// gives a date.
+  static EventSchedule? scheduleOf(EventDto dto, {DateTime? now}) {
+    return _scheduleFromDates(dto.dates) ??
+        _scheduleFromSlots(dto.slots, now ?? DateTime.now());
+  }
 
-      // Apply time if available
-      if (dto.dates!.startTime != null) {
-        final timeParts = dto.dates!.startTime!.split(':');
-        if (timeParts.length >= 2) {
-          startDate = DateTime(
-            startDate.year,
-            startDate.month,
-            startDate.day,
-            int.tryParse(timeParts[0]) ?? 0,
-            int.tryParse(timeParts[1]) ?? 0,
-          );
-        }
-      }
-
-      if (dto.dates!.endTime != null) {
-        final timeParts = dto.dates!.endTime!.split(':');
-        if (timeParts.length >= 2) {
-          endDate = DateTime(
-            endDate.year,
-            endDate.month,
-            endDate.day,
-            int.tryParse(timeParts[0]) ?? 0,
-            int.tryParse(timeParts[1]) ?? 0,
-          );
-        }
-      }
-    }
+  static Event toEvent(EventDto dto, {DateTime? now}) {
+    final clock = now ?? DateTime.now();
+    // Single-event screens still need an Event; lists drop these (toEvents).
+    final schedule = scheduleOf(dto, now: clock);
+    final startDate = schedule?.start ?? clock;
+    final endDate = schedule?.end ?? clock;
 
     // Determine price type from pricing object
     PriceType priceType = PriceType.paid;
@@ -640,14 +623,71 @@ class EventMapper {
     return audiences.isNotEmpty ? audiences : const [EventAudience.all];
   }
 
+  /// The `dates` block as a schedule, or null when it has no readable
+  /// start date. Same parsing as before when the start date is readable.
+  static EventSchedule? _scheduleFromDates(EventDatesDto? dates) {
+    final rawStart = dates?.startDate;
+    if (dates == null || rawStart == null || rawStart.isEmpty) return null;
+    var start = DateTime.tryParse(rawStart);
+    if (start == null) return null;
+
+    final rawEnd = dates.endDate;
+    var end = rawEnd != null && rawEnd.isNotEmpty
+        ? DateTime.tryParse(rawEnd) ?? start
+        : start;
+
+    start = _withClockTime(start, dates.startTime);
+    end = _withClockTime(end, dates.endTime);
+    return (start: start, end: end);
+  }
+
+  static DateTime _withClockTime(DateTime date, String? time) {
+    final parts = time?.split(':');
+    if (parts == null || parts.length < 2) return date;
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+      int.tryParse(parts[0]) ?? 0,
+      int.tryParse(parts[1]) ?? 0,
+    );
+  }
+
+  /// The slot a card should show: the earliest one not ended, else the
+  /// latest one. Slots without a readable date are ignored rather than
+  /// dated today.
+  static EventSchedule? _scheduleFromSlots(List<dynamic>? slots, DateTime now) {
+    final timings = [
+      for (final raw in slots ?? const [])
+        if (raw is Map &&
+            DateTime.tryParse(raw['date']?.toString() ?? '') != null)
+          calendarSlotTiming(
+            _parseSlotFromMobileFormat(Map<String, dynamic>.from(raw)),
+          ),
+    ].nonNulls.toList();
+    if (timings.isEmpty) return null;
+
+    final notEnded = timings.where((timing) => !timing.hasEnded(now)).toList();
+    final shown = notEnded.isNotEmpty
+        ? notEnded.reduce((a, b) => b.startsAt.isBefore(a.startsAt) ? b : a)
+        : timings.reduce((a, b) => b.runsUntil.isAfter(a.runsUntil) ? b : a);
+    return (start: shown.start, end: shown.end ?? shown.start);
+  }
+
   /// Parse a slot from the mobile v2 format into CalendarDateSlot
   static CalendarDateSlot _parseSlotFromMobileFormat(
       Map<String, dynamic> json) {
     return CalendarDateSlot.fromJson(<String, dynamic>{
       'id': json['uuid']?.toString() ?? json['id']?.toString() ?? '',
       'date': json['date']?.toString() ?? '',
+      'end_date': json['end_date'],
       'start_time': json['start_time'],
       'end_time': json['end_time'],
+      'time_kind': json['time_kind'],
+      // Offset-aware: what timing compares with now, whatever the phone's
+      // timezone. The date and times above are the venue's wall clock.
+      'start_datetime': json['start_datetime'],
+      'end_datetime': json['end_datetime'],
       'spots_remaining': json['available_capacity'] ?? json['spots_remaining'],
       'total_capacity': json['capacity'] ?? json['total_capacity'],
     });

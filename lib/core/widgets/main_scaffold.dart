@@ -112,72 +112,117 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
 
   // Source of truth for the highlighted tab is the current route, so back
   // navigation, deeplinks and programmatic context.go all stay in sync.
-  int _indexForLocation(String path, bool canScan, bool isAuthenticated) {
-    if (path.startsWith('/explore')) return 1;
-    // Logged-out organizers directory occupies the 4th slot.
-    if (!isAuthenticated && path.startsWith('/organizers')) return 3;
-    if (path.startsWith('/my-bookings')) return canScan ? -1 : 3;
-    return 0;
+  // Returns -1 for a shell page that is no tab for this user. Map and scan
+  // are not shell pages: they open full screen over the tabs.
+  int _tabIndexFor(String path, bool canScan, bool isAuthenticated) {
+    if (path == '/') return 0;
+    if (path == '/explore') return 1;
+    // Logged out, the organizers directory is the 4th tab; signed in, it is
+    // a Profile page.
+    if (path == '/organizers') return isAuthenticated ? -1 : 3;
+    // Scanners have Scan as their 4th tab, so their bookings are a Profile page.
+    if (path == '/my-bookings') return isAuthenticated && !canScan ? 3 : -1;
+    return -1;
+  }
+
+  /// Whether a page was pushed over the shell's first page, like the bookings
+  /// opened from the profile: it belongs to the page under it, not to a tab.
+  bool _showsPushedPage() {
+    final matches =
+        GoRouter.of(context).routerDelegate.currentConfiguration.matches;
+    for (final match in matches) {
+      if (match is ShellRouteMatch) return match.matches.length > 1;
+    }
+    return false;
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
     final isKeyboardVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
     final canScan = ref.watch(vendorEligibilityProvider);
     final isAuthenticated = ref.watch(isAuthenticatedProvider);
-    final selectedIndex = _indexForLocation(
-        GoRouterState.of(context).uri.path, canScan, isAuthenticated);
+    final path = GoRouterState.of(context).uri.path;
+    final selectedIndex = _tabIndexFor(path, canScan, isAuthenticated);
+    final showsBottomNav = selectedIndex >= 0 && !_showsPushedPage();
 
-    return Scaffold(
-      body: widget.child,
-      // Nouveau VoiceFab avec appui prolongé pour parler
-      floatingActionButton: isKeyboardVisible ? null : const VoiceFab(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8.0,
-        color: Colors.white,
-        elevation: 10,
-        height: 70,
-        padding: EdgeInsets.zero,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 16.0),
-              child:
-                  _buildNavItem(Icons.home_rounded, l10n.navHome, 0, selectedIndex),
-            ),
-            _buildNavItem(
-                Icons.explore_outlined, l10n.navExplore, 1, selectedIndex),
-            const SizedBox(width: 64), // Space for FAB
-            _buildNavItem(Icons.map_outlined, l10n.navMap, 2, selectedIndex),
-            Padding(
-              padding: const EdgeInsets.only(right: 16.0),
-              child: !isAuthenticated
-                  ? _buildNavItem(
-                      Icons.storefront_outlined,
-                      l10n.navOrganizers,
-                      3,
-                      selectedIndex,
-                    )
-                  : canScan
-                      ? _buildNavItem(
-                          Icons.qr_code_scanner_outlined,
-                          l10n.navScan,
-                          3,
-                          selectedIndex,
-                        )
-                      : _buildNavItem(
-                          Icons.confirmation_number_outlined,
-                          l10n.navBookings,
-                          3,
-                          selectedIndex,
-                        ),
-            ),
-          ],
-        ),
+    // Back on home leaves the app. Elsewhere in the shell, once there is no
+    // pushed page left to close, back returns home instead: tabs are opened
+    // with go(), so without this the app would close. When the shell itself
+    // was opened over another screen (Petit Boo pushes /profile), back returns
+    // there, and the iOS edge swipe, which a refused pop disables, stays on.
+    final opensOverAnotherScreen = ModalRoute.of(context)?.canPop ?? false;
+    return PopScope(
+      canPop: path == '/' || opensOverAnotherScreen,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) context.go('/');
+      },
+      child: Scaffold(
+        body: widget.child,
+        // Nouveau VoiceFab avec appui prolongé pour parler
+        floatingActionButton:
+            showsBottomNav && !isKeyboardVisible ? const VoiceFab() : null,
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        bottomNavigationBar: showsBottomNav
+            ? _buildBottomNav(
+                selectedIndex,
+                canScan: canScan,
+                isAuthenticated: isAuthenticated,
+              )
+            : null,
+      ),
+    );
+  }
+
+  Widget _buildBottomNav(
+    int selectedIndex, {
+    required bool canScan,
+    required bool isAuthenticated,
+  }) {
+    final l10n = context.l10n;
+
+    return BottomAppBar(
+      shape: const CircularNotchedRectangle(),
+      notchMargin: 8.0,
+      color: Colors.white,
+      elevation: 10,
+      height: 70,
+      padding: EdgeInsets.zero,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 16.0),
+            child: _buildNavItem(
+                Icons.home_rounded, l10n.navHome, 0, selectedIndex),
+          ),
+          _buildNavItem(
+              Icons.explore_outlined, l10n.navExplore, 1, selectedIndex),
+          const SizedBox(width: 64), // Space for FAB
+          _buildNavItem(Icons.map_outlined, l10n.navMap, 2, selectedIndex),
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: !isAuthenticated
+                ? _buildNavItem(
+                    Icons.storefront_outlined,
+                    l10n.navOrganizers,
+                    3,
+                    selectedIndex,
+                  )
+                : canScan
+                    ? _buildNavItem(
+                        Icons.qr_code_scanner_outlined,
+                        l10n.navScan,
+                        3,
+                        selectedIndex,
+                      )
+                    : _buildNavItem(
+                        Icons.confirmation_number_outlined,
+                        l10n.navBookings,
+                        3,
+                        selectedIndex,
+                      ),
+          ),
+        ],
       ),
     );
   }

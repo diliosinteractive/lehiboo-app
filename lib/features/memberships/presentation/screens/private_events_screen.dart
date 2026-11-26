@@ -175,7 +175,9 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
                     .refresh(),
               ),
               data: (state) {
-                if (state.events.isEmpty) {
+                // Undated events are left out rather than dated "now".
+                final events = EventMapper.toEvents(state.events);
+                if (events.isEmpty) {
                   return _EmptyState(
                     hasActiveMemberships: activeOrgs.isNotEmpty,
                     isFiltered:
@@ -192,7 +194,7 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
                     controller: _scrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: state.events.length +
+                    itemCount: events.length +
                         (state.isLoadingMore || state.loadMoreError != null
                             ? 1
                             : 0),
@@ -204,7 +206,7 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
                       endIndent: 20,
                     ),
                     itemBuilder: (context, index) {
-                      if (index == state.events.length) {
+                      if (index == events.length) {
                         if (state.loadMoreError != null) {
                           return _PrivateEventsLoadMoreError(
                             message: ApiResponseHandler.extractError(
@@ -227,7 +229,7 @@ class _PrivateEventsScreenState extends ConsumerState<PrivateEventsScreen> {
                           ),
                         );
                       }
-                      final event = EventMapper.toEvent(state.events[index]);
+                      final event = events[index];
                       return _PrivateEventTile(
                         event: event,
                         ownerSession: ownerSession,

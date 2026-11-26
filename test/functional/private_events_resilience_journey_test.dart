@@ -153,6 +153,36 @@ void main() {
     expect(find.text('Événement chargé après réessai'), findsOneWidget);
     expect(repository.privateEventCalls, 2);
   });
+
+  testWidgets('a private event with no date at all is left out', (
+    tester,
+  ) async {
+    final repository = _OutcomeMembershipsRepository([
+      _pageOf([
+        _privateEvent('Événement daté'),
+        _privateEvent('Événement sans date', dated: false),
+      ]),
+    ]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authProvider.overrideWith((ref) => _TestAuthNotifier(ref, _accountA)),
+          membershipsRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: const MaterialApp(
+          locale: Locale('fr'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: PrivateEventsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Événement daté'), findsOneWidget);
+    expect(find.text('Événement sans date'), findsNothing);
+  });
 }
 
 class _NeverCompletingAuthRepository implements AuthRepository {
@@ -242,13 +272,26 @@ class _OutcomeMembershipsRepository implements MembershipsRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-PrivateEventsPage _page(String title) {
+PrivateEventsPage _page(String title) => _pageOf([_privateEvent(title)]);
+
+PrivateEventsPage _pageOf(List<EventDto> events) {
   return PrivateEventsPage(
-    events: [EventDto(id: 1, title: title, slug: 'private-event')],
+    events: events,
     page: 1,
     perPage: 15,
-    total: 1,
+    total: events.length,
     lastPage: 1,
+  );
+}
+
+EventDto _privateEvent(String title, {bool dated = true}) {
+  return EventDto(
+    id: title.hashCode,
+    title: title,
+    slug: title,
+    dates: dated
+        ? const EventDatesDto(startDate: '2099-09-08', startTime: '18:00:00')
+        : null,
   );
 }
 

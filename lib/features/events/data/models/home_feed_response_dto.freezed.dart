@@ -192,6 +192,8 @@ HomeFeedDataDto _$HomeFeedDataDtoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$HomeFeedDataDto {
+  @JsonKey(name: 'happening_now')
+  List<EventDto>? get happeningNow => throw _privateConstructorUsedError;
   List<EventDto> get today => throw _privateConstructorUsedError;
   List<EventDto> get tomorrow => throw _privateConstructorUsedError;
   List<EventDto> get recommended => throw _privateConstructorUsedError;
@@ -211,7 +213,8 @@ abstract class $HomeFeedDataDtoCopyWith<$Res> {
       _$HomeFeedDataDtoCopyWithImpl<$Res, HomeFeedDataDto>;
   @useResult
   $Res call(
-      {List<EventDto> today,
+      {@JsonKey(name: 'happening_now') List<EventDto>? happeningNow,
+      List<EventDto> today,
       List<EventDto> tomorrow,
       List<EventDto> recommended,
       @JsonKey(name: 'location_provided') bool locationProvided});
@@ -230,12 +233,17 @@ class _$HomeFeedDataDtoCopyWithImpl<$Res, $Val extends HomeFeedDataDto>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? happeningNow = freezed,
     Object? today = null,
     Object? tomorrow = null,
     Object? recommended = null,
     Object? locationProvided = null,
   }) {
     return _then(_value.copyWith(
+      happeningNow: freezed == happeningNow
+          ? _value.happeningNow
+          : happeningNow // ignore: cast_nullable_to_non_nullable
+              as List<EventDto>?,
       today: null == today
           ? _value.today
           : today // ignore: cast_nullable_to_non_nullable
@@ -265,7 +273,8 @@ abstract class _$$HomeFeedDataDtoImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {List<EventDto> today,
+      {@JsonKey(name: 'happening_now') List<EventDto>? happeningNow,
+      List<EventDto> today,
       List<EventDto> tomorrow,
       List<EventDto> recommended,
       @JsonKey(name: 'location_provided') bool locationProvided});
@@ -282,12 +291,17 @@ class __$$HomeFeedDataDtoImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
+    Object? happeningNow = freezed,
     Object? today = null,
     Object? tomorrow = null,
     Object? recommended = null,
     Object? locationProvided = null,
   }) {
     return _then(_$HomeFeedDataDtoImpl(
+      happeningNow: freezed == happeningNow
+          ? _value._happeningNow
+          : happeningNow // ignore: cast_nullable_to_non_nullable
+              as List<EventDto>?,
       today: null == today
           ? _value._today
           : today // ignore: cast_nullable_to_non_nullable
@@ -312,16 +326,29 @@ class __$$HomeFeedDataDtoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$HomeFeedDataDtoImpl implements _HomeFeedDataDto {
   const _$HomeFeedDataDtoImpl(
-      {final List<EventDto> today = const [],
+      {@JsonKey(name: 'happening_now') final List<EventDto>? happeningNow,
+      final List<EventDto> today = const [],
       final List<EventDto> tomorrow = const [],
       final List<EventDto> recommended = const [],
       @JsonKey(name: 'location_provided') this.locationProvided = false})
-      : _today = today,
+      : _happeningNow = happeningNow,
+        _today = today,
         _tomorrow = tomorrow,
         _recommended = recommended;
 
   factory _$HomeFeedDataDtoImpl.fromJson(Map<String, dynamic> json) =>
       _$$HomeFeedDataDtoImplFromJson(json);
+
+  final List<EventDto>? _happeningNow;
+  @override
+  @JsonKey(name: 'happening_now')
+  List<EventDto>? get happeningNow {
+    final value = _happeningNow;
+    if (value == null) return null;
+    if (_happeningNow is EqualUnmodifiableListView) return _happeningNow;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
 
   final List<EventDto> _today;
   @override
@@ -356,7 +383,7 @@ class _$HomeFeedDataDtoImpl implements _HomeFeedDataDto {
 
   @override
   String toString() {
-    return 'HomeFeedDataDto(today: $today, tomorrow: $tomorrow, recommended: $recommended, locationProvided: $locationProvided)';
+    return 'HomeFeedDataDto(happeningNow: $happeningNow, today: $today, tomorrow: $tomorrow, recommended: $recommended, locationProvided: $locationProvided)';
   }
 
   @override
@@ -364,6 +391,8 @@ class _$HomeFeedDataDtoImpl implements _HomeFeedDataDto {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$HomeFeedDataDtoImpl &&
+            const DeepCollectionEquality()
+                .equals(other._happeningNow, _happeningNow) &&
             const DeepCollectionEquality().equals(other._today, _today) &&
             const DeepCollectionEquality().equals(other._tomorrow, _tomorrow) &&
             const DeepCollectionEquality()
@@ -376,6 +405,7 @@ class _$HomeFeedDataDtoImpl implements _HomeFeedDataDto {
   @override
   int get hashCode => Object.hash(
       runtimeType,
+      const DeepCollectionEquality().hash(_happeningNow),
       const DeepCollectionEquality().hash(_today),
       const DeepCollectionEquality().hash(_tomorrow),
       const DeepCollectionEquality().hash(_recommended),
@@ -398,7 +428,8 @@ class _$HomeFeedDataDtoImpl implements _HomeFeedDataDto {
 
 abstract class _HomeFeedDataDto implements HomeFeedDataDto {
   const factory _HomeFeedDataDto(
-          {final List<EventDto> today,
+          {@JsonKey(name: 'happening_now') final List<EventDto>? happeningNow,
+          final List<EventDto> today,
           final List<EventDto> tomorrow,
           final List<EventDto> recommended,
           @JsonKey(name: 'location_provided') final bool locationProvided}) =
@@ -407,6 +438,9 @@ abstract class _HomeFeedDataDto implements HomeFeedDataDto {
   factory _HomeFeedDataDto.fromJson(Map<String, dynamic> json) =
       _$HomeFeedDataDtoImpl.fromJson;
 
+  @override
+  @JsonKey(name: 'happening_now')
+  List<EventDto>? get happeningNow;
   @override
   List<EventDto> get today;
   @override

@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
+import '../../../../core/widgets/shell_back_button.dart';
 import '../providers/organizers_directory_providers.dart';
 import '../widgets/organizer_directory_tile.dart';
 import '../widgets/organizer_load_more_error.dart';
@@ -180,6 +181,7 @@ class _OrganizersDirectoryScreenState
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        leading: const ShellBackButton(),
         backgroundColor: Colors.white,
         elevation: 0,
         title: Text(

@@ -4618,6 +4618,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeUrgencySubtitle => 'Underway or about to start';
 
   @override
+  String get homeUrgencyLive => 'Live now';
+
+  @override
+  String homeUrgencyLiveUntil(String time) {
+    return 'Until $time';
+  }
+
+  @override
+  String homeUrgencyLiveUntilDate(String date) {
+    return 'Until $date';
+  }
+
+  @override
   String get homeCityNotFound => 'City not found';
 
   @override
@@ -4965,6 +4978,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchNoSuggestions => 'No suggestions';
+
+  @override
+  String get searchSuggestionEnded => 'Ended';
 
   @override
   String get searchSectionThemes => 'Themes';

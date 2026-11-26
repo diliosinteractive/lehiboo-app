@@ -7,11 +7,13 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lehiboo/core/l10n/l10n.dart';
 import 'package:lehiboo/domain/entities/activity.dart';
+import 'package:lehiboo/features/events/data/mappers/event_to_activity_mapper.dart';
 import 'package:lehiboo/features/events/domain/entities/event.dart';
 import 'package:lehiboo/core/themes/colors.dart';
 import 'package:lehiboo/features/favorites/presentation/widgets/favorite_button.dart';
 import 'package:lehiboo/features/auth/presentation/providers/auth_session_key_provider.dart';
 import 'package:lehiboo/features/home/presentation/providers/home_providers.dart';
+import 'package:lehiboo/features/home/presentation/utils/happening_now.dart';
 import 'package:lehiboo/features/home/presentation/utils/home_l10n_formatters.dart';
 import 'package:lehiboo/features/home/presentation/widgets/home_section_title.dart';
 
@@ -565,10 +567,23 @@ class _CountdownEventCardState extends ConsumerState<CountdownEventCard>
 class _FullCountdownCard extends ConsumerStatefulWidget {
   final Activity activity;
   final AuthSessionKey ownerSession;
+  final bool isLive;
+  final DateTime? liveUntil;
+
+  /// Whether [liveUntil] falls on the venue's current day.
+  final bool liveUntilToday;
+
+  /// The exact instant the occurrence starts, which the countdown measures.
+  /// The slot's own date-time is the venue's wall clock, for display.
+  final DateTime? startsAt;
 
   const _FullCountdownCard({
     required this.activity,
     required this.ownerSession,
+    this.isLive = false,
+    this.liveUntil,
+    this.liveUntilToday = false,
+    this.startsAt,
   });
 
   @override
@@ -595,12 +610,13 @@ class _FullCountdownCardState extends ConsumerState<_FullCountdownCard> {
   }
 
   void _calculateRemaining() {
-    final targetDate = widget.activity.nextSlot?.startDateTime;
+    final targetDate =
+        widget.startsAt ?? widget.activity.nextSlot?.startDateTime;
     if (targetDate == null) {
       setState(() => _remaining = Duration.zero);
       return;
     }
-    final now = DateTime.now();
+    final now = ref.read(homeNowProvider)();
     final diff = targetDate.difference(now);
     setState(() {
       _remaining = diff.isNegative ? Duration.zero : diff;
@@ -613,6 +629,21 @@ class _FullCountdownCardState extends ConsumerState<_FullCountdownCard> {
 
   String _formatSlotDateTime(BuildContext context, DateTime dt) {
     return context.homeDateAtTime(dt);
+  }
+
+  String _formatDateLine(BuildContext context) {
+    final liveUntil = widget.liveUntil;
+    if (widget.isLive && liveUntil != null) {
+      return widget.liveUntilToday
+          ? context.l10n.homeUrgencyLiveUntil(context.homeTime(liveUntil))
+          : context.l10n
+              .homeUrgencyLiveUntilDate(context.homeShortDate(liveUntil));
+    }
+
+    return _formatSlotDateTime(
+      context,
+      widget.activity.nextSlot!.startDateTime,
+    );
   }
 
   bool get _isUrgent => _remaining.inHours < 6;
@@ -662,25 +693,56 @@ class _FullCountdownCardState extends ConsumerState<_FullCountdownCard> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: _isUrgent
+                      color: widget.isLive || _isUrgent
                           ? const Color(0xFFFF4444)
                           : HbColors.brandPrimary,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.timer, color: Colors.white, size: 14),
-                        const SizedBox(width: 4),
-                        Text(
-                          _formatCountdown(context),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                      children: widget.isLive
+                          ? [
+                              Container(
+                                width: 9,
+                                height: 9,
+                                padding: const EdgeInsets.all(2),
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFFFF4444),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                context.l10n.homeUrgencyLive,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ]
+                          : [
+                              const Icon(
+                                Icons.timer,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _formatCountdown(context),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                     ),
                   ),
                 ),
@@ -824,10 +886,7 @@ class _FullCountdownCardState extends ConsumerState<_FullCountdownCard> {
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            _formatSlotDateTime(
-                              context,
-                              widget.activity.nextSlot!.startDateTime,
-                            ),
+                            _formatDateLine(context),
                             style: TextStyle(
                               color: Colors.grey[700],
                               fontSize: 12,
@@ -1151,24 +1210,16 @@ class _UrgencySectionState extends ConsumerState<UrgencySection> {
 
   @override
   Widget build(BuildContext context) {
-    final activitiesAsync = ref.watch(homeTodayActivitiesProvider);
+    final eventsAsync = ref.watch(homeHappeningNowEventsProvider);
     final renderedEventsSession = ref.watch(authSessionKeyProvider);
     final now = ref.watch(homeNowProvider)();
 
-    return activitiesAsync.when(
+    return eventsAsync.when(
       skipError: true,
-      data: (activities) {
-        final urgencyLimit = now.add(const Duration(hours: 12));
-        final urgentActivities = activities
-            .where((activity) {
-              final start = activity.nextSlot?.startDateTime;
-              if (start == null) return false;
-              return !start.isBefore(now) && !start.isAfter(urgencyLimit);
-            })
-            .take(6)
-            .toList();
+      data: (events) {
+        final happeningNowItems = selectHappeningNow(events, now);
 
-        if (urgentActivities.isEmpty) return const SizedBox.shrink();
+        if (happeningNowItems.isEmpty) return const SizedBox.shrink();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1190,15 +1241,29 @@ class _UrgencySectionState extends ConsumerState<UrgencySection> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: urgentActivities.length,
+                itemCount: happeningNowItems.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 12),
                 itemBuilder: (context, index) {
-                  final activity = urgentActivities[index];
+                  final item = happeningNowItems[index];
+                  final baseActivity =
+                      EventToActivityMapper.toActivity(item.event);
+                  // The mapper always sets nextSlot; keep its capacity, prices
+                  // and status, and only move it to the advertised occurrence.
+                  final activity = baseActivity.copyWith(
+                    nextSlot: baseActivity.nextSlot!.copyWith(
+                      startDateTime: item.start,
+                      endDateTime: item.end ?? item.start,
+                    ),
+                  );
                   return SizedBox(
                     width: 200,
                     child: _FullCountdownCard(
                       activity: activity,
                       ownerSession: renderedEventsSession,
+                      isLive: item.isLive,
+                      liveUntil: item.end,
+                      liveUntilToday: item.endsToday,
+                      startsAt: item.startsAt,
                     ),
                   );
                 },

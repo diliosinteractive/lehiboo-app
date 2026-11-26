@@ -7929,6 +7929,24 @@ abstract class AppLocalizations {
   /// **'En cours ou sur le point de commencer'**
   String get homeUrgencySubtitle;
 
+  /// No description provided for @homeUrgencyLive.
+  ///
+  /// In fr, this message translates to:
+  /// **'En cours'**
+  String get homeUrgencyLive;
+
+  /// No description provided for @homeUrgencyLiveUntil.
+  ///
+  /// In fr, this message translates to:
+  /// **'Jusqu\'à {time}'**
+  String homeUrgencyLiveUntil(String time);
+
+  /// No description provided for @homeUrgencyLiveUntilDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Jusqu\'au {date}'**
+  String homeUrgencyLiveUntilDate(String date);
+
   /// No description provided for @homeCityNotFound.
   ///
   /// In fr, this message translates to:
@@ -8534,6 +8552,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Aucune suggestion'**
   String get searchNoSuggestions;
+
+  /// Badge on an event suggestion whose slots have all ended
+  ///
+  /// In fr, this message translates to:
+  /// **'Terminé'**
+  String get searchSuggestionEnded;
 
   /// No description provided for @searchSectionThemes.
   ///

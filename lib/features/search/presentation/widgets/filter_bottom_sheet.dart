@@ -823,6 +823,7 @@ class _SearchFilterSectionState extends ConsumerState<_SearchFilterSection> {
               icon: isOrganization ? Icons.apartment : Icons.event,
               label: item.label,
               subtitle: item.subtitle,
+              badge: item.isPast ? context.l10n.searchSuggestionEnded : null,
               onTap: () {
                 // Un clic sur une suggestion navigue directement vers la page
                 // concernée (event ou organisation) plutôt que de compléter la
@@ -2862,6 +2863,9 @@ class _SuggestionTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final String? subtitle;
+
+  /// Short status shown at the end of the row, such as "Terminé".
+  final String? badge;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -2870,6 +2874,7 @@ class _SuggestionTile extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.subtitle,
+    this.badge,
     this.isSelected = false,
   });
 
@@ -2919,6 +2924,24 @@ class _SuggestionTile extends StatelessWidget {
                 ],
               ),
             ),
+            if (badge != null) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  badge!,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ),
+            ],
             if (isSelected)
               const Icon(
                 Icons.check_circle,

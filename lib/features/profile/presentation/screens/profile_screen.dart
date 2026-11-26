@@ -13,6 +13,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/l10n/l10n.dart';
 import '../../../../core/themes/colors.dart';
 import '../../../../core/utils/api_response_handler.dart';
+import '../../../../core/widgets/shell_back_button.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_session_key_provider.dart';
 import '../../../auth/presentation/widgets/account_bound_route_guard.dart';
@@ -57,6 +58,7 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const ShellBackButton(),
         title: Text(context.l10n.profileTitle),
         backgroundColor: Colors.white,
         elevation: 0,
